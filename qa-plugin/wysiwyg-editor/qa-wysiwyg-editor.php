@@ -1,15 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/wysiwyg-editor/qa-wysiwyg-editor.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
-	Description:
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
+	Description: Editor module class for WYSIWYG editor plugin
 
 
 	This program is free software; you can redistribute it and/or
@@ -88,7 +88,7 @@
 
 				return array(
 					'format' => '',
-					'content' => $viewer->get_view_text($html, 'html')
+					'content' => $viewer->get_text($html, 'html', array())
 				);
 			}
 		}

@@ -1,15 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-image.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
-	Description: Retrieve image for a specific blob at a specific size
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
+	Description: Outputs image for a specific blob at a specific size, caching as appropriate
 
 
 	This program is free software; you can redistribute it and/or
@@ -27,7 +27,7 @@
 
 //	Ensure no PHP errors are shown in the image data
 
-//	@ini_set('display_errors', 0);
+	@ini_set('display_errors', 0);
 
 	require_once QA_INCLUDE_DIR.'qa-db-cache.php';
 	
@@ -58,17 +58,22 @@
 		$blob=qa_db_blob_read($blobid);
 		
 		if (isset($blob)) {
-			$content=qa_image_constrain_data($blob['content'], $width, $height, $size);
+			if ($size>0)
+				$content=qa_image_constrain_data($blob['content'], $width, $height, $size);
+			else
+				$content=$blob['content'];
 			
 			if (isset($content)) {
 				header('Content-Type: image/jpeg');
 				echo $content;
 
-				$cachesizes=qa_get_options(array('avatar_profile_size', 'avatar_users_size', 'avatar_q_page_q_size', 'avatar_q_page_a_size', 'avatar_q_page_c_size'));
-					// to prevent cache being filled with inappropriate sizes
-					
-				if (strlen($content) && array_search($size, $cachesizes))
-					qa_db_cache_set($cachetype, $blobid, $content);
+				if (strlen($content) && ($size>0)) {
+					$cachesizes=qa_get_options(array('avatar_profile_size', 'avatar_users_size', 'avatar_q_page_q_size', 'avatar_q_page_a_size', 'avatar_q_page_c_size', 'avatar_q_list_size'));
+						// to prevent cache being filled with inappropriate sizes
+						
+					if (array_search($size, $cachesizes))
+						qa_db_cache_set($cachetype, $blobid, $content);
+				}
 			}	
 		}
 	}

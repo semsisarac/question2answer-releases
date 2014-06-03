@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-ip.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Controller for page showing activity for an IP address
 
 
@@ -37,7 +37,7 @@
 	$ip=$pass_ip; // picked up from qa-page.php
 
 
-//	Find recently (hidden or not) questions, answers, comments
+//	Find recently (hidden or not) questions, answers, comments and edits
 
 	list($qs, $qs_hidden, $a_qs, $a_hidden_qs, $c_qs, $c_hidden_qs, $edit_qs, $categories)=qa_db_select_with_pending(
 		qa_db_recent_qs_selectspec($qa_login_userid, 0, null, $ip, false),
@@ -51,7 +51,7 @@
 	);
 	
 	
-//	Check we have permission to view this page, and whether we can block or unblock users
+//	Check we have permission to view this page, and whether we can block or unblock IPs
 
 	if (qa_user_permit_error('permit_anon_view_ips')) {
 		$qa_content=qa_content_prepare();
@@ -169,7 +169,8 @@
 
 	} else
 		$qa_content['q_list']['title']=qa_lang_html_sub('misc/no_activity_from_x', qa_html($ip));
-		
+	
+	
 	return $qa_content;
 	
 

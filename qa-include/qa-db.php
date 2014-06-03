@@ -1,15 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
-	Description: Common functions for connecting to and access database
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
+	Description: Common functions for connecting to and accessing database
 
 
 	This program is free software; you can redistribute it and/or
@@ -64,6 +64,9 @@
 	
 	
 	function qa_db_connection()
+/*
+	Return the current connection to the QA database, if any
+*/
 	{
 		global $qa_db;
 		return $qa_db;
@@ -125,6 +128,9 @@
 	
 	
 	function qa_db_escape_string($string)
+/*
+	Return $string escaped for use in queries to the QA database (to which a connection must have been made)
+*/
 	{
 		global $qa_db;
 		
@@ -424,7 +430,7 @@
 
 	function qa_db_post_select(&$outresult, $selectspec)
 /*
-	Post-process $outresults according to $selectspec, applying 'sortasc', 'sortdesc', 'arrayvale' and 'single'
+	Post-process $outresults according to $selectspec, applying 'sortasc', 'sortdesc', 'arrayvalue' and 'single'
 */
 	{
 		// PHP's sorting algorithm is not 'stable', so we use '_order_' element to keep stability.

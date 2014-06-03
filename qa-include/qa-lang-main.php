@@ -1,15 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-main.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
-	Description: Language phrases commonly used throughout Q2A, plus a few other misc ones
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
+	Description: Language phrases commonly used throughout Q2A
 
 
 	This program is free software; you can redistribute it and/or
@@ -41,13 +41,13 @@
 		'1_year' => '1 year',
 		'all_categories' => 'All categories',
 		'anonymous' => 'anonymous',
-		'answered' => 'answered',
 		'answer_edited' => 'answer edited',
+		'answered' => 'answered',
 		'asked' => 'asked',
 		'by_x' => 'by ^',
 		'cancel_button' => 'Cancel',
-		'commented' => 'commented',
 		'comment_edited' => 'comment edited',
+		'commented' => 'commented',
 		'edited' => 'edited',
 		'field_required' => 'Please enter something in this field',
 		'general_error' => 'A server error occurred - please try again.',
@@ -118,9 +118,9 @@
 		'unanswered_qs_title' => 'Recent questions without answers',
 		'vote_disabled_hidden_a' => 'You cannot vote on hidden answers',
 		'vote_disabled_hidden_q' => 'You cannot vote on hidden questions',
-		'vote_disabled_q_page_only' => 'Please view this question to vote',
 		'vote_disabled_my_a' => 'You cannot vote on your own answers',
 		'vote_disabled_my_q' => 'You cannot vote on your own questions',
+		'vote_disabled_q_page_only' => 'Please view this question to vote',
 		'vote_down_popup' => 'Click to vote down',
 		'vote_limit' => 'Too many votes received - please try again in an hour',
 		'vote_must_confirm' => 'Please ^5confirm your email address^6 to vote.',

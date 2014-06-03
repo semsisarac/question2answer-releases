@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-confirm.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Controller for email confirmation page (can also request a new code)
 
 
@@ -142,6 +142,7 @@
 
 	} else
 		$qa_content['error']=qa_insert_login_links(qa_lang_html('users/confirm_wrong_log_in'), 'confirm');
+
 		
 	return $qa_content;
 

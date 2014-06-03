@@ -1,15 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/example-page/qa-example-page.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
-	Description:
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
+	Description: Page module class for example page plugin
 
 
 	This program is free software; you can redistribute it and/or
@@ -42,7 +42,7 @@
 				array(
 					'title' => 'Example',
 					'request' => 'example-plugin-page',
-					'nav' => 'M', // M=main, F=footer, B=before main, O=opposite main, other=none
+					'nav' => 'M', // 'M'=main, 'F'=footer, 'B'=before main, 'O'=opposite main, null=none
 				),
 			);
 		}

@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-userfields.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Controller for admin page for editing custom user fields
 
 
@@ -74,14 +74,14 @@
 
 			$errors=array();
 			
-		//	Verify the name (navigation link) is legitimate
+		//	Verify the name is legitimate
 		
 			if (qa_strlen($inname)>QA_DB_MAX_PROFILE_TITLE_LENGTH)
 				$errors['name']=qa_lang_sub('main/max_length_x', QA_DB_MAX_PROFILE_TITLE_LENGTH);
 
 		//	Perform appropriate database action
 	
-			if (isset($editfield['fieldid'])) { // changing existing field
+			if (isset($editfield['fieldid'])) { // changing existing user field
 				qa_db_userfield_set_fields($editfield['fieldid'], isset($errors['name']) ? $editfield['content'] : $inname, $inflags);
 				qa_db_userfield_move($editfield['fieldid'], $inposition);
 				
@@ -95,7 +95,7 @@
 							$editfield=$userfield;
 				}
 	
-			} elseif (empty($errors)) { // creating a new one
+			} elseif (empty($errors)) { // creating a new user field
 
 				for ($attempt=0; $attempt<1000; $attempt++) {
 					$suffix=$attempt ? ('-'.(1+$attempt)) : '';
@@ -221,7 +221,6 @@
 	else
 		unset($qa_content['form']['fields']['delete']);
 	
-
 	$qa_content['focusid']='name';
 
 

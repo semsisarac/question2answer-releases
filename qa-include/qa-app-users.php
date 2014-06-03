@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: User management (application level) for basic user operations
 
 
@@ -163,6 +163,10 @@
 		
 		
 		function qa_log_in_external_user($source, $identifier, $fields)
+	/*
+		Call to log in a user based on an external identity provider $source with external $identifier
+		A new user is created if it's a new combination of $source and $identifier, based on $fields
+	*/
 		{
 			require_once QA_INCLUDE_DIR.'qa-db-users.php';
 			
@@ -196,7 +200,7 @@
 					if (strlen($fields[$fieldname]))
 						qa_db_user_profile_set($userid, $fieldname, $fields[$fieldname]);
 						
-				if (strlen($fields['avatar']))
+				if (strlen(@$fields['avatar']))
 					qa_set_user_avatar($userid, $fields['avatar']);
 						
 				qa_set_logged_in_user($userid, @$fields['handle'], false, $source);
@@ -244,6 +248,9 @@
 		
 		
 		function qa_get_logged_in_source()
+	/*
+		Get the source of the currently logged in user, from call to qa_log_in_external_user() or null if logged in normally
+	*/
 		{
 			$userid=qa_get_logged_in_userid();
 			
@@ -321,6 +328,10 @@
 		
 		
 		function qa_get_user_avatar_html($flags, $email, $handle, $blobid, $width, $height, $size, $padding=false)
+	/*
+		Return HTML to display for the user's avatar, constrained to $size pixels, with optional $padding to that size
+		Pass the user's fields $flags, $email, $handle, and avatar $blobid, $width and $height
+	*/	
 		{
 			require_once QA_INCLUDE_DIR.'qa-app-format.php';
 			
@@ -395,7 +406,7 @@
 			);
 		}
 
-	} // end of: if (QA_EXTERNAL_USERS) else { }
+	} // end of: if (QA_EXTERNAL_USERS) { ... } else { ... }
 
 
 	function qa_get_logged_in_handle()
@@ -535,6 +546,9 @@
 	
 	
 	function qa_user_userfield_label($userfield)
+/*
+	Return the label to display for $userfield as retrieved from the database, using default if no name set
+*/
 	{
 		if (isset($userfield['content']))
 			return $userfield['content'];

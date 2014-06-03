@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-users-blocked.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Controller for page showing users who have been blocked
 
 
@@ -41,7 +41,7 @@
 		qa_fatal_error('User accounts are handled by external code');
 		
 
-//	Get list of special users
+//	Get list of blocked users
 
 	$users=qa_db_select_with_pending(qa_db_users_with_flag_selectspec(QA_USER_FLAGS_USER_BLOCKED));
 
@@ -76,6 +76,7 @@
 	}
 
 	$qa_content['navigation']['sub']=qa_users_sub_navigation();
+	
 	
 	return $qa_content;
 

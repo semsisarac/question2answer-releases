@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-theme-base.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Default theme class, broken into lots of little functions for easy overriding
 
 
@@ -363,14 +363,46 @@
 
 			$this->output('<DIV CLASS="qa-main'.(@$this->content['hidden'] ? ' qa-main-hidden' : '').'">');
 			
-			$this->page_title(@$this->content['title']);
-			
+			$this->page_title();			
 			$this->page_error();
 			
 			if (isset($content['main_form_tags']))
 				$this->output('<FORM '.$content['main_form_tags'].' >');
+				
+			$this->main_parts($content);
+		
+			if (isset($content['main_form_tags']))
+				$this->output('</FORM>');
+				
+			$this->page_links();
+			$this->suggest_next();
 			
-			foreach ($content as $key => $part) { // output other content parts in order
+			$this->output('</DIV> <!-- END qa-main -->', '');
+		}
+		
+		function page_title()
+		{
+			$title=@$this->content['title'];
+			
+			if (strlen($title))
+				$this->output('<H1>'.$title.'</H1>');
+		}
+		
+		function page_error()
+		{
+			$error=@$this->content['error'];
+			
+			if (strlen($error))
+				$this->output(
+					'<DIV CLASS="qa-error">',
+					$error,
+					'</DIV>'
+				);
+		}
+		
+		function main_parts($content)
+		{
+			foreach ($content as $key => $part) {
 				if (strpos($key, 'custom')===0)
 					$this->output_raw($part);
 
@@ -389,32 +421,6 @@
 				elseif (strpos($key, 'ranking')===0)
 					$this->ranking($part);
 			}
-			
-			if (isset($content['main_form_tags']))
-				$this->output('</FORM>');
-				
-			$this->page_links();
-			$this->suggest_next();
-			
-			$this->output('</DIV> <!-- END qa-main -->', '');
-		}
-		
-		function page_title($title)
-		{
-			if (isset($title))
-				$this->output('<H1>'.$title.'</H1>');
-		}
-		
-		function page_error()
-		{
-			$error=@$this->content['error'];
-			
-			if (!empty($error))
-				$this->output(
-					'<DIV CLASS="qa-error">',
-					$error,
-					'</DIV>'
-				);
 		}
 		
 		function footer()
@@ -1084,11 +1090,11 @@
 						break;
 						
 					case 'when':
-						$this->output_split(@$post['when'], $class.'-when');
+						$this->post_meta_when($post, $class);
 						break;
 						
 					case 'where':
-						$this->output_split(@$post['where'], $class.'-where');
+						$this->post_meta_where($post, $class);
 						break;
 						
 					case 'who':
@@ -1122,6 +1128,16 @@
 				else
 					$this->output('<SPAN CLASS="'.$class.'-what">'.$post['what'].'</SPAN>');
 			}
+		}
+		
+		function post_meta_when($post, $class)
+		{
+			$this->output_split(@$post['when'], $class.'-when');
+		}
+		
+		function post_meta_where($post, $class)
+		{
+			$this->output_split(@$post['where'], $class.'-where');
 		}
 		
 		function post_meta_who($post, $class)

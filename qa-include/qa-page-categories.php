@@ -1,15 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-categories.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
-	Description: Controller for popular tags page
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
+	Description: Controller for page listing categories
 
 
 	This program is free software; you can redistribute it and/or
@@ -34,7 +34,7 @@
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 
 
-//	Get popular tags
+//	Get information about categories
 	
 	$categories=qa_db_select_with_pending(
 		qa_db_categories_selectspec()
@@ -60,6 +60,7 @@
 		$qa_content['title']=qa_lang_html('main/no_categories_found');
 		$qa_content['suggest_next']=qa_html_suggest_qs_tags(qa_using_tags());
 	}
+
 	
 	return $qa_content;
 

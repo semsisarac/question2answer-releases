@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Common functions for creating theme-ready structures from data
 
 
@@ -71,7 +71,7 @@
 	function qa_post_is_by_user($post, $userid, $cookieid)
 /*
 	Check if $post is by user $userid, or if post is anonymous and $userid not specified, then
-	check if $post is by anonymous user identified by $cookieid
+	check if $post is by the anonymous user identified by $cookieid
 */
 	{
 		// In theory we should only test against NULL here, i.e. use isset($post['userid'])
@@ -166,9 +166,11 @@
 	$userid and $cookieid refer to the user *viewing* the page.
 	$usershtml is an array of [user id] => [HTML representation of user] built ahead of time.
 	$categories is an array of [category id] => category information from database
-	$options is an array of non-required elements which set what is displayed. It can contain true for
-	these keys: tagsview, voteview, whenview, ipview, pointsview, showurllinks, microformats, isselected
-	$options['blockwordspreg'] can be a pre-prepared regular expression for censored words
+	$options is an array of non-required elements which set what is displayed. It can contain true for keys:
+	tagsview, answersview, voteview, whatlink, whenview, whoview, ipview, pointsview, showurllinks, microformats, isselected.
+	$options['blockwordspreg'] can be a pre-prepared regular expression fragment for censored words.
+	$options['pointstitle'] can be an array of [points] => [user title] for custom user titles.
+	$options['avatarsize'] can be the size in pixels of an avatar to be displayed.
 	If something is missing from $post (e.g. ['content']), correponding HTML also omitted.
 */
 	{
@@ -253,7 +255,7 @@
 		if (!empty($post['content'])) {
 			$viewer=qa_load_viewer($post['content'], $post['format']);
 			
-			$fields['content']=$viewer->get_view_html($post['content'], $post['format'], array(
+			$fields['content']=$viewer->get_html($post['content'], $post['format'], array(
 				'blockwordspreg' => @$options['blockwordspreg'],
 				'showurllinks' => @$options['showurllinks'],
 			));
@@ -439,10 +441,9 @@
 
 	function qa_other_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options)
 /*
-	Return array of mostly HTML to be passed to theme layer, to *link* to an answer or comment
-	on $question retrieved from database. $basetype is 'A' for answer or 'C' for comment.
+	Return array of mostly HTML to be passed to theme layer, to *link* to an answer, comment or edit on
+	$question, as retrieved from database, with fields prefixed 'o' for the answer, comment or edit.
 	$userid, $cookieid, $usershtml, $categories, $options are passed through to qa_post_html_fields().
-	The $o* parameters relate to the answer or comment and its author.
 */
 	{
 		$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options);
@@ -494,7 +495,7 @@
 	function qa_any_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options)
 /*
 	Based on the elements in $question, return HTML to be passed to theme layer to link
-	to the question, or to an answer or comment thereon.
+	to the question, or to an associated answer, comment or edit.
 */
 	{
 		if (isset($question['opostid']))
@@ -507,6 +508,10 @@
 	
 
 	function qa_any_sort_by_date($questions)
+/*
+	Each element in $questions represents a question and optional associated answer, comment or edit, as retrieved from database.
+	Return it sorted by the date appropriate for each element, without removing duplicate references to the same question.
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-sort.php';
 		
@@ -521,7 +526,7 @@
 	
 	function qa_any_sort_and_dedupe($questions)
 /*
-	Each element in $questions represents a question or an answer or comment thereon, as retrieved from database.
+	Each element in $questions represents a question and optional associated answer, comment or edit, as retrieved from database.
 	Return it sorted by the date appropriate for each element, and keep only the first item related to each question.
 */
 	{
@@ -565,8 +570,8 @@
 	
 	function qa_any_get_userids_handles($questions)
 /*
-	Each element in $questions represents a question or an answer or comment thereon, as retrieved from database.
-	Return an array of elements (userid,handle), with the appropriate author for each element.
+	Each element in $questions represents a question and optional associated answer, comment or edit, as retrieved from database.
+	Return an array of elements (userid,handle) for the appropriate user for each element.
 */
 	{
 		$userids_handles=array();
@@ -798,6 +803,9 @@
 	
 	
 	function qa_custom_page_url($page)
+/*
+	Return the url for $page retrieved from the database
+*/
 	{
 		global $qa_root_url_relative;
 		
@@ -999,6 +1007,10 @@
 	
 	
 	function qa_load_editor($content, $format, &$editorname)
+/*
+	Return an instantiation of the appropriate editor module class, given $content in $format
+	Pass the preferred module name in $editorname, on return it will contain the name of the module used.
+*/
 	{
 		$maxeditor=qa_load_module('editor', $editorname); // take preferred one first
 		
@@ -1030,6 +1042,9 @@
 	
 	
 	function qa_load_viewer($content, $format)
+/*
+	Return an instantiation of the appropriate viewer modlue class, given $content in $format
+*/
 	{
 		$maxviewer=null;
 		$maxquality=0;
@@ -1038,7 +1053,7 @@
 		
 		foreach ($modulenames as $tryname) {
 			$tryviewer=qa_load_module('viewer', $tryname);
-			$tryquality=$tryviewer->calc_view_quality($content, $format);
+			$tryquality=$tryviewer->calc_quality($content, $format);
 			
 			if ($tryquality>$maxquality) {
 				$maxviewer=$tryviewer;
@@ -1051,20 +1066,30 @@
 	
 	
 	function qa_viewer_text($content, $format, $options=array())
+/*
+	Return the plain text rendering of $content in $format, passing $options to the appropriate module
+*/
 	{
 		$viewer=qa_load_viewer($content, $format);
-		return $viewer->get_view_text($content, $format, $options);
+		return $viewer->get_text($content, $format, $options);
 	}
 	
 	
 	function qa_viewer_html($content, $format, $options=array())
+/*
+	Return the HTML rendering of $content in $format, passing $options to the appropriate module
+*/
 	{
 		$viewer=qa_load_viewer($content, $format);
-		return $viewer->get_view_html($content, $format, $options);
+		return $viewer->get_html($content, $format, $options);
 	}
 	
 	
 	function qa_get_post_content($editorfield, $contentfield, &$ineditor, &$incontent, &$informat, &$intext)
+/*
+	Retrieve the POST from an editor module's HTML field named $contentfield, where the editor's name was in HTML field $editorfield
+	Assigns the module's output to $incontent and $informat, editor's name in $ineditor, text rendering of content in $intext
+*/
 	{
 		$ineditor=qa_post_text($editorfield);
 
@@ -1074,11 +1099,15 @@
 		$informat=$readdata['format'];
 
 		$viewer=qa_load_viewer($incontent, $informat);
-		$intext=$viewer->get_view_text($incontent, $informat);
+		$intext=$viewer->get_text($incontent, $informat, array());
 	}
 	
 	
 	function qa_get_avatar_blob_html($blobid, $width, $height, $size, $padding=false)
+/*
+	Return the <IMG...> HTML to display avatar $blobid whose stored size is $width and $height
+	Constrain the image to $size (width AND height) and pad it to that size if $padding is true
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-image.php';
 		
@@ -1104,6 +1133,9 @@
 	
 	
 	function qa_get_gravatar_html($email, $size)
+/*
+	Return the <IMG...> HTML to display the Gravatar for $email, constrained to $size
+*/
 	{
 		if ($size>0)
 			return '<IMG SRC="http://www.gravatar.com/avatar/'.md5(strtolower(trim($email))).'?s='.(int)$size.
@@ -1114,6 +1146,9 @@
 	
 	
 	function qa_get_points_title_html($userpoints, $pointstitle)
+/*
+	Retrieve the appropriate user title from $pointstitle for a user with $userpoints points, or null if none
+*/
 	{
 		foreach ($pointstitle as $points => $title)
 			if ($userpoints>=$points)

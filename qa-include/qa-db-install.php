@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-install.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Database-level functions for installation and upgrading
 
 
@@ -518,6 +518,9 @@
 	
 	
 	function qa_db_default_userfields_sql()
+/*
+	Return the SQL to create the default entries in the userfields table (before 1.3 these were hard-coded in PHP)
+*/
 	{
 		$oldprofileflags=array(
 			'name' => 0,
@@ -788,8 +791,7 @@
 					}
 					break;
 			
-			//	Up to here: Version 1.3 beta 2
-			
+			//	Up to here: Version 1.3 beta 2 and 1.3 release			
 					
 			}
 			

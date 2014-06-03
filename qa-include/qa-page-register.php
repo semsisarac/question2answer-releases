@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-register.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Controller for register page
 
 
@@ -73,7 +73,7 @@
 			$topath=qa_get('to');
 			
 			if (isset($topath))
-				qa_redirect_raw($topath); // path already provided as URL fragment
+				qa_redirect_raw($qa_root_url_relative.$topath); // path already provided as URL fragment
 			else
 				qa_redirect('');
 		}
@@ -137,7 +137,7 @@
 		
 		if (method_exists($module, 'login_html')) {
 			ob_start();
-			$module->login_html($qa_root_url_relative.qa_get('to'), 'register');
+			$module->login_html(qa_opt('site_url').qa_get('to'), 'register');
 			$html=ob_get_clean();
 			
 			if (strlen($html))
@@ -148,6 +148,7 @@
 	$qa_content['focusid']=isset($errors['handle']) ? 'handle'
 		: (isset($errors['password']) ? 'password'
 			: (isset($errors['email']) ? 'email' : 'handle'));
+
 			
 	return $qa_content;
 	

@@ -1,15 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users-edit.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
-	Description: User management (application level) for creating/modify users
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
+	Description: User management (application level) for creating/modifying users
 
 
 	This program is free software; you can redistribute it and/or
@@ -82,6 +82,9 @@
 	
 	
 	function qa_handle_make_valid($handle, $allowuserid=null)
+/*
+	Make $handle valid and unique in the database - if $allowuserid is set, allow it to match that user only
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 		
@@ -274,7 +277,7 @@
 	
 	function qa_set_user_avatar($userid, $imagedata, $oldblobid=null)
 /*
-
+	Set the avatar of $userid to the image in $imagedata, and remove $oldblobid from the database if not null
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-image.php';

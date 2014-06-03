@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-question.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Language phrases for question page
 
 
@@ -91,8 +91,8 @@
 		'hide_c_popup' => 'Hide this comment',
 		'hide_q_popup' => 'Hide this question',
 		'matching_tags' => 'Matching tags: ',
-		'min_tags_x' => 'Please provide at least ^ tag/s',
 		'max_tags_x' => 'A maximum of ^ tags are allowed',
+		'min_tags_x' => 'Please provide at least ^ tag/s',
 		'notify_email_note' => 'Privacy: Your email address will only be used for sending these notifications.',
 		'q_category_label' => 'Category:',
 		'q_content_label' => 'More information for your question:',

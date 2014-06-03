@@ -1,15 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-usertitles.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
-	Description: Controller for admin page for editing custom user fields
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
+	Description: Controller for admin page for editing custom user titles
 
 
 	This program is free software; you can redistribute it and/or
@@ -34,7 +34,7 @@
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 
 	
-//	Get current list of user fields and determine the state of this admin page
+//	Get current list of user titles and determine the state of this admin page
 
 	$oldpoints=qa_post_text('edit');
 	if (!isset($oldpoints))
@@ -49,7 +49,7 @@
 		return $qa_content;
 		
 		
-//	Process saving an old or new user field
+//	Process saving an old or new user title
 
 	if (qa_clicked('docancel'))
 		qa_redirect('admin/users');
@@ -82,14 +82,14 @@
 	
 		//	Perform appropriate action
 	
-			if (isset($pointstitle[$oldpoints])) { // changing existing title
+			if (isset($pointstitle[$oldpoints])) { // changing existing user title
 				$newpoints=isset($errors['points']) ? $oldpoints : $inpoints;
 				$newtitle=isset($errors['title']) ? $pointstitle[$oldpoints] : $intitle;
 	
 				unset($pointstitle[$oldpoints]);
 				$pointstitle[$newpoints]=$newtitle;
 	
-			} elseif (empty($errors)) // creating a new one
+			} elseif (empty($errors)) // creating a new user title
 				$pointstitle[$inpoints]=$intitle;
 		}
 			
@@ -171,6 +171,7 @@
 		unset($qa_content['form']['fields']['delete']);
 
 	$qa_content['focusid']='title';
+
 
 	$qa_content['navigation']['sub']=qa_admin_sub_navigation();
 	

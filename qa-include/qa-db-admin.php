@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-admin.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Database access functions which are specific to the admin center
 
 
@@ -84,7 +84,7 @@
 	
 	function qa_db_category_create($title, $tags)
 /*
-	Create a new category with $title (=name) and $tags (=slug)
+	Create a new category with $title (=name) and $tags (=slug) in the database
 */
 	{
 		$position=qa_db_read_one_value(qa_db_query_sub('SELECT 1+COALESCE(MAX(position), 0) FROM ^categories'));
@@ -100,7 +100,7 @@
 	
 	function qa_db_category_rename($categoryid, $title, $tags)
 /*
-	Set the name of $categoryid to $title and its slug to $tags
+	Set the name of $categoryid to $title and its slug to $tags in the database
 */
 	{
 		qa_db_query_sub(
@@ -112,7 +112,7 @@
 	
 	function qa_db_category_move($categoryid, $newposition)
 /*
-	Move the category $categoryid into position $newposition
+	Move the category $categoryid into position $newposition in the database
 */
 	{
 		qa_db_ordered_move('categories', 'categoryid', $categoryid, $newposition);
@@ -121,7 +121,7 @@
 	
 	function qa_db_category_delete($categoryid, $reassignid)
 /*
-	Delete the category $categoryid and reassign its posts to category $reassignid (which can also be null)
+	Delete the category $categoryid in the database and reassign its posts to category $reassignid (which can also be null)
 */
 	{
 		qa_db_query_sub('UPDATE ^posts SET categoryid=# WHERE categoryid=#', $reassignid, $categoryid);
@@ -131,7 +131,7 @@
 	
 	function qa_db_page_create($title, $flags, $tags, $heading, $content)
 /*
-	Create a new page with $title, $flags, $tags, $heading and $content
+	Create a new page with $title, $flags, $tags, $heading and $content in the database
 */
 	{
 		$position=qa_db_read_one_value(qa_db_query_sub('SELECT 1+COALESCE(MAX(position), 0) FROM ^pages'));
@@ -147,7 +147,7 @@
 	
 	function qa_db_page_set_fields($pageid, $title, $flags, $tags, $heading, $content)
 /*
-	Set the fields of $pageid to $title, $flags, $tags, $heading, $content
+	Set the fields of $pageid to $title, $flags, $tags, $heading, $content in the database
 */
 	{
 		qa_db_query_sub(
@@ -159,7 +159,7 @@
 	
 	function qa_db_page_move($pageid, $nav, $newposition)
 /*
-	Move the page $pageid into navigation menu $nav and position $newposition
+	Move the page $pageid into navigation menu $nav and position $newposition in the database
 */
 	{
 		qa_db_query_sub(
@@ -173,7 +173,7 @@
 	
 	function qa_db_page_delete($pageid)
 /*
-	Delete the page $pageid
+	Delete the page $pageid in the database
 */
 	{
 		qa_db_ordered_delete('pages', 'pageid', $pageid);
@@ -182,7 +182,7 @@
 	
 	function qa_db_ordered_move($table, $idcolumn, $id, $newposition)
 /*
-	Move the entity identified by $idcolumn=$id into position $newposition in $table
+	Move the entity identified by $idcolumn=$id into position $newposition in $table in the database
 */
 	{
 		qa_db_query_sub('LOCK TABLES ^'.$table.' WRITE');
@@ -207,7 +207,7 @@
 	
 	function qa_db_ordered_delete($table, $idcolumn, $id)
 /*
-	Delete the entity identified by $idcolumn=$id in $table
+	Delete the entity identified by $idcolumn=$id in $table in the database
 */
 	{
 		qa_db_query_sub('LOCK TABLES ^'.$table.' WRITE');
@@ -223,6 +223,9 @@
 	
 	
 	function qa_db_userfield_create($title, $content, $flags)
+/*
+	Create a new user field with (internal) tag $title, label $content, and $flags in the database
+*/
 	{
 		$position=qa_db_read_one_value(qa_db_query_sub('SELECT 1+COALESCE(MAX(position), 0) FROM ^userfields'));
 		
@@ -236,6 +239,9 @@
 	
 	
 	function qa_db_userfield_set_fields($fieldid, $content, $flags)
+/*
+	Change the user field $fieldid to have label $content and $flags in the database (the title column cannot be changed once set)
+*/
 	{
 		qa_db_query_sub(
 			'UPDATE ^userfields SET content=$, flags=# WHERE fieldid=#',
@@ -245,12 +251,18 @@
 	
 	
 	function qa_db_userfield_move($fieldid, $newposition)
+/*
+	Move the user field $fieldid into position $newposition in the database
+*/
 	{
 		qa_db_ordered_move('userfields', 'fieldid', $fieldid, $newposition);
 	}
 
 	
 	function qa_db_userfield_delete($fieldid)
+/*
+	Delete the user field $fieldid in the database
+*/
 	{
 		qa_db_ordered_delete('userfields', 'fieldid', $fieldid);
 	}

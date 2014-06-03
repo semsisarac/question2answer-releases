@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-options.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Getting and setting admin options (application level)
 
 
@@ -58,7 +58,7 @@
 			qa_db_select_with_pending();
 		}
 		
-	//	Pull out the options specifically requested here
+	//	Pull out the options specifically requested here, and assign defaults
 
 		$options=array();
 		foreach ($names as $name) {
@@ -89,16 +89,15 @@
 	
 	function qa_options_set_pending($names)
 /*
-	This is deprecated now that all options are retrieved for every page requested.
+	This is deprecated since version 1.3 now that all options are retrieved for every page requested.
 	Function kept for backwards compatibility with modified Q2A code bases.
 */
-	{
-	}
+	{}
 
 	
 	function qa_options_pending_selectspecs()
 /*
-	Return selectspec array (see qa-db.php) to get queued options from database
+	Return selectspec arrays (see qa-db.php) to get all options, and current timestamp, from the database
 */
 	{
 		global $qa_options_loaded;
@@ -123,9 +122,9 @@
 	}
 
 	
-	function qa_options_load_options($selectspec, $gotoptions)
+	function qa_options_load_options($selectspecs, $gotoptions)
 /*
-	Called after the options are retrieved from the database using $selectspec which returned $gotoptions
+	Called after the options are retrieved from the database using $selectspecs which returned $gotoptions
 */
 	{
 		global $qa_options_cache, $qa_options_loaded;
@@ -160,7 +159,7 @@
 	
 	function qa_reset_options($names)
 /*
-	Reset the options in $names
+	Reset the options in $names to their defaults
 */
 	{
 		foreach ($names as $name)
@@ -179,12 +178,12 @@
 			'allow_multi_answers' => 1,
 			'avatar_allow_gravatar' => 1,
 			'avatar_allow_upload' => 1,
-			'avatar_store_size' => 400,
 			'avatar_profile_size' => 200,
-			'avatar_q_page_q_size' => 50,
+			'avatar_q_list_size' => 0,
 			'avatar_q_page_a_size' => 40,
 			'avatar_q_page_c_size' => 20,
-			'avatar_q_list_size' => 0,
+			'avatar_q_page_q_size' => 50,
+			'avatar_store_size' => 400,
 			'avatar_users_size' => 30,
 			'captcha_on_anon_post' => 1,
 			'captcha_on_feedback' => 1,
@@ -268,9 +267,9 @@
 			'points_q_voted_max_gain' => 10,
 			'points_q_voted_max_loss' => 3,
 			'points_select_a' => 3,
-			'show_c_reply_buttons' => 1,
 			'show_a_c_links' => 1,
 			'show_a_form_immediate' => 'if_no_as',
+			'show_c_reply_buttons' => 1,
 			'show_selected_first' => 1,
 			'show_url_links' => 1,
 			'show_user_points' => 1,
@@ -333,7 +332,7 @@
 				case 'editor_for_as':
 					require_once QA_INCLUDE_DIR.'qa-app-format.php';
 					
-					$value='-'; // to match none by default, i.e. choose based on who is best with HTML
+					$value='-'; // to match none by default, i.e. choose based on who is best at editing HTML
 					qa_load_editor('', 'html', $value);
 					break;
 				
@@ -388,7 +387,7 @@
 	
 	function qa_post_html_defaults($basetype, $full=false)
 /*
-
+	Return an array of defaults for the $options parameter passed to qa_post_html_fields() and its ilk
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-users.php';
@@ -409,7 +408,6 @@
 			'microformats' => $full,
 		);
 	}
-	
 	
 
 	function qa_get_vote_view($basetype, $full=false, $enabledif=true)
@@ -453,7 +451,7 @@
 	
 	function qa_get_block_words_preg()
 /*
-	Return the regular expression to match the blocked words options set in the database
+	Return the regular expression fragment to match the blocked words options set in the database
 */
 	{
 		global $qa_blockwordspreg, $qa_blockwordspreg_set;
@@ -476,6 +474,9 @@
 	
 	
 	function qa_get_points_to_titles()
+/*
+	Return an array of [points] => [user title] from the 'points_to_titles' option, to pass to qa_get_points_title_html()
+*/
 	{
 		global $qa_points_title_cache;
 		

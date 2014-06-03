@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-admin.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Functions used in the admin center pages
 
 
@@ -301,7 +301,7 @@
 	
 	function qa_admin_page_error()
 /*
-	Return an error to be displayed on all admin pages, or null if none
+	Return the error that needs to displayed on all admin pages, or null if none
 */
 	{
 		@include_once QA_INCLUDE_DIR.'qa-db-install.php';
@@ -322,7 +322,7 @@
 
 	function qa_admin_url_test_html()
 /*
-	Return the HTML to display for a URL test which has passed
+	Return an HTML fragment to display for a URL test which has passed
 */
 	{
 		return '; font-size:9px; color:#060; font-weight:bold; font-family:arial,sans-serif; border-color:#060;">OK<';

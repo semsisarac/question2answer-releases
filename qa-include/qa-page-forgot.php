@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-forgot.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Controller for 'forgot my password' page
 
 
@@ -43,7 +43,7 @@
 		qa_redirect('');
 
 
-//	Queue appropriate options requests
+//	Start the 'I forgot my password' process, sending email if appropriate
 	
 	if (qa_clicked('doforgot')) {
 		require_once QA_INCLUDE_DIR.'qa-app-users-edit.php';
@@ -110,6 +110,7 @@
 		qa_set_up_captcha_field($qa_content, $qa_content['form']['fields'], @$errors);
 	
 	$qa_content['focusid']='emailhandle';
+
 	
 	return $qa_content;
 

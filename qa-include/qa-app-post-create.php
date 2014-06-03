@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-create.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Creating questions, answers and comments (application level)
 
 
@@ -38,7 +38,7 @@
 	
 	function qa_notify_validate(&$errors, $notify, $email)
 /*
-	Add textual element to $errors if user-entered values for $notify checkbox and $email field invalid
+	Add textual element ['email'] to $errors if user-entered values for $notify checkbox and $email field invalid
 */
 	{
 		if ($notify && !empty($email)) {
@@ -195,9 +195,9 @@
 	}
 
 	
-	function qa_post_index($postid, $type, $questionid, $title, $content, $tagstring, $skipcounts=false)
+	function qa_post_index($postid, $type, $questionid, $title, $text, $tagstring, $skipcounts=false)
 /*
-	Add post $postid (which comes under $questionid) of $type (Q/A/C) to the database index, with $title, $content
+	Add post $postid (which comes under $questionid) of $type (Q/A/C) to the database index, with $title, $text
 	and $tagstring. Set $skipcounts to true to not update counts - useful during recalculationss.
 */
 	{
@@ -205,7 +205,7 @@
 	//	Get words from each textual element
 	
 		$titlewords=array_unique(qa_string_to_words($title));
-		$contentcount=array_count_values(qa_string_to_words($content));
+		$contentcount=array_count_values(qa_string_to_words($text));
 		$tagwords=array_unique(qa_tagstring_to_tags($tagstring));
 		
 	//	Map all words to their word IDs
@@ -343,7 +343,7 @@
 	//	$senttoemail and $senttouserid ensure each user or email gets only one notification about an added comment,
 	//	even if they have several previous comments in the same thread and asked for notifications for the parent.
 	//	Still, if a person posted some comments as a registered user and some others anonymously,
-	//	they could get two emails about a subsequent comment. Shouldn't be a problem in practice.
+	//	they could get two emails about a subsequent comment. Shouldn't be much of a problem in practice.
 
 		$senttoemail=array();
 		$senttouserid=array();

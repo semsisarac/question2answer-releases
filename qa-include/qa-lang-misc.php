@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-misc.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Miscellaneous language phrases
 
 
@@ -47,8 +47,8 @@
 		'matches_blocked_ips' => 'Matches blocked IP addresses:',
 		'no_activity_from_x' => 'No activity from ^',
 		'recent_activity_from_x' => 'Recent activity from ^',
-		'unblock_ip_button' => 'Unblock IP address',
 		'site_in_maintenance' => 'This site is currently down for maintenance - please come back soon.',
+		'unblock_ip_button' => 'Unblock IP address',
 	);
 	
 

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Sets up Q2A environment, plus many globally useful functions
 
 
@@ -31,7 +31,7 @@
 	
 //	Set the version to be used for internal reference and a suffix for .js and .css requests
 
-	define('QA_VERSION', '1.3-beta-2');
+	define('QA_VERSION', '1.3');
 
 //	Basic PHP configuration checks and unregister globals
 
@@ -88,6 +88,9 @@
 
 	
 	function qa_sanitize_html($html)
+/*
+	Return $html after ensuring it is safe, i.e. removing Javascripts and the like - uses htmLawed library
+*/
 	{
 		require_once 'qa-htmLawed.php';
 		
@@ -438,15 +441,34 @@
 	}
 	
 	
-	function qa_redirect_raw($path)
+	function qa_redirect_raw($url)
 /*
-	Redirect the user's web browser to page $path which is already a URL fragment
+	Redirect the user's web browser to page $path which is already a URL
 */
 	{
-		global $qa_root_url_relative;
-		
-		header('Location: '.$qa_root_url_relative.$path);
+		header('Location: '.$url);
 		exit;
+	}
+	
+
+//	General utilities
+
+	function qa_retrieve_url($url)
+/*
+	Return the contents of remote $url, using file_get_contents() if possible, otherwise curl functions
+*/
+	{
+		$contents=@file_get_contents($url);
+		
+		if ((!strlen($contents)) && function_exists('curl_exec')) { // try curl as a backup (if allow_url_fopen not set)
+			$curl=curl_init($url);
+			curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+			$contents=@curl_exec($curl);
+			curl_close($curl);
+		}
+		
+		return $contents;
 	}
 
 
@@ -503,6 +525,10 @@
 //	Module (and plugin) management
 	
 	function qa_register_module($type, $include, $class, $name, $directory=QA_INCLUDE_DIR, $urltoroot=null)
+/*
+	Register a module of $type named $name, whose class named $class is defined in file $include (or null if no include necessary)
+	If this modules comes from a plugin, pass in the local plugin $directory and the $urltoroot relative url for that directory 
+*/
 	{
 		global $qa_modules;
 		
@@ -516,6 +542,9 @@
 
 	
 	function qa_list_modules($type)
+/*
+	Return an array of information about registered modules of $type
+*/
 	{
 		global $qa_modules;
 		
@@ -524,6 +553,9 @@
 	
 	
 	function qa_load_module($type, $name)
+/*
+	Return an instantiated class for module of $type named $name, whose functions can be called
+*/
 	{
 		global $qa_modules, $qa_root_url_relative;
 		
@@ -533,10 +565,10 @@
 			if (isset($module['object']))
 				return $module['object'];
 			
-			if (strlen($module['include']))
+			if (strlen(@$module['include']))
 				require_once $module['directory'].$module['include'];
 			
-			if (strlen($module['class'])) {
+			if (strlen(@$module['class'])) {
 				$object=new $module['class'];
 				
 				if (method_exists($object, 'load_module'))
@@ -552,6 +584,10 @@
 	
 	
 	function qa_register_plugin_module($type, $include, $class, $name)
+/*
+	Register a plugin module of $type named $name, whose class named $class is defined in file $include (or null if no include necessary)
+	This function relies on some global variable values and can only be called from a plugin's qa-plugin.php file
+*/
 	{
 		global $qa_plugin_directory, $qa_plugin_urltoroot;
 		
@@ -561,6 +597,8 @@
 		qa_register_module($type, $include, $class, $name, $qa_plugin_directory, $qa_plugin_urltoroot);
 	}
 	
+
+//	Register default editor and viewer modules and others via plugin qa-plugin.php files
 
 	$qa_modules=array();
 
@@ -579,6 +617,9 @@
 			$qa_plugin_urltoroot=substr($qa_plugin_directory, strlen(QA_BASE_DIR));
 			
 			@include_once $pluginfile;
+			
+			unset($qa_plugin_directory);
+			unset($qa_plugin_urltoroot);
 		}
 	
 

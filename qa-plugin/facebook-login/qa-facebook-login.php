@@ -1,15 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/facebook-login/qa-facebook-login.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
-	Description:
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
+	Description: Login module class for Facebook login plugin
 
 
 	This program is free software; you can redistribute it and/or
@@ -25,7 +25,6 @@
 	More about this license: http://www.question2answer.org/license.php
 */
 
-
 	class qa_facebook_login {
 		
 		var $directory;
@@ -37,7 +36,7 @@
 			$this->urltoroot=$urltoroot;
 		}
 		
-		function check_cookie()
+		function check_login()
 		{
 			// Based on sample code: http://developers.facebook.com/docs/guides/web
 			
@@ -67,16 +66,7 @@
 						$payload.=$key.'='.$value;
 						
 				if (md5($payload.qa_opt('facebook_app_secret'))==$args['sig']) {
-					$url='https://graph.facebook.com/me?access_token='.$args['access_token'].'&fields=picture';
-					$rawuser=''; //file_get_contents($url);
-					
-					if ((!strlen($rawuser)) && function_exists('curl_exec')) { // try curl as a backup (if allow_url_fopen not set)
-						$curl=curl_init($url);
-						curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-						curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-						$rawuser=curl_exec($curl);
-						curl_close($curl);
-					}
+					$rawuser=qa_retrieve_url('https://graph.facebook.com/me?access_token='.$args['access_token'].'&fields=picture');
 					
 					if (strlen($rawuser)) {
 						require_once $this->directory.'JSON.php';
@@ -93,7 +83,7 @@
 								'location' => @$user['location']['name'],
 								'website' => @$user['website'],
 								'about' => @$user['about'],
-								'avatar' => strlen(@$user['picture']) ? file_get_contents($user['picture']) : null,
+								'avatar' => strlen(@$user['picture']) ? qa_retrieve_url($user['picture']) : null,
 							));
 
 					}

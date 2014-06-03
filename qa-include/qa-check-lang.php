@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-check-lang.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Development tool to see which language phrases are missing or unused
 
 
@@ -58,6 +58,7 @@
 	$probable=array();
 	$possible=array();
 	$defined=array();
+	$english=array();
 	$backmap=array();
 	$substitutions=array();
 	
@@ -81,6 +82,7 @@
 			
 			foreach ($phrases as $key => $value) {
 				@$defined[$prefix][$key]++;
+				$english[$prefix][$key]=$value;
 				$backmap[$value][]=$prefix.'/'.$key;
 				$substitutions[$prefix][$key]=get_phrase_substitutions($value);
 			}
@@ -121,6 +123,7 @@
 		echo '<H2>Checking '.$language.' files in qa-lang/'.$code.':</H2>';
 		
 		$langdefined=array();
+		$langdifferent=array();
 		$langsubstitutions=array();
 		$langincludefiles=glob(QA_LANG_DIR.$code.'/qa-*.php');
 		
@@ -131,6 +134,7 @@
 				
 				foreach ($phrases as $key => $value) {
 					@$langdefined[$prefix][$key]++;
+					$langdifferent[$prefix][$key]=($value!=$english[$prefix][$key]);
 					$langsubstitutions[$prefix][$key]=get_phrase_substitutions($value);
 				}
 			}
@@ -139,6 +143,9 @@
 			foreach ($valuecount as $value => $count) {
 				if (!@$defined[$key][$value])
 					echo '<FONT COLOR="red">'.htmlspecialchars($key.'/'.$value.' defined but not in US English files').'</FONT><BR>';
+				
+				elseif (!$langdifferent[$key][$value])
+					echo '<FONT COLOR="red">'.htmlspecialchars($key.'/'.$value.' is identical to US English files').'</FONT><BR>';
 				
 				else
 					foreach ($substitutions[$key][$value] as $substitution => $subcount)

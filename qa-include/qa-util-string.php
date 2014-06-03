@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-util-string.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Some useful string-related stuff
 
 
@@ -188,7 +188,7 @@
 	
 	function qa_block_words_to_preg($wordsstring)
 /*
-	Return a regular expression corresponding to the block words $wordstring
+	Return a regular expression fragment corresponding to the block words $wordstring
 */
 	{
 		$blockwords=qa_block_words_explode($wordsstring);
@@ -203,8 +203,7 @@
 	
 	function qa_block_words_match_all($string, $wordspreg)
 /*
-	Return an array of matches of any element of $blockwords (which can contain asterisks) in $string,
-	offset => length
+	Return an array of matches of the regular expression fragment $wordspreg in $string, [offset] => [length]
 */
 	{
 		global $qa_utf8punctuation, $qa_utf8punctuation_keeplength;
@@ -235,9 +234,9 @@
 	}
 	
 	
-	function qa_block_words_replace($string, $wordspreg)
+	function qa_block_words_replace($string, $wordspreg, $character='*')
 /*
-	Return $string with asterisks replacing any words matching the blocked words regular expression $wordspreg
+	Return $string with any words matching the regular expression fragment $wordspreg replaced with repeated $character
 */
 	{
 		if (strlen($wordspreg)) {
@@ -245,7 +244,7 @@
 			krsort($matches, SORT_NUMERIC);
 			
 			foreach ($matches as $start => $length) // get length again below to deal with multi-byte characters
-				$string=substr_replace($string, str_repeat('*', qa_strlen(substr($string, $start, $length))), $start, $length);
+				$string=substr_replace($string, str_repeat($character, qa_strlen(substr($string, $start, $length))), $start, $length);
 		}
 			
 		return $string;
@@ -294,6 +293,9 @@
 	
 	
 	function qa_substr($string, $start, $length=2147483647)
+/*
+	Return $length characters from $string, starting from $start, preferably using PHP's multibyte string functions
+*/
 	{
 		return function_exists('mb_substr') ? mb_substr($string, $start, $length, 'UTF-8') : substr($string, $start, $length);
 	}

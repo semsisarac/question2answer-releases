@@ -1,15 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-util-image.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
-	Description: Some useful image-related stuff
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
+	Description: Some useful image-related functions (using GD)
 
 
 	This program is free software; you can redistribute it and/or
@@ -32,11 +32,19 @@
 
 
 	function qa_has_gd_image()
+/*
+	Return true if PHP has the GD extension installed and it appears to be usable
+*/
 	{
 		return extension_loaded('gd') && function_exists('imagecreatefromstring') && function_exists('imagejpeg');
 	}
+
 	
 	function qa_image_constrain_data($imagedata, &$width, &$height, $size)
+/*
+	Given $imagedata containing JPEG/GIF/PNG data, constrain it proportionally to fit in $size (square)
+	Return the new image data (will be a JPEG), and set the $width and $height variables
+*/
 	{
 		$inimage=@imagecreatefromstring($imagedata);
 		
@@ -56,10 +64,12 @@
 		
 		return null;	
 	}
+
 	
 	function qa_image_constrain(&$width, &$height, $size)
 /*
-
+	Given and $width and $height, return true if those need to be contrained to fit in $size (square)
+	If so, also set $width and $height to the new proportionally constrained values
 */
 	{
 		if (($width>$size) || ($height>$size)) {
@@ -73,9 +83,10 @@
 		return false;
 	}
 	
+	
 	function qa_gd_image_resize(&$image, $width, $height)
 /*
-
+	Resize the GD $image to $width and $height, setting it to null if the resize failed
 */
 	{
 		$oldimage=$image;
@@ -96,7 +107,7 @@
 	
 	function qa_gd_image_jpeg($image, $output=false)
 /*
-
+	Return the JPEG data for GD $image, also echoing it to browser if $output is true
 */
 	{
 		ob_start();
@@ -106,6 +117,9 @@
 	
 	
 	function qa_gd_image_formats()
+/*
+	Return an array of strings listing the image formats that are supported
+*/
 	{
 		$imagetypebits=imagetypes();
 		

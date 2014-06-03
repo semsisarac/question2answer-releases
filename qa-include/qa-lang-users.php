@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-users.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Language phrases for user management
 
 
@@ -28,9 +28,9 @@
 	return array(
 		'about' => 'About',
 		'avatar_default' => 'Default',
+		'avatar_gravatar' => 'Show my ^1Gravatar^2',
 		'avatar_label' => 'Avatar:',
 		'avatar_none' => 'None',
-		'avatar_gravatar' => 'Show my ^1Gravatar^2',
 		'avatar_not_read' => 'The image could not be read. Please upload one of: ^',
 		'block_user_button' => 'Block User',
 		'blocked_users' => 'Blocked users',
@@ -81,9 +81,9 @@
 		'password_label' => 'Password:',
 		'password_min' => 'Password must be at least ^ characters',
 		'password_mismatch' => 'New passwords do not match',
+		'password_none' => 'None. To log in directly, set a password below.',
 		'password_sent' => 'Your new password was emailed to you',
 		'password_wrong' => 'Password not correct',
-		'password_none' => 'None. To log in directly, set a password below.',
 		'profile_saved' => 'Profile saved',
 		'register_button' => 'Register',
 		'register_title' => 'Register as a new user',

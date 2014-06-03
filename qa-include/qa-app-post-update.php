@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-update.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Changing questions, answer and comments (application level)
 
 
@@ -38,7 +38,7 @@
 	
 	function qa_question_set_content($oldquestion, $title, $content, $format, $text, $tagstring, $notify, $lastuserid)
 /*
-	Change the text of a question (application level) to $title, $content, $tagstring and $notify, and reindex.
+	Change the fields of a question (application level) to $title, $content, $format, $tagstring and $notify, and reindex based on $text.
 	Pass the question's database record before changes in $oldquestion and the user doing this in $lastuserid.
 */
 	{
@@ -222,8 +222,8 @@
 	
 	function qa_answer_set_content($oldanswer, $content, $format, $text, $notify, $lastuserid, $question)
 /*
-	Change the text of an answer (application level) to $content and $notify, and reindex. Pass the answer's database
-	record before changes in $oldanswer, the question's record in $question, and the user doing this in $lastuserid.
+	Change the fields of an answer (application level) to $content, $format and $notify, and reindex based on $text.
+	Pass the answer's database record before changes in $oldanswer, the question's in $question, and the user doing this in $lastuserid.
 */
 	{
 		qa_post_unindex($oldanswer['postid']);
@@ -318,9 +318,9 @@
 	
 	function qa_comment_set_content($oldcomment, $content, $format, $text, $notify, $lastuserid, $question, $answer)
 /*
-	Change the text of a comment (application level) to $content and $notify, and reindex. Pass the comment's database
-	record before changes in $oldcomment, the antecedent question's record in $question, the user doing this in $lastuserid,
-	and the answer's database record in $answer if this is a comment on an answer, otherwise null.
+	Change the fields of a comment (application level) to $content, $format and $notify, and reindex based on $text.
+	Pass the comment's database record before changes in $oldcomment, the antecedent question's in $question, the user doing
+	this in $lastuserid, and the answer's database record in $answer if this is a comment on an answer, otherwise null.
 */
 	{
 		qa_post_unindex($oldcomment['postid']);
@@ -334,12 +334,12 @@
 	
 	function qa_answer_to_comment($oldanswer, $parentid, $content, $format, $text, $notify, $lastuserid, $question, $answers, $commentsfollows)
 /*
-	Convert an answer to a comment (application level) and set its text to $content and $notify.
+	Convert an answer to a comment (application level) and set its fields to $content, $format and $notify.
 	Pass the answer's database record before changes in $oldanswer, the new comment's $parentid to be, the
 	user doing this in $lastuserid, the antecedent question's record in $question, the records for all answers
 	to that question in $answers, and the records for all comments on the (old) answer and questions following
 	from the (old) answer in $commentsfollows ($commentsfollows can also contain other records which are ignored).
-	Handles indexing, user points and cached counts.
+	Handles indexing (based on $text), user points and cached counts.
 */
 	{
 		$parent=isset($answers[$parentid]) ? $answers[$parentid] : $question;

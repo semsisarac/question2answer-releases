@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-captcha.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Wrapper functions and utilities for reCAPTCHA
 
 
@@ -44,7 +44,7 @@
 
 	function qa_captcha_error()
 /*
-	Return string of error to display in admin interface if captchas not possible, null otherwise
+	Return string of error to display in admin interface if captchas are not possible, null otherwise
 */
 	{
 		if (qa_captcha_possible())

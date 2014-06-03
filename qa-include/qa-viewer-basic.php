@@ -1,15 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-viewer-basic.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
-	Description: Common functions for connecting to and access database
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
+	Description: Basic viewer module for displaying HTML or plain text
 
 
 	This program is free software; you can redistribute it and/or
@@ -43,7 +43,7 @@
 				'|hr|iframe|input|li|marquee|ol|p|pre|samp|select|spacer|table|tbody|td|textarea|tfoot|th|thead|tr|ul';
 		}
 		
-		function calc_view_quality($content, $format)
+		function calc_quality($content, $format)
 		{
 			if ( ($format=='') || ($format=='html') )
 				return 1.0;
@@ -51,7 +51,7 @@
 				return 0;
 		}
 		
-		function get_view_html($content, $format, $options=array())
+		function get_html($content, $format, $options)
 		{
 			if ($format=='html') {
 				$html=$content;
@@ -116,7 +116,7 @@
 			return $html;
 		}
 
-		function get_view_text($content, $format, $options=array())
+		function get_text($content, $format, $options)
 		{
 			if ($format=='html') {
 				$text=strtr($content, "\n\r\t", '   '); // convert all white space in HTML to spaces

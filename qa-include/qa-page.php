@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Routing and utility functions for page requests
 
 
@@ -227,7 +227,7 @@
 	qa_base_db_connect('qa_page_db_fail_handler');
 
 
-//	Get common parameters, queue many common options for retrieval and get the ID/cookie of the current user (if any)
+//	Get common parameters, queue some database information for retrieval and get the ID/cookie of the current user (if any)
 
 	$qa_start=min(max(0, (int)qa_get('start')), QA_MAX_LIMIT_START);
 	$qa_state=qa_get('state');
@@ -240,7 +240,7 @@
 	$qa_cookieid=qa_cookie_get();
 	
 
-// 	If not logged in as anyone via Q2A, see if any of the login plugins can help
+// 	If not currently logged in as anyone, see if any of the registered login modules can help
 	
 	if (!isset($qa_login_userid)) {
 		$modulenames=qa_list_modules('login');
@@ -248,8 +248,8 @@
 		foreach ($modulenames as $tryname) {
 			$module=qa_load_module('login', $tryname);
 			
-			if (method_exists($module, 'check_cookie')) {
-				$module->check_cookie();
+			if (method_exists($module, 'check_login')) {
+				$module->check_login();
 				$qa_login_userid=qa_get_logged_in_userid();
 	
 				if (isset($qa_login_userid)) // stop and reload page if it worked
@@ -436,7 +436,7 @@
 				
 				if (method_exists($module, 'login_html')) {
 					ob_start();
-					$module->login_html(isset($topath) ? ($qa_root_url_relative.$topath) : qa_path($qa_request, $_GET), 'menu');
+					$module->login_html(isset($topath) ? (qa_opt('site_url').$topath) : qa_path($qa_request, $_GET, qa_opt('site_url')), 'menu');
 					$qa_content['navigation']['user'][$tryname]=array('label' => ob_get_clean());
 				}
 			}
@@ -510,12 +510,12 @@
 			$qa_template='question';
 			$qa_content=require QA_INCLUDE_DIR.'qa-page-question.php';
 	
-		} elseif ( ($qa_request_lc_parts[0]=='tag') && strlen($qa_request_parts[1]) ) {
+		} elseif ( ($qa_request_lc_parts[0]=='tag') && strlen(@$qa_request_parts[1]) ) {
 			$pass_tag=$qa_request_parts[1]; // effectively a parameter that is passed to file
 			$qa_template='tag';
 			$qa_content=require QA_INCLUDE_DIR.'qa-page-tag.php';
 	
-		} elseif ( ($qa_request_lc_parts[0]=='user') && strlen($qa_request_parts[1]) ) {
+		} elseif ( ($qa_request_lc_parts[0]=='user') && strlen(@$qa_request_parts[1]) ) {
 			$pass_handle=$qa_request_parts[1]; // effectively a parameter that is passed to file
 			$qa_template='user';
 			$qa_content=require QA_INCLUDE_DIR.'qa-page-user.php';
@@ -527,7 +527,7 @@
 	
 		} else {
 			$qa_template='home';
-			$qa_content=require QA_INCLUDE_DIR.'qa-page-home.php'; // handles many other pages
+			$qa_content=require QA_INCLUDE_DIR.'qa-page-home.php'; // handles many other pages, including custom pages and page modules
 		}
 	}
 	
@@ -573,161 +573,166 @@
 	if (QA_DEBUG_PERFORMANCE)
 		qa_usage_mark('view');
 	
+
+//	Output the content if there is any
 	
-//	Set appropriate selected flags for navigation (not done in qa_content_prepare() since it also applies to sub-navigation)
+	if (is_array($qa_content)) {
 	
-	foreach ($qa_content['navigation'] as $navtype => $navigation)
-		if (is_array($navigation))
-			foreach ($navigation as $navprefix => $navlink)
-				if (substr($qa_request_lc.'$', 0, strlen($navprefix)) == $navprefix)
-					$qa_content['navigation'][$navtype][$navprefix]['selected']=true;
-
-
-//	Handle maintenance mode
-
-	if (qa_opt('site_maintenance') && ($qa_request_lc!='login')) {
-		if (qa_get_logged_in_level()>=QA_USER_LEVEL_ADMIN) {
-			if (!isset($qa_content['error']))
-				$qa_content['error']=strtr(qa_lang_html('admin/maintenance_admin_only'), array(
-					'^1' => '<A HREF="'.qa_path_html('admin').'">',
-					'^2' => '</A>',
-				));
-
-		} else {
-			$qa_content=qa_content_prepare();
-			$qa_content['error']=qa_lang_html('misc/site_in_maintenance');
+	//	Set appropriate selected flags for navigation (not done in qa_content_prepare() since it also applies to sub-navigation)
+		
+		foreach ($qa_content['navigation'] as $navtype => $navigation)
+			if (is_array($navigation))
+				foreach ($navigation as $navprefix => $navlink)
+					if (substr($qa_request_lc.'$', 0, strlen($navprefix)) == $navprefix)
+						$qa_content['navigation'][$navtype][$navprefix]['selected']=true;
+	
+	
+	//	Handle maintenance mode
+	
+		if (qa_opt('site_maintenance') && ($qa_request_lc!='login')) {
+			if (qa_get_logged_in_level()>=QA_USER_LEVEL_ADMIN) {
+				if (!isset($qa_content['error']))
+					$qa_content['error']=strtr(qa_lang_html('admin/maintenance_admin_only'), array(
+						'^1' => '<A HREF="'.qa_path_html('admin').'">',
+						'^2' => '</A>',
+					));
+	
+			} else {
+				$qa_content=qa_content_prepare();
+				$qa_content['error']=qa_lang_html('misc/site_in_maintenance');
+			}
 		}
-	}
-
-
-//	Load the appropriate theme class
-
-	$themeclass=qa_load_theme_class(qa_opt('site_theme'), $qa_template, $qa_content, $qa_request);
-
-
-//	Set HTTP header and output start of HTML document
-		
-	header('Content-type: text/html; charset=utf-8');
 	
-	$themeclass->doctype();
-	$themeclass->output(
-		'<HTML>',
-		'<!-- Powered by Question2Answer - http://www.question2answer.org/ -->'
-	);
-
-
-//	Output <HEAD> section, mainly a bunch of dynamic JavaScripts
-		
-	$themeclass->output(
-		'<HEAD>',
-		'<META HTTP-EQUIV="Content-type" CONTENT="text/html; charset=utf-8"/>',
-		'<TITLE>'.((empty($qa_content['title']) || empty($qa_request)) ? '' : (strip_tags($qa_content['title']).' - ')).qa_html(qa_opt('site_title')).'</TITLE>'
-	);
 	
-	if (!empty($qa_content['description']))
-		$themeclass->output('<META NAME="description" CONTENT="'.$qa_content['description'].'"/>');
+	//	Load the appropriate theme class
 	
-	if (!empty($qa_content['keywords']))
-		$themeclass->output('<META NAME="keywords" CONTENT="'.$qa_content['keywords'].'"/>');
-			// as far as I know, META keywords have zero effect on search rankings or listings
+		$themeclass=qa_load_theme_class(qa_opt('site_theme'), $qa_template, $qa_content, $qa_request);
+	
+	
+	//	Set HTTP header and output start of HTML document
 			
-	if (!empty($qa_content['canonical']))
-		$themeclass->output('<LINK REL="canonical" HREF="'.$qa_content['canonical'].'"/>');
+		header('Content-type: text/html; charset=utf-8');
 		
-	if (!empty($qa_content['feed']['url']))
-		$themeclass->output('<LINK REL="alternate" TYPE="application/rss+xml" HREF="'.$qa_content['feed']['url'].'" TITLE="'.@$qa_content['feed']['label'].'"/>');
-		
-	$themeclass->output('<SCRIPT TYPE="text/javascript"><!--');
-
-	if (isset($qa_content['script_var']))
-		foreach ($qa_content['script_var'] as $var => $value)
-			$themeclass->output('var '.$var.'='.qa_js($value).';');
-	
-	if (isset($qa_content['script_lines']))
-		foreach ($qa_content['script_lines'] as $script) {
-			$themeclass->output('');
-			$themeclass->output_array($script);
-		}
-		
-	if (isset($qa_content['focusid']))
-		$qa_content['script_onloads'][]=array(
-			"var elem=document.getElementById(".qa_js($qa_content['focusid']).");",
-			"if (elem) {",
-			"\telem.select();",
-			"\telem.focus();",
-			"}",
-		);
-		
-	if (isset($qa_content['script_onloads'])) {
+		$themeclass->doctype();
 		$themeclass->output(
-			'',
-			'var qa_oldonload=window.onload;',
-			'window.onload=function() {',
-			"\tif (typeof qa_oldonload=='function')",
-			"\t\tqa_oldonload();"
+			'<HTML>',
+			'<!-- Powered by Question2Answer - http://www.question2answer.org/ -->'
+		);
+	
+	
+	//	Output <HEAD> section, mainly a bunch of dynamic JavaScripts
+			
+		$themeclass->output(
+			'<HEAD>',
+			'<META HTTP-EQUIV="Content-type" CONTENT="text/html; charset=utf-8"/>',
+			'<TITLE>'.((empty($qa_content['title']) || empty($qa_request)) ? '' : (strip_tags($qa_content['title']).' - ')).qa_html(qa_opt('site_title')).'</TITLE>'
 		);
 		
-		foreach ($qa_content['script_onloads'] as $script) {
-			$themeclass->output("\t");
+		if (!empty($qa_content['description']))
+			$themeclass->output('<META NAME="description" CONTENT="'.$qa_content['description'].'"/>');
+		
+		if (!empty($qa_content['keywords']))
+			$themeclass->output('<META NAME="keywords" CONTENT="'.$qa_content['keywords'].'"/>');
+				// as far as I know, META keywords have zero effect on search rankings or listings
+				
+		if (!empty($qa_content['canonical']))
+			$themeclass->output('<LINK REL="canonical" HREF="'.$qa_content['canonical'].'"/>');
 			
-			foreach ((array)$script as $scriptline)
-				$themeclass->output("\t".$scriptline);
+		if (!empty($qa_content['feed']['url']))
+			$themeclass->output('<LINK REL="alternate" TYPE="application/rss+xml" HREF="'.$qa_content['feed']['url'].'" TITLE="'.@$qa_content['feed']['label'].'"/>');
+			
+		$themeclass->output('<SCRIPT TYPE="text/javascript"><!--');
+	
+		if (isset($qa_content['script_var']))
+			foreach ($qa_content['script_var'] as $var => $value)
+				$themeclass->output('var '.$var.'='.qa_js($value).';');
+		
+		if (isset($qa_content['script_lines']))
+			foreach ($qa_content['script_lines'] as $script) {
+				$themeclass->output('');
+				$themeclass->output_array($script);
+			}
+			
+		if (isset($qa_content['focusid']))
+			$qa_content['script_onloads'][]=array(
+				"var elem=document.getElementById(".qa_js($qa_content['focusid']).");",
+				"if (elem) {",
+				"\telem.select();",
+				"\telem.focus();",
+				"}",
+			);
+			
+		if (isset($qa_content['script_onloads'])) {
+			$themeclass->output(
+				'',
+				'var qa_oldonload=window.onload;',
+				'window.onload=function() {',
+				"\tif (typeof qa_oldonload=='function')",
+				"\t\tqa_oldonload();"
+			);
+			
+			foreach ($qa_content['script_onloads'] as $script) {
+				$themeclass->output("\t");
+				
+				foreach ((array)$script as $scriptline)
+					$themeclass->output("\t".$scriptline);
+			}
+	
+			$themeclass->output('}');
 		}
-
-		$themeclass->output('}');
-	}
-
-	$themeclass->output('--></SCRIPT>');
 	
-	if (isset($qa_content['script_rel']))
-		foreach ($qa_content['script_rel'] as $script_rel)
-			$themeclass->output('<SCRIPT SRC="'.qa_html($qa_root_url_relative.$script_rel).'" TYPE="text/javascript"></SCRIPT>');
-
-	if (isset($qa_content['script_src']))
-		foreach ($qa_content['script_src'] as $script_src)
-			$themeclass->output('<SCRIPT SRC="'.qa_html($script_src).'" TYPE="text/javascript"></SCRIPT>');
-
-	$themeclass->head_css();
-	$themeclass->head_custom();
-
-	if (qa_opt('show_custom_in_head'))
-		$themeclass->output_raw(qa_opt('custom_in_head'));
-
-	$themeclass->output('</HEAD>');
-
+		$themeclass->output('--></SCRIPT>');
+		
+		if (isset($qa_content['script_rel']))
+			foreach ($qa_content['script_rel'] as $script_rel)
+				$themeclass->output('<SCRIPT SRC="'.qa_html($qa_root_url_relative.$script_rel).'" TYPE="text/javascript"></SCRIPT>');
 	
-//	Output <BODY> section
-
-	$themeclass->output('<BODY');
-	$themeclass->body_tags();
-	$themeclass->output('>');
-
-	if (qa_opt('show_custom_header'))
-		$themeclass->output_raw(qa_opt('custom_header'));
-
-	$themeclass->body_content();
-
-	if (qa_opt('show_custom_footer'))
-		$themeclass->output_raw(qa_opt('custom_footer'));
-
-	$themeclass->output('</BODY>');
-
-
-//	Output end of HTML document and let theme do any clearing up
+		if (isset($qa_content['script_src']))
+			foreach ($qa_content['script_src'] as $script_src)
+				$themeclass->output('<SCRIPT SRC="'.qa_html($script_src).'" TYPE="text/javascript"></SCRIPT>');
 	
-	$themeclass->output(
-		'<!-- Powered by Question2Answer - http://www.question2answer.org/ -->',
-		'</HTML>'
-	);
-
-	$themeclass->finish();
-
-			
-//	End of output phase
-
-	if (QA_DEBUG_PERFORMANCE) {
-		qa_usage_mark('theme');
-		qa_usage_output();
+		$themeclass->head_css();
+		$themeclass->head_custom();
+	
+		if (qa_opt('show_custom_in_head'))
+			$themeclass->output_raw(qa_opt('custom_in_head'));
+	
+		$themeclass->output('</HEAD>');
+	
+		
+	//	Output <BODY> section
+	
+		$themeclass->output('<BODY');
+		$themeclass->body_tags();
+		$themeclass->output('>');
+	
+		if (qa_opt('show_custom_header'))
+			$themeclass->output_raw(qa_opt('custom_header'));
+	
+		$themeclass->body_content();
+	
+		if (qa_opt('show_custom_footer'))
+			$themeclass->output_raw(qa_opt('custom_footer'));
+	
+		$themeclass->output('</BODY>');
+	
+	
+	//	Output end of HTML document and let theme do any clearing up
+		
+		$themeclass->output(
+			'<!-- Powered by Question2Answer - http://www.question2answer.org/ -->',
+			'</HTML>'
+		);
+	
+		$themeclass->finish();
+	
+				
+	//	End of output phase
+	
+		if (QA_DEBUG_PERFORMANCE) {
+			qa_usage_mark('theme');
+			qa_usage_output();
+		}
 	}
 
 	

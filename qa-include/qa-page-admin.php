@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Controller for most admin pages which just contain options
 
 
@@ -275,26 +275,28 @@
 	}
 	
 
-//	Option types and maxima
+//	For non-text options, lists of option types, minima and maxima
 	
 	$optiontype=array(
-		'avatar_store_size' => 'number',
 		'avatar_profile_size' => 'number',
-		'avatar_users_size' => 'number',
-		'avatar_q_page_q_size' => 'number',
+		'avatar_q_list_size' => 'number',
 		'avatar_q_page_a_size' => 'number',
 		'avatar_q_page_c_size' => 'number',
-		'avatar_q_list_size' => 'number',
+		'avatar_q_page_q_size' => 'number',
+		'avatar_store_size' => 'number',
+		'avatar_users_size' => 'number',
 		'columns_tags' => 'number',
 		'columns_users' => 'number',
 		'feed_number_items' => 'number',
 		'logo_height' => 'number-blank',
 		'logo_width' => 'number-blank',
+		'max_len_q_title' => 'number',
+		'max_num_q_tags' => 'number',
 		'max_rate_ip_as' => 'number',
 		'max_rate_ip_cs' => 'number',
+		'max_rate_ip_logins' => 'number',
 		'max_rate_ip_qs' => 'number',
 		'max_rate_ip_votes' => 'number',
-		'max_rate_ip_logins' => 'number',
 		'max_rate_user_as' => 'number',
 		'max_rate_user_cs' => 'number',
 		'max_rate_user_qs' => 'number',
@@ -304,8 +306,6 @@
 		'min_len_q_content' => 'number',
 		'min_len_q_title' => 'number',
 		'min_num_q_tags' => 'number',
-		'max_len_q_title' => 'number',
-		'max_num_q_tags' => 'number',
 		'page_size_ask_check_qs' => 'number',
 		'page_size_ask_tags' => 'number',
 		'page_size_home' => 'number',
@@ -319,6 +319,7 @@
 		'page_size_users' => 'number',
 		'pages_prev_next' => 'number',
 		
+		'allow_multi_answers' => 'checkbox',
 		'avatar_allow_gravatar' => 'checkbox',
 		'avatar_allow_upload' => 'checkbox',
 		'avatar_default_show' => 'checkbox',
@@ -330,45 +331,46 @@
 		'comment_on_as' => 'checkbox',
 		'comment_on_qs' => 'checkbox',
 		'confirm_user_emails' => 'checkbox',
-		'feed_for_qa' => 'checkbox',
-		'feed_for_questions' => 'checkbox',
-		'feed_for_unanswered' => 'checkbox',
-		'feed_for_activity' => 'checkbox',
-		'feed_for_search' => 'checkbox',
-		'feed_per_category' => 'checkbox',
-		'feed_for_tag_qs' => 'checkbox',
-		'show_c_reply_buttons' => 'checkbox',
-		'show_custom_sidebar' => 'checkbox',
-		'show_custom_sidepanel' => 'checkbox',
-		'show_custom_header' => 'checkbox',
-		'show_custom_footer' => 'checkbox',
-		'show_custom_in_head' => 'checkbox',
-		'show_custom_home' => 'checkbox',
-		'show_home_description' => 'checkbox',
-		'allow_multi_answers' => 'checkbox',
 		'do_ask_check_qs' => 'checkbox',
 		'do_complete_tags' => 'checkbox',
 		'do_example_tags' => 'checkbox',
 		'do_related_qs' => 'checkbox',
-		'feedback_enabled' => 'checkbox',
+		'feed_for_activity' => 'checkbox',
+		'feed_for_qa' => 'checkbox',
+		'feed_for_questions' => 'checkbox',
+		'feed_for_search' => 'checkbox',
+		'feed_for_tag_qs' => 'checkbox',
+		'feed_for_unanswered' => 'checkbox',
 		'feed_full_text' => 'checkbox',
+		'feed_per_category' => 'checkbox',
+		'feedback_enabled' => 'checkbox',
 		'follow_on_as' => 'checkbox',
 		'logo_show' => 'checkbox',
 		'neat_urls' => 'checkbox',
 		'notify_admin_q_post' => 'checkbox',
+		'show_c_reply_buttons' => 'checkbox',
+		'show_custom_footer' => 'checkbox',
+		'show_custom_header' => 'checkbox',
+		'show_custom_home' => 'checkbox',
+		'show_custom_in_head' => 'checkbox',
+		'show_custom_sidebar' => 'checkbox',
+		'show_custom_sidepanel' => 'checkbox',
+		'show_home_description' => 'checkbox',
+		'show_selected_first' => 'checkbox',
 		'show_url_links' => 'checkbox',
 		'show_user_points' => 'checkbox',
 		'show_user_titles' => 'checkbox',
-		'show_selected_first' => 'checkbox',
 		'show_when_created' => 'checkbox',
 		'site_maintenance' => 'checkbox',
 		'votes_separated' => 'checkbox',
 		'voting_on_as' => 'checkbox',
-		'voting_on_qs' => 'checkbox',
 		'voting_on_q_page_only' => 'checkbox',
+		'voting_on_qs' => 'checkbox',
 	);
 	
 	$optionmaximum=array(
+		'feed_number_items' => QA_DB_RETRIEVE_QS_AS,
+		'max_len_q_title' => QA_DB_MAX_TITLE_LENGTH,
 		'page_size_ask_check_qs' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_ask_tags' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_home' => QA_DB_RETRIEVE_QS_AS,
@@ -380,8 +382,6 @@
 		'page_size_una_qs' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_user_posts' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_users' => QA_DB_RETRIEVE_USERS,
-		'feed_number_items' => QA_DB_RETRIEVE_QS_AS,
-		'max_len_q_title' => QA_DB_MAX_TITLE_LENGTH,
 	);
 	
 	$optionminimum=array(
@@ -430,7 +430,7 @@
 				$optionvalue=max($optionminimum[$optionname], $optionvalue);
 				
 			if ($optionname=='site_url')
-				if (substr($optionvalue, -1)!='/')
+				if (substr($optionvalue, -1)!='/') // seems to be a very common mistake and will mess up URLs
 					$optionvalue.='/';
 			
 			if ($optionname=='block_ips_write') {
@@ -920,7 +920,7 @@
 
 	if (isset($checkboxtodisplay))
 		qa_checkbox_to_display($qa_content, $checkboxtodisplay);
-		
+
 
 	$qa_content['navigation']['sub']=qa_admin_sub_navigation();
 	

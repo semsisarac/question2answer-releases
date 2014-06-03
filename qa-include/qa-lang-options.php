@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-options.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Language phrases for all options, as shown in admin center
 
 
@@ -31,12 +31,12 @@
 		'avatar_allow_gravatar' => 'Allow ^1Gravatar^2 avatars:',
 		'avatar_allow_upload' => 'Allow users to upload avatars:',
 		'avatar_default_show' => 'Show default avatar:',
-		'avatar_q_page_q_size' => 'Size of avatars on questions (pixels):',
+		'avatar_profile_size' => 'Size of avatar on user profile page (pixels):',
+		'avatar_q_list_size' => 'Size of avatars on question lists (pixels):',
 		'avatar_q_page_a_size' => 'Size of avatars on answers (pixels):',
 		'avatar_q_page_c_size' => 'Size of avatars on comments (pixels):',
-		'avatar_q_list_size' => 'Size of avatars on question lists (pixels):',
+		'avatar_q_page_q_size' => 'Size of avatars on questions (pixels):',
 		'avatar_store_size' => 'Maximum size of stored avatars (pixels):',
-		'avatar_profile_size' => 'Size of avatar on user profile page (pixels):',
 		'avatar_users_size' => 'Size of avatars on top users page (pixels):',
 		'block_bad_words' => 'Censored words (separate by spaces or commas):',
 		'block_ips_write' => 'Blocked IP addresses (separate by spaces or commas):',
@@ -60,11 +60,11 @@
 		'do_complete_tags' => 'Show matching tags while typing:',
 		'do_example_tags' => 'Show example tags based on question:',
 		'do_related_qs' => 'Show related questions on question page:',
-		'editor_for_qs' => 'Default editor for questions:',
 		'editor_for_as' => 'Default editor for answers:',
 		'editor_for_cs' => 'Default editor for comments:',
+		'editor_for_qs' => 'Default editor for questions:',
 		'email_privacy' => 'Privacy note for email on all forms (HTML allowed):',
-		'feed_for_activity' => 'Feed for recent questions, answers or comments:',
+		'feed_for_activity' => 'Feed for recent activity:',
 		'feed_for_qa' => 'Feed for recent questions and answers:',
 		'feed_for_questions' => 'Feed for recent questions:',
 		'feed_for_search' => 'Feeds for search results:',
@@ -72,7 +72,7 @@
 		'feed_for_unanswered' => 'Feed for recent unanswered questions:',
 		'feed_full_text' => 'Include full text in feeds:',
 		'feed_number_items' => 'Maximum number of items in feeds:',
-		'feed_per_category' => 'Also provide individual feeds for each category:',
+		'feed_per_category' => 'Feeds for the above in each category:',
 		'feedback_email' => 'Email address for admin messages (not shown to users):',
 		'feedback_enabled' => 'Provide a form for users to send me feedback',
 		'follow_on_as' => 'Allow new questions to be related to answers:',
@@ -190,8 +190,8 @@
 		'tags_or_categories' => 'Classify questions using:',
 		'votes_separated' => 'Show separate up and down votes:',
 		'voting_on_as' => 'Allow voting on answers:',
-		'voting_on_qs' => 'Allow voting on questions:',
 		'voting_on_q_page_only' => 'Allow voting on question page only:',
+		'voting_on_qs' => 'Allow voting on questions:',
 	);
 	
 

@@ -1,15 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-blobs.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
-	Description: Database-level access to blobs table
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
+	Description: Database-level access to blobs table for large chunks of data (e.g. images)
 
 
 	This program is free software; you can redistribute it and/or
@@ -33,7 +33,7 @@
 
 	function qa_db_blob_create($content, $format)
 /*
-	
+	Create a new blob in the database with $content and $format, returning its blobid
 */
 	{
 		for ($attempt=0; $attempt<10; $attempt++) {
@@ -56,7 +56,7 @@
 	
 	function qa_db_blob_read($blobid)
 /*
-
+	Get the content of blob $blobid from the database
 */
 	{
 		return qa_db_read_one_assoc(qa_db_query_sub(
@@ -67,6 +67,9 @@
 	
 	
 	function qa_db_blob_delete($blobid)
+/*
+	Delete blob $blobid in the database
+*/
 	{
 		qa_db_query_sub(
 			'DELETE FROM ^blobs WHERE blobid=#',
@@ -77,7 +80,7 @@
 	
 	function qa_db_blob_exists($blobid)
 /*
-
+	Check if blob $blobid exists in the database
 */
 	{
 		return qa_db_read_one_value(qa_db_query_sub(
@@ -86,7 +89,6 @@
 		)) > 0;
 	}
 
-	
 
 /*
 	Omit PHP closing tag to help avoid accidental output

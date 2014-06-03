@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-feedback.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Controller for feedback page
 
 
@@ -34,7 +34,7 @@
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 
 
-//	Queue required options and get useful information on the logged in user
+//	Get useful information on the logged in user
 
 	if (isset($qa_login_userid) && !QA_EXTERNAL_USERS)
 		list($useraccount, $userprofile)=qa_db_select_with_pending(
@@ -156,12 +156,14 @@
 	if ($usecaptcha && !$feedbacksent)
 		qa_set_up_captcha_field($qa_content, $qa_content['form']['fields'], @$errors);
 
+
 	$qa_content['focusid']='message';
 	
 	if ($feedbacksent) {
 		$qa_content['form']['ok']=qa_lang_html('misc/feedback_sent');
 		unset($qa_content['form']['buttons']);
 	}
+
 	
 	return $qa_content;
 	

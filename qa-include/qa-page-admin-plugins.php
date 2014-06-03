@@ -1,15 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-plugins.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
-	Description: Controller for admin page showing hidden questions, answers and comments
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
+	Description: Controller for admin page listing plugins and showing their options
 
 
 	This program is free software; you can redistribute it and/or
@@ -80,23 +80,23 @@
 				if (preg_match('/'.str_replace(' ', '[ \t]*', preg_quote($fieldname, '/')).':[ \t]*([^\n\f]*)[\n\f]/i', $contents, $matches))
 					$metadata[$key]=trim($matches[1]);
 					
-			if (strlen($metadata['name']))
+			if (strlen(@$metadata['name']))
 				$namehtml=qa_html($metadata['name']);
 			else
 				$namehtml=qa_lang_html('admin/unnamed_plugin');
 				
-			if (strlen($metadata['uri']))
+			if (strlen(@$metadata['uri']))
 				$namehtml='<A HREF="'.qa_html($metadata['uri']).'">'.$namehtml.'</A>';
 			
 			$namehtml='<B>'.$namehtml.'</B>';
 				
-			if (strlen($metadata['version']))
+			if (strlen(@$metadata['version']))
 				$namehtml.=' '.qa_html($metadata['version']);
 				
-			if (strlen($metadata['author'])) {
+			if (strlen(@$metadata['author'])) {
 				$authorhtml=qa_html($metadata['author']);
 				
-				if (strlen($metadata['author_uri']))
+				if (strlen(@$metadata['author_uri']))
 					$authorhtml='<A HREF="'.qa_html($metadata['author_uri']).'">'.$authorhtml.'</A>';
 					
 				$authorhtml=qa_lang_html_sub('main/by_x', $authorhtml);
@@ -104,7 +104,7 @@
 			} else
 				$authorhtml='';
 				
-			if (strlen($metadata['description']))
+			if (strlen(@$metadata['description']))
 				$deschtml=qa_html($metadata['description']).'<BR>';
 			else
 				$deschtml='';
@@ -148,6 +148,7 @@
 	if (!$formadded)
 		$qa_content['suggest_next']=qa_lang_html('admin/no_plugin_options');
 	
+
 	$qa_content['navigation']['sub']=qa_admin_sub_navigation();
 	
 	return $qa_content;

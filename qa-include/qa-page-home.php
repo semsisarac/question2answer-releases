@@ -1,15 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-home.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
-	Description: Controller for most question listing pages and custom pages
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
+	Description: Controller for most question listing pages, plus custom pages and plugin pages
 
 
 	This program is free software; you can redistribute it and/or
@@ -34,7 +34,7 @@
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 
 
-//	Common function to load the appropriate set of questions
+//	Common function to load the appropriate set of questions (although this efficiently factors out common tasks, it's too hard to understand)
 
 	function qa_home_load_ifcategory($pagesizeoption, $feedoption, $cachecountoption, $allsomekey, $allnonekey, $catsomekey, $catnonekey,
 		$questionselectspec1=null, $questionselectspec2=null, $questionselectspec3=null, $questionselectspec4=null, $pageselectspec=null)
@@ -79,8 +79,6 @@
 				if (method_exists($trypage, 'match_request') && $trypage->match_request($qa_request)) {
 					$qa_template='plugin';
 					$qa_content=$trypage->process_request($qa_request);
-					if (empty($qa_content))
-						$qa_content=qa_content_prepare();
 					return false;
 				}
 			}
@@ -276,6 +274,7 @@
 			'url' => qa_path_html(qa_feed_request($feedpathprefix.(isset($categoryid) ? ('/'.$categories[$categoryid]['tags']) : ''))),
 			'label' => strip_tags($sometitle),
 		);
+
 		
 	return $qa_content;
 

@@ -1,15 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/xml-sitemap/qa-xml-sitemap.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
-	Description:
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
+	Description: Page module class for XML sitemap plugin
 
 
 	This program is free software; you can redistribute it and/or
@@ -36,13 +36,13 @@
 			$this->urltoroot=$urltoroot;
 		}
 		
-		function suggest_requests() // for display in admin interface
+		function suggest_requests()
 		{	
 			return array(
 				array(
 					'title' => 'XML Sitemap',
 					'request' => 'sitemap.xml',
-					'nav' => null, // M=main, F=footer, B=before main, O=opposite main, other=none
+					'nav' => null, // 'M'=main, 'F'=footer, 'B'=before main, 'O'=opposite main, null=none
 				),
 			);
 		}
@@ -72,7 +72,7 @@
 			
 			while (1) {
 				$questions=qa_db_read_all_assoc(qa_db_query_sub(
-					"SELECT postid, title, upvotes, downvotes FROM ^posts WHERE postid>=# AND type='Q' ORDER BY postid LIMIT 100",
+					"SELECT postid, BINARY title AS title, upvotes, downvotes FROM ^posts WHERE postid>=# AND type='Q' ORDER BY postid LIMIT 100",
 					$nextpostid
 				));
 				
@@ -105,7 +105,7 @@
 			
 				while (1) {
 					$tagwords=qa_db_read_all_assoc(qa_db_query_sub(
-						"SELECT wordid, word, tagcount FROM ^words WHERE wordid>=# AND tagcount>0 ORDER BY wordid LIMIT 100",
+						"SELECT wordid, BINARY word AS word, tagcount FROM ^words WHERE wordid>=# AND tagcount>0 ORDER BY wordid LIMIT 100",
 						$nextwordid
 					));
 					
@@ -132,7 +132,7 @@
 				
 				while (1) {
 					$users=qa_db_read_all_assoc(qa_db_query_sub(
-						"SELECT userid, handle FROM ^users WHERE userid>=# ORDER BY userid LIMIT 100",
+						"SELECT userid, BINARY handle AS handle FROM ^users WHERE userid>=# ORDER BY userid LIMIT 100",
 						$nextuserid
 					));
 					
@@ -154,7 +154,7 @@
 			
 			echo "</urlset>\n";
 			
-			exit;
+			return null;
 		}
 	
 	};

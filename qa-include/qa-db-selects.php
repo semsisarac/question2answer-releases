@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-selects.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Builders of selectspec arrays (see qa-db.php) used to specify database SELECTs
 
 
@@ -36,8 +36,8 @@
 	function qa_db_select_with_pending() // any number of parameters read via func_get_args()
 /*
 	Return the results of all the SELECT operations specified by the supplied selectspec parameters, while also
-	loading any options which have been queued for retrieval, as well as information about custom pages and
-	the logged in user, if those were requested. Uses one DB query unless QA_OPTIMIZE_LOCAL_DB is true.
+	loading all options, plus custom pages and information about the logged in user, if those were requested.
+	Uses one DB query unless QA_OPTIMIZE_LOCAL_DB is true.
 	If only one parameter is supplied, return its result, otherwise return an array of results.
 */
 	{
@@ -202,7 +202,7 @@
 	return the selectspec to retrieve the antecedent questions for those answers,
 	with the corresponding vote on those questions made by $voteuserid (if not null).
 	The selectspec will also retrieve some information about the answers themselves
-	(including the content if $fullanswers is true), in columns named with the prefix 'a'.
+	(including the content if $fullanswers is true), in columns named with the prefix 'o'.
 */
 	{
 		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
@@ -261,7 +261,7 @@
 	return the selectspec to retrieve the antecedent questions for those comments,
 	with the corresponding vote on those questions made by $voteuserid (if not null).
 	The selectspec will also retrieve some information about the comments themselves
-	(including the content if $fullanswers is true), in columns named with the prefix 'c'.
+	(including the content if $fullanswers is true), in columns named with the prefix 'o'.
 */
 	{
 		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
@@ -316,6 +316,14 @@
 	
 	
 	function qa_db_recent_edit_qs_selectspec($voteuserid, $start, $categoryslug=null, $lastip=null, $onlyvisible=true, $full=false, $count=QA_DB_RETRIEVE_QS_AS)
+/*
+	For $count most recently edited posts, starting from offset $start, restricted to
+	edits by $lastip (if not null), the category for $categoryslug (if not null) and only visible posts (if $onlyvisible),
+	return the selectspec to retrieve the antecedent questions for those edits,
+	with the corresponding vote on those questions made by $voteuserid (if not null).
+	The selectspec will also retrieve some information about the edited posts themselves
+	(including the content if $full is true), in columns named with the prefix 'o'.
+*/
 	{
 		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
 		
@@ -685,7 +693,7 @@
 	For $count recent answers by the user identified by $identifier (see qa_db_user_recent_qs_selectspec() comment)
 	return the selectspec to retrieve the antecedent questions for those answers, with the corresponding
 	vote on those questions made by $voteuserid (if not null). The selectspec will also retrieve some
-	information about the answers themselves, in columns named with the prefix 'a'.
+	information about the answers themselves, in columns named with the prefix 'o'.
 */
 	{
 		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
@@ -709,6 +717,12 @@
 
 		
 	function qa_db_user_recent_c_qs_selectspec($voteuserid, $identifier, $count=QA_DB_RETRIEVE_QS_AS)
+/*
+	For $count recent comments by the user identified by $identifier (see qa_db_user_recent_qs_selectspec() comment)
+	return the selectspec to retrieve the antecedent questions for those comments, with the corresponding
+	vote on those questions made by $voteuserid (if not null). The selectspec will also retrieve some
+	information about the comments themselves, in columns named with the prefix 'o'.
+*/
 	{
 		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
 		
@@ -750,6 +764,9 @@
 
 
 	function qa_db_userfields_selectspec()
+/*
+	Return the selectspec to retrieve the list of user profile fields, ordered for display
+*/
 	{
 		return array(
 			'columns' => array('fieldid', 'title' => 'BINARY title', 'content' => 'BINARY content', 'flags', 'position'),
@@ -783,8 +800,8 @@
 	
 	function qa_db_user_profile_selectspec($useridhandle, $isuserid)
 /*
-	Return the selectspec to retrieve all user profile (location, website, etc...) information of the user
-	identified by $useridhandle (see qa_db_user_account_selectspec() comment), as an array of [field] => [value]
+	Return the selectspec to retrieve all user profile information of the user identified by
+	$useridhandle (see qa_db_user_account_selectspec() comment), as an array of [field] => [value]
 */
 	{
 		return array(
@@ -877,21 +894,6 @@
 			'columns' => array('^users.userid', 'handle' => 'BINARY handle', 'flags', 'level'),
 			'source' => '^users WHERE (flags & #)',
 			'arguments' => array($flag),
-		);
-	}
-
-
-	function qa_db_options_cache_selectspec($title)
-/*
-	Return the selectspec to get a particular cached value out of the options table, as a single value
-*/
-	{
-		return array(
-			'columns' => array('content'),
-			'source' => '^options WHERE title=$',
-			'arguments' => array($title),
-			'arrayvalue' => 'content',
-			'single' => true,
 		);
 	}
 	

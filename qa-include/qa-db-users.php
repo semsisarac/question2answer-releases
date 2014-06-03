@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-users.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Database-level access to user management tables (if not using single sign-on)
 
 
@@ -182,6 +182,9 @@
 	
 	
 	function qa_db_user_login_add($userid, $source, $identifier)
+/*
+	Add an external login in the database for $source and $identifier for user $userid
+*/
 	{
 		qa_db_query_sub(
 			'INSERT INTO ^userlogins (userid, source, identifier, identifiermd5) '.
@@ -192,6 +195,9 @@
 	
 
 	function qa_db_user_login_find($source, $identifier)
+/*
+	Return some information about the user with external login $source and $identifier in the database, if a match is found
+*/
 	{
 		return qa_db_read_all_assoc(qa_db_query_sub(
 			'SELECT ^userlogins.userid, handle, email FROM ^userlogins LEFT JOIN ^users ON ^userlogins.userid=^users.userid '.

@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-stats.php
-	Version: 1.3-beta-2
-	Date: 2010-11-11 10:26:02 GMT
+	Version: 1.3
+	Date: 2010-11-23 06:34:00 GMT
 	Description: Controller for admin page showing usage statistics and clean-up buttons
 
 
@@ -75,7 +75,8 @@
 			'q2a_latest' => array(
 				'label' => qa_lang_html('admin/q2a_latest_version'),
 				'type' => 'custom',
-				'html' => '<IFRAME SRC="http://www.question2answer.org/question2answer-latest.html" WIDTH="100" HEIGHT="16" STYLE="vertical-align:middle; border:0; background:transparent;" allowTransparency="true" SCROLLING="no" FRAMEBORDER="0"></IFRAME>',
+				'html' => '<IFRAME SRC="http://www.question2answer.org/question2answer-latest.php?version='.urlencode(QA_VERSION).'&language='.urlencode(qa_opt('site_language')).
+					'" WIDTH="100" HEIGHT="16" STYLE="vertical-align:middle; border:0; background:transparent;" allowTransparency="true" SCROLLING="no" FRAMEBORDER="0"></IFRAME>',
 			),
 			
 			'db_version' => array(
@@ -231,6 +232,7 @@
 	$qa_content['script_rel'][]='qa-content/jxs_compressed.js';
 	$qa_content['script_rel'][]='qa-content/qa-admin.js?'.QA_VERSION;
 	$qa_content['script_var']['qa_warning_recalc']=qa_lang('admin/stop_recalc_warning');
+
 	
 	$qa_content['navigation']['sub']=qa_admin_sub_navigation();
 	
