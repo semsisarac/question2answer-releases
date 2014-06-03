@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Routing and utility functions for page requests
 
 
@@ -283,7 +283,7 @@
 	
 	//	Load the appropriate theme class and output the page
 	
-		$themeclass=qa_load_theme_class(qa_opt('site_theme'), $qa_template, $qa_content, $qa_request);
+		$themeclass=qa_load_theme_class(qa_opt('site_theme'), (substr($qa_template, 0, 7)=='custom-') ? 'custom' : $qa_template, $qa_content, $qa_request);
 	
 		header('Content-type: '.$qa_content['content_type']);
 		
@@ -347,6 +347,12 @@
 		
 		if (QA_DEBUG_PERFORMANCE)
 			qa_usage_mark('control');
+		
+		// might get here without loading these, so load them now
+		if ( (!isset($qa_nav_pages_cached)) || (!isset($qa_widgets_cached)) ) {
+			require_once QA_INCLUDE_DIR.'qa-db-selects.php';
+			qa_db_select_with_pending();
+		}
 		
 		if (isset($categoryids) && !is_array($categoryids)) // accept old-style parameter
 			$categoryids=array($categoryids);
@@ -494,7 +500,7 @@
 			'L' => 'low',
 			'B' => 'bottom',
 		);
-
+		
 		foreach ($qa_widgets_cached as $widget)
 			if (is_numeric(strpos(','.$widget['tags'].',', ','.$qa_template.',')) || is_numeric(strpos(','.$widget['tags'].',', ',all,'))) { // see if it has been selected for display on this template
 				$region=@$regioncodes[substr($widget['place'], 0, 1)];
@@ -504,7 +510,8 @@
 					$module=qa_load_module('widget', $widget['title']);
 					
 					if (
-						isset($module) && method_exists($module, 'allow_template') && $module->allow_template($qa_template) &&
+						isset($module) && method_exists($module, 'allow_template') &&
+						$module->allow_template((substr($qa_template, 0, 7)=='custom-') ? 'custom' : $qa_template) &&
 						method_exists($module, 'allow_region') && $module->allow_region($region) && method_exists($module, 'output_widget')
 					)
 						$qa_content['widgets'][$region][$place][]=$module; // if module loaded and happy to be displayed here, tell theme about it

@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-message.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Controller for private messaging page
 
 
@@ -180,6 +180,9 @@
 		unset($qa_content['form']['buttons']);
 	}
 
+
+	$qa_content['raw']['account']=$useraccount; // for plugin layers to access
+	
 
 	return $qa_content;
 

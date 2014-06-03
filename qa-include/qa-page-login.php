@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-login.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Controller for login page
 
 
@@ -42,12 +42,12 @@
 
 //	Process submitted form after checking we haven't reached rate limit
 	
-	require_once QA_INCLUDE_DIR.'qa-app-limits.php';
-
 	$passwordsent=qa_get('ps');
 
-	if (qa_limits_remaining(null, 'L')) {
-		if (qa_clicked('dologin')) {
+	if (qa_clicked('dologin')) {
+		require_once QA_INCLUDE_DIR.'qa-app-limits.php';
+
+		if (qa_limits_remaining(null, 'L')) {
 			require_once QA_INCLUDE_DIR.'qa-db-users.php';
 			require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 		
@@ -89,10 +89,10 @@
 			qa_limits_increment(null, 'L'); // only get here if we didn't log in successfully
 
 		} else
-			$inemailhandle=qa_get('e');
+			$pageerror=qa_lang('users/login_limit');
 		
 	} else
-		$pageerror=qa_lang('users/login_limit');
+		$inemailhandle=qa_get('e');
 
 	
 //	Prepare content for theme

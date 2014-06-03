@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-check-lang.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Development tool to see which language phrases are missing or unused
 
 
@@ -71,6 +71,8 @@
 	$backmap=array();
 	$substitutions=array();
 	
+	output_start_includes();
+	
 	foreach ($includefiles as $includefile) {
 		$contents=file_get_contents($includefile);
 		
@@ -87,6 +89,7 @@
 		if (preg_match('|/qa-include/qa-lang-([a-z]+)\.php$|', $includefile, $matches)) { // it's a lang file
 			$prefix=$matches[1];
 		
+			output_reading_include($includefile);
 			$phrases=@include $includefile;
 			
 			foreach ($phrases as $key => $value) {
@@ -103,6 +106,8 @@
 				@$possible[$matchparts[1]]++;
 		}
 	}
+	
+	output_finish_includes();
 	
 	foreach ($definite as $key => $valuecount)
 		foreach ($valuecount as $value => $count)
@@ -133,9 +138,13 @@
 		$langincludefiles=glob(QA_LANG_DIR.$code.'/qa-*.php');
 		$langnewphrases=array();
 		
+		output_start_includes();
+		
 		foreach ($langincludefiles as $langincludefile)
 			if (preg_match('/qa-lang-([a-z]+)\.php$/', $langincludefile, $matches)) { // it's a lang file
 				$prefix=$matches[1];
+
+				output_reading_include($langincludefile);
 				$phrases=@include $langincludefile;
 				
 				foreach ($phrases as $key => $value) {
@@ -144,6 +153,8 @@
 					$langsubstitutions[$prefix][$key]=get_phrase_substitutions($value);
 				}
 			}
+			
+		output_finish_includes();
 			
 		foreach ($langdefined as $key => $valuecount)
 			foreach ($valuecount as $value => $count) {
@@ -202,6 +213,30 @@
 			echo "'<B>".qa_html($key)."</B>'";
 		
 		echo '</code></font> &nbsp; '.qa_html($issue).'<BR>';
+	}
+
+	function output_start_includes()
+	{
+		global $oneread;
+		
+		$oneread=false;
+		
+		echo '<P STYLE="font-size:80%; color:#999;">Reading: ';
+	}
+	
+	function output_reading_include($file)
+	{
+		global $oneread;
+		
+		echo ($oneread ? ', ' : '').htmlspecialchars(basename($file));
+		flush();
+		
+		$oneread=true;
+	}
+	
+	function output_finish_includes()
+	{
+		echo '</P>';
 	}
 	
 	echo '<H1>Finished scanning for problems!</H1>';

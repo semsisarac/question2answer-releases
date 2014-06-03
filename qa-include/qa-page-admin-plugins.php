@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-plugins.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Controller for admin page listing plugins and showing their options
 
 
@@ -39,6 +39,19 @@
 		return $qa_content;
 		
 		
+//	Map modules with options to their containing plugins
+	
+	$pluginoptionanchors=array();
+	
+	foreach ($qa_modules as $type => $modules)
+		foreach ($modules as $name => $spec) {
+			$module=qa_load_module($type, $name);
+			
+			if (method_exists($module, 'admin_form'))
+				$pluginoptionanchors[$spec['directory']][]=md5($type.'/'.$name);
+		}
+
+
 //	Prepare content for theme
 	
 	$qa_content=qa_content_prepare();
@@ -73,6 +86,8 @@
 		);
 			
 		foreach ($qa_plugin_files as $pluginfile) {
+			$plugindirectory=dirname($pluginfile).'/';
+				
 			$contents=file_get_contents($pluginfile);
 			$metadata=array();
 	
@@ -105,11 +120,16 @@
 				$authorhtml='';
 				
 			if (strlen(@$metadata['description']))
-				$deschtml=qa_html($metadata['description']).'<BR>';
+				$deschtml=qa_html($metadata['description']);
 			else
 				$deschtml='';
+			
+			if (isset($pluginoptionanchors[$plugindirectory]))
+				foreach ($pluginoptionanchors[$plugindirectory] as $anchor)
+					$deschtml.=(strlen($deschtml) ? ' - ' : '').'<A HREF="#'.qa_html($anchor).'">'.qa_lang_html('admin/options').'</A>';
 				
-			$pluginhtml=$namehtml.' '.$authorhtml.'<BR>'.$deschtml.'<SMALL STYLE="color:#666">'.qa_html(dirname($pluginfile).'/').'</SMALL>';
+			$pluginhtml=$namehtml.' '.$authorhtml.'<BR>'.$deschtml.(strlen($deschtml) ? '<BR>' : '').
+				'<SMALL STYLE="color:#666">'.qa_html($plugindirectory).'</SMALL>';
 				
 			if (is_numeric($metadata['min_q2a']) && ((float)QA_VERSION>0) && $metadata['min_q2a']>(float)QA_VERSION)
 				$pluginhtml='<STRIKE STYLE="color:#999">'.$pluginhtml.'</STRIKE><BR><SPAN STYLE="color:#f00">'.

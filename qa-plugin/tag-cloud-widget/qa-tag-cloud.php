@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/tag-cloud-widget/qa-tag-cloud.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Widget module class for tag cloud plugin
 
 
@@ -103,6 +103,7 @@
 				case 'users':
 				case 'search':
 				case 'admin':
+				case 'custom':
 					$allow=true;
 					break;
 			}
@@ -119,7 +120,7 @@
 		{
 			require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 			
-			$populartags=qa_db_single_select(qa_db_popular_tags_selectspec(0, qa_opt('tag_cloud_count_tags')));
+			$populartags=qa_db_single_select(qa_db_popular_tags_selectspec(0, (int)qa_opt('tag_cloud_count_tags')));
 			
 			reset($populartags);
 			$maxcount=current($populartags);

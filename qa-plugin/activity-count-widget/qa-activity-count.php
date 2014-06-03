@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/activity-count-widget/qa-activity-count.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Widget module class for activity count plugin
 
 
@@ -55,7 +55,7 @@
 			if ($value==1)
 				$themeobject->output(qa_lang_html_sub($langsingular, '<B>1</B>', '1'));
 			else
-				$themeobject->output(qa_lang_html_sub($langplural, '<B>'.number_format($value).'</B>'));
+				$themeobject->output(qa_lang_html_sub($langplural, '<B>'.number_format((int)$value).'</B>'));
 		}
 	
 	};

@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-selects.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Builders of selectspec arrays (see qa-db.php) used to specify database SELECTs
 
 
@@ -676,7 +676,7 @@
 		
 		$selectspec=array(
 			'columns' => array('^categories.categoryid', '^categories.parentid', 'title' => 'BINARY ^categories.title', 'tags' => 'BINARY ^categories.tags', '^categories.qcount', '^categories.position'),
-			'source' => '^categories JOIN ('.implode(' UNION ', $parentselects).') y ON parentid<=>parentkey'.($full ? ' LEFT JOIN ^categories AS child ON child.parentid=^categories.categoryid GROUP BY ^categories.categoryid' : '').' ORDER BY ^categories.position',
+			'source' => '^categories JOIN ('.implode(' UNION ', $parentselects).') y ON ^categories.parentid<=>parentkey'.($full ? ' LEFT JOIN ^categories AS child ON child.parentid=^categories.categoryid GROUP BY ^categories.categoryid' : '').' ORDER BY ^categories.position',
 			'arguments' => array($slugsorid, $slugsorid, $slugsorid, $slugsorid),
 			'arraykey' => 'categoryid',
 			'sortasc' => 'position',

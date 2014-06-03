@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: User management (application level) for basic user operations
 
 
@@ -223,7 +223,7 @@
 		function qa_log_in_external_user($source, $identifier, $fields)
 	/*
 		Call to log in a user based on an external identity provider $source with external $identifier
-		A new user is created if it's a new combination of $source and $identifier, based on $fields
+		A new user is created based on $fields if it's a new combination of $source and $identifier
 	*/
 		{
 			require_once QA_INCLUDE_DIR.'qa-db-users.php';
@@ -240,23 +240,34 @@
 			else { // create and log in user
 				require_once QA_INCLUDE_DIR.'qa-app-users-edit.php';
 				
-				$handle=qa_handle_make_valid(@$fields['handle']);
+				qa_db_user_login_sync(true);
 				
-				$userid=qa_create_new_user((string)@$fields['email'], null /* no password */, $handle,
-					isset($fields['level']) ? $fields['level'] : QA_USER_LEVEL_BASIC, @$fields['confirmed']);
+				$users=qa_db_user_login_find($source, $identifier); // check again after table is locked
 				
-				qa_db_user_login_add($userid, $source, $identifier);
+				if (count($users)==1) {
+					qa_db_user_login_sync(false);
+					qa_set_logged_in_user($users[0]['userid'], $users[0]['handle'], false, $source);
 				
-				$profilefields=array('name', 'location', 'website', 'about');
-				
-				foreach ($profilefields as $fieldname)
-					if (strlen(@$fields[$fieldname]))
-						qa_db_user_profile_set($userid, $fieldname, $fields[$fieldname]);
-						
-				if (strlen(@$fields['avatar']))
-					qa_set_user_avatar($userid, $fields['avatar']);
-						
-				qa_set_logged_in_user($userid, $handle, false, $source);
+				} else {
+					$handle=qa_handle_make_valid(@$fields['handle']);
+					
+					$userid=qa_create_new_user((string)@$fields['email'], null /* no password */, $handle,
+						isset($fields['level']) ? $fields['level'] : QA_USER_LEVEL_BASIC, @$fields['confirmed']);
+					
+					qa_db_user_login_add($userid, $source, $identifier);
+					qa_db_user_login_sync(false);
+					
+					$profilefields=array('name', 'location', 'website', 'about');
+					
+					foreach ($profilefields as $fieldname)
+						if (strlen(@$fields[$fieldname]))
+							qa_db_user_profile_set($userid, $fieldname, $fields[$fieldname]);
+							
+					if (strlen(@$fields['avatar']))
+						qa_set_user_avatar($userid, $fields['avatar']);
+							
+					qa_set_logged_in_user($userid, $handle, false, $source);
+				}
 			}
 		}
 

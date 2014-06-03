@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-util-sort.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: A useful general-purpose 'sort by' function
 
 
@@ -74,6 +74,34 @@
 		
 			return strcasecmp($a, $b); // doesn't do UTF-8 right but it will do for now
 		}
+	}
+	
+	
+	function qa_array_insert(&$array, $beforekey, $addelements)
+/*
+	Inserts $addelements into $array, preserving their keys, before $beforekey in that array
+	If $beforekey cannot be found, the elements are appended at the end
+*/
+	{
+		$newarray=array();
+		$beforefound=false;
+		
+		foreach ($array as $key => $element) {
+			if ($key==$beforekey) {
+				$beforefound=true;
+				
+				foreach ($addelements as $addkey => $addelement)
+					$newarray[$addkey]=$addelement;
+			}
+			
+			$newarray[$key]=$element;
+		}
+		
+		if (!$beforefound)
+			foreach ($addelements as $addkey => $addelement)
+				$newarray[$addkey]=$addelement;
+			
+		$array=$newarray;
 	}
 	
 

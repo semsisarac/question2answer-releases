@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-user.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Controller for user profile page
 
 
@@ -128,6 +128,20 @@
 				require_once QA_INCLUDE_DIR.'qa-db-users.php';
 				
 				$errors=array();
+				
+				if (qa_post_text('removeavatar')) {
+					qa_db_user_set_flag($userid, QA_USER_FLAGS_SHOW_AVATAR, false);
+					qa_db_user_set_flag($userid, QA_USER_FLAGS_SHOW_GRAVATAR, false);
+
+					if (isset($useraccount['avatarblobid'])) {
+						require_once QA_INCLUDE_DIR.'qa-db-blobs.php';
+						
+						qa_db_user_set($userid, 'avatarblobid', null);
+						qa_db_user_set($userid, 'avatarwidth', null);
+						qa_db_user_set($userid, 'avatarheight', null);
+						qa_db_blob_delete($useraccount['avatarblobid']);
+					}
+				}
 				
 				if ($fieldseditable) {
 					$inemail=qa_post_text('email');
@@ -261,6 +275,8 @@
 					'html' => qa_get_user_avatar_html($useraccount['flags'], $useraccount['email'], $useraccount['handle'],
 						$useraccount['avatarblobid'], $useraccount['avatarwidth'], $useraccount['avatarheight'], qa_opt('avatar_profile_size')),
 				),
+				
+				'removeavatar' => null,
 				
 				'duration' => array(
 					'type' => 'static',
@@ -397,6 +413,17 @@
 
 			if ($userediting) {
 
+				if (
+					(qa_opt('avatar_allow_gravatar') && ($useraccount['flags'] & QA_USER_FLAGS_SHOW_GRAVATAR)) ||
+					(qa_opt('avatar_allow_upload') && (($useraccount['flags'] & QA_USER_FLAGS_SHOW_AVATAR)) && isset($useraccount['avatarblobid']))
+				) {
+					$qa_content['form_profile']['fields']['removeavatar']=array(
+						'type' => 'checkbox',
+						'label' => qa_lang_html('users/remove_avatar'),
+						'tags' => 'NAME="removeavatar"',
+					);
+				}
+				
 				if (isset($maxlevelassign)) {
 					$qa_content['form_profile']['fields']['level']['type']='select';
 		
@@ -426,7 +453,7 @@
 				$qa_content['form_profile']['buttons']=array(
 					'edit' => array(
 						'tags' => 'NAME="doedit"',
-						'label' => qa_lang_html($fieldseditable ? 'users/edit_user_button' : 'users/edit_level_button'),
+						'label' => qa_lang_html('users/edit_user_button'),
 					),
 				);
 				
@@ -451,6 +478,12 @@
 				}
 			}
 		}
+		
+		if (!is_array($qa_content['form_profile']['fields']['removeavatar']))
+			unset($qa_content['form_profile']['fields']['removeavatar']);
+			
+		$qa_content['raw']['account']=$useraccount; // for plugin layers to access
+		$qa_content['raw']['profile']=$userprofile;
 	}
 	
 
@@ -571,6 +604,9 @@
 		$qa_content['form_activity']['fields']['answers']['value'].=($userpoints['aselecteds']==1)
 			? qa_lang_html_sub('profile/1_chosen_as_best', '<SPAN CLASS="qa-uf-user-a-selecteds">1</SPAN>', '1')
 			: qa_lang_html_sub('profile/x_chosen_as_best', '<SPAN CLASS="qa-uf-user-a-selecteds">'.number_format($userpoints['aselecteds']).'</SPAN>');
+			
+	$qa_content['raw']['points']=$userpoints; // for plugin layers to access
+	$qa_content['raw']['rank']=$userrank; // for plugin layers to access
 
 
 //	Recent posts by this user

@@ -6,22 +6,30 @@ Question2Answer_ (Q2A) is a popular open source Q&A platform for PHP/MySQL.
 --------------
 Release Notes
 --------------
-Version 1.4.1
+Version 1.4.2
 
-- Minor fixes and source code changes from 1.4 release, 10th July 2011.
+- Minor fixes and improvements, 12th September 2011.
+
+**New Features**
+
+- Added the ability for administrators to remove a user's avatar.
+- Added category question pages and category pages in XML sitemap, with options for control.
+- Allowed widgets to be embedded in custom pages.
+- Added Welsh (Cymraeg) to list of supported languages.
 
 **Bug Fixes**
 
-- Fixed MySQL error when setting a vote or flag on a post, if MySQL is in strict mode.
-- Fixed potential security issue in some browsers by escaping / slashes in Javascript variable values.
+- Added ideographic space, comma and full stops as recognized punctuation, for CJK support.
+- Fixed bug which removed periods (.) from the names of files uploaded in WYSIWYG editor.
+- Display tag auto-suggestion and auto-completion even if a tag error message is showing.
+- Worked around bug in MySQL 4.1.22 which affected retrieval of category information.
+- Added synchronization to prevent duplicate users being created from external identity providers.
+- Fixed PHP warning messages which appear under several unusual circumstances.
 
-**Other Changes**
+**Code Changes**
 
-- Added optional RSS feed for hot questions.
-- When converting an answer to a comment, only mark the post as edited if its content changed.
-- Retrieve user's IP address through new function qa_remote_ip_address() in qa-base.php.
-- Added link to the language checking page in the admin interface, to encourage complete translations.
-- Added white-space:nowrap; style to prompt in Ask Box Widget, to prevent wrapping in some languages.
+- Treat false or '' responses from option_default() module functions the same as null.
+- Added raw user information in $qa_content['raw'] on user-related pages, for access by custom themes or layers.
 
 
 

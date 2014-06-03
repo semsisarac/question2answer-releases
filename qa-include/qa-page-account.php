@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-account.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Controller for user account page
 
 
@@ -319,6 +319,13 @@
 			'rows' => ($userfield['flags'] & QA_FIELD_FLAGS_MULTI_LINE) ? 8 : null,
 		);
 	}
+	
+	
+//	Raw information for plugin layers to access
+
+	$qa_content['raw']['account']=$useraccount;
+	$qa_content['raw']['profile']=$userprofile;
+	$qa_content['raw']['points']=$userpoints;
 	
 
 //	Change password form

@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-admin.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Language phrases for admin center
 
 
@@ -130,6 +130,7 @@
 		'no_privileges' => 'Only administrators may access this page.',
 		'not_logged_in' => 'Please ^1log in^2 as the administrator to access this page.',
 		'opposite_main_menu' => 'Far end of tabs at top',
+		'options' => 'options',
 		'options_reset' => 'Options reset',
 		'options_saved' => 'Options saved',
 		'page_already_used' => 'This is already being used by a page',

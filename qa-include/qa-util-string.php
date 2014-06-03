@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-util-string.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Some useful string-related stuff
 
 
@@ -98,6 +98,10 @@
 		"\xE2\x81\x87" => ' ', // DOUBLE QUESTION MARK
 		"\xE2\x81\x88" => ' ', // QUESTION EXCLAMATION MARK
 		"\xE2\x81\x89" => ' ', // EXCLAMATION QUESTION MARK
+		
+		"\xE3\x80\x80" => ' ', // IDEOGRAPHIC SPACE
+		"\xE3\x80\x81" => ' ', // IDEOGRAPHIC COMMA
+		"\xE3\x80\x82" => ' ', // IDEOGRAPHIC FULL STOP
 	);
 	
 	$qa_utf8removeaccents=array( // convert UTF-8 accented characters to basic Roman characters

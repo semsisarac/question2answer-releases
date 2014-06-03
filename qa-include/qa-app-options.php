@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-options.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Getting and setting admin options (application level)
 
 
@@ -398,7 +398,7 @@
 							
 							if (method_exists($module, 'option_default')) {
 								$value=$module->option_default($name);
-								if (isset($value))
+								if (strlen($value))
 									return $value;
 							}
 						}

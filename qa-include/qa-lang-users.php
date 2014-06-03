@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-users.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Language phrases for user management
 
 
@@ -93,6 +93,7 @@
 		'register_title' => 'Register as a new user',
 		'registered_user' => 'Registered user',
 		'remember_label' => 'Remember me on this computer',
+		'remove_avatar' => 'Remove avatar:',
 		'reset_code_another' => 'send another',
 		'reset_code_emailed' => 'You have been emailed your reset code',
 		'reset_code_label' => 'Code:',

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-theme-base.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Default theme class, broken into lots of little functions for easy overriding
 
 
@@ -757,10 +757,13 @@
 				if ($showfield)
 					$this->form_field($field, $style);
 	
-				if (!empty($field['error']))
+				if (!empty($field['error'])) {
+					if (@$field['note_force'])
+						$this->form_note($field, $style, $columns);
+						
 					$this->form_error($field, $style, $columns);
 				
-				elseif (!empty($field['note']))
+				} elseif (!empty($field['note']))
 					$this->form_note($field, $style, $columns);
 				
 				$this->output('</TD>');
@@ -937,7 +940,7 @@
 		{
 			$tag=($columns>1) ? 'SPAN' : 'DIV';
 			
-			$this->output('<'.$tag.' CLASS="qa-form-'.$style.'-note">'.$field['note'].'</'.$tag.'>');
+			$this->output('<'.$tag.' CLASS="qa-form-'.$style.'-note">'.@$field['note'].'</'.$tag.'>');
 		}
 		
 		function ranking($ranking)

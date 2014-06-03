@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Common functions for creating theme-ready structures from data
 
 
@@ -1014,6 +1014,7 @@
 			$field['note'].=str_replace('^', qa_html($tag), $template).' ';
 
 		$field['note'].='</SPAN>';
+		$field['note_force']=true;
 	}
 	
 	

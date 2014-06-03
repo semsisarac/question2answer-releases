@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-default.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Controller for home page, Q&A listing page, custom pages and plugin pages
 
 
@@ -62,7 +62,7 @@
 //	First, if this matches a custom page, return immediately with that page's content
 	
 	if ( isset($custompage) && !($custompage['flags']&QA_PAGE_FLAGS_EXTERNAL) ) {
-		$qa_template='custom';
+		$qa_template='custom-'.$custompage['pageid'];
 		$qa_content=qa_content_prepare();
 		$qa_content['title']=qa_html($custompage['heading']);
 		$qa_content['custom']=$custompage['content'];

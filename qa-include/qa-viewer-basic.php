@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-viewer-basic.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Basic viewer module for displaying HTML or plain text
 
 
@@ -48,7 +48,7 @@
 			if ( ($format=='') || ($format=='html') )
 				return 1.0;
 			else
-				return 0;
+				return 0.0001; // if there's nothing better this will give an error message for unknown formats
 		}
 		
 		function get_html($content, $format, $options)
@@ -99,7 +99,7 @@
 					}
 				}					
 				
-			} else {
+			} elseif ($format=='') {
 				if (isset($options['blockwordspreg'])) {
 					require_once QA_INCLUDE_DIR.'qa-util-string.php';
 					$content=qa_block_words_replace($content, $options['blockwordspreg']);
@@ -111,7 +111,9 @@
 					require_once QA_INCLUDE_DIR.'qa-app-format.php';
 					$html=qa_html_convert_urls($html, qa_opt('links_in_new_window'));
 				}
-			}
+				
+			} else
+				$html='['.qa_html($format).']'; // for unknown formats
 			
 			return $html;
 		}
@@ -141,8 +143,11 @@
 				
 				$text=trim($text);
 
-			} else
+			} elseif ($format=='')
 				$text=$content;
+				
+			else
+				$text='['.$format.']'; // for unknown formats
 				
 			if (isset($options['blockwordspreg'])) {
 				require_once QA_INCLUDE_DIR.'qa-util-string.php';

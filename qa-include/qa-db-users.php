@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-users.php
-	Version: 1.4.1
-	Date: 2011-07-10 06:58:57 GMT
+	Version: 1.4.2
+	Date: 2011-09-12 10:46:08 GMT
 	Description: Database-level access to user management tables (if not using single sign-on)
 
 
@@ -204,6 +204,18 @@
 			'WHERE source=$ AND identifiermd5=UNHEX($) AND identifier=$',
 			$source, md5($identifier), $identifier
 		));
+	}
+	
+	
+	function qa_db_user_login_sync($sync)
+/*
+	Lock the userlogins table if $sync is true, otherwise unlock it. Used to synchronize access to table.
+*/
+	{
+		if ($sync)
+			qa_db_query_sub('LOCK TABLES ^userlogins WRITE');
+		else
+			qa_db_query_sub('UNLOCK TABLES');
 	}
 
 
