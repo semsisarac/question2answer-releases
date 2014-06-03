@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.3 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-options.php
-	Version: 1.4.2
-	Date: 2011-09-12 10:46:08 GMT
+	Version: 1.4.3
+	Date: 2011-09-27 18:06:46 GMT
 	Description: Language phrases for all options, as shown in admin center
 
 

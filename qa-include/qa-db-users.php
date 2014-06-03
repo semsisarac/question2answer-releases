@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4.2 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.3 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-users.php
-	Version: 1.4.2
-	Date: 2011-09-12 10:46:08 GMT
+	Version: 1.4.3
+	Date: 2011-09-27 18:06:46 GMT
 	Description: Database-level access to user management tables (if not using single sign-on)
 
 
@@ -209,12 +209,19 @@
 	
 	function qa_db_user_login_sync($sync)
 /*
-	Lock the userlogins table if $sync is true, otherwise unlock it. Used to synchronize access to table.
+	Lock all tables if $sync is true, otherwise unlock them. Used to synchronize creation of external login mappings.
 */
 	{
-		if ($sync)
-			qa_db_query_sub('LOCK TABLES ^userlogins WRITE');
-		else
+		if ($sync) { // need to lock all tables since any could be used by a plugin's event module
+			$tables=qa_db_read_all_values(qa_db_query_raw('SHOW TABLES'));
+
+			$locks=array();
+			foreach ($tables as $table)
+				$locks[]=$table.' WRITE';
+					
+			qa_db_query_sub('LOCK TABLES '.implode(', ', $locks));
+
+		} else
 			qa_db_query_sub('UNLOCK TABLES');
 	}
 
