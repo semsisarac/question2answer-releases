@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-points.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for admin page for user points
 
 
@@ -83,7 +83,7 @@
 		
 		'buttons' => array(
 			'saverecalc' => array(
-				'tags' => 'NAME="dorecalcpoints" ID="dosaverecalc"', // name important for recalc logic
+				'tags' => 'ID="dosaverecalc"',
 				'label' => qa_lang_html('admin/save_recalc_button'),
 			),
 		),
@@ -107,15 +107,14 @@
 		if (qa_clicked('docancel'))
 			;
 		elseif (qa_clicked('dosaverecalc')) {
-			$qa_content['form']['ok']='<SPAN ID="recalc_points_ok"></SPAN>';
+			$qa_content['form']['ok']='<SPAN ID="recalc_ok"></SPAN>';
 			
-			$qa_content['script_rel'][]='qa-content/jxs_compressed.js';
 			$qa_content['script_rel'][]='qa-content/qa-admin.js?'.QA_VERSION;
 			$qa_content['script_var']['qa_warning_recalc']=qa_lang('admin/stop_recalc_warning');
 			
 			$qa_content['script_onloads'][]=array(
-				"qa_recalc_click(document.getElementById('dosaverecalc'), ".qa_js(qa_lang('admin/save_recalc_button')).", 'recalc_points_ok');"
-			); // doesn't change button title since we haven't set up onClick handler anyway
+				"qa_recalc_click('dorecalcpoints', document.getElementById('recalc_ok'), null, 'recalc_ok');"
+			);
 		}
 		
 		$qa_content['form']['buttons']['showdefaults']=array(

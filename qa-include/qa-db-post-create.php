@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-post-create.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Database functions for creating a question, answer or comment
 
 
@@ -45,15 +45,50 @@
 	}
 
 	
+	function qa_db_posts_calc_category_path($firstpostid, $lastpostid=null)
+	{
+		if (!isset($lastpostid))
+			$lastpostid=$firstpostid;
+		
+		qa_db_query_sub(
+			"UPDATE ^posts AS x, (SELECT ^posts.postid, ".
+				"COALESCE(parent2.parentid, parent1.parentid, parent0.parentid, parent0.categoryid) AS catidpath1, ".
+				"IF (parent2.parentid IS NOT NULL, parent1.parentid, IF (parent1.parentid IS NOT NULL, parent0.parentid, IF (parent0.parentid IS NOT NULL, parent0.categoryid, NULL))) AS catidpath2, ".
+				"IF (parent2.parentid IS NOT NULL, parent0.parentid, IF (parent1.parentid IS NOT NULL, parent0.categoryid, NULL)) AS catidpath3 ".
+				"FROM ^posts LEFT JOIN ^categories AS parent0 ON ^posts.categoryid=parent0.categoryid LEFT JOIN ^categories AS parent1 ON parent0.parentid=parent1.categoryid LEFT JOIN ^categories AS parent2 ON parent1.parentid=parent2.categoryid WHERE ^posts.postid BETWEEN # AND #) AS a SET x.catidpath1=a.catidpath1, x.catidpath2=a.catidpath2, x.catidpath3=a.catidpath3 WHERE x.postid=a.postid",
+			$firstpostid, $lastpostid
+		); // requires QA_CATEGORY_DEPTH=4
+	}
+	
+	
+	function qa_db_post_get_category_path($postid)
+	{
+		return qa_db_read_one_assoc(qa_db_query_sub(
+			'SELECT categoryid, catidpath1, catidpath2, catidpath3 FROM ^posts WHERE postid=#',
+			$postid
+		)); // requires QA_CATEGORY_DEPTH=4
+	}
+	
+	
 	function qa_db_post_acount_update($questionid)
 /*
 	Update the cached number of answers for question $questionid in the database
 */
 	{
-		qa_db_query_sub(
-			'UPDATE ^posts AS x, (SELECT COUNT(*) AS acount FROM ^posts WHERE parentid=# AND type=\'A\') AS a SET x.acount=a.acount WHERE x.postid=#',
-			$questionid, $questionid
-		);
+		if (qa_should_update_counts())
+			qa_db_query_sub(
+				'UPDATE ^posts AS x, (SELECT COUNT(*) AS acount FROM ^posts WHERE parentid=# AND type=\'A\') AS a SET x.acount=a.acount WHERE x.postid=#',
+				$questionid, $questionid
+			);
+	}
+	
+	
+	function qa_db_category_path_qcount_update($path)
+	{
+		qa_db_ifcategory_qcount_update($path['categoryid']); // requires QA_CATEGORY_DEPTH=4
+		qa_db_ifcategory_qcount_update($path['catidpath1']);
+		qa_db_ifcategory_qcount_update($path['catidpath2']);
+		qa_db_ifcategory_qcount_update($path['catidpath3']);
 	}
 	
 	
@@ -62,11 +97,11 @@
 	Update the cached number of questions for category $categoryid in the database
 */
 	{
-		if (isset($categoryid)) {
+		if (qa_should_update_counts() && isset($categoryid)) {
 			qa_db_query_sub(
-				'UPDATE ^categories SET qcount=(SELECT COUNT(*) FROM ^posts WHERE categoryid=# AND type=\'Q\') WHERE ^categories.categoryid=#',
-				$categoryid, $categoryid
-			);
+				"UPDATE ^categories SET qcount=GREATEST( (SELECT COUNT(*) FROM ^posts WHERE categoryid=# AND type='Q'), (SELECT COUNT(*) FROM ^posts WHERE catidpath1=# AND type='Q'), (SELECT COUNT(*) FROM ^posts WHERE catidpath2=# AND type='Q'), (SELECT COUNT(*) FROM ^posts WHERE catidpath3=# AND type='Q') ) WHERE categoryid=#",
+				$categoryid, $categoryid, $categoryid, $categoryid, $categoryid
+			); // requires QA_CATEGORY_DEPTH=4
 		}
 	}
 
@@ -192,7 +227,7 @@
 	Update the titlecount column in the database for the words in $wordids, based on how many posts they appear in the title of
 */
 	{
-		if (count($wordids))
+		if (qa_should_update_counts() && count($wordids))
 			qa_db_query_sub(
 				'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^titlewords.wordid) AS titlecount FROM ^words LEFT JOIN ^titlewords ON ^titlewords.wordid=^words.wordid WHERE ^words.wordid IN (#) GROUP BY wordid) AS a SET x.titlecount=a.titlecount WHERE x.wordid=a.wordid',
 				$wordids
@@ -205,7 +240,7 @@
 	Update the contentcount column in the database for the words in $wordids, based on how many posts they appear in the content of
 */
 	{
-		if (count($wordids))
+		if (qa_should_update_counts() && count($wordids))
 			qa_db_query_sub(
 				'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^contentwords.wordid) AS contentcount FROM ^words LEFT JOIN ^contentwords ON ^contentwords.wordid=^words.wordid WHERE ^words.wordid IN (#) GROUP BY wordid) AS a SET x.contentcount=a.contentcount WHERE x.wordid=a.wordid',
 				$wordids
@@ -218,7 +253,7 @@
 	Update the tagwordcount column in the database for the individual tag words in $wordids, based on how many posts they appear in the tags of
 */
 	{
-		if (count($wordids))
+		if (qa_should_update_counts() && count($wordids))
 			qa_db_query_sub(
 				'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^tagwords.wordid) AS tagwordcount FROM ^words LEFT JOIN ^tagwords ON ^tagwords.wordid=^words.wordid WHERE ^words.wordid IN (#) GROUP BY wordid) AS a SET x.tagwordcount=a.tagwordcount WHERE x.wordid=a.wordid',
 				$wordids
@@ -231,7 +266,7 @@
 	Update the tagcount column in the database for the whole tags in $wordids, based on how many posts they appear as tags of
 */
 	{
-		if (count($wordids))
+		if (qa_should_update_counts() && count($wordids))
 			qa_db_query_sub(
 				'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^posttags.wordid) AS tagcount FROM ^words LEFT JOIN ^posttags ON ^posttags.wordid=^words.wordid WHERE ^words.wordid IN (#) GROUP BY wordid) AS a SET x.tagcount=a.tagcount WHERE x.wordid=a.wordid',
 				$wordids
@@ -244,7 +279,8 @@
 	Updated the cached count in the database of the number of questions (excluding hidden)
 */
 	{
-		qa_db_query_sub("REPLACE ^options (title, content) SELECT 'cache_qcount', COUNT(*) FROM ^posts WHERE type='Q'");
+		if (qa_should_update_counts())
+			qa_db_query_sub("REPLACE ^options (title, content) SELECT 'cache_qcount', COUNT(*) FROM ^posts WHERE type='Q'");
 	}
 
 
@@ -253,7 +289,8 @@
 	Updated the cached count in the database of the number of answers (excluding hidden)
 */
 	{
-		qa_db_query_sub("REPLACE ^options (title, content) SELECT 'cache_acount', COUNT(*) FROM ^posts WHERE type='A'");
+		if (qa_should_update_counts())
+			qa_db_query_sub("REPLACE ^options (title, content) SELECT 'cache_acount', COUNT(*) FROM ^posts WHERE type='A'");
 	}
 
 
@@ -262,7 +299,8 @@
 	Updated the cached count in the database of the number of comments (excluding hidden)
 */
 	{
-		qa_db_query_sub("REPLACE ^options (title, content) SELECT 'cache_ccount', COUNT(*) FROM ^posts WHERE type='C'");
+		if (qa_should_update_counts())
+			qa_db_query_sub("REPLACE ^options (title, content) SELECT 'cache_ccount', COUNT(*) FROM ^posts WHERE type='C'");
 	}
 
 
@@ -271,7 +309,8 @@
 	Updated the cached count in the database of the number of different tags used
 */
 	{
-		qa_db_query_sub("REPLACE ^options (title, content) SELECT 'cache_tagcount', COUNT(*) FROM ^words WHERE tagcount>0");
+		if (qa_should_update_counts())
+			qa_db_query_sub("REPLACE ^options (title, content) SELECT 'cache_tagcount', COUNT(*) FROM ^words WHERE tagcount>0");
 	}
 
 	
@@ -280,7 +319,8 @@
 	Updated the cached count in the database of the number of unanswered questions (excluding hidden)
 */
 	{
-		qa_db_query_sub("REPLACE ^options (title, content) SELECT 'cache_unaqcount', COUNT(*) FROM ^posts WHERE type='Q' AND acount=0");
+		if (qa_should_update_counts())
+			qa_db_query_sub("REPLACE ^options (title, content) SELECT 'cache_unaqcount', COUNT(*) FROM ^posts WHERE type='Q' AND acount=0");
 	}
 	
 

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-question-post.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: More control for question page if it's submitted by HTTP POST
 
 
@@ -156,6 +156,35 @@
 	}
 	
 
+//	Process flag or unflag button for question
+
+	if (qa_clicked('doflagq') && $question['flagbutton']) {
+		require_once QA_INCLUDE_DIR.'qa-app-votes.php';
+		
+		$pageerror=qa_flag_error_html($question, $qa_login_userid, $qa_request);
+		if (!$pageerror) {
+			if (qa_flag_set_tohide($question, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $question))
+				qa_question_set_hidden($question, true, null, null, null, $answers, $commentsfollows); // hiding not really by this user so pass nulls
+
+			qa_redirect($qa_request);
+		}
+	}
+	
+	if (qa_clicked('dounflagq') && $question['unflaggable']) {
+		require_once QA_INCLUDE_DIR.'qa-app-votes.php';
+		
+		qa_flag_clear($question, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid);
+		qa_redirect($qa_request);
+	}
+	
+	if (qa_clicked('doclearflagsq') && $question['clearflaggable']) {
+		require_once QA_INCLUDE_DIR.'qa-app-votes.php';
+	
+		qa_flags_clear_all($question, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid);
+		qa_redirect($qa_request);
+	}
+
+	
 //	Process edit or save button for question
 
 	if ($question['editbutton']) {
@@ -166,11 +195,11 @@
 			qa_redirect($qa_request, array('state' => 'edit-'.$questionid));
 			
 		elseif (qa_clicked('dosaveq') && qa_page_q_permit_edit($question, 'permit_edit_q')) {
-			$incategoryid=qa_post_text('category');
+			$incategoryid=qa_get_category_field_value('category');
 			$inqtitle=qa_post_text('qtitle');
 
-			$inqtags=qa_post_text('qtags');
-			$tagstring=qa_using_tags() ? qa_tags_to_tagstring(array_unique(qa_string_to_words($inqtags, true, false, false, false))) : $question['tags'];
+			$inqtags=qa_get_tags_field_value('qtags');
+			$tagstring=qa_using_tags() ? qa_tags_to_tagstring($inqtags) : $question['tags'];
 	
 			qa_get_post_content('editor', 'qcontent', $ineditor, $inqcontent, $inqformat, $inqtext);
 
@@ -182,8 +211,8 @@
 			if (empty($qerrors)) {
 				$setnotify=$question['isbyuser'] ? qa_combine_notify_email($question['userid'], $innotify, $inemail) : $question['notify'];
 				
-				if (qa_using_categories() && ($incategoryid!=$question['categoryid']))
-					qa_question_set_category($question, strlen($incategoryid) ? $incategoryid : null,
+				if (qa_using_categories() && strcmp($incategoryid, $question['categoryid']))
+					qa_question_set_category($question, $incategoryid,
 						$qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $answers, $commentsfollows);
 				
 				qa_question_set_content($question, $inqtitle, $inqcontent, $inqformat, $inqtext, $tagstring, $setnotify,
@@ -222,7 +251,7 @@
 	}
 
 
-//	Process hide, show, delete, edit, save, comment or follow-on button for answers
+//	Process hide, show, delete, flag, unflag, edit, save, comment or follow-on button for answers
 
 	foreach ($answers as $answerid => $answer) {
 		if (qa_clicked('dohidea_'.$answerid) && $answer['hideable']) {
@@ -253,6 +282,32 @@
 				$pageerror=qa_lang_html('question/answer_limit');
 		}
 		
+		if (qa_clicked('doflaga_'.$answerid) && $answer['flagbutton']) {
+			require_once QA_INCLUDE_DIR.'qa-app-votes.php';
+			
+			$pageerror=qa_flag_error_html($answer, $qa_login_userid, $qa_request);
+			if (!$pageerror) {
+				if (qa_flag_set_tohide($answer, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $question))
+					qa_answer_set_hidden($answer, true, null, null, null, $question, $commentsfollows); // hiding not really by this user so pass nulls
+					
+				qa_redirect($qa_request, null, null, null, qa_anchor('A', $answerid));
+			}
+		}
+
+		if (qa_clicked('dounflaga_'.$answerid) && $answer['unflaggable']) {
+			require_once QA_INCLUDE_DIR.'qa-app-votes.php';
+			
+			qa_flag_clear($answer, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid);
+			qa_redirect($qa_request, null, null, null, qa_anchor('A', $answerid));
+		}
+		
+		if (qa_clicked('doclearflagsa_'.$answerid) && $answer['clearflaggable']) {
+			require_once QA_INCLUDE_DIR.'qa-app-votes.php';
+			
+			qa_flags_clear_all($answer, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid);
+			qa_redirect($qa_request, null, null, null, qa_anchor('A', $answerid));
+		}
+
 		if ($answer['editbutton']) {
 			if (qa_clicked('docancel'))
 				qa_redirect($qa_request);
@@ -313,12 +368,17 @@
 				qa_page_q_do_comment($answer);
 		}
 
-		if (qa_clicked('dofollowa_'.$answerid))
-			qa_redirect('ask', array('follow' => $answerid));
+		if (qa_clicked('dofollowa_'.$answerid)) {
+			$params=array('follow' => $answerid);
+			if (isset($question['categoryid']))
+				$params['cat']=$question['categoryid'];
+			
+			qa_redirect('ask', $params);
+		}
 	}
 
 
-//	Process hide, show, delete, edit or save button for comments
+//	Process hide, show, delete, flag, unflag, edit or save button for comments
 
 	foreach ($commentsfollows as $commentid => $comment)
 		if ($comment['basetype']=='C') {
@@ -364,6 +424,32 @@
 					$pageerror=qa_lang_html('question/comment_limit');
 			}
 			
+			if (qa_clicked('doflagc_'.$commentid) && $comment['flagbutton']) {
+				require_once QA_INCLUDE_DIR.'qa-app-votes.php';
+				
+				$pageerror=qa_flag_error_html($comment, $qa_login_userid, $qa_request);
+				if (!$pageerror) {
+					if (qa_flag_set_tohide($comment, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $question))
+						qa_comment_set_hidden($comment, true, null, null, null, $question, $commentanswer); // hiding not really by this user so pass nulls
+					
+					qa_redirect($qa_request, null, null, null, qa_anchor($commentparenttype, $comment['parentid']));
+				}
+			}
+
+			if (qa_clicked('dounflagc_'.$commentid) && $comment['unflaggable']) {
+				require_once QA_INCLUDE_DIR.'qa-app-votes.php';
+				
+				qa_flag_clear($comment, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid);
+				qa_redirect($qa_request, null, null, null, qa_anchor($commentparenttype, $comment['parentid']));
+			}
+			
+			if (qa_clicked('doclearflagsc_'.$commentid) && $comment['clearflaggable']) {
+				require_once QA_INCLUDE_DIR.'qa-app-votes.php';
+				
+				qa_flags_clear_all($comment, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid);
+				qa_redirect($qa_request, null, null, null, qa_anchor($commentparenttype, $comment['parentid']));
+			}
+
 			if ($comment['editbutton']) {
 				if (qa_clicked('docancel'))
 					qa_redirect($qa_request);
@@ -441,8 +527,6 @@
 	{
 		global $qa_content, $question, $inqtitle, $inqcontent, $inqformat, $inqeditor, $inqtags, $qerrors, $innotify, $inemail, $completetags, $categories;
 		
-		$categoryoptions=qa_category_options($categories);
-		
 		$content=isset($inqcontent) ? $inqcontent : $question['content'];
 		$format=isset($inqformat) ? $inqformat : $question['format'];
 		
@@ -462,10 +546,6 @@
 				
 				'category' => array(
 					'label' => qa_lang_html('question/q_category_label'),
-					'tags' => 'NAME="category"',
-					'value' => @$categoryoptions[isset($incategoryid) ? $incategoryid : $question['categoryid']],
-					'type' => 'select',
-					'options' => $categoryoptions,
 				),
 				
 				'content' => array_merge(
@@ -477,8 +557,6 @@
 				),
 				
 				'tags' => array(
-					'label' => qa_lang_html('question/q_tags_label'),
-					'value' => qa_html(isset($inqtags) ? $inqtags : str_replace(',', ' ', @$question['tags'])),
 					'error' => qa_html(@$qerrors['tags']),
 				),
 
@@ -501,12 +579,16 @@
 			),
 		);
 		
-		if (!isset($categoryoptions))
+		if (qa_using_categories() && count($categories))
+			qa_set_up_category_field($qa_content, $form['fields']['category'], 'category', $categories,
+				isset($incategoryid) ? $incategoryid : $question['categoryid'], 
+				qa_opt('allow_no_category') || !isset($question['categoryid']), qa_opt('allow_no_sub_category'));
+		else
 			unset($form['fields']['category']);
-			
+		
 		if (qa_using_tags())
-			qa_set_up_tag_field($qa_content, $form['fields']['tags'], 'qtags', array(),
-				$completetags, qa_opt('page_size_ask_tags'));
+			qa_set_up_tag_field($qa_content, $form['fields']['tags'], 'qtags', isset($inqtags) ? $inqtags : qa_tagstring_to_tags($question['tags']),
+				array(), $completetags, qa_opt('page_size_ask_tags'));
 		else
 			unset($form['fields']['tags']);
 				
@@ -612,7 +694,7 @@
 				'value' => @$commentonoptions[$lastbeforeid],
 			);
 			
-			qa_checkbox_to_display($qa_content, array(
+			qa_set_display_rules($qa_content, array(
 				'commenton' => 'tocomment',
 				'tocomment_shown' => 'tocomment',
 				'tocomment_hidden' => '!tocomment',
@@ -755,7 +837,7 @@
 		);
 
 		qa_set_up_notify_fields($qa_content, $form['fields'], 'C', qa_get_logged_in_email(),
-			isset($innotify) ? $innotify : true, @$inemail, @$errors['email']);
+			isset($innotify) ? $innotify : qa_opt('notify_users_default'), @$inemail, @$errors['email']);
 		
 		if ($usecaptcha)
 			qa_set_up_captcha_field($qa_content, $form['fields'], @$errors,

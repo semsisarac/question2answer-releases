@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/basic-adsense/qa-basic-adsense.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Widget module class for AdSense widget plugin
 
 
@@ -101,12 +101,12 @@
 			}
 			
 ?>
-<div style="<?=$divstyle?>">
+<div style="<?php echo $divstyle?>">
 <script type="text/javascript"><!--
-google_ad_client = <?=qa_js(qa_opt('adsense_publisher_id'))?>;
-google_ad_width = <?=qa_js($width)?>;
-google_ad_height = <?=qa_js($height)?>;
-google_ad_format = <?=qa_js($format)?>;
+google_ad_client = <?php echo qa_js(qa_opt('adsense_publisher_id'))?>;
+google_ad_width = <?php echo qa_js($width)?>;
+google_ad_height = <?php echo qa_js($height)?>;
+google_ad_format = <?php echo qa_js($format)?>;
 google_ad_type = "text_image";
 google_ad_channel = "";
 //-->
@@ -115,7 +115,7 @@ google_ad_channel = "";
 src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
 </script>
 </div>
-<?
+<?php
 		}
 	
 	};

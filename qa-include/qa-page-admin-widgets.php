@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-widgets.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for admin page for editing widgets
 
 
@@ -71,17 +71,20 @@
 		'question' => 'admin/question_pages',
 
 		'qa' => 'main/recent_qs_as_title',
-		'questions' => 'main/recent_qs_title',
-		'unanswered' => 'main/unanswered_qs_title',
 		'activity' => 'main/recent_activity_title',
+		'questions' => 'admin/question_lists',
+		'hot' => 'main/hot_qs_title',
+		'unanswered' => 'main/unanswered_qs_title',
 
 		'tags' => 'main/popular_tags',
-		'tag' => 'admin/tag_pages',
-		'categories' => 'main/all_categories',
+		'categories' => 'misc/browse_categories',
 		'users' => 'main/highest_users',
-		'user' => 'admin/user_pages',
-
 		'ask' => 'question/ask_title',
+
+		'tag' => 'admin/tag_pages',
+		'user' => 'admin/user_pages',
+		'message' => 'misc/private_message_title',
+
 		'search' => 'main/search_title',
 		'feedback' => 'misc/feedback_title',
 
@@ -271,14 +274,14 @@
 					'/>'.qa_lang_html($langkey).'<BR/>';
 					
 	if (isset($editwidget['widgetid']))
-		qa_checkbox_to_display($qa_content, array(
+		qa_set_display_rules($qa_content, array(
 			'templates_display' => '!(dodelete||template_all)',
 			'all_display' => '!dodelete',
 		));
 
 	else {
 		unset($qa_content['form']['fields']['delete']);
-		qa_checkbox_to_display($qa_content, array(
+		qa_set_display_rules($qa_content, array(
 			'templates_display' => '!template_all',
 		));
 	}

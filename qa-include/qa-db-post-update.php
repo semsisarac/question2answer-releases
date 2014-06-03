@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-post-update.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description:  Database functions for changing a question, answer or comment
 
 
@@ -55,15 +55,21 @@
 	}
 
 	
-	function qa_db_post_set_parent($postid, $parentid, $lastuserid, $lastip)
+	function qa_db_post_set_parent($postid, $parentid, $lastuserid=null, $lastip=null)
 /*
-	Set the parent in the database of $postid to $parentid, and record that $lastuserid did it
+	Set the parent in the database of $postid to $parentid, and optioanlly record that $lastuserid did it from $lastip
 */
 	{
-		qa_db_query_sub(
-			'UPDATE ^posts SET parentid=#, updated=NOW(), lastuserid=$, lastip=INET_ATON($) WHERE postid=#',
-			$parentid, $lastuserid, $lastip, $postid
-		);
+		if (isset($lastuserid) || isset($lastip))
+			qa_db_query_sub(
+				'UPDATE ^posts SET parentid=#, updated=NOW(), lastuserid=$, lastip=INET_ATON($) WHERE postid=#',
+				$parentid, $lastuserid, $lastip, $postid
+			);
+		else
+			qa_db_query_sub(
+				'UPDATE ^posts SET parentid=# WHERE postid=#',
+				$parentid, $postid
+			);
 	}
 
 	
@@ -72,10 +78,16 @@
 	Set the text fields in the database of $postid to $title, $content, $tagstring and $notify, and record that $lastuserid did it
 */
 	{
-		qa_db_query_sub(
-			'UPDATE ^posts SET title=$, content=$, format=$, tags=$, updated=NOW(), notify=$, lastuserid=$, lastip=INET_ATON($) WHERE postid=#',
-			$title, $content, $format, $tagstring, $notify, $lastuserid, $lastip, $postid
-		);
+		if (isset($lastuserid) || isset($lastip))
+			qa_db_query_sub(
+				'UPDATE ^posts SET title=$, content=$, format=$, tags=$, notify=$, updated=NOW(), lastuserid=$, lastip=INET_ATON($) WHERE postid=#',
+				$title, $content, $format, $tagstring, $notify, $lastuserid, $lastip, $postid
+			);
+		else
+			qa_db_query_sub(
+				'UPDATE ^posts SET title=$, content=$, format=$, tags=$, notify=$ WHERE postid=#',
+				$title, $content, $format, $tagstring, $notify, $postid
+			);
 	}
 
 	
@@ -91,28 +103,28 @@
 	}
 	
 	
-	function qa_db_post_set_category($postid, $categoryid, $lastuserid, $lastip)
+	function qa_db_post_set_category($postid, $categoryid)
 /*
 	Set the category in the database of $postid to $categoryid, and record that $lastuserid did it
 */
 	{
 		qa_db_query_sub(
-			'UPDATE ^posts SET categoryid=#, updated=NOW(), lastuserid=$, lastip=INET_ATON($) WHERE postid=#',
-			$categoryid, $lastuserid, $lastip, $postid
+			'UPDATE ^posts SET categoryid=# WHERE postid=#',
+			$categoryid, $postid
 		);
 	}
 	
 	
-	function qa_db_post_set_category_multi($postids, $categoryid)
+	function qa_db_posts_set_category_path($postids, $path)
 /*
-	Set the category in the database of each of $postids to $categoryid, but don't record it as a change
+	Set the category in the database of each of $postids to $categoryid, but don't record it as a user-initiated change
 */
 	{
 		if (count($postids))
 			qa_db_query_sub(
-				'UPDATE ^posts SET categoryid=# WHERE postid IN (#)',
-				$categoryid, $postids
-			);
+				'UPDATE ^posts SET categoryid=#, catidpath1=#, catidpath2=#, catidpath3=# WHERE postid IN (#)',
+				$path['categoryid'], $path['catidpath1'], $path['catidpath2'], $path['catidpath3'], $postids
+			); // requires QA_CATEGORY_DEPTH=4
 	}
 	
 	

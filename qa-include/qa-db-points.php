@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-points.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Database-level access to user points and statistics
 
 
@@ -143,7 +143,7 @@
 	This dynamically builds some fairly crazy looking SQL, but it works, and saves repeat calculations.
 */
 	{
-		if (isset($userid)) {
+		if (qa_should_update_counts() && isset($userid)) {
 			require_once QA_INCLUDE_DIR.'qa-app-options.php';
 
 			$calculations=qa_db_points_calculations();
@@ -193,7 +193,8 @@
 	Update the cached count in the database of the number of rows in the userpoints table
 */
 	{
-		qa_db_query_sub("REPLACE ^options (title, content) SELECT 'cache_userpointscount', COUNT(*) FROM ^userpoints");
+		if (qa_should_update_counts())
+			qa_db_query_sub("REPLACE ^options (title, content) SELECT 'cache_userpointscount', COUNT(*) FROM ^userpoints");
 	}
 
 

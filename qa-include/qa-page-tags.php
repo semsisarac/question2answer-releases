@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-tags.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for popular tags page
 
 
@@ -48,7 +48,7 @@
 
 	$qa_content['title']=qa_lang_html('main/popular_tags');
 	
-	$qa_content['ranking']=array('items' => array(), 'rows' => ceil($pagesize/qa_opt('columns_tags')));
+	$qa_content['ranking']=array('items' => array(), 'rows' => ceil($pagesize/qa_opt('columns_tags')), 'type' => 'tags');
 	
 	if (count($populartags)) {
 		$output=0;

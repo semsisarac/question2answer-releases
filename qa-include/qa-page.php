@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Routing and utility functions for page requests
 
 
@@ -34,15 +34,17 @@
 		'unanswered/' => QA_INCLUDE_DIR.'qa-page-unanswered.php',
 		'activity/' => QA_INCLUDE_DIR.'qa-page-activity.php',
 		'questions/' => QA_INCLUDE_DIR.'qa-page-questions.php',
+		'hot' => QA_INCLUDE_DIR.'qa-page-hot.php',
 		'ask' => QA_INCLUDE_DIR.'qa-page-ask.php',
 		'search' => QA_INCLUDE_DIR.'qa-page-search.php',
-		'categories' => QA_INCLUDE_DIR.'qa-page-categories.php',
+		'categories/' => QA_INCLUDE_DIR.'qa-page-categories.php',
 		'tags' => QA_INCLUDE_DIR.'qa-page-tags.php',
 		'tag/' => QA_INCLUDE_DIR.'qa-page-tag.php',
 		'users' => QA_INCLUDE_DIR.'qa-page-users.php',
 		'users/special' => QA_INCLUDE_DIR.'qa-page-users-special.php',
 		'users/blocked' => QA_INCLUDE_DIR.'qa-page-users-blocked.php',
 		'user/' => QA_INCLUDE_DIR.'qa-page-user.php',
+		'message/' => QA_INCLUDE_DIR.'qa-page-message.php',
 		'ip/' => QA_INCLUDE_DIR.'qa-page-ip.php',
 		'register' => QA_INCLUDE_DIR.'qa-page-register.php',
 		'confirm' => QA_INCLUDE_DIR.'qa-page-confirm.php',
@@ -51,6 +53,7 @@
 		'admin/emails' => QA_INCLUDE_DIR.'qa-page-admin.php',
 		'admin/layout' => QA_INCLUDE_DIR.'qa-page-admin.php',
 		'admin/users' => QA_INCLUDE_DIR.'qa-page-admin.php',
+		'admin/lists' => QA_INCLUDE_DIR.'qa-page-admin.php',
 		'admin/viewing' => QA_INCLUDE_DIR.'qa-page-admin.php',
 		'admin/posting' => QA_INCLUDE_DIR.'qa-page-admin.php',
 		'admin/permissions' => QA_INCLUDE_DIR.'qa-page-admin.php',
@@ -262,16 +265,21 @@
 	}
 
 	
-	function qa_content_prepare($voting=false, $categoryid=null)
+	function qa_content_prepare($voting=false, $categoryids=null)
 /*
 	Start preparing theme content in global $qa_content variable, with or without $voting support,
 	in the context of $categoryid (if not null)
 */
 	{
-		global $qa_root_url_relative, $qa_request, $qa_template, $qa_login_userid, $qa_vote_error, $qa_nav_pages_cached, $qa_widgets_cached, $qa_routing;
+		global $qa_root_url_relative, $qa_request, $qa_template, $qa_login_userid, $qa_vote_error_html, $qa_nav_pages_cached, $qa_widgets_cached, $qa_routing;
 		
 		if (QA_DEBUG_PERFORMANCE)
 			qa_usage_mark('control');
+		
+		if (isset($categoryids) && !is_array($categoryids)) // accept old-style parameter
+			$categoryids=array($categoryids);
+			
+		$lastcategoryid=count($categoryids) ? end($categoryids) : null;
 		
 		$qa_content=array(
 			'content_type' => 'text/html; charset=utf-8',
@@ -310,8 +318,8 @@
 		if (qa_opt('show_custom_footer'))
 			$qa_content['body_footer']=qa_opt('custom_footer');
 
-		if (isset($categoryid))
-			$qa_content['categoryid']=$categoryid;
+		if (isset($categoryids))
+			$qa_content['categoryids']=$categoryids;
 		
 		foreach ($qa_nav_pages_cached as $page)
 			if ($page['nav']=='B')
@@ -343,6 +351,12 @@
 				'label' => qa_lang_html('main/nav_qs'),
 			);
 
+		if (qa_opt('nav_hot'))
+			$qa_content['navigation']['main']['hot']=array(
+				'url' => qa_path_html('hot'),
+				'label' => qa_lang_html('main/nav_hot'),
+			);
+
 		if (qa_opt('nav_unanswered'))
 			$qa_content['navigation']['main']['unanswered']=array(
 				'url' => qa_path_html('unanswered'),
@@ -369,7 +383,7 @@
 			
 		if (qa_user_permit_error('permit_post_q')!='level')
 			$qa_content['navigation']['main']['ask']=array(
-				'url' => qa_path_html('ask', (qa_using_categories() && strlen($categoryid)) ? array('cat' => $categoryid) : null),
+				'url' => qa_path_html('ask', (qa_using_categories() && strlen($lastcategoryid)) ? array('cat' => $lastcategoryid) : null),
 				'label' => qa_lang_html('main/nav_ask'),
 			);
 		
@@ -506,11 +520,12 @@
 				);
 		}
 		
+		$qa_content['script_rel']=array('qa-content/jquery-1.6.1.min.js');
+		
 		if ($voting) {
-			$qa_content['error']=@$qa_vote_error;
-			$qa_content['script_rel']=array('qa-content/jxs_compressed.js', 'qa-content/qa-votes.js?'.QA_VERSION);
-		} else
-			$qa_content['script_rel']=array();
+			$qa_content['error']=@$qa_vote_error_html;
+			$qa_content['script_rel'][]='qa-content/qa-votes.js?'.QA_VERSION;
+		}
 			
 		$qa_content['script_var']=array(
 			'qa_root' => $qa_root_url_relative,
@@ -536,10 +551,15 @@
 				
 				if (isset($postid) && isset($vote)) {
 					require_once QA_INCLUDE_DIR.'qa-app-votes.php';
-					$qa_vote_error=qa_user_vote_error($qa_login_userid, $postid, $vote, $qa_request);
+					require_once QA_INCLUDE_DIR.'qa-db-selects.php';
+					
+					$post=qa_db_select_with_pending(qa_db_full_post_selectspec($qa_login_userid, $postid));
+					$qa_vote_error_html=qa_vote_error_html($post, $qa_login_userid, $qa_request);
 
-					if (!$qa_vote_error)
+					if (!$qa_vote_error_html) {
+						qa_vote_set($post, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $vote);
 						qa_redirect($qa_request, $_GET, null, null, $anchor);
+					}
 					break;
 				}
 			}
@@ -558,7 +578,7 @@
 			$qa_content=require $qa_routing[$qa_request_lc];
 	
 		} elseif (isset($qa_routing[$qa_request_lc_parts[0].'/'])) {
-			$pass_subrequest=@$qa_request_parts[1]; // effectively a parameter that is passed to file
+			$pass_subrequests=array_slice($qa_request_parts, 1); // effectively a parameter that is passed to file
 			$qa_template=$qa_request_lc_parts[0];
 			$qa_content=require $qa_routing[$qa_request_lc_parts[0].'/'];
 			
@@ -579,12 +599,17 @@
 	Returns whether a URL path beginning with $requestpart is reserved by QA
 */
 	{
-		global $qa_routing;
+		global $qa_routing, $QA_CONST_PATH_MAP;
 		
 		$requestpart=trim(strtolower($requestpart));
 		
 		if (isset($qa_routing[$requestpart]) || isset($qa_routing[$requestpart.'/']) || is_numeric($requestpart))
 			return true;
+			
+		if (isset($QA_CONST_PATH_MAP))
+			foreach ($QA_CONST_PATH_MAP as $requestmap)
+				if (trim(strtolower($requestmap)) == $requestpart)
+					return true;
 			
 		switch ($requestpart) {
 			case '':
@@ -623,7 +648,7 @@
 	//	Set appropriate selected flags for navigation (not done in qa_content_prepare() since it also applies to sub-navigation)
 		
 		foreach ($qa_content['navigation'] as $navtype => $navigation)
-			if (is_array($navigation))
+			if (is_array($navigation) && ($navtype!='cat'))
 				foreach ($navigation as $navprefix => $navlink)
 					if (substr($qa_request_lc.'$', 0, strlen($navprefix)) == $navprefix)
 						$qa_content['navigation'][$navtype][$navprefix]['selected']=true;
@@ -690,10 +715,12 @@
 		
 		$script[]='--></SCRIPT>';
 		
-		if (isset($qa_content['script_rel']))
-			foreach ($qa_content['script_rel'] as $script_rel)
+		if (isset($qa_content['script_rel'])) {
+			$uniquerel=array_unique($qa_content['script_rel']); // remove any duplicates
+			foreach ($uniquerel as $script_rel)
 				$script[]='<SCRIPT SRC="'.qa_html($qa_root_url_relative.$script_rel).'" TYPE="text/javascript"></SCRIPT>';
-	
+		}
+		
 		if (isset($qa_content['script_src']))
 			foreach ($qa_content['script_src'] as $script_src)
 				$script[]='<SCRIPT SRC="'.qa_html($script_src).'" TYPE="text/javascript"></SCRIPT>';
@@ -712,6 +739,14 @@
 		$themeclass->finish();
 	
 				
+	//	Increment question view counter (do at very end so page can be output first)
+	
+		if (isset($qa_content['inc_views_postid'])) {
+			require_once QA_INCLUDE_DIR.'qa-db-hotness.php';
+			qa_db_hotness_update($qa_content['inc_views_postid'], null, true);
+		}
+
+
 	//	End of output phase
 	
 		if (QA_DEBUG_PERFORMANCE) {

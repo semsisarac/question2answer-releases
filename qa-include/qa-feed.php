@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-feed.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Handles all requests to RSS feeds, first checking if they should be available
 
 
@@ -67,18 +67,18 @@
 	Common function to load appropriate set of questions for requested feed, check category exists, and set up page title
 */
 	{
-		global $categoryslug, $categories, $categoryid, $title, $questions;
+		global $categoryslugs, $countslugs, $categories, $categoryid, $title, $questions;
 		
 		@list($questions1, $questions2, $questions3, $questions4, $categories, $categoryid)=qa_db_select_with_pending(
 			$questionselectspec1,
 			$questionselectspec2,
 			$questionselectspec3,
 			$questionselectspec4,
-			qa_using_categories() ? qa_db_categories_selectspec() : null,
-			isset($categoryslug) ? qa_db_slug_to_category_id_selectspec($categoryslug) : null
+			$countslugs ? qa_db_category_nav_selectspec($categoryslugs, false) : null,
+			$countslugs ? qa_db_slugs_to_category_id_selectspec($categoryslugs) : null
 		);
 
-		if (isset($categoryslug) && !isset($categoryid))
+		if ($countslugs && !isset($categoryid))
 			qa_feed_not_found();
 
 		$questions=array_merge(
@@ -97,20 +97,23 @@
 
 	qa_base_db_connect('qa_feed_db_fail_handler');
 
-	$feedtype=@$qa_request_lc_parts[1];
-	$feedparam=@$qa_request_lc_parts[2];
+	end($qa_request_lc_parts);
+	$lastkey=key($qa_request_lc_parts);
 	
-	if ((substr($feedtype, -4)=='.rss') || (substr($feedtype, -4)=='.xml')) // remove suffixes which are optional
-		$feedtype=substr($feedtype, 0, -4);
-
-	if ((substr($feedparam, -4)=='.rss') || (substr($feedparam, -4)=='.xml'))
-		$feedparam=substr($feedparam, 0, -4);
-
+	if (isset($lastkey)) {
+		$suffix=substr($qa_request_lc_parts[$lastkey], -4);
+		if (($suffix=='.rss') || ($suffix=='.xml'))
+			$qa_request_lc_parts[$lastkey]=substr($qa_request_lc_parts[$lastkey], 0, -4);
+	}
+	
+	$feedtype=@$qa_request_lc_parts[1];
+	$feedparams=array_slice($qa_request_lc_parts, 2);
+	
 
 //	Choose which option needs to be checked to determine if this feed can be requested, and stop if no matches
 
 	$feedoption=null;
-	$categoryslug=$feedparam;
+	$categoryslugs=$feedparams;
 	
 	switch ($feedtype) {
 		case 'questions':
@@ -119,6 +122,7 @@
 			
 		case 'unanswered':
 			$feedoption='feed_for_unanswered';
+			$categoryslugs=null;
 			break;
 			
 		case 'answers':
@@ -132,20 +136,22 @@
 			break;
 		
 		case 'tag':
-			if (strlen($feedparam)) {
+			if (strlen(@$feedparams[0])) {
 				$feedoption='feed_for_tag_qs';
-				$categoryslug=null;
+				$categoryslugs=null;
 			}
 			break;
 			
 		case 'search':
-			if (strlen($feedparam)) {
+			if (strlen(@$feedparams[0])) {
 				$feedoption='feed_for_search';
-				$categoryslug=null;
+				$categoryslugs=null;
 			}
 			break;
 	}
 	
+	$countslugs=@count($categoryslugs);
+
 	if (!isset($feedoption))
 		qa_feed_not_found();
 	
@@ -154,7 +160,7 @@
 
 	if (!(
 		(qa_opt($feedoption)) &&
-		(isset($categoryslug) ? (qa_using_categories() && qa_opt('feed_per_category')) : true)
+		($countslugs ? (qa_using_categories() && qa_opt('feed_per_category')) : true)
 	))
 		qa_feed_not_found();
 
@@ -169,52 +175,52 @@
 	$count=qa_opt('feed_number_items');
 	$showurllinks=qa_opt('show_url_links');
 	
-	$linkrequest=$feedtype.(isset($categoryslug) ? ('/'.$categoryslug) : '');
+	$linkrequest=$feedtype.($countslugs ? ('/'.implode('/', $categoryslugs)) : '');
 	$linkparams=null;
 
 	switch ($feedtype) {
 		case 'questions':
 			qa_feed_load_ifcategory('main/recent_qs_title', 'main/recent_qs_in_x',
-				qa_db_recent_qs_selectspec(null, 0, $categoryslug, null, false, $full, $count)
+				qa_db_qs_selectspec(null, 'created', 0, $categoryslugs, null, false, $full, $count)
 			);
 			break;
 			
 		case 'unanswered':
 			qa_feed_load_ifcategory('main/unanswered_qs_title', 'main/unanswered_qs_in_x',
-				qa_db_unanswered_qs_selectspec(null, 0, $categoryslug, false, $full, $count)
+				qa_db_unanswered_qs_selectspec(null, 0, null, false, $full, $count)
 			);
 			break;
 			
 		case 'answers':
 			qa_feed_load_ifcategory('main/recent_as_title', 'main/recent_as_in_x',
-				qa_db_recent_a_qs_selectspec(null, 0, $categoryslug, null, false, $full, $count)
+				qa_db_recent_a_qs_selectspec(null, 0, $categoryslugs, null, false, $full, $count)
 			);
 			break;
 
 		case 'comments':
 			qa_feed_load_ifcategory('main/recent_cs_title', 'main/recent_cs_in_x',
-				qa_db_recent_c_qs_selectspec(null, 0, $categoryslug, null, false, $full, $count)
+				qa_db_recent_c_qs_selectspec(null, 0, $categoryslugs, null, false, $full, $count)
 			);
 			break;
 			
 		case 'qa':
 			qa_feed_load_ifcategory('main/recent_qs_as_title', 'main/recent_qs_as_in_x',
-				qa_db_recent_qs_selectspec(null, 0, $categoryslug, null, false, $full, $count),
-				qa_db_recent_a_qs_selectspec(null, 0, $categoryslug, null, false, $full, $count)
+				qa_db_qs_selectspec(null, 'created', 0, $categoryslugs, null, false, $full, $count),
+				qa_db_recent_a_qs_selectspec(null, 0, $categoryslugs, null, false, $full, $count)
 			);
 			break;
 		
 		case 'activity':
 			qa_feed_load_ifcategory('main/recent_activity_title', 'main/recent_activity_in_x',
-				qa_db_recent_qs_selectspec(null, 0, $categoryslug, null, false, $full, $count),
-				qa_db_recent_a_qs_selectspec(null, 0, $categoryslug, null, false, $full, $count),
-				qa_db_recent_c_qs_selectspec(null, 0, $categoryslug, null, false, $full, $count),
-				qa_db_recent_edit_qs_selectspec(null, 0, $categoryslug, null, true, $full, $count)
+				qa_db_qs_selectspec(null, 'created', 0, $categoryslugs, null, false, $full, $count),
+				qa_db_recent_a_qs_selectspec(null, 0, $categoryslugs, null, false, $full, $count),
+				qa_db_recent_c_qs_selectspec(null, 0, $categoryslugs, null, false, $full, $count),
+				qa_db_recent_edit_qs_selectspec(null, 0, $categoryslugs, null, true, $full, $count)
 			);
 			break;
 			
 		case 'tag':
-			$tag=$feedparam;
+			$tag=$feedparams[0];
 
 			qa_feed_load_ifcategory(null, null,
 				qa_db_tag_recent_qs_selectspec(null, $tag, 0, $full, $count)
@@ -227,8 +233,7 @@
 		case 'search':
 			require_once QA_INCLUDE_DIR.'qa-util-string.php';
 			
-			$query=$feedparam;
-			$categoryslug=null;
+			$query=$feedparams[0];
 
 			$words=qa_string_to_words($query);
 
@@ -324,8 +329,8 @@
 		if ($full && isset($htmlcontent))
 			$lines[]='<description>'.qa_html($htmlcontent).'</description>'; // qa_html() a second time to put HTML code inside XML wrapper
 			
-		if (isset($question['categoryid']) && isset($categories[$question['categoryid']]))
-			$lines[]='<category>'.qa_html($categories[$question['categoryid']]['title']).'</category>';
+		if (isset($question['categoryname']))
+			$lines[]='<category>'.qa_html($question['categoryname']).'</category>';
 			
 		$lines[]='<guid isPermaLink="true">'.$urlhtml.'</guid>';
 		$lines[]='<pubDate>'.qa_html(gmdate('r', $time)).'</pubDate>';

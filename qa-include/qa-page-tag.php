@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-tag.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for page for a specific tag
 
 
@@ -33,17 +33,16 @@
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 	
-	$tag=$pass_subrequest; // picked up from qa-page.php
+	$tag=@$pass_subrequests[0]; // picked up from qa-page.php
 	if (!strlen($tag))
 		qa_redirect('tags');
 
 
 //	Find the questions with this tag
 
-	list($questions, $qcount, $categories)=qa_db_select_with_pending(
+	list($questions, $qcount)=qa_db_select_with_pending(
 		qa_db_tag_recent_qs_selectspec($qa_login_userid, $tag, $qa_start),
-		qa_db_tag_count_qs_selectspec($tag),
-		qa_db_categories_selectspec()
+		qa_db_tag_count_qs_selectspec($tag)
 	);
 	
 	$pagesize=qa_opt('page_size_tag_qs');
@@ -67,7 +66,7 @@
 	$qa_content['q_list']['qs']=array();
 	foreach ($questions as $postid => $question)
 		$qa_content['q_list']['qs'][]=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
-			qa_using_categories() ? $categories : null, qa_post_html_defaults('Q'));
+			null, qa_post_html_defaults('Q'));
 		
 	$qa_content['page_links']=qa_html_page_links($qa_request, $qa_start, $pagesize, $qcount, qa_opt('pages_prev_next'));
 

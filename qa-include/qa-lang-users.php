@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-users.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Language phrases for user management
 
 
@@ -27,11 +27,12 @@
 
 	return array(
 		'about' => 'About',
+		'private_messages' => 'Private messages:',
+		'private_messages_explanation' => 'Allow users to email me (without seeing my address)',
 		'avatar_default' => 'Default',
 		'avatar_gravatar' => 'Show my ^1Gravatar^2',
 		'avatar_label' => 'Avatar:',
 		'avatar_none' => 'None',
-		'avatar_not_read' => 'The image could not be read. Please upload one of: ^',
 		'block_user_button' => 'Block User',
 		'blocked_users' => 'Blocked users',
 		'change_password' => 'Change Password',
@@ -56,6 +57,7 @@
 		'handle_exists' => 'Username is taken - please try another',
 		'handle_has_bad' => 'Username may not contain: ^',
 		'handle_label' => 'Username:',
+		'hide_all_user_button' => 'Hide all posts by this user',
 		'last_login_label' => 'Last login:',
 		'last_write_label' => 'Last write action:',
 		'level_admin' => 'Administrator',
@@ -88,6 +90,7 @@
 		'profile_saved' => 'Profile saved',
 		'register_button' => 'Register',
 		'register_title' => 'Register as a new user',
+		'register_suspended' => 'Registration of new users has been temporarily suspended. Please try again soon.',
 		'registered_user' => 'Registered user',
 		'remember_label' => 'Remember me on this computer',
 		'reset_code_another' => 'send another',

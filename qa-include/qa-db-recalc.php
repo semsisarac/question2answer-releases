@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-recalc.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Database functions for recalculations (clean-up operations)
 
 
@@ -175,8 +175,10 @@
 	Recalculate the cached counts for posts $firstpostid to $lastpostid in the database
 */
 	{
+		require_once QA_INCLUDE_DIR.'qa-db-hotness.php';
+		
 		qa_db_query_sub(
-			'UPDATE ^posts AS x, (SELECT ^posts.postid, COALESCE(SUM(GREATEST(0,^uservotes.vote)),0) AS upvotes, -COALESCE(SUM(LEAST(0,^uservotes.vote)),0) AS downvotes FROM ^posts LEFT JOIN ^uservotes ON ^uservotes.postid=^posts.postid WHERE ^posts.postid>=# AND ^posts.postid<=# GROUP BY postid) AS a SET x.upvotes=a.upvotes, x.downvotes=a.downvotes WHERE x.postid=a.postid',
+			'UPDATE ^posts AS x, (SELECT ^posts.postid, COALESCE(SUM(GREATEST(0,^uservotes.vote)),0) AS upvotes, -COALESCE(SUM(LEAST(0,^uservotes.vote)),0) AS downvotes, COALESCE(SUM(IF(^uservotes.flag, 1, 0)),0) AS flagcount FROM ^posts LEFT JOIN ^uservotes ON ^uservotes.postid=^posts.postid WHERE ^posts.postid>=# AND ^posts.postid<=# GROUP BY postid) AS a SET x.upvotes=a.upvotes, x.downvotes=a.downvotes, x.netvotes=a.upvotes-a.downvotes, x.flagcount=a.flagcount WHERE x.postid=a.postid',
 			$firstpostid, $lastpostid
 		);
 		
@@ -184,6 +186,8 @@
 			'UPDATE ^posts AS x, (SELECT parents.postid, COUNT(children.postid) AS acount FROM ^posts AS parents LEFT JOIN ^posts AS children ON parents.postid=children.parentid AND children.type=\'A\' WHERE parents.postid>=# AND parents.postid<=# GROUP BY postid) AS a SET x.acount=a.acount WHERE x.postid=a.postid',
 			$firstpostid, $lastpostid
 		);
+		
+		qa_db_hotness_update($firstpostid, $lastpostid);
 	}
 
 	
@@ -206,6 +210,7 @@
 				$startuserid, $count
 			));
 	}
+
 	
 	function qa_db_users_recalc_points($firstuserid, $lastuserid)
 /*
@@ -267,20 +272,20 @@
 	
 	function qa_db_posts_get_for_recategorizing($startpostid, $count)
 /*
-	Return the ids of up to $count answer or comments (including hidden) in the database starting from $startpostid
+	Return the ids of up to $count posts (including hidden) in the database starting from $startpostid
 */
 	{
 		return qa_db_read_all_values(qa_db_query_sub(
-			"SELECT postid FROM ^posts WHERE postid>=# AND type IN ('A', 'C', 'A_HIDDEN', 'C_HIDDEN') ORDER BY postid LIMIT #",
+			"SELECT postid FROM ^posts WHERE postid>=# ORDER BY postid LIMIT #",
 			$startpostid, $count
 		));
 	}
 	
 	
-	function qa_db_posts_recategorize($firstpostid, $lastpostid)
+	function qa_db_posts_recalc_categoryid($firstpostid, $lastpostid)
 /*
-	Recalculate the categories for answer or comments (including hidden) between $firstpostid and $lastpostid
-	in the database, based on the category of the antecedent question
+	Recalculate the categories for the posts (including hidden) between $firstpostid and $lastpostid
+	in the database, category of comments and answers are based on the category of the antecedent question
 */
 	{
 		qa_db_query_sub(
@@ -289,19 +294,15 @@
 		);
 	}
 	
-
-	function qa_db_categories_recount()
-/*
-	Recalculate the total number of visible questions in all categories
-*/
+	
+	function qa_db_categories_get_for_recalcs($startcategoryid, $count)
 	{
-		qa_db_query_sub("UPDATE ^categories SET qcount=0");
-
-		qa_db_query_sub(
-			"UPDATE ^categories AS x, (SELECT ^categories.categoryid, COUNT(*) AS qcount FROM ^categories LEFT JOIN ^posts ON ^posts.categoryid=^categories.categoryid WHERE ^posts.type='Q' GROUP BY categoryid) AS a SET x.qcount=a.qcount WHERE x.categoryid=a.categoryid"
-		);
+		return qa_db_read_all_values(qa_db_query_sub(
+			"SELECT categoryid FROM ^categories WHERE categoryid>=# ORDER BY categoryid LIMIT #",
+			$startcategoryid, $count
+		));
 	}
-
+	
 
 //	For deleting hidden posts...
 

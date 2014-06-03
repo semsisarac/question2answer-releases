@@ -1,12 +1,12 @@
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-content/qa-votes.js
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: JS to handle Ajax voting
 
 
@@ -60,11 +60,9 @@ function qa_vote_click(elem, oldvote)
 
 function qa_ajax_post(operation, params, callback)
 {
-	var url=qa_root+'?qa=ajax&qa_operation='+operation+'&qa_root='+encodeURIComponent(qa_root)+'&qa_request='+encodeURIComponent(qa_request);
-	for (var key in params)
-		url+='&'+encodeURIComponent(key)+'='+encodeURIComponent(params[key]);
+	jQuery.extend(params, {qa:'ajax', qa_operation:operation, qa_root:qa_root, qa_request:qa_request});
 	
-	jx.load(url, function(response) {
+	jQuery.post(qa_root, params, function(response) {
 		var header='QA_AJAX_RESPONSE';
 		var headerpos=response.indexOf(header);
 		
@@ -73,5 +71,5 @@ function qa_ajax_post(operation, params, callback)
 		else
 			callback([]);
 
-	}, 'text', 'POST', {onError:callback});
+	}, 'text').error(callback);	
 }

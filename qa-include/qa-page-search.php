@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-search.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for search page
 
 
@@ -43,9 +43,8 @@
 		$words=qa_string_to_words($inquery);
 		$retrieve=2*QA_DB_RETRIEVE_QS_AS+1; // get enough results to be able to give some idea of how many pages of search results there are
 		
-		list($questions, $categories)=qa_db_select_with_pending(
-			qa_db_search_posts_selectspec($qa_login_userid, $words, $words, $words, $words, $inquery, $qa_start, false, $retrieve),
-			qa_db_categories_selectspec()
+		$questions=qa_db_select_with_pending(
+			qa_db_search_posts_selectspec($qa_login_userid, $words, $words, $words, $words, $inquery, $qa_start, false, $retrieve)
 		);
 		
 		$pagesize=qa_opt('page_size_search');
@@ -79,8 +78,7 @@
 		
 		$qa_content['q_list']['qs']=array();
 		foreach ($questions as $question) {
-			$fields=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
-				qa_using_categories() ? $categories : null, qa_post_html_defaults('Q'));
+			$fields=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, null, qa_post_html_defaults('Q'));
 				
 			$fields['url']=qa_path_html(qa_q_request($question['postid'], $question['title']),
 				null, null, null, qa_search_max_match_anchor($question));

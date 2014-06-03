@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-account.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for user account page
 
 
@@ -54,12 +54,14 @@
 	
 //	Get current information on user
 
-	list($useraccount, $userprofile, $userfields)=qa_db_select_with_pending(
+	list($useraccount, $userprofile, $userpoints, $userfields)=qa_db_select_with_pending(
 		qa_db_user_account_selectspec($qa_login_userid, true),
 		qa_db_user_profile_selectspec($qa_login_userid, true),
+		qa_db_user_points_selectspec($qa_login_userid, true),
 		qa_db_userfields_selectspec()
 	);
 	
+	$changehandle=qa_opt('allow_change_usernames') || ((!$userpoints['qposts']) && (!$userpoints['aposts']) && (!$userpoints['cposts']));
 	$doconfirms=qa_opt('confirm_user_emails') && ($useraccount['level']<QA_USER_LEVEL_EXPERT);
 	$isconfirmed=($useraccount['flags'] & QA_USER_FLAGS_EMAIL_CONFIRMED) ? true : false;
 	$haspassword=isset($useraccount['passsalt']) && isset($useraccount['passcheck']);
@@ -70,8 +72,9 @@
 	if (qa_clicked('dosaveprofile')) {
 		require_once QA_INCLUDE_DIR.'qa-app-users-edit.php';
 		
-		$inhandle=qa_post_text('handle');
+		$inhandle=$changehandle ? qa_post_text('handle') : $useraccount['handle'];
 		$inemail=qa_post_text('email');
+		$inmessages=qa_post_text('messages');
 		$inavatar=qa_post_text('avatar');
 		
 		$errors=qa_handle_email_validate($inhandle, $inemail, $qa_login_userid);
@@ -89,12 +92,31 @@
 					qa_send_new_confirm($qa_login_userid);
 			}
 			
+		qa_db_user_set_flag($qa_login_userid, QA_USER_FLAGS_NO_MESSAGES, !$inmessages);
 		qa_db_user_set_flag($qa_login_userid, QA_USER_FLAGS_SHOW_AVATAR, ($inavatar=='uploaded'));
 		qa_db_user_set_flag($qa_login_userid, QA_USER_FLAGS_SHOW_GRAVATAR, ($inavatar=='gravatar'));
 
-		if (is_array(@$_FILES['file']) && $_FILES['file']['size'])
-			if (!qa_set_user_avatar($qa_login_userid, file_get_contents($_FILES['file']['tmp_name']), $useraccount['avatarblobid']))
-				$errors['avatar']=qa_lang_sub('users/avatar_not_read', implode(', ', qa_gd_image_formats()));
+		if (is_array(@$_FILES['file']) && $_FILES['file']['size']) {
+			require_once QA_INCLUDE_DIR.'qa-app-limits.php';
+			
+			switch (qa_user_permit_error(null, 'U'))
+			{
+				case 'limit':
+					$errors['avatar']=qa_lang('main/upload_limit');
+					break;
+				
+				default:
+					$errors['avatar']=qa_lang('users/no_permission');
+					break;
+					
+				case false:
+					qa_limits_increment($qa_login_userid, 'U');
+					
+					if (!qa_set_user_avatar($qa_login_userid, file_get_contents($_FILES['file']['tmp_name']), $useraccount['avatarblobid']))
+						$errors['avatar']=qa_lang_sub('main/image_not_read', implode(', ', qa_gd_image_formats()));
+					break;
+			}
+		}
 
 		$infield=array();
 		foreach ($userfields as $userfield) {
@@ -182,6 +204,7 @@
 				'tags' => 'NAME="handle"',
 				'value' => qa_html(isset($inhandle) ? $inhandle : $useraccount['handle']),
 				'error' => qa_html(@$errors['handle']),
+				'type' => $changehandle ? 'text' : 'static',
 			),
 			
 			'email' => array(
@@ -190,6 +213,14 @@
 				'value' => qa_html(isset($inemail) ? $inemail : $useraccount['email']),
 				'error' => isset($errors['email']) ? qa_html($errors['email']) :
 					(($doconfirms && !$isconfirmed) ? qa_insert_login_links(qa_lang_html('users/email_please_confirm')) : null),
+			),
+			
+			'messages' => array(
+				'label' => qa_lang_html('users/private_messages'),
+				'tags' => 'NAME="messages"',
+				'type' => 'checkbox',
+				'value' => !($useraccount['flags'] & QA_USER_FLAGS_NO_MESSAGES),
+				'note' => qa_lang_html('users/private_messages_explanation'),
 			),
 			
 			'avatar' => null, // for positioning
@@ -208,6 +239,9 @@
 	
 	if ($qa_state=='profile-saved')
 		$qa_content['form_profile']['ok']=qa_lang_html('users/profile_saved');
+	
+	if (!qa_opt('allow_private_messages'))
+		unset($qa_content['form_profile']['fields']['messages']);
 		
 
 //	Avatar upload stuff

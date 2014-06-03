@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-ip.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for page showing activity for an IP address
 
 
@@ -34,22 +34,21 @@
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 
 	
-	$ip=$pass_subrequest; // picked up from qa-page.php
+	$ip=@$pass_subrequests[0]; // picked up from qa-page.php
 	if (long2ip(ip2long($ip))!==$ip)
 		return include QA_INCLUDE_DIR.'qa-page-not-found.php';
 
 
 //	Find recently (hidden or not) questions, answers, comments and edits
 
-	list($qs, $qs_hidden, $a_qs, $a_hidden_qs, $c_qs, $c_hidden_qs, $edit_qs, $categories)=qa_db_select_with_pending(
-		qa_db_recent_qs_selectspec($qa_login_userid, 0, null, $ip, false),
-		qa_db_recent_qs_selectspec($qa_login_userid, 0, null, $ip, true),
+	list($qs, $qs_hidden, $a_qs, $a_hidden_qs, $c_qs, $c_hidden_qs, $edit_qs)=qa_db_select_with_pending(
+		qa_db_qs_selectspec($qa_login_userid, 'created', 0, null, $ip, false),
+		qa_db_qs_selectspec($qa_login_userid, 'created', 0, null, $ip, true, true),
 		qa_db_recent_a_qs_selectspec($qa_login_userid, 0, null, $ip, false),
-		qa_db_recent_a_qs_selectspec($qa_login_userid, 0, null, $ip, true),
+		qa_db_recent_a_qs_selectspec($qa_login_userid, 0, null, $ip, true, true),
 		qa_db_recent_c_qs_selectspec($qa_login_userid, 0, null, $ip, false),
-		qa_db_recent_c_qs_selectspec($qa_login_userid, 0, null, $ip, true),
-		qa_db_recent_edit_qs_selectspec($qa_login_userid, 0, null, $ip, false),
-		qa_db_categories_selectspec()
+		qa_db_recent_c_qs_selectspec($qa_login_userid, 0, null, $ip, true, true),
+		qa_db_recent_edit_qs_selectspec($qa_login_userid, 0, null, $ip, false)
 	);
 	
 	
@@ -83,6 +82,22 @@
 					unset($blockipclauses[$key]);
 					
 			qa_set_option('block_ips_write', implode(' , ', $blockipclauses));
+			qa_redirect($qa_request);
+		}
+		
+		if (qa_clicked('dohideall') && !qa_user_permit_error('permit_hide_show')) {
+			require_once QA_INCLUDE_DIR.'qa-db-admin.php';
+			require_once QA_INCLUDE_DIR.'qa-app-posts.php';
+		
+			$postids=array_merge(
+				qa_db_get_ip_posts($ip, 'C'),
+				qa_db_get_ip_posts($ip, 'A'),
+				qa_db_get_ip_posts($ip, 'Q')
+			);
+
+			foreach ($postids as $postid)
+				qa_post_set_hidden($postid, true, $qa_login_userid);
+				
 			qa_redirect($qa_request);
 		}
 	}
@@ -139,6 +154,12 @@
 				'tags' => 'NAME="dounblock"',
 				'label' => qa_lang_html('misc/unblock_ip_button'),
 			);
+			
+			if (count($questions) && !qa_user_permit_error('permit_hide_show'))
+				$qa_content['form']['buttons']['hideall']=array(
+					'tags' => 'NAME="dohideall"',
+					'label' => qa_lang_html('misc/hide_all_ip_button'),
+				);
 
 		} else
 			$qa_content['form']['buttons']['block']=array(
@@ -160,8 +181,7 @@
 			$htmloptions['ipview']=false;
 			$htmloptions['answersview']=false;
 			
-			$htmlfields=qa_any_to_q_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
-				qa_using_categories() ? $categories : null, $htmloptions);
+			$htmlfields=qa_any_to_q_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, null, $htmloptions);
 			
 			if (isset($htmlfields['what_url'])) // link directly to relevant content
 				$htmlfields['url']=$htmlfields['what_url'];

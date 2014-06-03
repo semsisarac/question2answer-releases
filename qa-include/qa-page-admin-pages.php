@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-pages.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for admin page for editing custom pages and external links
 
 
@@ -69,6 +69,7 @@
 		'nav_activity' => 'main/nav_activity',
 		 $hascustomhome ? 'nav_qa_not_home' : 'nav_qa_is_home' => $hascustomhome ? 'main/nav_qa' : 'admin/nav_qa_is_home',
 		'nav_questions' => 'main/nav_qs',
+		'nav_hot' => 'main/nav_hot',
 		'nav_unanswered' => 'main/nav_unanswered',
 		'nav_tags' => 'main/nav_tags',
 		'nav_categories' => 'main/nav_categories',
@@ -81,6 +82,7 @@
 		'nav_qa_not_home' => 'qa',
 		'nav_qa_is_home' => 'qa',
 		'nav_questions' => 'questions',
+		'nav_hot' => 'hot',
 		'nav_unanswered' => 'unanswered',
 		'nav_tags' => 'tags',
 		'nav_categories' => 'categories',
@@ -177,7 +179,7 @@
 					}
 					
 					list($matchcategoryid, $matchpage)=qa_db_select_with_pending(
-						qa_db_slug_to_category_id_selectspec($inslug),
+						qa_db_slugs_to_category_id_selectspec($inslug),
 						qa_db_page_full_selectspec($inslug, false)
 					);
 					
@@ -400,7 +402,7 @@
 		}
 		
 		if (isset($editpage['pageid']))
-			qa_checkbox_to_display($qa_content, array(
+			qa_set_display_rules($qa_content, array(
 				'position_display' => '!dodelete',
 				($isexternal ? 'url_display' : 'slug_display') => '!dodelete',
 				($isexternal ? 'newwindow_display' : 'heading_display') => '!dodelete',

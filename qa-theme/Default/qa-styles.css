@@ -1,12 +1,12 @@
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-theme/Default/qa-styles.css
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: CSS file for included Candy theme
 
 
@@ -63,7 +63,7 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-sidebar {padding:12px; font-size:14px; background:#f5e4c3; border:1px solid #f3c772; margin:24px 0;}
 .qa-feed {background:url(feed-icon-14x14.png) no-repeat left top; padding-left:20px; height:16px; margin:24px 0;}
 .qa-feed-link {font-size:10px; color:#666;}
-.qa-main {padding-left:20px; float:left; margin-bottom:2em; width:750px; clear:left;}
+.qa-main {padding-left:20px; float:left; margin-bottom:2em; width:750px; clear:left; overflow:hidden;}
 .qa-main-hidden h1 {color:#999;}
 .qa-footer {clear:both; background:#293D39; color:#FFF; font-size:10px; padding:12px;}
 * html .qa-footer {padding-top:6px;} /* IE6 */
@@ -103,6 +103,8 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-nav-main-item-opp {float:right; margin-left:4px;}
 .qa-nav-main-link {color:#FFF; display:block; padding:6px 10px; background:#293d39;}
 .qa-nav-main-link:hover, .qa-nav-main-selected {background:#396e63; text-decoration:none;}
+.qa-nav-main-hot .qa-nav-main-link {background:#f33;}
+.qa-nav-main-hot .qa-nav-main-link:hover, .qa-nav-main-hot .qa-nav-main-selected {background:#f66;}
 
 .qa-nav-sub {clear:both; float:left; padding-top:3px;}
 .qa-nav-sub-list {font-size:12px; list-style:none; padding:0; margin:0;}
@@ -111,7 +113,12 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-nav-sub-link:hover, .qa-nav-sub-selected {background:#9cdbce; text-decoration:none;}
 .qa-nav-sub-link.qa-nav-selected {background:#396e63;}
 
-.qa-nav-cat-list {font-size:14px; list-style:none; padding:0; margin:0; margin:24px 0;}
+.qa-nav-cat {margin:24px 0;}
+.qa-nav-cat-list {list-style:none; padding:0; margin:0;}
+.qa-nav-cat-list-1 {font-size:14px;}
+.qa-nav-cat-list-2 {font-size:12px; margin-left:1em;}
+.qa-nav-cat-list-3 {font-size:10px; margin-left:1em;}
+.qa-nav-cat-list-4 {font-size:9px; margin-left:1em;}
 .qa-nav-cat-item {margin:0.5em 0;}
 .qa-nav-cat-link {font-weight:bold;}
 .qa-nav-cat-selected,.qa-nav-cat-selected:hover {text-decoration:none; color:#000;}
@@ -159,7 +166,7 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-form-wide-text {width:320px; border:1px solid #658296;}
 .qa-form-wide-number {width:48px; border:1px solid #658296; vertical-align:middle;}
 .qa-form-wide-error {display:inline-block; background:#fee; border:1px solid #c00; color:#c00; font-size:11px; margin-left:6px; padding:.5em;}
-.qa-form-wide-note {font-size:10px; margin-left:4px; color:#235272;}
+.qa-form-wide-note {font-size:10px; margin-left:4px;}
 .qa-form-wide-buttons {padding:8px; text-align:center;}
 
 /* Standard form (light version - buttons only) */
@@ -233,13 +240,16 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-upvote-count-data,.qa-downvote-count-data {font-size:18px; font-weight:bold; display:inline;}
 .qa-upvote-count-pad,.qa-downvote-count-pad {font-size:9px; display:none;}
 
-/* Answer count */
+/* Answers and views count */
 
 .qa-a-count {background:#f7cd7d; border:1px solid #d6ae64; text-align:center; width:60px; height:42px; overflow:hidden; float:left; padding:18px 0; margin-right:1.5em;}
 .qa-a-count-data {font-size:24px; font-weight:bold; display:block;}
 .qa-a-count-pad {font-size:11px;}
 
-/* Top tags and users tables */
+.qa-view-count {float:right; font-size:11px; color: #8F5EA3; margin:3px 10px 0 20px;}
+.qa-view-count-data {font-weight:bold;}
+
+/* Tags, users and categories */
 
 .qa-top-tags-table {float:left; border-collapse:collapse; margin-bottom:1em;}
 .qa-top-tags-count {border:1px solid #658296; border-right:1px dashed #c1ced6; color:#235272; text-align:right; padding:6px 8px 6px 12px;}
@@ -252,6 +262,18 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-top-users-score {border:1px solid #c1c5a9; border-left:none; background:#e9ebde; color:#414944; text-align:right; padding:6px 12px;}
 .qa-top-users-spacer {padding:0 4px;}
 
+.qa-browse-cat-list {list-style:none; padding:0; margin:0; margin-left:2.5em;}
+.qa-browse-cat-list-1 {font-size:16px;}
+.qa-browse-cat-list-2 {font-size:14px;}
+.qa-browse-cat-list-3 {font-size:12px;}
+.qa-browse-cat-list-4 {font-size:10px;}
+.qa-browse-cat-item {margin:0.5em 0; font-weight:bold; color:#000;}
+.qa-browse-cat-closed {list-style:disc;}
+.qa-browse-cat-open {list-style:circle;}
+.qa-browse-cat-link {font-weight:bold; text-decoration:none; color:#000;}
+.qa-browse-cat-note {font-weight:normal; font-size:85%; color:#444;}
+	.qa-browse-cat-note a {color:#473A9F;}
+
 /* Question view */
 
 .qa-q-view-main {float:left; width:600px;}
@@ -262,6 +284,7 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-q-view-when-data {font-weight:bold;}
 .qa-q-view-who-title {font-size:80%; font-weight:bold; color:#900707;}
 .qa-q-view-points-data {font-weight:bold;}
+.qa-q-view-flags {background:#f00; color:#fff; font-weight:bold; padding:2px 5px; margin:4px 0; display:inline-block;}
 .qa-q-view-tags {margin-bottom:12px;}
 .qa-q-view-tag-list {list-style:none; margin:0; padding:0;}
 .qa-q-view-tag-item {display:inline;}
@@ -296,6 +319,7 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-a-item-when-data {font-weight:bold;}
 .qa-a-item-who-title {font-size:80%; font-weight:bold; color:#900707;}
 .qa-a-item-points-data {font-weight:bold;}
+.qa-a-item-flags {background:#f00; color:#fff; font-weight:bold; padding:2px 5px; display:inline-block;}
 .qa-a-item-buttons {text-align:right; margin-top:12px; clear:both;}
 .qa-a-item-c-list {clear:both; margin:12px 0 0 12px; border-top:1px dotted #666;}
 
@@ -332,6 +356,7 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-c-item-meta {display:inline-block; vertical-align:middle; font-size:10px; color:#666;}
 .qa-c-item-who-title {font-size:80%; font-weight:bold; color:#900707;}
 .qa-c-item-who-points {display:none;}
+.qa-c-item-flags {background:#f00; color:#fff; font-weight:bold; padding:2px 5px; display:inline-block;}
 .qa-c-item-buttons {display:block; position:absolute; bottom:0px; right:0px;}
 
 /* Footer parts */

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-config-example.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: After renaming, use this to set up database details and other stuff
 
 
@@ -76,6 +76,20 @@
 	useful if you're running multiple QA sites on subdomains with a shared user base. 
 	
 	define('QA_COOKIE_DOMAIN', '.example.com'); // be sure to keep the leading period
+*/
+
+/*
+	If you wish, you can define an array QA_CONST_PATH_MAP to modify the URLs used in your Q2A site.
+	The key of each array element should be the standard part of the path, e.g. 'questions',
+	and the value should be the replacement for that standard part, e.g. 'topics'. If you edit this
+	file in UTF-8 encoding you can also use non-ASCII characters in these URLs.
+	
+	$QA_CONST_PATH_MAP=array(
+		'questions' => 'topics',
+		'categories' => 'sections',
+		'users' => 'contributors',
+		'user' => 'contributor',
+	);
 */
 
 /*

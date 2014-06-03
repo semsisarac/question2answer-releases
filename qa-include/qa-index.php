@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-index.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: The Grand Central of Q2A - most requests come through here
 
 
@@ -35,6 +35,14 @@
 
 	if (@$_POST['qa']=='ajax') {
 		require 'qa-ajax.php';
+		return;
+	}
+
+
+//	If this is a direct blob request, branch off here
+
+	if (@$_GET['qa']=='blob') {
+		require 'qa-blob.php';
 		return;
 	}
 
@@ -114,6 +122,16 @@
 	foreach ($requestparts as $part => $requestpart) // remove any blank parts
 		if (!strlen($requestpart))
 			unset($requestparts[$part]);
+			
+	reset($requestparts);
+	$key=key($requestparts);
+	
+	if ( strlen(@$requestparts[$key]) && isset($QA_CONST_PATH_MAP) ) {
+		$replacement=array_search($requestparts[$key], $QA_CONST_PATH_MAP, true);
+		
+		if (strlen($replacement))
+			$requestparts[$key]=$replacement;
+	}
 
 	$qa_request=implode('/', $requestparts);
 	$qa_request_lc=strtolower($qa_request);

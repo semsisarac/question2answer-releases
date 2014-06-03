@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-votes.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Database-level access to votes tables
 
 
@@ -57,15 +57,46 @@
 	}
 	
 	
+	function qa_db_userflag_set($postid, $userid, $flag)
+	{
+		$flag=$flag ? 1 : 0;
+
+		qa_db_query_sub(
+			'INSERT INTO ^uservotes (postid, userid, flag) VALUES (#, #, #) ON DUPLICATE KEY UPDATE flag=#',
+			$postid, $userid, $flag, $flag
+		);
+	}
+	
+	
+	function qa_db_userflags_clear_all($postid)
+	{
+		qa_db_query_sub(
+			'UPDATE ^uservotes SET flag=0 WHERE postid=#',
+			$postid
+		);
+	}
+	
+	
 	function qa_db_post_recount_votes($postid)
 /*
 	Recalculate the cached count of upvotes and downvotes for $postid in the database
 */
 	{
-		qa_db_query_sub(
-			'UPDATE ^posts AS x, (SELECT COALESCE(SUM(GREATEST(0,vote)),0) AS upvotes, -COALESCE(SUM(LEAST(0,vote)),0) AS downvotes FROM ^uservotes WHERE postid=#) AS a SET x.upvotes=a.upvotes, x.downvotes=a.downvotes WHERE x.postid=#',
-			$postid, $postid
-		);
+		if (qa_should_update_counts())
+			qa_db_query_sub(
+				'UPDATE ^posts AS x, (SELECT COALESCE(SUM(GREATEST(0,vote)),0) AS upvotes, -COALESCE(SUM(LEAST(0,vote)),0) AS downvotes FROM ^uservotes WHERE postid=#) AS a SET x.upvotes=a.upvotes, x.downvotes=a.downvotes, x.netvotes=a.upvotes-a.downvotes WHERE x.postid=#',
+				$postid, $postid
+			);
+	}
+	
+	
+	function qa_db_post_recount_flags($postid)
+	{
+		if (qa_should_update_counts())
+			qa_db_query_sub(
+				'UPDATE ^posts AS x, (SELECT COALESCE(SUM(IF(flag, 1, 0)),0) AS flagcount FROM ^uservotes WHERE postid=#) AS a SET x.flagcount=a.flagcount WHERE x.postid=#',
+				$postid, $postid
+			);
 	}
 	
 	

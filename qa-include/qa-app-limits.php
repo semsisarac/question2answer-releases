@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-limits.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Monitoring and rate-limiting user actions (application level)
 
 
@@ -45,33 +45,43 @@
 		
 		switch ($actioncode) {
 			case 'Q':
-				$options=qa_get_options(array('max_rate_user_qs', 'max_rate_ip_qs'));
-				$userlimit=$options['max_rate_user_qs'];
-				$iplimit=$options['max_rate_ip_qs'];
+				$userlimit=qa_opt('max_rate_user_qs');
+				$iplimit=qa_opt('max_rate_ip_qs');
 				break;
 				
 			case 'A':
-				$options=qa_get_options(array('max_rate_user_as', 'max_rate_ip_as'));
-				$userlimit=$options['max_rate_user_as'];
-				$iplimit=$options['max_rate_ip_as'];
+				$userlimit=qa_opt('max_rate_user_as');
+				$iplimit=qa_opt('max_rate_ip_as');
 				break;
 				
 			case 'C':
-				$options=qa_get_options(array('max_rate_user_cs', 'max_rate_ip_cs'));
-				$userlimit=$options['max_rate_user_cs'];
-				$iplimit=$options['max_rate_ip_cs'];
+				$userlimit=qa_opt('max_rate_user_cs');
+				$iplimit=qa_opt('max_rate_ip_cs');
 				break;
 
 			case 'V':
-				$options=qa_get_options(array('max_rate_user_votes', 'max_rate_ip_votes'));
-				$userlimit=$options['max_rate_user_votes'];
-				$iplimit=$options['max_rate_ip_votes'];
+				$userlimit=qa_opt('max_rate_user_votes');
+				$iplimit=qa_opt('max_rate_ip_votes');
 				break;
 				
 			case 'L':
-				$options=qa_get_options(array('max_rate_ip_logins'));
 				$userlimit=1; // not really relevant
-				$iplimit=$options['max_rate_ip_logins'];
+				$iplimit=qa_opt('max_rate_ip_logins');
+				break;
+				
+			case 'U':
+				$userlimit=qa_opt('max_rate_user_uploads');
+				$iplimit=qa_opt('max_rate_ip_uploads');
+				break;
+				
+			case 'F':
+				$userlimit=qa_opt('max_rate_user_flags');
+				$iplimit=qa_opt('max_rate_ip_flags');
+				break;
+				
+			case 'M':
+				$userlimit=qa_opt('max_rate_user_messages');
+				$iplimit=qa_opt('max_rate_ip_messages');
 				break;
 		}
 		
@@ -162,6 +172,12 @@
 			case 'a_vote_down':
 			case 'a_vote_nil':
 				qa_limits_increment($userid, 'V');
+				break;
+				
+			case 'q_flag':
+			case 'a_flag':
+			case 'c_flag':
+				qa_limits_increment($userid, 'F');
 				break;
 		}
 

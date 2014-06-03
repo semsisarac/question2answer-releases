@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Common functions for creating theme-ready structures from data
 
 
@@ -139,12 +139,38 @@
 	}
 
 	
-	function qa_category_html($category)
-/*
-	Return HTML to use for $category as retrieved from the database
-*/
+	function qa_category_path($navcategories, $categoryid)
 	{
-		return '<A HREF="'.qa_path_html($category['tags']).'" CLASS="qa-category-link">'.qa_html($category['title']).'</A>';
+		$upcategories=array();
+		
+		for ($upcategory=@$navcategories[$categoryid]; isset($upcategory); $upcategory=@$navcategories[$upcategory['parentid']])
+			$upcategories[$upcategory['categoryid']]=$upcategory;
+			
+		return array_reverse($upcategories, true);
+	}
+	
+
+	function qa_category_path_html($navcategories, $categoryid)
+	{
+		$categories=qa_category_path($navcategories, $categoryid);
+		
+		$html='';
+		foreach ($categories as $category)
+			$html.=(strlen($html) ? ' / ' : '').qa_html($category['title']);
+			
+		return $html;
+	}
+	
+	
+	function qa_category_path_request($navcategories, $categoryid)
+	{
+		$categories=qa_category_path($navcategories, $categoryid);
+
+		$request='';
+		foreach ($categories as $category)
+			$request.=(strlen($request) ? '/' : '').$category['tags'];
+			
+		return $request;
 	}
 	
 	
@@ -160,12 +186,12 @@
 	}
 	
 	
-	function qa_post_html_fields($post, $userid, $cookieid, $usershtml, $categories, $options=array())
+	function qa_post_html_fields($post, $userid, $cookieid, $usershtml, $dummy, $options=array())
 /*
 	Given $post retrieved from database, return array of mostly HTML to be passed to theme layer.
 	$userid and $cookieid refer to the user *viewing* the page.
 	$usershtml is an array of [user id] => [HTML representation of user] built ahead of time.
-	$categories is an array of [category id] => category information from database
+	$dummy is a placeholder (used to be $categories parameter but that's no longer needed)
 	$options is an array of non-required elements which set what is displayed. It can contain true for keys:
 	tagsview, answersview, voteview, whatlink, whenview, whoview, ipview, pointsview, showurllinks, microformats, isselected.
 	$options['blockwordspreg'] can be a pre-prepared regular expression fragment for censored words.
@@ -235,12 +261,18 @@
 					
 				$fields['answer_selected']=isset($post['selchildid']);
 			}
-
-			if (isset($post['categoryid'])) {
-				$category=@$categories[$post['categoryid']];
-				if (isset($category))
-					$fields['where']=qa_lang_html_sub_split('main/in_category_x', qa_category_html($category));
+			
+			if (@$options['viewsview'] && isset($post['views'])) {
+				$fields['views_raw']=$post['views'];
+				
+				$fields['views']=($post['views']==1) ? qa_lang_html_sub_split('main/1_view', '1', '1') :
+					qa_lang_html_sub_split('main/x_views', number_format($post['views']));
 			}
+
+			if (isset($post['categoryname']) && isset($post['categorybackpath']))
+				$fields['where']=qa_lang_html_sub_split('main/in_category_x',
+					'<A HREF="'.qa_path_html(@$options['categorypathprefix'].implode('/', array_reverse(explode('/', $post['categorybackpath'])))).
+					'" CLASS="qa-category-link">'.qa_html($post['categoryname']).'</A>');
 		}
 		
 	//	Answer-specific stuff (selection)
@@ -307,8 +339,10 @@
 			}
 			
 		//	Pass information on vote viewing
+		
+		//	$voteview will be one of: updown, net, updown-disabled-level, net-disabled-level, updown-disabled-page, net-disabled-page
 				
-			$fields['vote_view']=(($voteview=='updown') || ($voteview=='updown-disabled')) ? 'updown' : 'net';
+			$fields['vote_view']=(substr($voteview, 0, 6)=='updown') ? 'updown' : 'net';
 			
 			$fields['upvotes_view']=($upvotes==1) ? qa_lang_html_sub_split('main/1_liked', $upvoteshtml, '1')
 				: qa_lang_html_sub_split('main/x_liked', $upvoteshtml);
@@ -334,9 +368,14 @@
 				$fields['vote_up_tags']='TITLE="'.qa_lang_html($isanswer ? 'main/vote_disabled_my_a' : 'main/vote_disabled_my_q').'"';
 				$fields['vote_down_tags']=$fields['vote_up_tags'];
 				
-			} elseif (($voteview=='updown-disabled') || ($voteview=='net-disabled')) {
+			} elseif (strpos($voteview, '-disabled-')) {
 				$fields['vote_state']=(@$post['uservote']>0) ? 'voted_up_disabled' : ((@$post['uservote']<0) ? 'voted_down_disabled' : 'disabled');
-				$fields['vote_up_tags']='TITLE="'.qa_lang_html('main/vote_disabled_q_page_only').'"';
+				
+				if (strpos($voteview, '-disabled-page'))
+					$fields['vote_up_tags']='TITLE="'.qa_lang_html('main/vote_disabled_q_page_only').'"';
+				else
+					$fields['vote_up_tags']='TITLE="'.qa_lang_html('main/vote_disabled_level').'"';
+					
 				$fields['vote_down_tags']=$fields['vote_up_tags'];
 
 			} elseif (@$post['uservote']>0) {
@@ -356,6 +395,12 @@
 			}
 		}
 		
+	//	Flag count
+	
+		if (@$options['flagsview'] && @$post['flagcount'])
+			$fields['flags']=($post['flagcount']==1) ? qa_lang_html_sub_split('main/1_flag', '1', '1')
+				: qa_lang_html_sub_split('main/x_flags', $post['flagcount']);
+	
 	//	Created when and by whom
 		
 		$fields['meta_order']=qa_lang_html('main/meta_order'); // sets ordering of meta elements which can be language-specific
@@ -409,9 +454,12 @@
 				$fields['when_2']=qa_lang_html_sub_split($fields['hidden'] ? 'question/hidden_x_ago' : 'question/edited_x_ago', $whenhtml);
 			
 			} else
-				$fields['when_2']['prefix']=qa_lang_html($fields['hidden'] ? 'question/hidden' : 'question/edited');
-				
-			$fields['who_2']=qa_who_to_html(isset($userid) && ($post['lastuserid']==$userid), $post['lastuserid'], $usershtml, @$options['ipview'] ? $post['lastip'] : null, false);
+				$fields['when_2']['prefix']=qa_lang_html($fields['hidden'] ? 'question/hidden' : 'main/edited');
+			
+			if ( $fields['hidden'] && $post['flagcount'] && !isset($post['lastuserid']) )
+				; // special case for posts hidden by community flagging
+			else
+				$fields['who_2']=qa_who_to_html(isset($userid) && ($post['lastuserid']==$userid), $post['lastuserid'], $usershtml, @$options['ipview'] ? $post['lastip'] : null, false);
 		}
 		
 	//	That's it!
@@ -444,14 +492,14 @@
 	}
 	
 
-	function qa_other_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options)
+	function qa_other_to_q_html_fields($question, $userid, $cookieid, $usershtml, $dummy, $options)
 /*
 	Return array of mostly HTML to be passed to theme layer, to *link* to an answer, comment or edit on
 	$question, as retrieved from database, with fields prefixed 'o' for the answer, comment or edit.
 	$userid, $cookieid, $usershtml, $categories, $options are passed through to qa_post_html_fields().
 */
 	{
-		$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options);
+		$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, null, $options);
 		
 		switch ($question['obasetype']) {
 			case 'Q':
@@ -491,6 +539,11 @@
 				$fields['who']['level']=qa_html(qa_user_level_string($question['olevel']));
 		}
 		
+		unset($fields['flags']);
+		if (@$options['flagsview'] && @$post['oflagcount'])
+			$fields['flags']=($post['oflagcount']==1) ? qa_lang_html_sub_split('main/1_flag', '1', '1')
+				: qa_lang_html_sub_split('main/x_flags', $post['oflagcount']);
+
 		unset($fields['avatar']);
 		if ((!QA_EXTERNAL_USERS) && (@$options['avatarsize']>0))
 			$fields['avatar']=qa_get_user_avatar_html($question['oflags'], $question['oemail'], $question['ohandle'],
@@ -500,16 +553,16 @@
 	}
 	
 	
-	function qa_any_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options)
+	function qa_any_to_q_html_fields($question, $userid, $cookieid, $usershtml, $dummy, $options)
 /*
 	Based on the elements in $question, return HTML to be passed to theme layer to link
 	to the question, or to an associated answer, comment or edit.
 */
 	{
 		if (isset($question['opostid']))
-			$fields=qa_other_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options);
+			$fields=qa_other_to_q_html_fields($question, $userid, $cookieid, $usershtml, null, $options);
 		else
-			$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options);
+			$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, null, $options);
 
 		return $fields;
 	}
@@ -608,7 +661,7 @@
 	So this is something quick and dirty that should do the trick in most cases
 */
 	{
-		return trim(preg_replace('/([^A-Za-z0-9])((http|https|ftp):\/\/([^\s&<>"\'\.])+\.([^\s&<>"\']|&amp;)+)/i', '\1<A HREF="\2" rel="nofollow">\2</A>', ' '.$html.' '));
+		return trim(preg_replace('/([^A-Za-z0-9])((http|https|ftp):\/\/([^\s&<>"\'\.])+\.([^\s&<>"\']|&amp;)+)/i', '\1<A HREF="\2" rel="nofollow"'.(qa_opt('links_in_new_window') ? ' target="_blank"' : '').'>\2</A>', ' '.$html.' '));
 	}
 
 	
@@ -622,7 +675,7 @@
 			if (!is_numeric(strpos($linkurl, ':/')))
 				$linkurl='http://'.$linkurl;
 				
-			return '<A HREF="'.qa_html($linkurl).'" rel="nofollow">'.qa_html($url).'</A>';
+			return '<A HREF="'.qa_html($linkurl).'" rel="nofollow"'.(qa_opt('links_in_new_window') ? ' target="_blank"' : '').'>'.qa_html($url).'</A>';
 		
 		} else
 			return qa_html($url);
@@ -714,20 +767,22 @@
 	}
 
 	
-	function qa_html_suggest_qs_tags($usingtags=false, $categoryslug=null)
+	function qa_html_suggest_qs_tags($usingtags=false, $categoryrequest=null)
 /*
 	Return HTML that suggests browsing all questions (in the category with $categoryslug, if
 	it's not null) and also popular tags if $usingtags is true
 */
 	{
-		$htmlmessage=strlen($categoryslug) ? qa_lang_html('main/suggest_category_qs') :
+		$hascategory=strlen($categoryrequest);
+		
+		$htmlmessage=$hascategory ? qa_lang_html('main/suggest_category_qs') :
 			($usingtags ? qa_lang_html('main/suggest_qs_tags') : qa_lang_html('main/suggest_qs'));
 		
 		return strtr(
 			$htmlmessage,
 			
 			array(
-				'^1' => '<A HREF="'.qa_path_html('questions'.(strlen($categoryslug) ? ('/'.$categoryslug) : '')).'">',
+				'^1' => '<A HREF="'.qa_path_html('questions'.($hascategory ? ('/'.$categoryrequest) : '')).'">',
 				'^2' => '</A>',
 				'^3' => '<A HREF="'.qa_path_html('tags').'">',
 				'^4' => '</A>',
@@ -754,27 +809,45 @@
 	}
 	
 	
-	function qa_category_navigation($categories, $categoryid=null, $pathprefix='', $showqcount=true)
+	function qa_category_navigation($categories, $selectedid=null, $pathprefix='', $showqcount=true)
 /*
-	Return the navigation structure for the category menu, with $categoryid selected,
+	Return the navigation structure for the category menu, with $selectedid selected,
 	and links beginning with $pathprefix, and showing question counts if $showqcount
 */
 	{
-		$navigation=array(
-			'all' => array(
-				'url' => qa_path_html($pathprefix),
-				'label' => qa_lang_html('main/all_categories'),
-				'selected' => !isset($categoryid),
-			),
-		);
+		$parentcategories=array();
 		
 		foreach ($categories as $category)
-			$navigation[$category['tags']]=array(
-				'url' => qa_path_html((strlen($pathprefix) ? ($pathprefix.'/') : '').$category['tags']),
-				'label' => qa_html($category['title']),
-				'selected' => ($categoryid == $category['categoryid']),
-				'note' => $showqcount ? qa_html(number_format($category['qcount'])) : null,
+			$parentcategories[$category['parentid']][]=$category;
+			
+		$selecteds=qa_category_path($categories, $selectedid);
+			
+		return qa_category_navigation_sub($parentcategories, null, $selecteds, $pathprefix, $showqcount);
+	}
+	
+	
+	function qa_category_navigation_sub($parentcategories, $parentid, $selecteds, $pathprefix, $showqcount)
+	{
+		$navigation=array();
+		
+		if (!isset($parentid))
+			$navigation['all']=array(
+				'url' => qa_path_html($pathprefix),
+				'label' => qa_lang_html('main/all_categories'),
+				'selected' => !count($selecteds),
+				'categoryid' => null,
 			);
+		
+		if (isset($parentcategories[$parentid]))
+			foreach ($parentcategories[$parentid] as $category)
+				$navigation[qa_html($category['tags'])]=array(
+					'url' => qa_path_html($pathprefix.$category['tags']),
+					'label' => qa_html($category['title']),
+					'selected' => isset($selecteds[$category['categoryid']]),
+					'note' => $showqcount ? ('('.qa_html(number_format($category['qcount'])).')') : null,
+					'subnav' => qa_category_navigation_sub($parentcategories, $category['categoryid'], $selecteds, $pathprefix.$category['tags'].'/', $showqcount),
+					'categoryid' => $category['categoryid'],
+				);
 		
 		return $navigation;
 	}
@@ -818,7 +891,7 @@
 		global $qa_root_url_relative;
 		
 		return ($page['flags'] & QA_PAGE_FLAGS_EXTERNAL)
-			? is_numeric(strpos($page['tags'], '://')) ? $page['tags'] : $qa_root_url_relative.$page['tags']
+			? (is_numeric(strpos($page['tags'], '://')) ? $page['tags'] : $qa_root_url_relative.$page['tags'])
 			: qa_path($page['tags']);
 	}
 	
@@ -846,7 +919,7 @@
 	}
 
 	
-	function qa_checkbox_to_display(&$qa_content, $effects)
+	function qa_set_display_rules(&$qa_content, $effects)
 /*
 	For each [target] => [source] in $effects, set up $qa_content so that the visibility of
 	the DOM element ID target is equal to the checked state of the DOM element ID source.
@@ -854,22 +927,21 @@
 	This is pretty twisted, but also rather convenient.
 */
 	{
-		$function='qa_checkbox_display_'.count(@$qa_content['script_lines']);
+		$function='qa_display_rule_'.count(@$qa_content['script_lines']);
 		
 		$keysourceids=array();
 		
-		foreach ($effects as $target => $sources) {
-			$elements=preg_split('/([^A-Za-z0-9_]+)/', $sources, -1, PREG_SPLIT_NO_EMPTY); // element names must be legal JS variable names
-			foreach ($elements as $element)
-				$keysourceids[$element]=true;
-		}
+		foreach ($effects as $target => $sources)
+			if (preg_match_all('/[A-Za-z_][A-Za-z0-9_]*/', $sources, $matches)) // element names must be legal JS variable names
+				foreach ($matches[0] as $element)
+					$keysourceids[$element]=true;
 		
 		$funcscript=array("function ".$function."() {"); // build the Javascripts
 		$loadscript=array();
 		
 		foreach ($keysourceids as $key => $dummy) {
 			$funcscript[]="\tvar e=document.getElementById(".qa_js($key).");";
-			$funcscript[]="\tvar ".$key."=e && e.checked;";
+			$funcscript[]="\tvar ".$key."=e && (e.checked || (e.options && e.options[e.selectedIndex].value));";
 			$loadscript[]="var e=document.getElementById(".qa_js($key).");";
 			$loadscript[]="if (e) {";
 			$loadscript[]="\t".$key."_oldonclick=e.onclick;";
@@ -894,7 +966,7 @@
 	}
 
 	
-	function qa_set_up_tag_field(&$qa_content, &$field, $fieldname, $exampletags, $completetags, $maxtags)
+	function qa_set_up_tag_field(&$qa_content, &$field, $fieldname, $tags, $exampletags, $completetags, $maxtags)
 /*
 	Set up $qa_content and $field (with HTML name $fieldname) for tag auto-completion, where
 	$exampletags are suggestions and $completetags are simply the most popular ones. Show up to $maxtags.
@@ -904,10 +976,15 @@
 
 		$qa_content['script_rel'][]='qa-content/qa-ask.js?'.QA_VERSION;
 		$qa_content['script_var']['qa_tag_template']=$template;
-		$qa_content['script_var']['qa_tags_examples']=qa_html(implode(' ', $exampletags));
-		$qa_content['script_var']['qa_tags_complete']=qa_html(implode(' ', $completetags));
+		$qa_content['script_var']['qa_tag_onlycomma']=(int)qa_opt('tag_separator_comma');
+		$qa_content['script_var']['qa_tags_examples']=qa_html(implode(',', $exampletags));
+		$qa_content['script_var']['qa_tags_complete']=qa_html(implode(',', $completetags));
 		$qa_content['script_var']['qa_tags_max']=(int)$maxtags;
 		
+		$separatorcomma=qa_opt('tag_separator_comma');
+		
+		$field['label']=qa_lang_html($separatorcomma ? 'question/q_tags_comma_label' : 'question/q_tags_label');
+		$field['value']=qa_html(implode($separatorcomma ? ', ' : ' ', $tags));
 		$field['tags']='NAME="'.$fieldname.'" ID="tags" AUTOCOMPLETE="off" onKeyUp="qa_tag_hints();" onMouseUp="qa_tag_hints();"';
 		
 		$sdn=' STYLE="display:none;"';
@@ -920,6 +997,112 @@
 			$field['note'].=str_replace('^', qa_html($tag), $template).' ';
 
 		$field['note'].='</SPAN>';
+	}
+	
+	
+	function qa_get_tags_field_value($fieldname)
+	{
+		require_once QA_INCLUDE_DIR.'qa-util-string.php';
+		
+		$text=qa_post_text($fieldname);
+		
+		if (qa_opt('tag_separator_comma'))
+			return array_unique(preg_split('/\s*,\s*/', trim(qa_strtolower(strtr($text, '/', ' '))), -1, PREG_SPLIT_NO_EMPTY));
+		else
+			return array_unique(qa_string_to_words($text, true, false, false, false));
+	}
+	
+	
+	function qa_set_up_category_field(&$qa_content, &$field, $fieldname, $navcategories, $categoryid, $allownone, $allownosub, $maxdepth=null, $excludecategoryid=null)
+	{
+		$pathcategories=qa_category_path($navcategories, $categoryid);
+
+		$startpath='';
+		foreach ($pathcategories as $category)
+			$startpath.='/'.$category['categoryid'];
+		
+		if (!isset($maxdepth))
+			$maxdepth=QA_CATEGORY_DEPTH;
+		$maxdepth=min(QA_CATEGORY_DEPTH, $maxdepth);
+
+		$qa_content['script_rel'][]='qa-content/qa-ask.js?'.QA_VERSION;
+		$qa_content['script_onloads'][]='qa_category_select('.qa_js($fieldname).', '.qa_js($startpath).');';
+		
+		$qa_content['script_var']['qa_cat_exclude']=$excludecategoryid;	
+		$qa_content['script_var']['qa_cat_allownone']=(int)$allownone;
+		$qa_content['script_var']['qa_cat_allownosub']=(int)$allownosub;
+		$qa_content['script_var']['qa_cat_maxdepth']=$maxdepth;
+
+		$field['type']='select';
+		$field['tags']='NAME="'.$fieldname.'_0" ID="'.$fieldname.'_0" onChange="qa_category_select('.qa_js($fieldname).');"';
+		$field['options']=array();
+		
+		// create the menu that will be shown if Javascript is disabled
+		
+		if ($allownone)
+			$field['options']['']=qa_lang_html('main/no_category'); // this is also copied to first menu created by Javascript
+		
+		$keycategoryids=array();
+		
+		if ($allownosub) {
+			$category=@$navcategories[$categoryid];
+			$upcategory=$category;
+
+			while (true) { // first get supercategories
+				$upcategory=@$navcategories[$upcategory['parentid']];
+				
+				if (!isset($upcategory))
+					break;
+				
+				$keycategoryids[$upcategory['categoryid']]=true;
+			}
+			
+			$keycategoryids=array_reverse($keycategoryids, true);
+
+			$depth=count($keycategoryids); // number of levels above
+			
+			if (isset($category)) {
+				$depth++; // to count category itself
+				
+				foreach ($navcategories as $navcategory) // now get siblings and self
+					if (!strcmp($navcategory['parentid'], $category['parentid']))
+						$keycategoryids[$navcategory['categoryid']]=true;
+			}
+	
+			if ($depth<$maxdepth)
+				foreach ($navcategories as $navcategory) // now get children, if not too deep
+					if (!strcmp($navcategory['parentid'], $categoryid))
+						$keycategoryids[$navcategory['categoryid']]=true;
+
+		} else {
+			$haschildren=false;
+			
+			foreach ($navcategories as $navcategory) // check if it has any children
+				if (!strcmp($navcategory['parentid'], $categoryid))
+					$haschildren=true;
+			
+			if (!$haschildren)
+				$keycategoryids[$categoryid]=true; // show this category if it has no children
+		}
+		
+		foreach ($keycategoryids as $keycategoryid => $dummy)
+			if (strcmp($keycategoryid, $excludecategoryid))
+				$field['options'][$keycategoryid]=qa_category_path_html($navcategories, $keycategoryid);
+			
+		$field['value']=@$field['options'][$categoryid];
+		$field['note']='<NOSCRIPT STYLE="color:red;">'.qa_lang_html('question/category_js_note').'</NOSCRIPT> ';
+	}
+	
+	
+	function qa_get_category_field_value($fieldname)
+	{
+		for ($level=QA_CATEGORY_DEPTH; $level>=0; $level--) {
+			$levelid=qa_post_text($fieldname.'_'.$level);
+			if (isset($levelid))
+				return strlen($levelid) ? $levelid : null;
+		}
+		
+		return null;
 	}
 
 	
@@ -972,7 +1155,7 @@
 				'error' => qa_html($errors_email),
 			);
 			
-			qa_checkbox_to_display($qa_content, array(
+			qa_set_display_rules($qa_content, array(
 				'email_display' => 'notify',
 				'email_shown' => 'notify',
 				'email_hidden' => '!notify',
@@ -999,7 +1182,7 @@
 		
 	//	Then load the selected theme if valid, otherwise load the default theme
 	
-		if (!(file_exists(QA_THEME_DIR.$theme.'/qa-theme.php') && file_exists(QA_THEME_DIR.$theme.'/qa-styles.css')))
+		if (!file_exists(QA_THEME_DIR.$theme.'/qa-styles.css'))
 			$theme='Default';
 
 		$themeroothtml=qa_html($qa_root_url_relative.'qa-theme/'.$theme.'/');

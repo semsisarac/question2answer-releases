@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-admin.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Language phrases for admin center
 
 
@@ -50,12 +50,27 @@
 		'categories_not_shown' => 'Some questions have categories which will not be displayed.',
 		'categories_title' => 'Categories',
 		'categories' => 'Categories',
+		'category_added' => 'Category added',
 		'category_already_used' => 'This is already being used by a category',
 		'category_default_slug' => 'category-^',
+		'category_subs' => 'Sub-categories:',
+		'category_no_subs' => 'None',
+		'category_move_parent' => 'move to different parent',
+		'category_max_depth_x' => 'Some options may be hidden to prevent a category going deeper than ^ levels.',
+		'category_add_sub' => 'add sub-category',
+		'category_description' => 'Category description (optional):',
 		'category_name_first' => 'Name of first category:',
 		'category_name' => 'Category name:',
-		'category_position' => 'Position in categories:',
+		'category_no_delete_subs' => 'This category cannot be deleted because it has a sub-category',
+		'category_no_add_subs_x' => 'This category cannot have sub-categories because it is already ^ levels down.',
+		'category_parent' => 'Parent category:',
+		'category_saved' => 'Category saved',
 		'category_slug' => 'Category slug (URL fragment):',
+		'category_top_level' => 'No parent (top level)',
+		'category_none_error' => '^q question/s currently have no category - ^1set category^2',
+		'category_no_sub_error' => '^q question/s in this category have no sub-category - ^1set sub-category^2',
+		'category_none_to' => 'Move questions with no category to:',
+		'category_no_sub_to' => 'Move questions in ^ with no sub-category to:',
 		'click_category_edit' => 'Click a category name to edit:',
 		'click_name_edit' => 'Custom pages or links:',
 		'database_cleanup' => 'Database clean-up operations',
@@ -75,7 +90,6 @@
 		'edit_link' => ' - ^1edit link^2',
 		'edit_page' => ' - ^1edit page^2',
 		'edit_title' => ' - ^1edit title^2',
-		'edit_widget_position' => ' - ^1edit widget position^2',
 		'emails_title' => 'Emails',
 		'feed_link_example' => 'Example feed',
 		'feed_link' => 'Feed',
@@ -100,6 +114,7 @@
 		'link_name' => 'Text of link:',
 		'link_new_window' => 'Open link in a new window',
 		'link_url' => 'URL of link (absolute or relative to QA root):',
+		'lists_title' => 'Lists',
 		'maintenance_admin_only' => 'Your site is in ^1maintenance^2 and is currently inaccessible to regular users.',
 		'maximum_x' => ' (max ^)',
 		'mysql_version' => 'MySQL version:',
@@ -137,14 +152,16 @@
 		'position' => 'Position:',
 		'posting_title' => 'Posting',
 		'profile_fields' => 'Extra fields on user profile:',
+		'question_lists' => 'Question lists',
 		'q2a_db_version' => 'Q2A database version:',
 		'q2a_latest_version' => 'Q2A latest version:',
 		'q2a_version' => 'Question2Answer version:',
 		'question_pages' => 'Question pages',
+		'recalc_categories_backpaths' => 'Recalculating URL paths for ^1 of ^2 categories...',
 		'recalc_categories_complete' => 'All categories were successfully recalculated.',
 		'recalc_categories_note' => ' - for post categories and category counts',
-		'recalc_categories_recounting' => 'Recalculating category question totals...',
-		'recalc_categories_updated' => 'Recalculated for ^1 of ^2 answers and comments...',
+		'recalc_categories_recounting' => 'Recounting questions for ^1 of ^2 categories...',
+		'recalc_categories_updated' => 'Recalculated for ^1 of ^2 posts...',
 		'recalc_categories' => 'Recalculate categories',
 		'recalc_points_complete' => 'All user points were successfully recalculated.',
 		'recalc_points_note' => ' - for user ranking and points displays',
@@ -156,17 +173,17 @@
 		'recaptcha_fsockopen' => 'To use reCAPTCHA, the fsockopen() PHP function must be enabled on your server. Please check with your system administrator.',
 		'recaptcha_get_keys' => 'To use reCAPTCHA, you must ^1sign up^2 to get these keys.',
 		'recent_hidden_title' => 'Questions with recent hidden content',
-		'recount_posts_complete' => 'All questions and answers were successfully recounted',
-		'recount_posts_note' => ' - the number of answers and votes for each post',
-		'recount_posts_recounted' => 'Recounted for ^1 of ^2 questions and answers...',
+		'recount_posts_complete' => 'All posts were successfully recounted.',
+		'recount_posts_note' => ' - the number of answers, votes, flags and hotness for each post',
+		'recount_posts_recounted' => 'Recounted for ^1 of ^2 posts...',
 		'recount_posts_stop' => 'Stop recounting',
-		'recount_posts' => 'Recount questions and answers',
-		'reindex_posts_complete' => 'All questions, answers and comments were successfully reindexed.',
+		'recount_posts' => 'Recount posts',
+		'reindex_posts_complete' => 'All posts were successfully reindexed.',
 		'reindex_posts_note' => ' - for searching and related question suggestions',
-		'reindex_posts_reindexed' => 'Reindexed ^1 of ^2 questions, answers and comments...',
+		'reindex_posts_reindexed' => 'Reindexed ^1 of ^2 posts...',
 		'reindex_posts_stop' => 'Stop reindexing',
 		'reindex_posts_wordcounted' => 'Recounted ^1 of ^2 words...',
-		'reindex_posts' => 'Reindex questions, answers and comments',
+		'reindex_posts' => 'Reindex posts',
 		'requires_q2a_version' => 'Disabled - requires Question2Answer ^ or later',
 		'reset_options_button' => 'Reset to Defaults',
 		'save_options_button' => 'Save Options',
@@ -202,7 +219,8 @@
 		'widget_not_available' => 'This widget is not available. This could be because the plugin providing the widget is no longer installed.',
 		'widget_all_pages' => 'Show widget in this position on all available pages',
 		'widget_pages_explanation' => 'Show widget in this position on the following pages:',
-		'widget_global_options' => ' - ^1edit global options^2'
+		'widget_global_options' => ' - ^1edit global options^2',
+		'users_must_have' => 'Users must have',
 	);
 	
 

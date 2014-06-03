@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-user.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for user profile page
 
 
@@ -35,13 +35,13 @@
 	require_once QA_INCLUDE_DIR.'qa-app-users.php';
 	
 
-	if (!strlen($pass_subrequest))
+	if (!strlen(@$pass_subrequests[0]))
 		qa_redirect('users');
 
 
 	if (QA_EXTERNAL_USERS) {
-		$publictouserid=qa_get_userids_from_public(array($pass_subrequest));
-		$userid=@$publictouserid[$pass_subrequest];
+		$publictouserid=qa_get_userids_from_public(array(@$pass_subrequests[0]));
+		$userid=@$publictouserid[@$pass_subrequests[0]];
 		
 		if (!isset($userid))
 			return include QA_INCLUDE_DIR.'qa-page-not-found.php';
@@ -50,7 +50,7 @@
 		$userhtml=@$usershtml[$userid];
 
 	} else {
-		$handle=$pass_subrequest; // picked up from qa-page.php
+		$handle=@$pass_subrequests[0]; // picked up from qa-page.php
 		$userhtml=qa_html($handle);
 	}
 
@@ -59,7 +59,7 @@
 	
 	$identifier=QA_EXTERNAL_USERS ? $userid : $handle;
 
-	@list($useraccount, $userprofile, $userfields, $userpoints, $userrank, $questions, $answerquestions, $commentquestions, $categories)=qa_db_select_with_pending(
+	@list($useraccount, $userprofile, $userfields, $userpoints, $userrank, $questions, $answerquestions, $commentquestions)=qa_db_select_with_pending(
 		QA_EXTERNAL_USERS ? null : qa_db_user_account_selectspec($handle, false),
 		QA_EXTERNAL_USERS ? null : qa_db_user_profile_selectspec($handle, false),
 		QA_EXTERNAL_USERS ? null : qa_db_userfields_selectspec(),
@@ -67,8 +67,7 @@
 		qa_db_user_rank_selectspec($identifier),
 		qa_db_user_recent_qs_selectspec($qa_login_userid, $identifier),
 		qa_db_user_recent_a_qs_selectspec($qa_login_userid, $identifier),
-		qa_db_user_recent_c_qs_selectspec($qa_login_userid, $identifier),
-		qa_db_categories_selectspec()
+		qa_db_user_recent_c_qs_selectspec($qa_login_userid, $identifier)
 	);
 	
 
@@ -214,6 +213,22 @@
 
 				qa_redirect($qa_request);
 			}
+
+			if (qa_clicked('dohideall') && !qa_user_permit_error('permit_hide_show')) {
+				require_once QA_INCLUDE_DIR.'qa-db-admin.php';
+				require_once QA_INCLUDE_DIR.'qa-app-posts.php';
+				
+				$postids=array_merge(
+					qa_db_get_user_posts($userid, 'C'),
+					qa_db_get_user_posts($userid, 'A'),
+					qa_db_get_user_posts($userid, 'Q')
+				);
+				
+				foreach ($postids as $postid)
+					qa_post_set_hidden($postid, true, $qa_login_userid);
+					
+				qa_redirect($qa_request);
+			}
 		}
 	}
 
@@ -222,7 +237,7 @@
 
 	$pagesize=qa_opt('page_size_user_posts');
 	$questions=qa_any_sort_by_date(array_merge($questions, $answerquestions, $commentquestions));
-	$questions=array_slice($questions, 0, 10);
+	$questions=array_slice($questions, 0, $pagesize);
 	$usershtml=qa_userids_handles_html(qa_any_get_userids_handles($questions));
 	$usershtml[$userid]=$userhtml;
 
@@ -269,6 +284,33 @@
 		
 		if (empty($qa_content['form_profile']['fields']['avatar']['html']))
 			unset($qa_content['form_profile']['fields']['avatar']);
+		
+	
+	//	Private message form
+	
+		if ( qa_opt('allow_private_messages') && isset($qa_login_userid) && ($qa_login_userid!=$userid) && !($useraccount['flags'] & QA_USER_FLAGS_NO_MESSAGES) )
+			$qa_content['form_profile']['fields']['level']['value'].=strtr(qa_lang_html('profile/send_private_message'), array(
+				'^1' => '<A HREF="'.qa_path_html('message/'.$handle).'">',
+				'^2' => '</A>',
+			));
+				
+	
+	//	Show any extra privileges due to user's level or their points
+	
+		$showpermits=array();
+		$permitoptions=qa_get_permit_options();
+		
+		foreach ($permitoptions as $permitoption)
+			if (qa_opt($permitoption)<QA_PERMIT_CONFIRMED) // if it's not available to all users (after they've confirmed their email address)
+				if (!qa_permit_error($permitoption, $userid, $useraccount['level'], $useraccount['flags'], $userpoints['points'])) // but this user can
+					$showpermits[]=qa_lang('profile/'.$permitoption); // then show it as an extra priviliege
+				
+		if (count($showpermits))
+			$qa_content['form_profile']['fields']['permits']=array(
+				'type' => 'static',
+				'label' => qa_lang_html('profile/extra_privileges'),
+				'value' => qa_html(implode("\n", $showpermits), true),
+			);
 		
 	
 	//	Show email address only if we're an administrator
@@ -392,12 +434,19 @@
 				);
 				
 				if (isset($maxlevelassign) && ($useraccount['level']<QA_USER_LEVEL_MODERATOR)) {
-					if ($useraccount['flags'] & QA_USER_FLAGS_USER_BLOCKED)
+					if ($useraccount['flags'] & QA_USER_FLAGS_USER_BLOCKED) {
 						$qa_content['form_profile']['buttons']['unblock']=array(
 							'tags' => 'NAME="dounblock"',
 							'label' => qa_lang_html('users/unblock_user_button'),
 						);
-					else
+						
+						if (count($questions) && !qa_user_permit_error('permit_hide_show'))
+							$qa_content['form_profile']['buttons']['hideall']=array(
+								'tags' => 'NAME="dohideall"',
+								'label' => qa_lang_html('users/hide_all_user_button'),
+							);
+						
+					} else
 						$qa_content['form_profile']['buttons']['block']=array(
 							'tags' => 'NAME="doblock"',
 							'label' => qa_lang_html('users/block_user_button'),
@@ -410,10 +459,6 @@
 
 //	Information about user activity, available also with single sign-on integration
 
-	$netvotesin=number_format(round(@$userpoints['qvoteds']/qa_opt('points_per_q_voted')+@$userpoints['avoteds']/qa_opt('points_per_a_voted')));
-	if ($netvotesin>0)
-		$netvotesin='+'.$netvotesin;
-	
 	$qa_content['form_activity']=array(
 		'title' => qa_lang_html_sub('profile/activity_by_x', $userhtml),
 		
@@ -551,7 +596,7 @@
 		
 		foreach ($questions as $question)
 			$qa_content['q_list']['qs'][]=qa_any_to_q_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
-				qa_using_categories() ? $categories : null, $htmloptions);
+				null, $htmloptions);
 	}
 
 

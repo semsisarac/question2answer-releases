@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-emails.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Wrapper functions for sending email notifications to users
 
 
@@ -33,6 +33,16 @@
 	require_once QA_INCLUDE_DIR.'qa-app-options.php';
 
 
+	$qa_notifications_suspended=0;
+	
+	
+	function qa_suspend_notifications($suspend=true)
+	{
+		global $qa_notifications_suspended;
+		
+		$qa_notifications_suspended+=($suspend ? 1 : -1);
+	}
+	
 	function qa_send_notification($userid, $email, $handle, $subject, $body, $subs)
 /*
 	Send email to person with $userid and/or $email and/or $handle (null/invalid values
@@ -40,8 +50,14 @@
 	and $body, after substituting each key in $subs with its corresponding value.
 */
 	{
+		global $qa_notifications_suspended;
+		
+		if ($qa_notifications_suspended>0)
+			return false;
+		
 		require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 		require_once QA_INCLUDE_DIR.'qa-util-emailer.php';
+		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 		
 		if (isset($userid)) {
 			$needemail=!qa_email_validate(@$email); // take from user if invalid, e.g. @ used in practice

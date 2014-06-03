@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-default.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for home page, Q&A listing page, custom pages and plugin pages
 
 
@@ -38,24 +38,24 @@
 
 	$explicitqa=($qa_request_lc_parts[0]=='qa');
 	
-	if ($explicitqa) {
-		$slug=@$qa_request_parts[1];
-		$hasslug=isset($slug);
-
-	} else {
-		$hasslug=strlen($qa_request_parts[0]); // $qa_request_parts[0] always present so we need to check its length
-		$slug=$hasslug ? $qa_request_parts[0] : null;
-	}
-
+	if ($explicitqa)
+		$slugs=array_slice($qa_request_parts, 1);
+	elseif (strlen($qa_request_parts[0])) // $qa_request_parts[0] always present so we need to check its length
+		$slugs=$qa_request_parts;
+	else
+		$slugs=array();
+	
+	$countslugs=count($slugs);
+		
 	
 //	Get list of questions, other bits of information that might be
 	
 	@list($questions1, $questions2, $categories, $categoryid, $custompage)=qa_db_select_with_pending(
-		qa_db_recent_qs_selectspec($qa_login_userid, 0, $slug),
-		qa_db_recent_a_qs_selectspec($qa_login_userid, 0, $slug),
-		qa_db_categories_selectspec(),
-		$hasslug ? qa_db_slug_to_category_id_selectspec($slug) : null,
-		($hasslug && !$explicitqa) ? qa_db_page_full_selectspec($slug, false) : null
+		qa_db_qs_selectspec($qa_login_userid, 'created', 0, $slugs),
+		qa_db_recent_a_qs_selectspec($qa_login_userid, 0, $slugs),
+		qa_db_category_nav_selectspec($slugs, false),
+		$countslugs ? qa_db_slugs_to_category_id_selectspec($slugs) : null,
+		(($countslugs==1) && !$explicitqa) ? qa_db_page_full_selectspec($slugs[0], false) : null
 	);
 
 
@@ -82,7 +82,7 @@
 
 //	Then, if there's a slug that matches no category, check page modules provided by plugins
 
-	if ( (!$explicitqa) && $hasslug && !isset($categoryid) ) {
+	if ( (!$explicitqa) && $countslugs && !isset($categoryid) ) {
 		$modulenames=qa_list_modules('page');
 		
 		foreach ($modulenames as $tryname) {
@@ -98,7 +98,7 @@
 	
 //	Then, check whether we are showing a custom home page
 
-	if ( (!$explicitqa) && (!$hasslug) && qa_opt('show_custom_home') ) {
+	if ( (!$explicitqa) && (!$countslugs) && qa_opt('show_custom_home') ) {
 		$qa_template='custom';
 		$qa_content=qa_content_prepare();
 		$qa_content['title']=qa_html(qa_opt('custom_home_heading'));
@@ -114,16 +114,16 @@
 	require_once QA_INCLUDE_DIR.'qa-app-q-list.php';
 
 	$qa_template='qa';
-	$questions=array_merge($questions1, $questions2);
+	$questions=qa_any_sort_and_dedupe(array_merge($questions1, $questions2));
 	$pagesize=qa_opt('page_size_home');
 	
-	if ($hasslug) {
+	if ($countslugs) {
 		if (!isset($categoryid))
 			return include QA_INCLUDE_DIR.'qa-page-not-found.php';
 
-		$categorytitlehtml=qa_category_html($categories[$categoryid]);
+		$categorytitlehtml=qa_html($categories[$categoryid]['title']);
 		$sometitle=qa_lang_html_sub('main/recent_qs_as_in_x', $categorytitlehtml);
-		$nonetitle=qa_lang_html_sub('main/no_questions_found_in_x', $categorytitlehtml);
+		$nonetitle=qa_lang_html_sub('main/no_questions_in_x', $categorytitlehtml);
 
 	} else {
 		$sometitle=qa_lang_html('main/recent_qs_as_title');
@@ -131,18 +131,19 @@
 	}
 	
 	
-//	Prepare and return content for theme
+//	Prepare and return content for theme for Q&A listing page
 
 	$qa_content=qa_q_list_page_content(
 		$questions, $pagesize, 0, null, $sometitle, $nonetitle,
-		$categories, $categoryid, true, $explicitqa ? 'qa' : '', qa_opt('feed_for_qa') ? 'qa' : null,
+		$categories, $categoryid, true, $explicitqa ? 'qa/' : '', qa_opt('feed_for_qa') ? 'qa' : null,
 		(count($questions)<$pagesize)
 			? qa_html_suggest_ask($categoryid)
-			: qa_html_suggest_qs_tags(qa_using_tags(), $hasslug ? $categories[$categoryid]['tags'] : null)
+			: qa_html_suggest_qs_tags(qa_using_tags(), qa_category_path_request($categories, $categoryid))
 	);
 	
-	if ( (!$explicitqa) && (!$hasslug) && qa_opt('show_home_description') )
+	if ( (!$explicitqa) && (!$countslugs) && qa_opt('show_home_description') )
 		$qa_content['description']=qa_html(qa_opt('home_description'));
+
 	
 	return $qa_content;
 

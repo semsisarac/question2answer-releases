@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-create.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Creating questions, answers and comments (application level)
 
 
@@ -33,7 +33,11 @@
 	require_once QA_INCLUDE_DIR.'qa-db-maxima.php';
 	require_once QA_INCLUDE_DIR.'qa-db-post-create.php';
 	require_once QA_INCLUDE_DIR.'qa-db-points.php';
+	require_once QA_INCLUDE_DIR.'qa-db-hotness.php';
 	require_once QA_INCLUDE_DIR.'qa-util-string.php';
+	
+	
+	$qa_post_indexing_suspended=0;
 
 	
 	function qa_notify_validate(&$errors, $notify, $email)
@@ -112,27 +116,6 @@
 	}
 	
 	
-	function qa_category_options($categories)
-/*
-	Return the appropriate list of category options to be shown, [id] => [title] - returns null if none to show
-*/
-	{
-		if (qa_using_categories() && count($categories)) {
-			$categoryoptions=array();
-
-			if (qa_opt('allow_no_category'))
-				$categoryoptions['']=qa_lang_html('main/no_category');
-
-			foreach ($categories as $category)
-				$categoryoptions[$category['categoryid']]=qa_html($category['title']);
-
-		} else
-			$categoryoptions=null;
-			
-		return $categoryoptions;
-	}
-
-	
 	function qa_question_create($followanswer, $userid, $handle, $cookieid, $title, $content, $format, $text, $tagstring, $notify, $email, $categoryid=null)
 /*
 	Add a question (application level) - create record, update appropriate counts, index it, send notifications.
@@ -141,12 +124,15 @@
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 		require_once QA_INCLUDE_DIR.'qa-app-emails.php';
+		require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 
 		$postid=qa_db_post_create('Q', @$followanswer['postid'], $userid, isset($userid) ? null : $cookieid,
 			@$_SERVER['REMOTE_ADDR'], $title, $content, $format, $tagstring, qa_combine_notify_email($userid, $notify, $email), $categoryid);
 		
-		qa_db_ifcategory_qcount_update($categoryid);
+		qa_db_posts_calc_category_path($postid);
+		qa_db_category_path_qcount_update(qa_db_post_get_category_path($postid));
 		qa_post_index($postid, 'Q', $postid, $title, $text, $tagstring);
+		qa_db_hotness_update($postid);
 		qa_db_points_update_ifuser($userid, 'qposts');
 		qa_db_qcount_update();
 		qa_db_unaqcount_update();
@@ -208,13 +194,25 @@
 	}
 
 	
+	function qa_suspend_post_indexing($suspend=true)
+	{
+		global $qa_post_indexing_suspended;
+		
+		$qa_post_indexing_suspended+=($suspend ? 1 : -1);
+	}
+	
+	
 	function qa_post_index($postid, $type, $questionid, $title, $text, $tagstring, $skipcounts=false)
 /*
 	Add post $postid (which comes under $questionid) of $type (Q/A/C) to the database index, with $title, $text
 	and $tagstring. Set $skipcounts to true to not update counts - useful during recalculationss.
 */
 	{
-	
+		global $qa_post_indexing_suspended;
+		
+		if ($qa_post_indexing_suspended>0)
+			return;
+			
 	//	Get words from each textual element
 	
 		$titlewords=array_unique(qa_string_to_words($title));
@@ -289,10 +287,13 @@
 		$postid=qa_db_post_create('A', $question['postid'], $userid, isset($userid) ? null : $cookieid,
 			@$_SERVER['REMOTE_ADDR'], null, $content, $format, null, qa_combine_notify_email($userid, $notify, $email), $question['categoryid']);
 		
+		qa_db_posts_calc_category_path($postid);
+		
 		if (!$question['hidden']) // don't index answer if parent question is hidden
 			qa_post_index($postid, 'A', $question['postid'], null, $text, null);
 		
 		qa_db_post_acount_update($question['postid']);
+		qa_db_hotness_update($question['postid']);
 		qa_db_points_update_ifuser($userid, 'aposts');
 		qa_db_acount_update();
 		qa_db_unaqcount_update();
@@ -364,6 +365,8 @@
 		
 		$postid=qa_db_post_create('C', $parent['postid'], $userid, isset($userid) ? null : $cookieid,
 			@$_SERVER['REMOTE_ADDR'], null, $content, $format, null, qa_combine_notify_email($userid, $notify, $email), $question['categoryid']);
+		
+		qa_db_posts_calc_category_path($postid);
 		
 		if (!($question['hidden'] || @$answer['hidden'])) // don't index comment if parent or parent of parent is hidden
 			qa_post_index($postid, 'C', $question['postid'], null, $text, null);

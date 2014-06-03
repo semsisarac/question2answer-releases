@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-external-example/qa-external-users.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Example of how to integrate with your own user database
 
 
@@ -609,10 +609,8 @@
 	Call qa_db_connection() to get the connection to the QA database. If your database is shared with
 	QA, you can use this with PHP's MySQL functions such as mysql_query() to run queries.
 	
-	$action is one of:
-	q_post, q_edit, q_hide, q_reshow, q_delete, q_claim, q_vote_up, q_vote_down, q_vote_nil
-	a_post, a_edit, a_hide, a_reshow, a_delete, a_claim, a_vote_up, a_vote_down, a_vote_nil, a_select, a_unselect, a_to_c
-	c_post, c_edit, c_hide, c_reshow, c_delete, c_claim
+	$action will be a string (such as 'q_edit') describing the action. These strings will match the
+	first $event parameter passed to the process_event(...) function in event modules.
 	
 	$questionid and/or $answerid and/or $commentid contain the ID of the relevant question or answer
 	or comment affected, or null if this information is not appropriate for $action.

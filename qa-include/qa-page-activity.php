@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-activity.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for page listing recent activity
 
 
@@ -34,28 +34,28 @@
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 	require_once QA_INCLUDE_DIR.'qa-app-q-list.php';
 	
-	$categoryslug=$pass_subrequest;
-	$hascategory=isset($categoryslug);
+	$categoryslugs=$pass_subrequests;
+	$countslugs=count($categoryslugs);
 
 
 //	Get lists of recent activity in all its forms, plus category information
 
 	@list($questions1, $questions2, $questions3, $questions4, $categories, $categoryid)=qa_db_select_with_pending(
-		qa_db_recent_qs_selectspec($qa_login_userid, 0, $categoryslug),
-		qa_db_recent_a_qs_selectspec($qa_login_userid, 0, $categoryslug),
-		qa_db_recent_c_qs_selectspec($qa_login_userid, 0, $categoryslug),
-		qa_db_recent_edit_qs_selectspec($qa_login_userid, 0, $categoryslug),
-		qa_db_categories_selectspec(),
-		$hascategory ? qa_db_slug_to_category_id_selectspec($categoryslug) : null
+		qa_db_qs_selectspec($qa_login_userid, 'created', 0, $categoryslugs),
+		qa_db_recent_a_qs_selectspec($qa_login_userid, 0, $categoryslugs),
+		qa_db_recent_c_qs_selectspec($qa_login_userid, 0, $categoryslugs),
+		qa_db_recent_edit_qs_selectspec($qa_login_userid, 0, $categoryslugs),
+		qa_db_category_nav_selectspec($categoryslugs, false),
+		$countslugs ? qa_db_slugs_to_category_id_selectspec($categoryslugs) : null
 	);
 	
-	if ($hascategory) {
+	if ($countslugs) {
 		if (!isset($categoryid))
 			return include QA_INCLUDE_DIR.'qa-page-not-found.php';
 	
-		$categorytitlehtml=qa_category_html($categories[$categoryid]);
+		$categorytitlehtml=qa_html($categories[$categoryid]['title']);
 		$sometitle=qa_lang_html_sub('main/recent_activity_in_x', $categorytitlehtml);
-		$nonetitle=qa_lang_html_sub('main/no_questions_found_in_x', $categorytitlehtml);
+		$nonetitle=qa_lang_html_sub('main/no_questions_in_x', $categorytitlehtml);
 
 	} else {
 		$sometitle=qa_lang_html('main/recent_activity_title');
@@ -66,10 +66,10 @@
 //	Prepare and return content for theme
 
 	return qa_q_list_page_content(
-		array_merge($questions1, $questions2, $questions3, $questions4),
-		qa_opt('page_size_home'), 0, null, $sometitle, $nonetitle,
-		$categories, $categoryid, true, 'activity', qa_opt('feed_for_activity') ? 'activity' : null,
-		qa_html_suggest_qs_tags(qa_using_tags(), $hascategory ? $categories[$categoryid]['tags'] : null)
+		qa_any_sort_and_dedupe(array_merge($questions1, $questions2, $questions3, $questions4)),
+		qa_opt('page_size_activity'), 0, null, $sometitle, $nonetitle,
+		$categories, $categoryid, true, 'activity/', qa_opt('feed_for_activity') ? 'activity' : null,
+		qa_html_suggest_qs_tags(qa_using_tags(), qa_category_path_request($categories, $categoryid))
 	);
 
 

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-install.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Database-level functions for installation and upgrading
 
 
@@ -31,7 +31,7 @@
 	}
 
 
-	define('QA_DB_VERSION_CURRENT', 24);
+	define('QA_DB_VERSION_CURRENT', 30);
 
 
 	function qa_db_user_column_type_verify()
@@ -126,7 +126,7 @@
 				'emailcode' => 'CHAR(8) CHARACTER SET ascii NOT NULL DEFAULT \'\'', // for email confirmation or password reset
 				'sessioncode' => 'CHAR(8) CHARACTER SET ascii NOT NULL DEFAULT \'\'', // for comparing against session cookie in browser
 				'sessionsource' => 'VARCHAR (16) CHARACTER SET ascii DEFAULT \'\'', // e.g. facebook, openid, etc...
-				'flags' => 'TINYINT UNSIGNED NOT NULL DEFAULT 0', // email confirmed, user blocked, show gravatar?
+				'flags' => 'TINYINT UNSIGNED NOT NULL DEFAULT 0', // email confirmed, user blocked, show avatar/gravatar, accept direct messages
 				'PRIMARY KEY (userid)',
 				'KEY email (email)',
 				'KEY handle (handle)',
@@ -168,14 +168,19 @@
 			),
 			
 			'categories' => array(
-				'categoryid' => 'SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT',
+				'categoryid' => 'INT UNSIGNED NOT NULL AUTO_INCREMENT',
+				'parentid' => 'INT UNSIGNED',
 				'title' => 'VARCHAR('.QA_DB_MAX_CAT_PAGE_TITLE_LENGTH.') NOT NULL', // category name
 				'tags' => 'VARCHAR('.QA_DB_MAX_CAT_PAGE_TAGS_LENGTH.') NOT NULL', // slug (url fragment) used to identify category
+				'content' => 'VARCHAR('.QA_DB_MAX_CAT_CONTENT_LENGTH.') NOT NULL DEFAULT \'\'', // description of category
 				'qcount' => 'INT UNSIGNED NOT NULL DEFAULT 0',
 				'position' => 'SMALLINT UNSIGNED NOT NULL',
+				'backpath' => 'VARCHAR('.(QA_CATEGORY_DEPTH*(QA_DB_MAX_CAT_PAGE_TAGS_LENGTH+1)).') NOT NULL DEFAULT \'\'',
+					// full slug path for category, with forward slash separators, in reverse order to make index from effective
 				'PRIMARY KEY (categoryid)',
-				'UNIQUE tags (tags)',
-				'UNIQUE position (position)',
+				'UNIQUE parentid (parentid, tags)',
+				'UNIQUE parentid_2 (parentid, position)',
+				'KEY backpath (backpath('.QA_DB_MAX_CAT_PAGE_TAGS_LENGTH.'))',
 			),
 			
 			'pages' => array(
@@ -207,9 +212,12 @@
 			
 			'posts' => array(
 				'postid' => 'INT UNSIGNED NOT NULL AUTO_INCREMENT',
-				'categoryid' => 'SMALLINT UNSIGNED',
 				'type' => "ENUM('Q', 'A', 'C', 'Q_HIDDEN', 'A_HIDDEN', 'C_HIDDEN') NOT NULL",
 				'parentid' => 'INT UNSIGNED', // for follow on questions, all answers and comments
+				'categoryid' => 'INT UNSIGNED', // this is the canonical final category id
+				'catidpath1' => 'INT UNSIGNED', // the catidpath* columns are calculated from categoryid, for the full hierarchy of that category
+				'catidpath2' => 'INT UNSIGNED', // note that QA_CATEGORY_DEPTH=4
+				'catidpath3' => 'INT UNSIGNED',
 				'acount' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0', // number of answers (for questions)
 				'selchildid' => 'INT UNSIGNED', // selected answer (for questions)
 				'userid' => $useridcoltype, // which user wrote it
@@ -219,6 +227,11 @@
 				'lastip' => 'INT UNSIGNED', // INET_ATON of IP address which last modified the post
 				'upvotes' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0',
 				'downvotes' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0',
+				'netvotes' => 'SMALLINT NOT NULL DEFAULT 0',
+				'lastviewip' => 'INT UNSIGNED', // INET_ATON of IP address which last viewed the post
+				'views' => 'INT UNSIGNED NOT NULL DEFAULT 0',
+				'hotness' => 'FLOAT',
+				'flagcount' => 'TINYINT UNSIGNED NOT NULL DEFAULT 0',
 				'format' => 'VARCHAR('.QA_DB_MAX_FORMAT_LENGTH.') CHARACTER SET ascii NOT NULL DEFAULT \'\'', // format of content, e.g. 'html'
 				'created' => 'DATETIME NOT NULL',
 				'updated' => 'DATETIME', // time of last update
@@ -228,14 +241,24 @@
 				'notify' => 'VARCHAR('.QA_DB_MAX_EMAIL_LENGTH.')', // email address, or @ to get from user, or NULL for none
 				'PRIMARY KEY (postid)',
 				'KEY type (type, created)', // for getting recent questions, answers, comments
+				'KEY type_2 (type, acount, created)', // for getting unanswered questions
+				'KEY type_3 (type, flagcount, created)', // for getting posts with the most flags
+				'KEY type_4 (type, netvotes, created)', // for getting posts with the most votes
+				'KEY type_5 (type, views, created)', // for getting questions with the most views
+				'KEY type_6 (type, hotness)', // for getting 'hot' questions
 				'KEY parentid (parentid, type)', // for getting a question's answers, any post's comments and follow-on questions
 				'KEY userid (userid, type, created)', // for recent questions, answers or comments by a user
 				'KEY selchildid (selchildid)', // for counting how many of a user's answers have been selected
-				'KEY type_2 (type, acount, created)', // for getting unanswered questions
-				'KEY categoryid (categoryid, type, created)', // for getting question, answers or comment in a specific category
+				'KEY catidpath1 (catidpath1, type, created)', // for getting question, answers or comments in a specific level category
+				'KEY catidpath2 (catidpath2, type, created)', // note that QA_CATEGORY_DEPTH=4
+				'KEY catidpath3 (catidpath3, type, created)',
+				'KEY categoryid (categoryid, type, created)', // this can also be used for searching the equivalent of catidpath4
 				'KEY createip (createip, created)', // for getting posts created by a specific IP address
 				'KEY updated (updated, type)', // for getting recent edits across all categories
-				'KEY categoryid_2 (categoryid, updated, type)', // for getting recent edits in a specific category
+				'KEY catidpath1_2 (catidpath1, updated, type)', // for getting recent edits in a specific level category
+				'KEY catidpath2_2 (catidpath2, updated, type)', // note that QA_CATEGORY_DEPTH=4
+				'KEY catidpath3_2 (catidpath3, updated, type)',
+				'KEY categoryid_2 (categoryid, updated, type)',
 				'KEY lastip (lastip, updated, type)', // for getting posts edited by a specific IP address
 				'CONSTRAINT ^posts_ibfk_2 FOREIGN KEY (parentid) REFERENCES ^posts(postid)', // ^posts_ibfk_1 is set later on userid
 				'CONSTRAINT ^posts_ibfk_3 FOREIGN KEY (categoryid) REFERENCES ^categories(categoryid) ON DELETE SET NULL',
@@ -245,6 +268,11 @@
 				'blobid' => 'BIGINT UNSIGNED NOT NULL',
 				'format' => 'VARCHAR('.QA_DB_MAX_FORMAT_LENGTH.') CHARACTER SET ascii NOT NULL', // format e.g. 'jpeg', 'gif', 'png'
 				'content' => 'MEDIUMBLOB NOT NULL',
+				'filename' => 'VARCHAR('.QA_DB_MAX_BLOB_FILE_NAME_LENGTH.')', // name of source file (if appropriate)
+				'userid' => $useridcoltype, // which user created it
+				'cookieid' => 'BIGINT UNSIGNED', // which cookie created it
+				'createip' => 'INT UNSIGNED', // INET_ATON of IP address that created it
+				'created' => 'DATETIME', // when it was created
 				'PRIMARY KEY (blobid)',
 			),
 			
@@ -304,6 +332,7 @@
 				'postid' => 'INT UNSIGNED NOT NULL',
 				'userid' => $useridcoltype.' NOT NULL',
 				'vote' => 'TINYINT NOT NULL', // -1, 0 or 1
+				'flag' => 'TINYINT NOT NULL', // 0 or 1
 				'UNIQUE userid (userid, postid)',
 				'KEY postid (postid)',
 				'CONSTRAINT ^uservotes_ibfk_1 FOREIGN KEY (postid) REFERENCES ^posts(postid) ON DELETE CASCADE',
@@ -333,7 +362,7 @@
 				
 			'userlimits' => array(
 				'userid' => $useridcoltype.' NOT NULL',
-				'action' => 'CHAR(1) CHARACTER SET ascii NOT NULL', // Q/A/C = post question/answer/comment, V=vote, L=login
+				'action' => 'CHAR(1) CHARACTER SET ascii NOT NULL', // Q/A/C = post question/answer/comment, V=vote, L=login, U=upload, F=flag, M=private message
 				'period' => 'INT UNSIGNED NOT NULL', // integer representing hour of last action
 				'count' => 'SMALLINT UNSIGNED NOT NULL', // how many of this action has been performed within that hour
 				'UNIQUE userid (userid, action)',
@@ -865,6 +894,65 @@
 					break;
 					
 			//	Up to here: Version 1.4 developer preview
+			
+				case 25:
+					qa_db_upgrade_query('ALTER TABLE ^blobs ADD COLUMN filename '.$definitions['blobs']['filename'].', ADD COLUMN userid '.$definitions['blobs']['userid'].', ADD COLUMN cookieid '.$definitions['blobs']['cookieid'].', ADD COLUMN createip '.$definitions['blobs']['createip'].', ADD COLUMN created '.$definitions['blobs']['created']);
+					qa_db_upgrade_query($locktablesquery);
+					break;
+					
+				case 26:
+					qa_db_upgrade_query('ALTER TABLE ^uservotes ADD COLUMN flag '.$definitions['uservotes']['flag']);
+					qa_db_upgrade_query($locktablesquery);
+					
+					qa_db_upgrade_query('ALTER TABLE ^posts ADD COLUMN flagcount '.$definitions['posts']['flagcount'].', ADD KEY type_3 (type, flagcount, created)');
+					qa_db_upgrade_query($locktablesquery);
+					
+					$keyrecalc['dorecountposts']=true;
+					break;
+					
+				case 27:
+					qa_db_upgrade_query('ALTER TABLE ^posts ADD COLUMN netvotes '.$definitions['posts']['netvotes'].', ADD KEY type_4 (type, netvotes, created)');
+					qa_db_upgrade_query($locktablesquery);
+					
+					$keyrecalc['dorecountposts']=true;
+					break;
+					
+				case 28:
+					qa_db_upgrade_query('ALTER TABLE ^posts ADD COLUMN views '.$definitions['posts']['views'].', ADD COLUMN hotness '.$definitions['posts']['hotness'].', ADD KEY type_5 (type, views, created), ADD KEY type_6 (type, hotness)');
+					qa_db_upgrade_query($locktablesquery);
+					
+					$keyrecalc['dorecountposts']=true;
+					break;
+					
+				case 29:
+					qa_db_upgrade_query('ALTER TABLE ^posts ADD COLUMN lastviewip '.$definitions['posts']['lastviewip']);
+					qa_db_upgrade_query($locktablesquery);
+					break;
+					
+				case 30:
+					qa_db_upgrade_query('ALTER TABLE ^posts DROP FOREIGN KEY ^posts_ibfk_3'); // to allow category column types to be changed
+					qa_db_upgrade_query($locktablesquery);
+					
+					qa_db_upgrade_query('ALTER TABLE ^posts DROP KEY categoryid, DROP KEY categoryid_2');
+					qa_db_upgrade_query($locktablesquery);
+					
+					qa_db_upgrade_query('ALTER TABLE ^categories CHANGE COLUMN categoryid categoryid '.$definitions['categories']['categoryid'].', ADD COLUMN parentid '.$definitions['categories']['parentid'].', ADD COLUMN backpath '.$definitions['categories']['backpath'].', ADD COLUMN content '.$definitions['categories']['content'].', DROP INDEX tags, DROP INDEX position, ADD UNIQUE parentid (parentid, tags), ADD UNIQUE parentid_2 (parentid, position), ADD KEY backpath (backpath('.QA_DB_MAX_CAT_PAGE_TAGS_LENGTH.'))');
+					qa_db_upgrade_query($locktablesquery);
+					
+					qa_db_upgrade_query('ALTER TABLE ^posts CHANGE COLUMN categoryid categoryid '.$definitions['posts']['categoryid'].', ADD COLUMN catidpath1 '.$definitions['posts']['catidpath1'].', ADD COLUMN catidpath2 '.$definitions['posts']['catidpath2'].', ADD COLUMN catidpath3 '.$definitions['posts']['catidpath3']); // QA_CATEGORY_DEPTH=4
+					qa_db_upgrade_query($locktablesquery);
+					
+					qa_db_upgrade_query('ALTER TABLE ^posts ADD KEY catidpath1 (catidpath1, type, created), ADD KEY catidpath2 (catidpath2, type, created), ADD KEY catidpath3 (catidpath3, type, created), ADD KEY categoryid (categoryid, type, created), ADD KEY catidpath1_2 (catidpath1, updated, type), ADD KEY catidpath2_2 (catidpath2, updated, type), ADD KEY catidpath3_2 (catidpath3, updated, type), ADD KEY categoryid_2 (categoryid, updated, type)');
+					qa_db_upgrade_query($locktablesquery);
+					
+					qa_db_upgrade_query('ALTER TABLE ^posts ADD CONSTRAINT ^posts_ibfk_3 FOREIGN KEY (categoryid) REFERENCES ^categories(categoryid) ON DELETE SET NULL');
+					qa_db_upgrade_query($locktablesquery);
+					
+					$keyrecalc['dorecalccategories']=true;
+					break;
+					
+					
+			//	Up to here: Version 1.4 beta 1
 					
 			}
 			

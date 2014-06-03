@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/event-logger/qa-event-logger.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Event module class for event logger plugin
 
 
@@ -84,7 +84,7 @@
 				
 		//	Create the form for display
 
-			qa_checkbox_to_display($qa_content, array(
+			qa_set_display_rules($qa_content, array(
 				'event_logger_directory_display' => 'event_logger_to_files_field',
 				'event_logger_hide_header_display' => 'event_logger_to_files_field',
 			));

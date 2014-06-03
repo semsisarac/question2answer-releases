@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for most admin pages which just contain options
 
 
@@ -39,7 +39,7 @@
 
 //	Get list of categories and all options
 	
-	$categories=qa_db_select_with_pending(qa_db_categories_selectspec());
+	$categories=qa_db_select_with_pending(qa_db_category_nav_selectspec(null, true));
 	
 
 //	Check admin privileges (do late to allow one DB query)
@@ -47,6 +47,162 @@
 	if (!qa_admin_check_privileges($qa_content))
 		return $qa_content;
 
+
+//	For non-text options, lists of option types, minima and maxima
+	
+	$optiontype=array(
+		'avatar_profile_size' => 'number',
+		'avatar_q_list_size' => 'number',
+		'avatar_q_page_a_size' => 'number',
+		'avatar_q_page_c_size' => 'number',
+		'avatar_q_page_q_size' => 'number',
+		'avatar_store_size' => 'number',
+		'avatar_users_size' => 'number',
+		'columns_tags' => 'number',
+		'columns_users' => 'number',
+		'feed_number_items' => 'number',
+		'flagging_hide_after' => 'number',
+		'flagging_notify_first' => 'number',
+		'flagging_notify_every' => 'number',
+		'hot_weight_views' => 'number',
+		'hot_weight_answers' => 'number',
+		'hot_weight_votes' => 'number',
+		'hot_weight_q_age' => 'number',
+		'hot_weight_a_age' => 'number',
+		'logo_height' => 'number-blank',
+		'logo_width' => 'number-blank',
+		'max_len_q_title' => 'number',
+		'max_num_q_tags' => 'number',
+		'max_rate_ip_as' => 'number',
+		'max_rate_ip_cs' => 'number',
+		'max_rate_ip_flags' => 'number',
+		'max_rate_ip_logins' => 'number',
+		'max_rate_ip_messages' => 'number',
+		'max_rate_ip_qs' => 'number',
+		'max_rate_ip_uploads' => 'number',
+		'max_rate_ip_votes' => 'number',
+		'max_rate_user_as' => 'number',
+		'max_rate_user_cs' => 'number',
+		'max_rate_user_flags' => 'number',
+		'max_rate_user_messages' => 'number',
+		'max_rate_user_qs' => 'number',
+		'max_rate_user_uploads' => 'number',
+		'max_rate_user_votes' => 'number',
+		'min_len_a_content' => 'number',
+		'min_len_c_content' => 'number',
+		'min_len_q_content' => 'number',
+		'min_len_q_title' => 'number',
+		'min_num_q_tags' => 'number',
+		'page_size_ask_check_qs' => 'number',
+		'page_size_ask_tags' => 'number',
+		'page_size_activity' => 'number',
+		'page_size_home' => 'number',
+		'page_size_hot_qs' => 'number',
+		'page_size_qs' => 'number',
+		'page_size_related_qs' => 'number',
+		'page_size_search' => 'number',
+		'page_size_tag_qs' => 'number',
+		'page_size_tags' => 'number',
+		'page_size_una_qs' => 'number',
+		'page_size_user_posts' => 'number',
+		'page_size_users' => 'number',
+		'pages_prev_next' => 'number',
+		'title_length_urls' => 'number',
+		
+		'allow_change_usernames' => 'checkbox',
+		'allow_multi_answers' => 'checkbox',
+		'allow_private_messages' => 'checkbox',
+		'allow_view_q_bots' => 'checkbox',
+		'avatar_allow_gravatar' => 'checkbox',
+		'avatar_allow_upload' => 'checkbox',
+		'avatar_default_show' => 'checkbox',
+		'captcha_on_anon_post' => 'checkbox',
+		'captcha_on_feedback' => 'checkbox',
+		'captcha_on_register' => 'checkbox',
+		'captcha_on_reset_password' => 'checkbox',
+		'captcha_on_unconfirmed' => 'checkbox',
+		'comment_on_as' => 'checkbox',
+		'comment_on_qs' => 'checkbox',
+		'confirm_user_emails' => 'checkbox',
+		'do_ask_check_qs' => 'checkbox',
+		'do_complete_tags' => 'checkbox',
+		'do_count_q_views' => 'checkbox',
+		'do_example_tags' => 'checkbox',
+		'do_related_qs' => 'checkbox',
+		'feed_for_activity' => 'checkbox',
+		'feed_for_qa' => 'checkbox',
+		'feed_for_questions' => 'checkbox',
+		'feed_for_search' => 'checkbox',
+		'feed_for_tag_qs' => 'checkbox',
+		'feed_for_unanswered' => 'checkbox',
+		'feed_full_text' => 'checkbox',
+		'feed_per_category' => 'checkbox',
+		'feedback_enabled' => 'checkbox',
+		'flagging_of_posts' => 'checkbox',
+		'follow_on_as' => 'checkbox',
+		'links_in_new_window' => 'checkbox',
+		'logo_show' => 'checkbox',
+		'neat_urls' => 'checkbox',
+		'notify_admin_q_post' => 'checkbox',
+		'notify_users_default' => 'checkbox',
+		'show_c_reply_buttons' => 'checkbox',
+		'show_custom_footer' => 'checkbox',
+		'show_custom_header' => 'checkbox',
+		'show_custom_home' => 'checkbox',
+		'show_custom_in_head' => 'checkbox',
+		'show_custom_sidebar' => 'checkbox',
+		'show_custom_sidepanel' => 'checkbox',
+		'show_home_description' => 'checkbox',
+		'show_selected_first' => 'checkbox',
+		'show_url_links' => 'checkbox',
+		'show_user_points' => 'checkbox',
+		'show_user_titles' => 'checkbox',
+		'show_view_counts' => 'checkbox',
+		'show_when_created' => 'checkbox',
+		'site_maintenance' => 'checkbox',
+		'suspend_register_users' => 'checkbox',
+		'tag_separator_comma' => 'checkbox',
+		'votes_separated' => 'checkbox',
+		'voting_on_as' => 'checkbox',
+		'voting_on_q_page_only' => 'checkbox',
+		'voting_on_qs' => 'checkbox',
+	);
+	
+	$optionmaximum=array(
+		'feed_number_items' => QA_DB_RETRIEVE_QS_AS,
+		'max_len_q_title' => QA_DB_MAX_TITLE_LENGTH,
+		'page_size_ask_check_qs' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_ask_tags' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_activity' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_home' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_hot_qs' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_qs' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_related_qs' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_search' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_tag_qs' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_tags' => QA_DB_RETRIEVE_TAGS,
+		'page_size_una_qs' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_user_posts' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_users' => QA_DB_RETRIEVE_USERS,
+	);
+	
+	$optionminimum=array(
+		'flagging_hide_after' => 2,
+		'flagging_notify_every' => 1,
+		'flagging_notify_first' => 1,
+		'max_num_q_tags' => 2,
+		'page_size_ask_check_qs' => 3,
+		'page_size_ask_tags' => 3,
+		'page_size_activity' => 3,
+		'page_size_home' => 3,
+		'page_size_hot_qs' => 3,
+		'page_size_qs' => 3,
+		'page_size_search' => 3,
+		'page_size_tag_qs' => 3,
+		'page_size_tags' => 3,
+		'page_size_users' => 3,
+	);
+	
 
 //	Define the options to show (and some other visual stuff) based on request
 	
@@ -87,7 +243,7 @@
 			if (!QA_EXTERNAL_USERS) {
 				require_once QA_INCLUDE_DIR.'qa-util-image.php';
 				
-				$showoptions=array('avatar_allow_gravatar');
+				$showoptions=array('allow_change_usernames', 'allow_private_messages', '', 'avatar_allow_gravatar');
 				
 				if (qa_has_gd_image())
 					array_push($showoptions, 'avatar_allow_upload', 'avatar_store_size', 'avatar_default_show');
@@ -111,20 +267,8 @@
 			break;
 			
 		case 'viewing':
-			$getoptions=qa_get_options(array('tags_or_categories'));
-
 			$subtitle='admin/viewing_title';
-			$showoptions=array('voting_on_qs', 'voting_on_q_page_only', 'voting_on_as', 'votes_separated', '', 'page_size_home', 'page_size_qs', 'page_size_una_qs', '');
-			
-			if (qa_using_tags())
-				array_push($showoptions, 'page_size_tags', 'columns_tags');
-				
-			array_push($showoptions, 'page_size_users', 'columns_users', '');
-			
-			if (qa_using_tags())
-				$showoptions[]='page_size_tag_qs';
-				
-			array_push($showoptions, 'page_size_user_posts', 'page_size_search', '', 'show_url_links', 'show_when_created');
+			$showoptions=array('title_length_urls', 'do_count_q_views', '', 'voting_on_qs', 'voting_on_q_page_only', 'voting_on_as', 'votes_separated', '', 'show_url_links', 'links_in_new_window', 'show_when_created');
 			
 			if (count(qa_get_points_to_titles()))
 				$showoptions[]='show_user_titles';
@@ -142,6 +286,33 @@
 				'page_size_related_qs' => 'option_do_related_qs',
 			);
 			break;
+			
+		case 'lists':
+			$subtitle='admin/lists_title';
+			
+			$showoptions=array('page_size_home', 'page_size_activity', 'page_size_qs', 'page_size_hot_qs', 'page_size_una_qs');
+			
+			if (qa_opt('do_count_q_views'))
+				$showoptions[]='show_view_counts';
+				
+			$showoptions[]='';
+			
+			if (qa_using_tags())
+				array_push($showoptions, 'page_size_tags', 'columns_tags');
+				
+			array_push($showoptions, 'page_size_users', 'columns_users', '');
+			
+			if (qa_using_tags())
+				$showoptions[]='page_size_tag_qs';
+				
+			array_push($showoptions, 'page_size_user_posts', 'page_size_search', '', 'hot_weight_q_age', 'hot_weight_a_age', 'hot_weight_answers', 'hot_weight_votes');
+			
+			if (qa_opt('do_count_q_views'))
+				$showoptions[]='hot_weight_views';
+			
+			$formstyle='wide';
+			
+			break;
 		
 		case 'posting':
 			$getoptions=qa_get_options(array('tags_or_categories'));
@@ -156,9 +327,9 @@
 			array_push($showoptions, 'min_len_q_title', 'max_len_q_title', 'min_len_q_content');
 			
 			if (qa_using_tags())
-				array_push($showoptions, 'min_num_q_tags', 'max_num_q_tags');
+				array_push($showoptions, 'min_num_q_tags', 'max_num_q_tags', 'tag_separator_comma');
 			
-			array_push($showoptions, 'min_len_a_content', 'min_len_c_content', 'block_bad_words', '', 'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs', '');
+			array_push($showoptions, 'min_len_a_content', 'min_len_c_content', 'notify_users_default', 'block_bad_words', '', 'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs', '');
 
 			if (qa_using_tags())
 				array_push($showoptions, 'do_example_tags', 'match_example_tags', 'do_complete_tags', 'page_size_ask_tags');
@@ -177,36 +348,36 @@
 		case 'permissions':
 			$subtitle='admin/permissions_title';
 			
-			$showoptions=array('permit_post_q', 'permit_post_a');
+			$permitoptions=qa_get_permit_options();
 			
-			$getoptions=qa_get_options(array('comment_on_qs', 'comment_on_as', 'voting_on_qs', 'voting_on_as'));
+			$showoptions=array();
+			$checkboxtodisplay=array();
 			
-			if ($getoptions['comment_on_qs'] || $getoptions['comment_on_as'])
-				$showoptions[]='permit_post_c';
-			
-			if ($getoptions['voting_on_qs'])
-				$showoptions[]='permit_vote_q';
+			foreach ($permitoptions as $permitoption) {
+				$showoptions[]=$permitoption;
 				
-			if ($getoptions['voting_on_as'])
-				$showoptions[]='permit_vote_a';
+				if ($permitoption=='permit_view_q_page') {
+					$showoptions[]='allow_view_q_bots';
+					$checkboxtodisplay['allow_view_q_bots']='option_permit_view_q_page<'.qa_js(QA_PERMIT_ALL);
 				
-			array_push($showoptions, 'permit_edit_q', 'permit_edit_a');
+				} else {
+					$showoptions[]=$permitoption.'_points';
+					$checkboxtodisplay[$permitoption.'_points']='(option_'.$permitoption.'=='.qa_js(QA_PERMIT_POINTS).') ||(option_'.$permitoption.'=='.qa_js(QA_PERMIT_POINTS_CONFIRMED).')';
+				}
+			}
 			
-			if ($getoptions['comment_on_qs'] || $getoptions['comment_on_as'])
-				$showoptions[]='permit_edit_c';
-				
-			array_push($showoptions, 'permit_select_a', 'permit_anon_view_ips', 'permit_hide_show', 'permit_delete_hidden');
-
 			$formstyle='wide';
 			break;
 		
 		case 'feeds':
 			$subtitle='admin/feeds_title';
 			
-			$showoptions=array('feed_for_qa', 'feed_for_questions', 'feed_for_unanswered', 'feed_for_activity');
+			$showoptions=array('feed_for_qa', 'feed_for_questions', 'feed_for_activity');
 			
 			if (qa_using_categories())
 				$showoptions[]='feed_per_category';
+			
+			$showoptions[]='feed_for_unanswered';
 			
 			if (qa_using_tags())
 				$showoptions[]='feed_for_tag_qs';
@@ -228,7 +399,7 @@
 			$getoptions=qa_get_options(array('feedback_enabled', 'permit_post_q', 'permit_post_a', 'permit_post_c'));
 			
 			if (!QA_EXTERNAL_USERS)
-				array_push($showoptions, 'confirm_user_emails', '');
+				array_push($showoptions, 'confirm_user_emails', 'suspend_register_users', '');
 			
 			$maxpermitpost=max($getoptions['permit_post_q'], $getoptions['permit_post_a'], $getoptions['permit_post_c']);
 			
@@ -247,25 +418,43 @@
 			if (count($showoptions))
 				array_push($showoptions, 'recaptcha_public_key', 'recaptcha_private_key', '');
 				
-			array_push($showoptions,
-				'max_rate_ip_qs', 'max_rate_ip_as', 'max_rate_ip_cs', 'max_rate_ip_votes', 'max_rate_ip_logins', 'block_ips_write', '',
-				'max_rate_user_qs', 'max_rate_user_as', 'max_rate_user_cs', 'max_rate_user_votes'
+			array_push($showoptions, 'flagging_of_posts', 'flagging_notify_first', 'flagging_notify_every', 'flagging_hide_after', '');
+			
+			$checkboxtodisplay=array(
+				'flagging_hide_after' => 'option_flagging_of_posts',
+				'flagging_notify_every' => 'option_flagging_of_posts',
+				'flagging_notify_first' => 'option_flagging_of_posts',
+				'max_rate_ip_flags' =>  'option_flagging_of_posts',
+				'max_rate_user_flags' => 'option_flagging_of_posts',
 			);
 
+			array_push($showoptions, 'max_rate_ip_qs', 'max_rate_ip_as', 'max_rate_ip_cs', 'max_rate_ip_uploads', 'max_rate_ip_votes', 'max_rate_ip_flags');
+			
+			if (qa_opt('allow_private_messages'))
+				$showoptions[]='max_rate_ip_messages';
+			
+			array_push($showoptions,
+				'max_rate_ip_logins', 'block_ips_write', '',
+				'max_rate_user_qs', 'max_rate_user_as', 'max_rate_user_cs', 'max_rate_user_uploads', 'max_rate_user_votes', 'max_rate_user_flags'
+			);
+
+			if (qa_opt('allow_private_messages'))
+				$showoptions[]='max_rate_user_messages';
+			
 			$formstyle='wide';
 
 			if ($maxpermitpost > QA_PERMIT_USERS)
-				$checkboxtodisplay=array(
+				$checkboxtodisplay=array_merge($checkboxtodisplay, array(
 					'captcha_on_unconfirmed' => 'option_confirm_user_emails && option_captcha_on_anon_post',
 					'recaptcha_public_key' => 'option_captcha_on_register || option_captcha_on_anon_post || option_captcha_on_reset_password || option_captcha_on_feedback',
 					'recaptcha_private_key' => 'option_captcha_on_register || option_captcha_on_anon_post || option_captcha_on_reset_password || option_captcha_on_feedback',
-				);
+				));
 			else
-				$checkboxtodisplay=array(
+				$checkboxtodisplay=array_merge($checkboxtodisplay, array(
 					'captcha_on_unconfirmed' => 'option_confirm_user_emails',
 					'recaptcha_public_key' => 'option_captcha_on_register || option_captcha_on_unconfirmed || option_captcha_on_reset_password || option_captcha_on_feedback',
 					'recaptcha_private_key' => 'option_captcha_on_register || option_captcha_on_unconfirmed || option_captcha_on_reset_password || option_captcha_on_feedback',
-				);
+				));
 			break;
 		
 		default:
@@ -273,128 +462,6 @@
 			$showoptions=array('site_title', 'site_url', 'neat_urls', 'site_language', 'site_theme', 'tags_or_categories', 'site_maintenance');
 			break;
 	}
-	
-
-//	For non-text options, lists of option types, minima and maxima
-	
-	$optiontype=array(
-		'avatar_profile_size' => 'number',
-		'avatar_q_list_size' => 'number',
-		'avatar_q_page_a_size' => 'number',
-		'avatar_q_page_c_size' => 'number',
-		'avatar_q_page_q_size' => 'number',
-		'avatar_store_size' => 'number',
-		'avatar_users_size' => 'number',
-		'columns_tags' => 'number',
-		'columns_users' => 'number',
-		'feed_number_items' => 'number',
-		'logo_height' => 'number-blank',
-		'logo_width' => 'number-blank',
-		'max_len_q_title' => 'number',
-		'max_num_q_tags' => 'number',
-		'max_rate_ip_as' => 'number',
-		'max_rate_ip_cs' => 'number',
-		'max_rate_ip_logins' => 'number',
-		'max_rate_ip_qs' => 'number',
-		'max_rate_ip_votes' => 'number',
-		'max_rate_user_as' => 'number',
-		'max_rate_user_cs' => 'number',
-		'max_rate_user_qs' => 'number',
-		'max_rate_user_votes' => 'number',
-		'min_len_a_content' => 'number',
-		'min_len_c_content' => 'number',
-		'min_len_q_content' => 'number',
-		'min_len_q_title' => 'number',
-		'min_num_q_tags' => 'number',
-		'page_size_ask_check_qs' => 'number',
-		'page_size_ask_tags' => 'number',
-		'page_size_home' => 'number',
-		'page_size_qs' => 'number',
-		'page_size_related_qs' => 'number',
-		'page_size_search' => 'number',
-		'page_size_tag_qs' => 'number',
-		'page_size_tags' => 'number',
-		'page_size_una_qs' => 'number',
-		'page_size_user_posts' => 'number',
-		'page_size_users' => 'number',
-		'pages_prev_next' => 'number',
-		
-		'allow_multi_answers' => 'checkbox',
-		'avatar_allow_gravatar' => 'checkbox',
-		'avatar_allow_upload' => 'checkbox',
-		'avatar_default_show' => 'checkbox',
-		'captcha_on_anon_post' => 'checkbox',
-		'captcha_on_feedback' => 'checkbox',
-		'captcha_on_register' => 'checkbox',
-		'captcha_on_reset_password' => 'checkbox',
-		'captcha_on_unconfirmed' => 'checkbox',
-		'comment_on_as' => 'checkbox',
-		'comment_on_qs' => 'checkbox',
-		'confirm_user_emails' => 'checkbox',
-		'do_ask_check_qs' => 'checkbox',
-		'do_complete_tags' => 'checkbox',
-		'do_example_tags' => 'checkbox',
-		'do_related_qs' => 'checkbox',
-		'feed_for_activity' => 'checkbox',
-		'feed_for_qa' => 'checkbox',
-		'feed_for_questions' => 'checkbox',
-		'feed_for_search' => 'checkbox',
-		'feed_for_tag_qs' => 'checkbox',
-		'feed_for_unanswered' => 'checkbox',
-		'feed_full_text' => 'checkbox',
-		'feed_per_category' => 'checkbox',
-		'feedback_enabled' => 'checkbox',
-		'follow_on_as' => 'checkbox',
-		'logo_show' => 'checkbox',
-		'neat_urls' => 'checkbox',
-		'notify_admin_q_post' => 'checkbox',
-		'show_c_reply_buttons' => 'checkbox',
-		'show_custom_footer' => 'checkbox',
-		'show_custom_header' => 'checkbox',
-		'show_custom_home' => 'checkbox',
-		'show_custom_in_head' => 'checkbox',
-		'show_custom_sidebar' => 'checkbox',
-		'show_custom_sidepanel' => 'checkbox',
-		'show_home_description' => 'checkbox',
-		'show_selected_first' => 'checkbox',
-		'show_url_links' => 'checkbox',
-		'show_user_points' => 'checkbox',
-		'show_user_titles' => 'checkbox',
-		'show_when_created' => 'checkbox',
-		'site_maintenance' => 'checkbox',
-		'votes_separated' => 'checkbox',
-		'voting_on_as' => 'checkbox',
-		'voting_on_q_page_only' => 'checkbox',
-		'voting_on_qs' => 'checkbox',
-	);
-	
-	$optionmaximum=array(
-		'feed_number_items' => QA_DB_RETRIEVE_QS_AS,
-		'max_len_q_title' => QA_DB_MAX_TITLE_LENGTH,
-		'page_size_ask_check_qs' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_ask_tags' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_home' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_qs' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_related_qs' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_search' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_tag_qs' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_tags' => QA_DB_RETRIEVE_TAGS,
-		'page_size_una_qs' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_user_posts' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_users' => QA_DB_RETRIEVE_USERS,
-	);
-	
-	$optionminimum=array(
-		'max_num_q_tags' => 2,
-		'page_size_ask_check_qs' => 3,
-		'page_size_ask_tags' => 3,
-		'page_size_home' => 3,
-		'page_size_qs' => 3,
-		'page_size_search' => 3,
-		'page_size_tag_qs' => 3,
-		'page_size_tags' => 3,
-		'page_size_users' => 3,
-	);
 	
 
 //	Filter out blanks to get list of valid options
@@ -408,6 +475,8 @@
 //	Process user actions
 	
 	$errors=array();
+
+	$recalchotness=false;			
 	
 	if (qa_clicked('doresetoptions'))
 		qa_reset_options($getoptions);
@@ -429,22 +498,32 @@
 			if (isset($optionminimum[$optionname]))
 				$optionvalue=max($optionminimum[$optionname], $optionvalue);
 				
-			if ($optionname=='site_url')
-				if (substr($optionvalue, -1)!='/') // seems to be a very common mistake and will mess up URLs
-					$optionvalue.='/';
-			
-			if ($optionname=='block_ips_write') {
-				require_once QA_INCLUDE_DIR.'qa-app-limits.php';
+			switch ($optionname) {
+				case 'site_url':
+					if (substr($optionvalue, -1)!='/') // seems to be a very common mistake and will mess up URLs
+						$optionvalue.='/';
+					break;
 				
-				$optionvalue=implode(' , ', qa_block_ips_explode($optionvalue));
+				case 'hot_weight_views':
+				case 'hot_weight_answers':
+				case 'hot_weight_votes':
+				case 'hot_weight_q_age':
+				case 'hot_weight_a_age':
+					if (qa_opt($optionname) != $optionvalue)
+						$recalchotness=true;
+					break;
+					
+				case 'block_ips_write':
+					require_once QA_INCLUDE_DIR.'qa-app-limits.php';
+					$optionvalue=implode(' , ', qa_block_ips_explode($optionvalue));
+					break;
+					
+				case 'block_bad_words':
+					require_once QA_INCLUDE_DIR.'qa-util-string.php';
+					$optionvalue=implode(' , ', qa_block_words_explode($optionvalue));
+					break;
 			}
-			
-			if ($optionname=='block_bad_words') {
-				require_once QA_INCLUDE_DIR.'qa-util-string.php';
-				
-				$optionvalue=implode(' , ', qa_block_words_explode($optionvalue));
-			}
-				
+						
 			qa_set_option($optionname, $optionvalue);
 		}
 
@@ -473,7 +552,7 @@
 					qa_db_blob_delete($oldblobid);
 
 			} else
-				$errors['avatar_default_show']=qa_lang_sub('users/avatar_not_read', implode(', ', qa_gd_image_formats()));
+				$errors['avatar_default_show']=qa_lang_sub('main/image_not_read', implode(', ', qa_gd_image_formats()));
 		}
 	}
 
@@ -515,6 +594,17 @@
 		$qa_content['form']['ok']=qa_lang_html('admin/options_reset');
 	elseif (qa_clicked('dosaveoptions'))
 		$qa_content['form']['ok']=qa_lang_html('admin/options_saved');
+	
+	if ($recalchotness) {
+		$qa_content['form']['ok']='<SPAN ID="recalc_ok"></SPAN>';
+		
+		$qa_content['script_rel'][]='qa-content/qa-admin.js?'.QA_VERSION;
+		$qa_content['script_var']['qa_warning_recalc']=qa_lang('admin/stop_recalc_warning');
+		
+		$qa_content['script_onloads'][]=array(
+			"qa_recalc_click('dorecountposts', document.getElementById('recalc_ok'), null, 'recalc_ok');"
+		);
+	}
 		
 
 	function qa_optionfield_make_select(&$optionfield, $options, $value, $default)
@@ -578,7 +668,7 @@
 						$neatoptions[$rawoption]=
 							'<IFRAME SRC="'.qa_path_html('url/test/'.QA_URL_TEST_STRING, array('dummy' => '', 'param' => QA_URL_TEST_STRING), null, $rawoption).'" WIDTH="20" HEIGHT="16" STYLE="vertical-align:middle; border:0" SCROLLING="no" FRAMEBORDER="0"></IFRAME>&nbsp;'.
 							'<SMALL>'.
-							qa_path_html('questions/123/why-do-birds-sing', null, '/', $rawoption).
+							qa_html(urldecode(qa_path('123/why-do-birds-sing', null, '/', $rawoption))).
 							(($rawoption==QA_URL_FORMAT_NEAT) ? strtr(qa_lang_html('admin/neat_urls_note'), array(
 								'^1' => '<A HREF="http://www.question2answer.org/htaccess.php" TARGET="_blank">',
 								'^2' => '</A>',
@@ -712,12 +802,24 @@
 					$optionfield['error']=qa_captcha_error();
 					break;
 					
+				case 'flagging_hide_after':
+				case 'flagging_notify_every':
+				case 'flagging_notify_first':
+					$optionfield['note']=qa_lang_html_sub('main/x_flags', '');
+					break;
+				
 				case 'block_ips_write':
 					$optionfield['style']='tall';
 					$optionfield['rows']=4;
 					$optionfield['note']=qa_lang_html('admin/block_ips_note');
 					break;
 					
+				case 'allow_view_q_bots':
+					$optionfield['note']=$optionfield['label'];
+					unset($optionfield['label']);
+					break;
+				
+				case 'permit_view_q_page':
 				case 'permit_post_q':
 				case 'permit_post_a':
 				case 'permit_post_c':
@@ -726,25 +828,30 @@
 				case 'permit_edit_q':
 				case 'permit_edit_a':
 				case 'permit_edit_c':
+				case 'permit_flag':
 				case 'permit_select_a':
 				case 'permit_hide_show':
 				case 'permit_delete_hidden':
 				case 'permit_anon_view_ips':
-					if ( ($optionname=='permit_post_q') || ($optionname=='permit_post_a') || ($optionname=='permit_post_c') || ($optionname=='permit_anon_view_ips') )
+					$optionfield['label']=qa_lang_html('profile/'.$optionname).':';
+					
+					if ( ($optionname=='permit_view_q_page') || ($optionname=='permit_post_q') || ($optionname=='permit_post_a') || ($optionname=='permit_post_c') || ($optionname=='permit_anon_view_ips') )
 						$widest=QA_PERMIT_ALL;
 					elseif ( ($optionname=='permit_select_a') || ($optionname=='permit_hide_show') )
-						$widest=QA_PERMIT_EXPERTS;
+						$widest=QA_PERMIT_POINTS;
 					elseif ($optionname=='permit_delete_hidden')
 						$widest=QA_PERMIT_EDITORS;
 					else
 						$widest=QA_PERMIT_USERS;
 						
-					if ( ($optionname=='permit_edit_c') || ($optionname=='permit_select_a') || ($optionname=='permit_hide_show') || ($optionname=='permit_anon_view_ips') )
+					if ($optionname=='permit_view_q_page')
+						$narrowest=QA_PERMIT_CONFIRMED;
+					elseif ( ($optionname=='permit_edit_c') || ($optionname=='permit_select_a') || ($optionname=='permit_hide_show') || ($optionname=='permit_anon_view_ips') )
 						$narrowest=QA_PERMIT_MODERATORS;
-					elseif ( ($optionname=='permit_post_c') || ($optionname=='permit_edit_q') || ($optionname=='permit_edit_a') )
+					elseif ( ($optionname=='permit_post_c') || ($optionname=='permit_edit_q') || ($optionname=='permit_edit_a') || ($optionname=='permit_flag') )
 						$narrowest=QA_PERMIT_EDITORS;
 					elseif ( ($optionname=='permit_vote_q') || ($optionname=='permit_vote_a') )
-						$narrowest=QA_PERMIT_CONFIRMED;
+						$narrowest=QA_PERMIT_POINTS_CONFIRMED;
 					elseif ($optionname=='permit_delete_hidden')
 						$narrowest=QA_PERMIT_ADMINS;
 					else
@@ -759,6 +866,25 @@
 						$optionfield['type']='static';
 						$optionfield['value']=reset($permitoptions);
 					}
+					break;
+					
+				case 'permit_post_q_points':
+				case 'permit_post_a_points':
+				case 'permit_post_c_points':
+				case 'permit_vote_q_points':
+				case 'permit_vote_a_points':
+				case 'permit_flag_points':
+				case 'permit_edit_q_points':
+				case 'permit_edit_a_points':
+				case 'permit_edit_c_points':
+				case 'permit_select_a_points':
+				case 'permit_hide_show_points':
+				case 'permit_delete_hidden_points':
+				case 'permit_anon_view_ips_points':
+					unset($optionfield['label']);
+					$optionfield['type']='number';
+					$optionfield['prefix']=qa_lang_html('admin/users_must_have').'&nbsp;';
+					$optionfield['note']=qa_lang_html('admin/points');
 					break;
 					
 				case 'feed_for_qa':
@@ -976,7 +1102,7 @@
 	
 
 	if (isset($checkboxtodisplay))
-		qa_checkbox_to_display($qa_content, $checkboxtodisplay);
+		qa_set_display_rules($qa_content, $checkboxtodisplay);
 
 
 	$qa_content['navigation']['sub']=qa_admin_sub_navigation();

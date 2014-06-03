@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-check-lang.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Development tool to see which language phrases are missing or unused
 
 
@@ -35,8 +35,11 @@
 	<HEAD>
 		<META HTTP-EQUIV="Content-type" CONTENT="text/html; charset=utf-8"/>
 		<TITLE>Question2Answer Language Check</TITLE>
+		<STYLE>
+			code {font-size:125%;}
+		</STYLE>
 	</HEAD>
-	<BODY>
+	<BODY STYLE="font-family:arial; font-size:12px;">
 <?php
 
 	function get_phrase_substitutions($phrase)
@@ -50,9 +53,12 @@
 		return $substitutions;
 	}
 	
-	echo '<H2>Checking US English files in qa-include:</H2>';
+	echo '<H1>Checking US English files in <code>qa-include</code>...</H1>';
 	
-	$includefiles=glob(QA_INCLUDE_DIR.'qa-*.php');
+	$includefiles=array_merge(
+		glob(QA_INCLUDE_DIR.'qa-*.php'),
+		glob(QA_PLUGIN_DIR.'*/qa-*.php')
+	);
 	
 	$definite=array();
 	$probable=array();
@@ -75,7 +81,7 @@
 		foreach ($matches as $matchparts)
 			@$probable[$matchparts[1]][$matchparts[2]]++;
 
-		if (preg_match('/qa-lang-([a-z]+)\.php$/', $includefile, $matches)) { // it's a lang file
+		if (preg_match('|/qa-include/qa-lang-([a-z]+)\.php$|', $includefile, $matches)) { // it's a lang file
 			$prefix=$matches[1];
 		
 			$phrases=@include $includefile;
@@ -83,7 +89,7 @@
 			foreach ($phrases as $key => $value) {
 				@$defined[$prefix][$key]++;
 				$english[$prefix][$key]=$value;
-				$backmap[$value][]=$prefix.'/'.$key;
+				$backmap[$value][]=array('prefix' => $prefix, 'key' => $key);
 				$substitutions[$prefix][$key]=get_phrase_substitutions($value);
 			}
 
@@ -98,34 +104,36 @@
 	foreach ($definite as $key => $valuecount)
 		foreach ($valuecount as $value => $count)
 			if (!@$defined[$key][$value])
-				echo '<FONT COLOR="red">'.htmlspecialchars($key.'/'.$value.' used by '.$count.' but not defined').'</FONT><BR>';
+				output_lang_issue($key, $value, 'used by '.$count.' file/s but not defined');
 				
 	foreach ($defined as $key => $valuecount)
 		foreach ($valuecount as $value => $count)
-			if ( (!@$definite[$key][$value]) && (!@$probable[$key][$value]) ) {
-				if (@$possible[$value]) {
-					if ($key!='options')
-						echo htmlspecialchars($key.'/'.$value.' defined and possibly not used').'<BR>';
-				} else
-					echo '<FONT COLOR="red">'.htmlspecialchars($key.'/'.$value.' defined and apparently not used').'</FONT><BR>';
-			}
+			if ( (!@$definite[$key][$value]) && (!@$probable[$key][$value]) && (!@$possible[$value]) )
+				output_lang_issue($key, $value, 'defined but apparently not used');
 	
 	foreach ($backmap as $phrase => $where)
 		if (count($where)>1)
-			echo '<FONT COLOR="blue">'.htmlspecialchars('"'.$phrase.'" multiply defined as '.implode(' and ', $where)).'</FONT><BR>';
+			foreach ($where as $onewhere)
+				output_lang_issue($onewhere['prefix'], $onewhere['key'], 'contains the shared phrase "'.$phrase.'"', false);
 	
 	require_once QA_INCLUDE_DIR.'qa-app-admin.php';
 	
 	$languages=qa_admin_language_options();
 	unset($languages['']);
 	
+	$optionalprefixes=array(
+		'admin' => true,
+		'options' => true,
+	);
+	
 	foreach ($languages as $code => $language) {
-		echo '<H2>Checking '.$language.' files in qa-lang/'.$code.':</H2>';
+		echo '<H1>Checking '.$language.' files in <code>qa-lang/'.$code.'</code>...</H1>';
 		
 		$langdefined=array();
 		$langdifferent=array();
 		$langsubstitutions=array();
 		$langincludefiles=glob(QA_LANG_DIR.$code.'/qa-*.php');
+		$langnewphrases=array();
 		
 		foreach ($langincludefiles as $langincludefile)
 			if (preg_match('/qa-lang-([a-z]+)\.php$/', $langincludefile, $matches)) { // it's a lang file
@@ -134,7 +142,7 @@
 				
 				foreach ($phrases as $key => $value) {
 					@$langdefined[$prefix][$key]++;
-					$langdifferent[$prefix][$key]=($value!=$english[$prefix][$key]);
+					$langdifferent[$prefix][$key]=($value!=@$english[$prefix][$key]);
 					$langsubstitutions[$prefix][$key]=get_phrase_substitutions($value);
 				}
 			}
@@ -142,33 +150,60 @@
 		foreach ($langdefined as $key => $valuecount)
 			foreach ($valuecount as $value => $count) {
 				if (!@$defined[$key][$value])
-					echo '<FONT COLOR="red">'.htmlspecialchars($key.'/'.$value.' defined but not in US English files').'</FONT><BR>';
+					output_lang_issue($key, $value, 'defined but not in US English files');
 				
 				elseif (!$langdifferent[$key][$value])
-					echo '<FONT COLOR="red">'.htmlspecialchars($key.'/'.$value.' is identical to US English files').'</FONT><BR>';
+					output_lang_issue($key, $value, 'identical to US English files', false);
 				
 				else
 					foreach ($substitutions[$key][$value] as $substitution => $subcount)
 						if (!@$langsubstitutions[$key][$value][$substitution])
-							echo '<FONT COLOR="red">'.htmlspecialchars($key.'/'.$value.' omitted the substitution '.$substitution).'</FONT><BR>';
+							output_lang_issue($key, $value, 'omitted the substitution '.$substitution);
 						elseif ($subcount > @$langsubstitutions[$key][$value][$substitution])
-							echo '<FONT COLOR="red">'.htmlspecialchars($key.'/'.$value.' has fewer of the substitution '.$substitution).'</FONT><BR>';
+							output_lang_issue($key, $value, 'has fewer of the substitution '.$substitution);
 			}
 					
 		foreach ($defined as $key => $valuecount)
 			if (@$langdefined[$key]) {
 				if (count($langdefined[$key]) < (count($valuecount)/2)) { // only a few phrases defined
-					echo '<FONT COLOR="red">'.htmlspecialchars('Most '.$key.'/* values undefined so will use US English defaults').'</FONT><BR>';
+					output_lang_issue($key, null, 'few translations provided so will use US English defaults', !@$optionalprefixes[$key]);
 
 				} else
 					foreach ($valuecount as $value => $count)
-						if (!@$langdefined[$key][$value])
-							echo '<FONT COLOR="red">'.htmlspecialchars($key.'/'.$value.' undefined so will use US English defaults').'</FONT><BR>';
+						if (!@$langdefined[$key][$value]) {
+							output_lang_issue($key, $value, 'undefined so will use US English defaults', !@$optionalprefixes[$key]);
+							$langnewphrases[$key][$value]=$english[$key][$value];
+						}
 			} else
-				echo '<FONT COLOR="red">'.htmlspecialchars('All '.$key.'/* values undefined so will use US English defaults').'</FONT><BR>';
+				output_lang_issue($key, null, 'no translations provided so will use US English defaults', !@$optionalprefixes[$key]);
+		
+		foreach ($langnewphrases as $prefix => $phrases) {
+			echo '<H2>'.$language.' phrases to add to <code>qa-lang/'.$code.'/qa-lang-'.$prefix.'.php</code>:</H2>';
+			
+			echo 'Copy and paste this into the middle of <code>qa-lang/'.$code.'/qa-lang-'.$prefix.'.php</code> then translate the right-hand sides after the <code>=></code> symbol.';
+			
+			echo '<PRE>';
+			
+			foreach ($phrases as $key => $value)
+				echo '<SPAN STYLE="font-size:25%;">'."\t\t</SPAN>'".$key."' => \"".strtr($value, array('\\' => '\\\\', '"' => '\"', '$' => '\$', "\n" => '\n', "\t" => '\t'))."\",\n";
+				
+			echo '</PRE>';
+		}
 	}
 	
-	echo '<H2>Finished scanning for problems!</H2>';
+	function output_lang_issue($prefix, $key, $issue, $error=true)
+	{
+		echo '<font color="'.($error ? '#c00' : '#c99').'"><code>';
+
+		echo 'qa-lang-<B>'.qa_html($prefix).'</B>.php:';
+
+		if (strlen($key))
+			echo "'<B>".qa_html($key)."</B>'";
+		
+		echo '</code></font> &nbsp; '.qa_html($issue).'<BR>';
+	}
+	
+	echo '<H1>Finished scanning for problems!</H1>';
 
 ?>
 

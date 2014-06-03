@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-hidden.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for admin page showing hidden questions, answers and comments
 
 
@@ -37,11 +37,10 @@
 	
 //	Find recently hidden questions, answers, comments
 
-	list($hiddenquestions, $hiddenanswers, $hiddencomments, $categories)=qa_db_select_with_pending(
-		qa_db_recent_qs_selectspec($qa_login_userid, 0, null, null, true),
+	list($hiddenquestions, $hiddenanswers, $hiddencomments)=qa_db_select_with_pending(
+		qa_db_qs_selectspec($qa_login_userid, 'created', 0, null, null, true),
 		qa_db_recent_a_qs_selectspec($qa_login_userid, 0, null, null, true),
-		qa_db_recent_c_qs_selectspec($qa_login_userid, 0, null, null, true),
-		qa_db_categories_selectspec()
+		qa_db_recent_c_qs_selectspec($qa_login_userid, 0, null, null, true)
 	);
 	
 	
@@ -75,8 +74,7 @@
 			$htmloptions['tagsview']=false;
 			$htmloptions['answersview']=false;
 
-			$htmlfields=qa_any_to_q_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
-				qa_using_categories() ? $categories : null, $htmloptions);
+			$htmlfields=qa_any_to_q_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, null, $htmloptions);
 			
 			if (isset($htmlfields['what_url'])) // link directly to relevant content
 				$htmlfields['url']=$htmlfields['what_url'];

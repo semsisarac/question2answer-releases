@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-question.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for question page (only viewing functionality here)
 
 
@@ -55,7 +55,7 @@
 			qa_db_full_a_child_posts_selectspec($qa_login_userid, $questionid),
 			qa_db_post_parent_q_selectspec($questionid),
 			qa_db_related_qs_selectspec($qa_login_userid, $questionid),
-			qa_db_categories_selectspec()
+			qa_db_category_nav_selectspec($questionid, true, true)
 		);
 		
 		if ($question['basetype']!='Q') // don't allow direct viewing of other types of post
@@ -155,12 +155,19 @@
 
 		$post['editbutton']=(!$post['hidden']) && ($post['isbyuser'] || ($permiterror_edit!='level'));
 		$post['aselectable']=($post['type']=='Q') && !qa_user_permit_error($post['isbyuser'] ? null : 'permit_select_a');
+
+		$post['flagbutton']=qa_opt('flagging_of_posts') && (!$post['isbyuser']) && (!$post['hidden']) &&
+			(!@$post['userflag']) && (qa_user_permit_error('permit_flag')!='level');
+		$post['flagtohide']=$post['flagbutton'] && (!qa_user_permit_error('permit_flag')) && (($post['flagcount']+1)>=qa_opt('flagging_hide_after'));
+		$post['unflaggable']=@$post['userflag'] && (!$post['hidden']);
+		$post['clearflaggable']=($post['flagcount']>=(@$post['userflag'] ? 2 : 1)) && !qa_user_permit_error('permit_hide_show');
 		
 	//	Other actions only show the button if it's immediately possible
 		
 		$post['hideable']=(!$post['hidden']) && !$permiterror_hide_show;
-		$post['reshowable']=$post['hidden'] && (!$permiterror_hide_show) && ($post['authorlast'] || !$post['isbyuser']);
-			// can only reshow a question if you're the one who hid it, or of course if you have general showing permissions
+		$post['reshowable']=$post['hidden'] && (!$permiterror_hide_show) &&
+			(($post['authorlast'] && !$post['flagcount']) || (!$post['isbyuser']) || !qa_user_permit_error('permit_hide_show'));
+			// can only reshow a question if you're the one who hid it and it hasn't been flagged, or of course if you have general showing permissions
 		$post['deleteable']=$post['hidden'] && !qa_user_permit_error('permit_delete_hidden');
 			// this does not check the post has no children - that check is performed in qa_page_q_load_q()
 		$post['claimable']=(!isset($post['userid'])) && isset($qa_login_userid) && (strcmp(@$post['cookieid'], $qa_cookieid)==0) &&
@@ -174,7 +181,7 @@
 	Return a theme-ready structure with all the comments and follow-on questions to show for post $parent (question or answer)
 */
 	{
-		global $commentsfollows, $qa_login_userid, $qa_cookieid, $usershtml, $formtype, $formpostid, $formrequested, $categories;
+		global $commentsfollows, $qa_login_userid, $qa_cookieid, $usershtml, $formtype, $formpostid, $formrequested;
 		
 		foreach ($commentsfollows as $commentfollowid => $commentfollow)
 			if (($commentfollow['parentid']==$parent['postid']) && $commentfollow['viewable'] && ($commentfollowid!=$formpostid) ) {
@@ -199,6 +206,27 @@
 								'popup' => qa_lang_html('question/edit_c_popup'),
 							);
 							
+						if ($commentfollow['flagbutton'])
+							$c_view['form']['buttons']['flag']=array(
+								'tags' => 'NAME="doflagc_'.qa_html($commentfollowid).'"',
+								'label' => qa_lang_html($commentfollow['flagtohide'] ? 'question/flag_hide_button' : 'question/flag_button'),
+								'popup' => qa_lang_html('question/flag_c_popup'),
+							);
+						
+						if ($commentfollow['unflaggable'])
+							$c_view['form']['buttons']['unflag']=array(
+								'tags' => 'NAME="dounflagc_'.qa_html($commentfollowid).'"',
+								'label' => qa_lang_html('question/unflag_button'),
+								'popup' => qa_lang_html('question/unflag_popup'),
+							);
+							
+						if ($commentfollow['clearflaggable'])
+							$c_view['form']['buttons']['clearflags']=array(
+								'tags' => 'NAME="doclearflagsc_'.qa_html($commentfollowid).'"',
+								'label' => qa_lang_html('question/clear_flags_button'),
+								'popup' => qa_lang_html('question/clear_flags_popup'),
+							);
+	
 						if ($commentfollow['hideable'])
 							$c_view['form']['buttons']['hide']=array(
 								'tags' => 'NAME="dohidec_'.qa_html($commentfollowid).'"',
@@ -238,8 +266,7 @@
 					$htmloptions=qa_post_html_defaults('Q');
 					$htmloptions['avatarsize']=qa_opt('avatar_q_page_c_size');
 					
-					$c_view=qa_post_html_fields($commentfollow, $qa_login_userid, $qa_cookieid, $usershtml,
-						qa_using_categories() ? $categories : null, $htmloptions);
+					$c_view=qa_post_html_fields($commentfollow, $qa_login_userid, $qa_cookieid, $usershtml, null, $htmloptions);
 				}
 
 				$commentlist[]=$c_view;
@@ -263,9 +290,39 @@
 
 	if (!$question['viewable']) {
 		$qa_content=qa_content_prepare();
-		$qa_content['error']=qa_lang_html($question['authorlast'] ? 'question/q_hidden_author' : 'question/q_hidden_other');
+		
+		if ($question['flagcount'] && !isset($question['lastuserid']))
+			$qa_content['error']=qa_lang_html('question/q_hidden_flagged');
+		elseif ($question['authorlast'])
+			$qa_content['error']=qa_lang_html('question/q_hidden_author');
+		else
+			$qa_content['error']=qa_lang_html('question/q_hidden_other');
+
 		$qa_content['suggest_next']=qa_html_suggest_qs_tags(qa_using_tags());
 
+		return $qa_content;
+	}
+	
+	$permiterror=qa_user_permit_error('permit_view_q_page');
+	
+	if ( $permiterror && (qa_is_human_probably() || !qa_opt('allow_view_q_bots')) ) {
+		$qa_content=qa_content_prepare();
+		$topage=qa_q_request($questionid, $question['title']);
+		
+		switch ($permiterror) {
+			case 'login':
+				$qa_content['error']=qa_insert_login_links(qa_lang_html('main/view_q_must_login'), $topage);
+				break;
+				
+			case 'confirm':
+				$qa_content['error']=qa_insert_login_links(qa_lang_html('main/view_q_must_confirm'), $topage);
+				break;
+				
+			default:
+				$qa_content['error']=qa_lang_html('users/no_permission');
+				break;
+		}
+		
 		return $qa_content;
 	}
 	
@@ -301,7 +358,7 @@
 	
 //	Prepare content for theme
 	
-	$qa_content=qa_content_prepare(true, $question['categoryid']);
+	$qa_content=qa_content_prepare(true, array_keys(qa_category_path($categories, $question['categoryid'])));
 	
 	$qa_content['main_form_tags']='METHOD="POST" ACTION="'.qa_self_html().'"';
 	
@@ -325,8 +382,7 @@
 		$htmloptions['answersview']=false; // answer count is displayed separately so don't show it here
 		$htmloptions['avatarsize']=qa_opt('avatar_q_page_q_size');
 		
-		$qa_content['q_view']=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
-			qa_using_categories() ? $categories : null, $htmloptions);
+		$qa_content['q_view']=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, null, $htmloptions);
 		
 		$qa_content['title']=$qa_content['q_view']['title'];
 		
@@ -357,6 +413,27 @@
 					'popup' => qa_lang_html('question/edit_q_popup'),
 				);
 				
+			if ($question['flagbutton'])
+				$qa_content['q_view']['form']['buttons']['flag']=array(
+					'tags' => 'NAME="doflagq"',
+					'label' => qa_lang_html($question['flagtohide'] ? 'question/flag_hide_button' : 'question/flag_button'),
+					'popup' => qa_lang_html('question/flag_q_popup'),
+				);
+
+			if ($question['unflaggable'])
+				$qa_content['q_view']['form']['buttons']['unflag']=array(
+					'tags' => 'NAME="dounflagq"',
+					'label' => qa_lang_html('question/unflag_button'),
+					'popup' => qa_lang_html('question/unflag_popup'),
+				);
+				
+			if ($question['clearflaggable'])
+				$qa_content['q_view']['form']['buttons']['clearflags']=array(
+					'tags' => 'NAME="doclearflagsq"',
+					'label' => qa_lang_html('question/clear_flags_button'),
+					'popup' => qa_lang_html('question/clear_flags_popup'),
+				);
+
 			if ($question['hideable'])
 				$qa_content['q_view']['form']['buttons']['hide']=array(
 					'tags' => 'NAME="dohideq"',
@@ -477,6 +554,27 @@
 						'popup' => qa_lang_html('question/edit_a_popup'),
 					);
 					
+				if ($answer['flagbutton'])
+					$a_view['form']['buttons']['flag']=array(
+						'tags' => 'NAME="doflaga_'.qa_html($answerid).'"',
+						'label' => qa_lang_html($answer['flagtohide'] ? 'question/flag_hide_button' : 'question/flag_button'),
+						'popup' => qa_lang_html('question/flag_a_popup'),
+					);
+
+				if ($answer['unflaggable'])
+					$a_view['form']['buttons']['unflag']=array(
+						'tags' => 'NAME="dounflaga_'.qa_html($answerid).'"',
+						'label' => qa_lang_html('question/unflag_button'),
+						'popup' => qa_lang_html('question/unflag_popup'),
+					);
+					
+				if ($answer['clearflaggable'])
+					$a_view['form']['buttons']['clearflags']=array(
+						'tags' => 'NAME="doclearflagsa_'.qa_html($answerid).'"',
+						'label' => qa_lang_html('question/clear_flags_button'),
+						'popup' => qa_lang_html('question/clear_flags_popup'),
+					);
+	
 				if ($answer['hideable'])
 					$a_view['form']['buttons']['hide']=array(
 						'tags' => 'NAME="dohidea_'.qa_html($answerid).'"',
@@ -614,7 +712,7 @@
 				}
 				
 				qa_set_up_notify_fields($qa_content, $answerform['fields'], 'A', qa_get_logged_in_email(),
-					isset($innotify) ? $innotify : true, @$inemail, @$errors['email']);
+					isset($innotify) ? $innotify : qa_opt('notify_users_default'), @$inemail, @$errors['email']);
 					
 				if ($usecaptcha)
 					qa_set_up_captcha_field($qa_content, $answerform['fields'], @$errors,
@@ -647,12 +745,11 @@
 			
 		$qa_content['q_list']['qs']=array();
 		foreach ($relatedquestions as $related)
-			$qa_content['q_list']['qs'][]=qa_post_html_fields($related, $qa_login_userid, $qa_cookieid, $usershtml,
-				qa_using_categories() ? $categories : null, qa_post_html_defaults('Q'));
+			$qa_content['q_list']['qs'][]=qa_post_html_fields($related, $qa_login_userid, $qa_cookieid, $usershtml, null, qa_post_html_defaults('Q'));
 	}
 	
 
-//	Some final generally useful stuff
+//	Some generally useful stuff
 	
 	if (qa_using_categories() && count($categories))
 		$qa_content['navigation']['cat']=qa_category_navigation($categories, $question['categoryid']);
@@ -666,6 +763,23 @@
 		$qa_content['script_onloads'][]=array(
 			"document.getElementById(".qa_js($focusonid).").focus();"
 		);
+		
+		
+//	Determine whether the page view should be counted
+	
+	if (
+		qa_opt('do_count_q_views') &&
+		(!$formrequested) &&
+		(!qa_is_http_post()) &&
+		qa_is_human_probably() &&
+		( (!$question['views']) || ( // if it has more than zero views
+			( ($question['lastviewip']!=@$_SERVER['REMOTE_ADDR']) || (!isset($question['lastviewip'])) ) && // then it must be different IP from last view
+			( ($question['createip']!=@$_SERVER['REMOTE_ADDR']) || (!isset($question['createip'])) ) && // and different IP from the creator
+			( ($question['userid']!=$qa_login_userid) || (!isset($question['userid'])) ) && // and different user from the creator
+			( ($question['cookieid']!=$qa_cookieid) || (!isset($question['cookieid'])) ) // and different cookieid from the creator
+		) )
+	)
+		$qa_content['inc_views_postid']=$questionid;
 
 		
 	return $qa_content;

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/mouseover-layer/qa-mouseover-admin-form.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Generic module class for mouseover layer plugin to provide admin form and default option
 
 
@@ -43,7 +43,7 @@
 				$saved=true;
 			}
 			
-			qa_checkbox_to_display($qa_content, array(
+			qa_set_display_rules($qa_content, array(
 				'mouseover_content_max_len_display' => 'mouseover_content_on_field',
 			));
 			

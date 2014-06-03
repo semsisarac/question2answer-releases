@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-ajax.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Front line of response to Ajax requests, routing as appropriate
 
 
@@ -27,7 +27,7 @@
 
 //	Output this header as early as possible
 
-	header('Content-Type: text/plain');
+	header('Content-Type: text/plain; charset=utf-8');
 
 //	Ensure no PHP errors are shown in the Ajax response
 
@@ -52,6 +52,14 @@
 			
 		case 'recalc':
 			require QA_INCLUDE_DIR.'qa-ajax-recalc.php';
+			break;
+			
+		case 'subcats':
+			require QA_INCLUDE_DIR.'qa-ajax-subcats.php';
+			break;
+			
+		case 'asktitle':
+			require QA_INCLUDE_DIR.'qa-ajax-asktitle.php';
 			break;
 	}
 

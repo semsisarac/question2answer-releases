@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-update.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Changing questions, answer and comments (application level)
 
 
@@ -34,6 +34,7 @@
 	require_once QA_INCLUDE_DIR.'qa-db-post-create.php';
 	require_once QA_INCLUDE_DIR.'qa-db-post-update.php';
 	require_once QA_INCLUDE_DIR.'qa-db-points.php';
+	require_once QA_INCLUDE_DIR.'qa-db-hotness.php';
 
 	
 	function qa_question_set_content($oldquestion, $title, $content, $format, $text, $tagstring, $notify, $userid, $handle, $cookieid)
@@ -44,7 +45,10 @@
 	{
 		qa_post_unindex($oldquestion['postid']);
 		
-		qa_db_post_set_content($oldquestion['postid'], $title, $content, $format, $tagstring, $notify, $userid, @$_SERVER['REMOTE_ADDR']);
+		$setupdated=strcmp($oldquestion['title'], $title) || strcmp($oldquestion['content'], $content) || strcmp($oldquestion['format'], $format);
+		
+		qa_db_post_set_content($oldquestion['postid'], $title, $content, $format, $tagstring, $notify,
+			$setupdated ? $userid : null, $setupdated ? @$_SERVER['REMOTE_ADDR'] : null);
 		
 		if (!$oldquestion['hidden'])
 			qa_post_index($oldquestion['postid'], 'Q', $oldquestion['postid'], $title, $text, $tagstring);
@@ -136,7 +140,7 @@
 				qa_post_unindex($comment['postid']);
 			
 		qa_db_post_set_type($oldquestion['postid'], $hidden ? 'Q_HIDDEN' : 'Q', $userid, @$_SERVER['REMOTE_ADDR']);
-		qa_db_ifcategory_qcount_update($oldquestion['categoryid']);
+		qa_db_category_path_qcount_update(qa_db_post_get_category_path($oldquestion['postid']));
 		qa_db_points_update_ifuser($oldquestion['userid'], array('qposts', 'aselects'));
 		qa_db_qcount_update();
 		qa_db_unaqcount_update();
@@ -174,11 +178,16 @@
 	Handles cached counts and notifications and will reset category IDs for all answers and comments.
 */
 	{
-		qa_db_post_set_category($oldquestion['postid'], $categoryid, $userid, @$_SERVER['REMOTE_ADDR']);
+		$oldpath=qa_db_post_get_category_path($oldquestion['postid']);
 		
-		qa_db_ifcategory_qcount_update($oldquestion['categoryid']);
-		qa_db_ifcategory_qcount_update($categoryid);
+		qa_db_post_set_category($oldquestion['postid'], $categoryid);
+		qa_db_posts_calc_category_path($oldquestion['postid']);
 		
+		$newpath=qa_db_post_get_category_path($oldquestion['postid']);
+		
+		qa_db_category_path_qcount_update($oldpath);
+		qa_db_category_path_qcount_update($newpath);
+
 		$otherpostids=array();
 		foreach ($answers as $answer)
 			$otherpostids[]=$answer['postid'];
@@ -187,7 +196,7 @@
 			if ($comment['basetype']=='C')
 				$otherpostids[]=$comment['postid'];
 				
-		qa_db_post_set_category_multi($otherpostids, $categoryid);
+		qa_db_posts_set_category_path($otherpostids, $newpath);
 
 		qa_report_event('q_move', $userid, $handle, $cookieid, array(
 			'postid' => $oldquestion['postid'],
@@ -210,11 +219,12 @@
 			qa_fatal_error('Tried to delete a non-hidden question');
 		
 		$useridvotes=qa_db_uservote_post_get($oldquestion['postid']);
+		$oldpath=qa_db_post_get_category_path($oldquestion['postid']);
 		
 		qa_post_unindex($oldquestion['postid']);
 		qa_db_post_delete($oldquestion['postid']); // also deletes any related voteds due to cascading
 		
-		qa_db_ifcategory_qcount_update($oldquestion['categoryid']);
+		qa_db_category_path_qcount_update($oldpath);
 		qa_db_points_update_ifuser($oldquestion['userid'], array('qposts', 'aselects', 'qvoteds', 'upvoteds', 'downvoteds'));
 		
 		foreach ($useridvotes as $voteruserid => $vote)
@@ -252,6 +262,11 @@
 	Remove post $postid from our index and update appropriate word counts
 */
 	{
+		global $qa_post_indexing_suspended;
+
+		if ($qa_post_indexing_suspended>0)
+			return;
+			
 		$titlewordids=qa_db_titlewords_get_post_wordids($postid);
 		qa_db_titlewords_delete_post($postid);
 		qa_db_word_titlecount_update($titlewordids);
@@ -279,7 +294,10 @@
 	{
 		qa_post_unindex($oldanswer['postid']);
 		
-		qa_db_post_set_content($oldanswer['postid'], $oldanswer['title'], $content, $format, $oldanswer['tags'], $notify, $userid, @$_SERVER['REMOTE_ADDR']);
+		$setupdated=strcmp($oldanswer['content'], $content) || strcmp($oldanswer['format'], $format);
+		
+		qa_db_post_set_content($oldanswer['postid'], $oldanswer['title'], $content, $format, $oldanswer['tags'], $notify,
+			$setupdated ? $userid : null, $setupdated ? @$_SERVER['REMOTE_ADDR'] : null);
 		
 		if (!($oldanswer['hidden'] || $question['hidden'])) // don't index if answer or its question is hidden
 			qa_post_index($oldanswer['postid'], 'A', $question['postid'], null, $text, null);
@@ -313,6 +331,7 @@
 		qa_db_post_set_type($oldanswer['postid'], $hidden ? 'A_HIDDEN' : 'A', $userid, @$_SERVER['REMOTE_ADDR']);
 		qa_db_points_update_ifuser($oldanswer['userid'], array('aposts', 'aselecteds'));
 		qa_db_post_acount_update($question['postid']);
+		qa_db_hotness_update($question['postid']);
 		qa_db_acount_update();
 		qa_db_unaqcount_update();
 		
@@ -365,6 +384,7 @@
 				// could do this in one query like in qa_db_users_recalc_points() but this will do for now - unlikely to be many votes
 		
 		qa_db_post_acount_update($question['postid']);
+		qa_db_hotness_update($question['postid']);
 		qa_db_acount_update();
 		qa_db_unaqcount_update();
 
@@ -403,7 +423,10 @@
 	{
 		qa_post_unindex($oldcomment['postid']);
 		
-		qa_db_post_set_content($oldcomment['postid'], $oldcomment['title'], $content, $format, $oldcomment['tags'], $notify, $userid, @$_SERVER['REMOTE_ADDR']);
+		$setupdated=strcmp($oldcomment['content'], $content) || strcmp($oldcomment['format'], $format);
+		
+		qa_db_post_set_content($oldcomment['postid'], $oldcomment['title'], $content, $format, $oldcomment['tags'], $notify,
+			$setupdated ? $userid : null, $setupdated ? @$_SERVER['REMOTE_ADDR'] : null);
 
 		if (!($oldcomment['hidden'] || $question['hidden'] || @$answer['hidden']))
 			qa_post_index($oldcomment['postid'], 'C', $question['postid'], null, $text, null);
@@ -442,11 +465,12 @@
 		
 		foreach ($commentsfollows as $commentfollow)
 			if ($commentfollow['parentid']==$oldanswer['postid']) // do same thing for comments and follows
-				qa_db_post_set_parent($commentfollow['postid'], $parentid, $commentfollow['lastuserid'], @$_SERVER['REMOTE_ADDR']);
+				qa_db_post_set_parent($commentfollow['postid'], $parentid, null, null);
 
 		qa_db_points_update_ifuser($oldanswer['userid'], array('aposts', 'aselecteds', 'cposts'));
 
 		qa_db_post_acount_update($question['postid']);
+		qa_db_hotness_update($question['postid']);
 		qa_db_acount_update();
 		qa_db_ccount_update();
 		qa_db_unaqcount_update();

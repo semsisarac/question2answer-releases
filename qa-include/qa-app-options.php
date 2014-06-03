@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-options.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Getting and setting admin options (application level)
 
 
@@ -36,6 +36,8 @@
 	define('QA_PERMIT_ALL', 150);
 	define('QA_PERMIT_USERS', 120);
 	define('QA_PERMIT_CONFIRMED', 110);
+	define('QA_PERMIT_POINTS', 106);
+	define('QA_PERMIT_POINTS_CONFIRMED', 104);
 	define('QA_PERMIT_EXPERTS', 100);
 	define('QA_PERMIT_EDITORS', 70);
 	define('QA_PERMIT_MODERATORS', 40);
@@ -175,7 +177,10 @@
 		global $qa_root_url_inferred;
 		
 		$fixed_defaults=array(
+			'allow_change_usernames' => 1,
 			'allow_multi_answers' => 1,
+			'allow_private_messages' => 1,
+			'allow_view_q_bots' => 1,
 			'avatar_allow_gravatar' => 1,
 			'avatar_allow_upload' => 1,
 			'avatar_profile_size' => 200,
@@ -197,6 +202,7 @@
 			'confirm_user_emails' => 1,
 			'do_ask_check_qs' => 0,
 			'do_complete_tags' => 1,
+			'do_count_q_views' => 1,
 			'do_example_tags' => 1,
 			'do_related_qs' => 1,
 			'feed_for_activity' => 1,
@@ -207,20 +213,35 @@
 			'feed_number_items' => 50,
 			'feed_per_category' => 1,
 			'feedback_enabled' => 1,
+			'flagging_hide_after' => 5,
+			'flagging_notify_first' => 1,
+			'flagging_notify_every' => 2,
+			'flagging_of_posts' => 1,
 			'follow_on_as' => 1,
+			'hot_weight_views' => 100,
+			'hot_weight_answers' => 100,
+			'hot_weight_votes' => 100,
+			'hot_weight_q_age' => 100,
+			'hot_weight_a_age' => 100,
 			'match_ask_check_qs' => 3,
 			'match_example_tags' => 3,
 			'match_related_qs' => 3,
 			'max_len_q_title' => 120,
 			'max_num_q_tags' => 5,
-			'max_rate_ip_as' => 150,
-			'max_rate_ip_cs' => 100,
-			'max_rate_ip_logins' => 100,
-			'max_rate_ip_qs' => 50,
-			'max_rate_ip_votes' => 1500,
-			'max_rate_user_as' => 30,
+			'max_rate_ip_as' => 50,
+			'max_rate_ip_cs' => 40,
+			'max_rate_ip_flags' => 10,
+			'max_rate_ip_logins' => 20,
+			'max_rate_ip_messages' => 10,
+			'max_rate_ip_qs' => 20,
+			'max_rate_ip_uploads' => 20,
+			'max_rate_ip_votes' => 600,
+			'max_rate_user_as' => 25,
 			'max_rate_user_cs' => 20,
+			'max_rate_user_flags' => 5,
+			'max_rate_user_messages' => 5,
 			'max_rate_user_qs' => 10,
+			'max_rate_user_uploads' => 10,
 			'max_rate_user_votes' => 300,
 			'min_len_a_content' => 12,
 			'min_len_c_content' => 12,
@@ -234,9 +255,12 @@
 			'nav_unanswered' => 1,
 			'nav_users' => 1,
 			'neat_urls' => QA_URL_FORMAT_SAFEST,
+			'notify_users_default' => 1,
 			'page_size_ask_check_qs' => 5,
 			'page_size_ask_tags' => 5,
+			'page_size_activity' => 20,
 			'page_size_home' => 20,
+			'page_size_hot_qs' => 20,
 			'page_size_qs' => 20,
 			'page_size_related_qs' => 5,
 			'page_size_search' => 10,
@@ -251,8 +275,10 @@
 			'permit_edit_a' => QA_PERMIT_EXPERTS,
 			'permit_edit_c' => QA_PERMIT_EDITORS,
 			'permit_edit_q' => QA_PERMIT_EDITORS,
+			'permit_flag' => QA_PERMIT_CONFIRMED,
 			'permit_hide_show' => QA_PERMIT_EDITORS,
 			'permit_select_a' => QA_PERMIT_EXPERTS,
+			'permit_view_q_page' => QA_PERMIT_ALL,
 			'permit_vote_a' => QA_PERMIT_USERS,
 			'permit_vote_q' => QA_PERMIT_USERS,
 			'points_a_selected' => 30,
@@ -278,6 +304,7 @@
 			'site_theme' => 'Default',
 			'sort_answers_by' => 'created',
 			'tags_or_categories' => 'tc',
+			'title_length_urls' => 50,
 			'voting_on_as' => 1,
 			'voting_on_qs' => 1,
 		);
@@ -410,8 +437,10 @@
 		
 		return array(
 			'tagsview' => ($basetype=='Q') && qa_using_tags(),
-			'voteview' => (($basetype=='Q') || ($basetype=='A')) ? qa_get_vote_view($basetype, $full) : false,
+			'voteview' => qa_get_vote_view($basetype, $full),
+			'flagsview' => qa_opt('flagging_of_posts') && $full,
 			'answersview' => $basetype=='Q',
+			'viewsview' => ($basetype=='Q') && qa_opt('do_count_q_views') && qa_opt('show_view_counts'),
 			'whatlink' => qa_opt('show_a_c_links'),
 			'whenview' => qa_opt('show_when_created'),
 			'ipview' => !qa_user_permit_error('permit_anon_view_ips'),
@@ -432,18 +461,28 @@
 	with buttons enabled if appropriate (based on whether $full post shown) unless $enabledif is false.
 */
 	{
+		$disabledsuffix='';
+		
 		if ($basetype=='Q') {
 			$view=qa_opt('voting_on_qs');
-			$enabled=$enabledif && $view && ($full || !qa_opt('voting_on_q_page_only'));
+			
+			if (qa_user_permit_error('permit_vote_q')=='level')
+				$disabledsuffix='-disabled-level';
+			elseif (!($enabledif && ($full || !qa_opt('voting_on_q_page_only'))))
+				$disabledsuffix='-disabled-page';
 
 		} elseif ($basetype=='A') {
 			$view=qa_opt('voting_on_as');
-			$enabled=$enabledif;
+			
+			if (qa_user_permit_error('permit_vote_a')=='level')
+				$disabledsuffix='-disabled-level';
+			elseif (!$enabledif)
+				$disabledsuffix='-disabled-page';
 			
 		} else
 			$view=false;
 		
-		return $view ? (qa_opt('votes_separated') ? ($enabled ? 'updown' : 'updown-disabled') : ($enabled ? 'net' : 'net-disabled')) : false;
+		return $view ? ( (qa_opt('votes_separated') ? 'updown' : 'net').$disabledsuffix ) : false;
 	}
 	
 	
@@ -515,6 +554,35 @@
 		}
 		
 		return $qa_points_title_cache;
+	}
+	
+	
+	function qa_get_permit_options()
+	{
+		$permits=array('permit_view_q_page', 'permit_post_q', 'permit_post_a');
+		
+		if (qa_opt('comment_on_qs') || qa_opt('comment_on_as'))
+			$permits[]='permit_post_c';
+		
+		if (qa_opt('voting_on_qs'))
+			$permits[]='permit_vote_q';
+			
+		if (qa_opt('voting_on_as'))
+			$permits[]='permit_vote_a';
+			
+		array_push($permits, 'permit_edit_q', 'permit_edit_a');
+		
+		if (qa_opt('comment_on_qs') || qa_opt('comment_on_as'))
+			$permits[]='permit_edit_c';
+			
+		array_push($permits, 'permit_select_a', 'permit_anon_view_ips');
+		
+		if (qa_opt('flagging_of_posts'))
+			$permits[]='permit_flag';
+			
+		array_push($permits, 'permit_hide_show', 'permit_delete_hidden');
+		
+		return $permits;
 	}
 
 

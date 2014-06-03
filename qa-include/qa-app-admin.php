@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-admin.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Functions used in the admin center pages
 
 
@@ -215,6 +215,8 @@
 			QA_PERMIT_ALL => qa_lang_html('options/permit_all'),
 			QA_PERMIT_USERS => qa_lang_html('options/permit_users'),
 			QA_PERMIT_CONFIRMED => qa_lang_html('options/permit_confirmed'),
+			QA_PERMIT_POINTS => qa_lang_html('options/permit_points'),
+			QA_PERMIT_POINTS_CONFIRMED => qa_lang_html('options/permit_points_confirmed'),
 			QA_PERMIT_EXPERTS => qa_lang_html('options/permit_experts'),
 			QA_PERMIT_EDITORS => qa_lang_html('options/permit_editors'),
 			QA_PERMIT_MODERATORS => qa_lang_html('options/permit_moderators'),
@@ -226,8 +228,10 @@
 			if (($key<$narrowest) || ($key>$widest))
 				unset($options[$key]);
 		
-		if (!$doconfirms)
+		if (!$doconfirms) {
 			unset($options[QA_PERMIT_CONFIRMED]);
+			unset($options[QA_PERMIT_POINTS_CONFIRMED]);
+		}
 			
 		return $options;
 	}
@@ -257,6 +261,11 @@
 			'admin/layout' => array(
 				'label' => qa_lang('admin/layout_title'),
 				'url' => qa_path_html('admin/layout'),
+			),
+			
+			'admin/lists' => array(
+				'label' => qa_lang('admin/lists_title'),
+				'url' => qa_path_html('admin/lists'),
 			),
 			
 			'admin/viewing' => array(

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-register.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for register page
 
 
@@ -41,6 +41,12 @@
 		
 	if (isset($qa_login_userid))
 		qa_redirect('');
+	
+	if (qa_opt('suspend_register_users')) {
+		$qa_content=qa_content_prepare();
+		$qa_content['error']=qa_lang_html('users/register_suspended');
+		return $qa_content;
+	}
 	
 	if (qa_user_permit_error()) {
 		$qa_content=qa_content_prepare();

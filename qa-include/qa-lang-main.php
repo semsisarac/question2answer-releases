@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-main.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Language phrases commonly used throughout Q2A
 
 
@@ -27,8 +27,10 @@
 
 	return array(
 		'1_answer' => '1 answer',
+		'1_comment' => '1 comment',
 		'1_day' => '1 day',
 		'1_disliked' => '1 dislike',
+		'1_flag' => '1 flag',
 		'1_hour' => '1 hour',
 		'1_liked' => '1 like',
 		'1_minute' => '1 minute',
@@ -36,6 +38,8 @@
 		'1_point' => '1 point',
 		'1_question' => '1 question',
 		'1_second' => '1 second',
+		'1_user' => '1 user',
+		'1_view' => '1 view',
 		'1_vote' => '1 vote',
 		'1_week' => '1 week',
 		'1_year' => '1 year',
@@ -52,6 +56,7 @@
 		'field_required' => 'Please enter something in this field',
 		'general_error' => 'A server error occurred - please try again.',
 		'highest_users' => 'Top scoring users',
+		'image_not_read' => 'The image could not be read. Please upload one of: ^',
 		'in_category_x' => 'in ^',
 		'ip_address_x' => 'IP address ^',
 		'logged_in_x' => 'Hello ^',
@@ -65,6 +70,7 @@
 		'nav_ask' => 'Ask a Question',
 		'nav_categories' => 'Categories',
 		'nav_feedback' => 'Send feedback',
+		'nav_hot' => 'Hot!',
 		'nav_home' => 'Home',
 		'nav_login' => 'Login',
 		'nav_logout' => 'Logout',
@@ -81,13 +87,12 @@
 		'no_category' => 'No category',
 		'no_comments_found' => 'No comments found',
 		'no_comments_in_x' => 'No comments in ^',
-		'no_questions_found_in_x' => 'No questions found in ^',
+		'no_questions_in_x' => 'No questions in ^',
 		'no_questions_found' => 'No questions found',
 		'no_related_qs_title' => 'No related questions found',
 		'no_results_for_x' => 'No results found for ^',
 		'no_tags_found' => 'No tags found',
 		'no_una_questions_found' => 'No unanswered questions found',
-		'no_una_questions_in_x' => 'No unanswered questions in ^',
 		'page_label' => 'Page:',
 		'page_next' => 'next',
 		'page_not_found' => 'Page not found',
@@ -104,6 +109,10 @@
 		'recent_qs_as_title' => 'Recent questions and answers',
 		'recent_qs_in_x' => 'Recent questions in ^',
 		'recent_qs_title' => 'Recent questions',
+		'nav_most_votes' => 'Most votes',
+		'nav_most_recent' => 'Recent',
+		'nav_most_answers' => 'Most answers',
+		'nav_most_views' => 'Most views',
 		'related_qs_title' => 'Related questions',
 		'results_for_x' => 'Search results for ^',
 		'save_button' => 'Save Changes',
@@ -114,15 +123,23 @@
 		'suggest_category_qs' => 'To see more, click for all the ^1questions in this category^2.',
 		'suggest_qs_tags' => 'To see more, click for the ^1full list of questions^2 or ^3popular tags^4.',
 		'suggest_qs' => 'To see more, click for the ^1full list of questions^2.',
+		'voted_qs_title' => 'Highest voted questions',
+		'answered_qs_title' => 'Most answered questions',
+		'hot_qs_title' => 'Hot questions',
 		'unanswered_qs_in_x' => 'Recent questions without answers in ^',
 		'unanswered_qs_title' => 'Recent questions without answers',
+		'upload_limit' => 'Too many uploads - please try again in an hour',
+		'viewed_qs_title' => 'Most viewed questions',
 		'vote_disabled_hidden_a' => 'You cannot vote on hidden answers',
 		'vote_disabled_hidden_q' => 'You cannot vote on hidden questions',
+		'vote_disabled_level' => 'Voting is only available to some users',
 		'vote_disabled_my_a' => 'You cannot vote on your own answers',
 		'vote_disabled_my_q' => 'You cannot vote on your own questions',
 		'vote_disabled_q_page_only' => 'Please view this question to vote',
 		'vote_down_popup' => 'Click to vote down',
 		'vote_limit' => 'Too many votes received - please try again in an hour',
+		'view_q_must_confirm' => 'Please ^5confirm your email address^6 to view question pages.',
+		'view_q_must_login' => 'Please ^1log in^2 or ^3register^4 to view question pages.',
 		'vote_must_confirm' => 'Please ^5confirm your email address^6 to vote.',
 		'vote_must_login' => 'Please ^1log in^2 or ^3register^4 to vote.',
 		'vote_not_allowed' => 'Voting on this is not allowed',
@@ -131,8 +148,10 @@
 		'voted_up_popup' => 'You have voted this up - click to remove vote',
 		'x_ago' => '^ ago',
 		'x_answers' => '^ answers',
+		'x_comments' => '^ comments',
 		'x_days' => '^ days',
 		'x_disliked' => '^ dislike',
+		'x_flags' => '^ flags',
 		'x_hours' => '^ hours',
 		'x_liked' => '^ like',
 		'x_minutes' => '^ minutes',
@@ -140,6 +159,8 @@
 		'x_points' => '^ points',
 		'x_questions' => '^ questions',
 		'x_seconds' => '^ seconds',
+		'x_users' => '^ users',
+		'x_views' => '^ views',
 		'x_votes' => '^ votes',
 		'x_weeks' => '^ weeks',
 		'x_years' => '^ years',

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/ask-box-widget/qa-ask-box.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Widget module class for ask a question box
 
 
@@ -38,6 +38,7 @@
 				case 'feedback':
 				case 'qa':
 				case 'questions':
+				case 'hot':
 				case 'search':
 				case 'tag':
 				case 'tags':
@@ -67,19 +68,23 @@
 		
 		function output_widget($region, $place, $themeobject, $template, $request, $qa_content)
 		{
+			if (isset($qa_content['categoryids']))
+				$params=array('cat' => end($qa_content['categoryids']));
+			else
+				$params=null;
 ?>
-<FORM METHOD="POST" ACTION="./ask">
+<FORM METHOD="POST" ACTION="<?php echo qa_path_html('ask', $params); ?>">
 	<TABLE CLASS="qa-form-tall-table" STYLE="width:100%">
 		<TR STYLE="vertical-align:middle;">
-			<TD CLASS="qa-form-tall-label" STYLE="padding:8px; <?=($region=='side') ? 'padding-bottom:0;' : 'text-align:right;'?>" WIDTH="1">
-				<?=strtr(qa_lang_html('question/ask_title'), array(' ' => '&nbsp;'))?>:
+			<TD CLASS="qa-form-tall-label" STYLE="padding:8px; <?php echo ($region=='side') ? 'padding-bottom:0;' : 'text-align:right;'?>" WIDTH="1">
+				<?php echo strtr(qa_lang_html('question/ask_title'), array(' ' => '&nbsp;'))?>:
 			</TD>
-<?
+<?php
 			if ($region=='side') {
 ?>
 		</TR>
 		<TR>
-<?			
+<?php			
 			}
 ?>
 			<TD CLASS="qa-form-tall-data" STYLE="padding:8px;" WIDTH="*">
@@ -89,7 +94,7 @@
 	</TABLE>
 	<INPUT TYPE="hidden" NAME="doask1" VALUE="1">
 </FORM>
-<?
+<?php
 		}
 	
 	};

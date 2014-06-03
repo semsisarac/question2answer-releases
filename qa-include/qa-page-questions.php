@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-questions.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for page listing recent questions
 
 
@@ -34,39 +34,94 @@
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 	require_once QA_INCLUDE_DIR.'qa-app-q-list.php';
 	
-	$categoryslug=$pass_subrequest;
-	$hascategory=isset($categoryslug);
+	$categoryslugs=$pass_subrequests;
+	$countslugs=count($categoryslugs);
+	$sort=$countslugs ? null : qa_get('sort');
 
 
 //	Get list of questions, plus category information
 
+	switch ($sort) {
+		case 'hot':
+			$questionselect=qa_db_qs_selectspec($qa_login_userid, 'hotness', $qa_start);
+			break;
+		
+		case 'votes':
+			$questionselect=qa_db_qs_selectspec($qa_login_userid, 'netvotes', $qa_start);
+			break;
+			
+		case 'answers':
+			$questionselect=qa_db_qs_selectspec($qa_login_userid, 'acount', $qa_start);
+			break;
+			
+		case 'views':
+			$questionselect=qa_db_qs_selectspec($qa_login_userid, 'views', $qa_start);
+			break;
+		
+		default:
+			$questionselect=qa_db_qs_selectspec($qa_login_userid, 'created', $qa_start, $categoryslugs);
+			break;
+	}
+	
 	@list($questions, $categories, $categoryid)=qa_db_select_with_pending(
-		qa_db_recent_qs_selectspec($qa_login_userid, $qa_start, $categoryslug),
-		qa_db_categories_selectspec(),
-		$hascategory ? qa_db_slug_to_category_id_selectspec($categoryslug) : null
+		$questionselect,
+		qa_db_category_nav_selectspec($categoryslugs, false),
+		$countslugs ? qa_db_slugs_to_category_id_selectspec($categoryslugs) : null
 	);
 	
-	if ($hascategory) {
+	if ($countslugs) {
 		if (!isset($categoryid))
 			return include QA_INCLUDE_DIR.'qa-page-not-found.php';
 	
-		$categorytitlehtml=qa_category_html($categories[$categoryid]);
-		$sometitle=qa_lang_html_sub('main/recent_qs_in_x', $categorytitlehtml);
-		$nonetitle=qa_lang_html_sub('main/no_questions_found_in_x', $categorytitlehtml);
+		$categorytitlehtml=qa_html($categories[$categoryid]['title']);
+		$nonetitle=qa_lang_html_sub('main/no_questions_in_x', $categorytitlehtml);
 
-	} else {
-		$sometitle=qa_lang_html('main/recent_qs_title');
+	} else
 		$nonetitle=qa_lang_html('main/no_questions_found');
+	
+	$categorypathprefix=null; // only show category list and feed when sorting by date
+	$feedpathprefix=null;
+	$pagelinkparams=array('sort' => $sort);
+	
+	switch ($sort) {
+		case 'hot':
+			$sometitle=qa_lang_html('main/hot_qs_title');
+			break;
+			
+		case 'votes':
+			$sometitle=qa_lang_html('main/voted_qs_title');
+			break;
+			
+		case 'answers':
+			$sometitle=qa_lang_html('main/answered_qs_title');
+			break;
+		
+		case 'views':
+			$sometitle=qa_lang_html('main/viewed_qs_title');
+			break;
+		
+		default:
+			$pagelinkparams=array();
+			$sometitle=$countslugs ? qa_lang_html_sub('main/recent_qs_in_x', $categorytitlehtml) : qa_lang_html('main/recent_qs_title');
+			$categorypathprefix='questions/';
+			$feedpathprefix=qa_opt('feed_for_questions') ? 'questions' : null;
+			break;
 	}
 
 	
 //	Prepare and return content for theme
 
-	return qa_q_list_page_content(
-		$questions, qa_opt('page_size_qs'), $qa_start, $hascategory ? $categories[$categoryid]['qcount'] : qa_opt('cache_qcount'), $sometitle, $nonetitle,
-		$categories, $categoryid, true, 'questions', qa_opt('feed_for_questions') ? 'questions' : null,
-		$hascategory ? qa_html_suggest_qs_tags(qa_using_tags()) : qa_html_suggest_ask($categoryid)
+	$qa_content=qa_q_list_page_content(
+		$questions, qa_opt('page_size_qs'), $qa_start, $countslugs ? $categories[$categoryid]['qcount'] : qa_opt('cache_qcount'), $sometitle, $nonetitle,
+		$categories, $categoryid, true, $categorypathprefix, $feedpathprefix,
+		$countslugs ? qa_html_suggest_qs_tags(qa_using_tags()) : qa_html_suggest_ask($categoryid), $pagelinkparams
 	);
+	
+	if (!$countslugs)
+		$qa_content['navigation']['sub']=qa_qs_sub_navigation($sort);
+
+	
+	return $qa_content;
 
 
 /*

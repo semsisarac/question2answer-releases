@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-recalc.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Managing database recalculations (clean-up operations) and status messages
 
 
@@ -37,9 +37,9 @@
 	^words (all): list of words used for indexes
 	^options (title=cache_qcount|cache_acount|cache_ccount|cache_tagcount|cache_unaqcount): total Qs, As, Cs, tags, unanswered Qs
 	
-	Recalculated in dorecalcposts:
+	Recalculated in dorecountposts:
 	==============================
-	^posts (upvotes, downvotes, acount): number of votes and answers received by questions
+	^posts (upvotes, downvotes, netvotes, hotness, acount, flagcount): number of votes, hotness, answers, flags received by posts
 	
 	Recalculated in dorecalcpoints:
 	===============================
@@ -49,7 +49,9 @@
 	Recalculated in dorecalccategories:
 	===================================
 	^posts (categoryid): assign to answers and comments based on their antecedent question
+	^posts (catidpath1, catidpath2, catidpath3): hierarchical path to category ids (requires QA_CATEGORY_DEPTH=4)
 	^categories (qcount): number of (visible) questions in each category
+	^categories (backpath): full (backwards) path of slugs to that category
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -202,12 +204,13 @@
 				break;
 				
 			case 'dorecalccategories_postupdate':
-				$postids=qa_db_posts_get_for_recategorizing($next, 1000);
+				$postids=qa_db_posts_get_for_recategorizing($next, 100);
 				
 				if (count($postids)) {
 					$lastpostid=max($postids);
 					
-					qa_db_posts_recategorize($next, $lastpostid);
+					qa_db_posts_recalc_categoryid($next, $lastpostid);
+					qa_db_posts_calc_category_path($next, $lastpostid);
 					
 					$next=1+$lastpostid;
 					$done+=count($postids);
@@ -219,8 +222,38 @@
 				break;
 			
 			case 'dorecalccategories_recount':
-				qa_db_categories_recount();
-				qa_recalc_transition($state, 'dorecalccategories_complete');
+				$categoryids=qa_db_categories_get_for_recalcs($next, 10);
+				
+				if (count($categoryids)) {
+					$lastcategoryid=max($categoryids);
+					
+					foreach ($categoryids as $categoryid)
+						qa_db_ifcategory_qcount_update($categoryid);
+					
+					$next=1+$lastcategoryid;
+					$done+=count($categoryids);
+					$continue=true;
+				
+				} else {
+					qa_recalc_transition($state, 'dorecalccategories_backpaths');
+				}
+				break;
+				
+			case 'dorecalccategories_backpaths':
+				$categoryids=qa_db_categories_get_for_recalcs($next, 10);
+
+				if (count($categoryids)) {
+					$lastcategoryid=max($categoryids);
+					
+					qa_db_categories_recalc_backpaths($next, $lastcategoryid);
+					
+					$next=1+$lastcategoryid;
+					$done+=count($categoryids);
+					$continue=true;
+				
+				} else {
+					qa_recalc_transition($state, 'dorecalccategories_complete');
+				}
 				break;
 				
 			case 'dodeletehidden':
@@ -317,7 +350,6 @@
 	{
 		switch ($operation) {
 			case 'doreindexposts_reindex':
-			case 'dorecountposts_recount':
 				$length=qa_opt('cache_qcount')+qa_opt('cache_acount')+qa_opt('cache_ccount');
 				break;
 			
@@ -329,11 +361,16 @@
 				$length=qa_opt('cache_userpointscount');
 				break;
 				
+			case 'dorecountposts_recount':
 			case 'dorecalccategories_postupdate':
-				$length=qa_opt('cache_acount')+qa_opt('cache_ccount')+
-					qa_db_count_posts('A_HIDDEN')+qa_db_count_posts('C_HIDDEN');
+				$length=qa_db_count_posts();
 				break;
 				
+			case 'dorecalccategories_recount':
+			case 'dorecalccategories_backpaths':
+				$length=qa_db_count_categories();
+				break;
+			
 			case 'dodeletehidden_comments':
 				$length=count(qa_db_posts_get_for_deleting('C'));
 				break;
@@ -424,7 +461,17 @@
 				break;
 				
 			case 'dorecalccategories_recount':
-				$message=qa_lang('admin/recalc_categories_recounting');
+				$message=strtr(qa_lang('admin/recalc_categories_recounting'), array(
+					'^1' => number_format($done),
+					'^2' => number_format($length)
+				));
+				break;
+				
+			case 'dorecalccategories_backpaths':
+				$message=strtr(qa_lang('admin/recalc_categories_backpaths'), array(
+					'^1' => number_format($done),
+					'^2' => number_format($length)
+				));
 				break;
 				
 			case 'dorecalccategories_complete':

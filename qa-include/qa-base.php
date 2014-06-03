@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Sets up Q2A environment, plus many globally useful functions
 
 
@@ -29,9 +29,12 @@
 
 	error_reporting(E_ALL);
 	
-//	Set the version to be used for internal reference and a suffix for .js and .css requests
 
-	define('QA_VERSION', '1.4-dev');
+//	Set the version to be used for internal reference and a suffix for .js and .css requests, and other constants
+
+	define('QA_VERSION', '1.4-beta-1');
+	define('QA_CATEGORY_DEPTH', 4); // you can't change this number!
+	
 
 //	Basic PHP configuration checks and unregister globals
 
@@ -42,6 +45,9 @@
 	
 	@setlocale(LC_CTYPE, 'C'); // prevent strtolower() et al affecting non-ASCII characters (appears important for IIS)
 	
+	if (function_exists('date_default_timezone_set') && function_exists('date_default_timezone_get'))
+		@date_default_timezone_set(@date_default_timezone_get()); // prevent PHP notices where default timezone not set
+		
 	if (ini_get('register_globals')) {
 		$checkarrays=array('_ENV', '_GET', '_POST', '_COOKIE', '_SERVER', '_FILES', '_REQUEST', '_SESSION');
 		$keyprotect=array_flip(array_merge($checkarrays, array('GLOBALS')));
@@ -54,11 +60,13 @@
 					else
 						unset($GLOBALS[$checkkey]);
 	}
+	
 
 //	Try our best to set base path here just in case it wasn't set in index.php or qa-index.php - won't work with symbolic links
 
 	if (!defined('QA_BASE_DIR'))
 		define('QA_BASE_DIR', dirname(dirname(__FILE__)).'/');
+
 
 //	Define directories of important files in local disk space, load up configuration
 	
@@ -104,18 +112,35 @@
 	{
 		require_once 'qa-htmLawed.php';
 		
-		$html=preg_replace('/(<[^>\w]*param[^>\w][^>]*[^>\w])AllowScriptAccess([^\w])/i', '\1Denied_AllowScriptAccess\2', $html);
-			// remove <PARAM NAME="AllowScriptAccess"...> tags in Flash embed code (avoid using hook_tag in htmLawed)
-		
 		$safe=htmLawed($html, array(
 			'safe' => 1,
 			'elements' => '*+embed+object',
 			'schemes' => 'href: aim, feed, file, ftp, gopher, http, https, irc, mailto, news, nntp, sftp, ssh, telnet; *:file, http, https; style: !; classid:clsid',
 			'keep_bad' => 0,
-			'anti_link_spam' => array('/.*/', '')
+			'anti_link_spam' => array('/.*/', ''),
+			'hook_tag' => 'qa_sanitize_html_hook_tag',
 		));
 		
 		return $safe;
+	}
+	
+	
+	function qa_sanitize_html_hook_tag($element, $attributes)
+	{
+		if ( ($element=='param') && (trim(strtolower(@$attributes['name']))=='allowscriptaccess') )
+			$attributes['name']='allowscriptaccess_denied';
+			
+		if ($element=='embed')
+			unset($attributes['allowscriptaccess']);
+			
+		if (($element=='a') && isset($attributes['href']) && qa_opt('links_in_new_window'))
+			$attributes['target']='_blank';
+		
+		$html='<'.$element;
+		foreach ($attributes as $key => $value)
+			$html.=' '.$key.'="'.$value.'"';
+			
+		return $html.'>';
 	}
 	
 	
@@ -197,6 +222,25 @@
 */
 	{
 		return (@$_SERVER['HTTPS'] && ($_SERVER['HTTPS']!='off')) || (@$_SERVER['SERVER_PORT']==443);
+	}
+	
+	
+	function qa_is_human_probably()
+	{
+		$useragent=@$_SERVER['HTTP_USER_AGENT'];
+		
+		if (strlen($useragent)) {
+			$humanagents=array('MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Gecko', 'MIDP', 'PLAYSTATION', 'Teleca',
+			'BlackBerry', 'UP.Browser', 'Polaris', 'MAUI_WAP_Browser', 'iPad', 'iPhone', 'iPod');
+			
+			foreach ($humanagents as $humanagent)
+				if (strpos($useragent, $humanagent)!==false)
+					return true;
+					
+			return false;
+			
+		} else
+			return true; // if server doesn't provide user agent, assume it's a human
 	}
 
 	
@@ -320,7 +364,7 @@
 	that as the root of the QA site, otherwise use $qa_root_url_relative set elsewhere.
 */
 	{
-		global $qa_root_url_relative;
+		global $qa_root_url_relative, $QA_CONST_PATH_MAP;
 		
 		if (!isset($neaturls)) {
 			require_once QA_INCLUDE_DIR.'qa-app-options.php';
@@ -334,6 +378,10 @@
 		$paramsextra='';
 		
 		$requestparts=explode('/', $request);
+		
+		if ( strlen(@$requestparts[0]) && isset($QA_CONST_PATH_MAP) && strlen(@$QA_CONST_PATH_MAP[$requestparts[0]]) )
+			$requestparts[0]=$QA_CONST_PATH_MAP[$requestparts[0]];
+		
 		foreach ($requestparts as $index => $requestpart)
 			$requestparts[$index]=urlencode($requestpart);
 		$requestpath=implode('/', $requestparts);
@@ -386,7 +434,7 @@
 		foreach ($words as $index => $word)
 			$wordlength[$index]=qa_strlen($word);
 
-		$remaining=50;
+		$remaining=qa_opt('title_length_urls');
 		
 		if (array_sum($wordlength)>$remaining) {
 			arsort($wordlength, SORT_NUMERIC); // sort with longest words first
@@ -533,10 +581,11 @@
 
 	function qa_fatal_error($message)
 /*
-	Display $message in the browser and then stop abruptly
+	Display $message in the browser, write it to server error log, and then stop abruptly
 */
 	{
 		echo '<FONT COLOR="red">'.qa_html($message).'</FONT>';
+		@error_log('Question2Answer error: '.$message);
 		exit;
 	}
 	
@@ -668,11 +717,27 @@
 	}
 	
 	
+	$qa_event_reports_suspended=0;
+	
+	
+	function qa_suspend_event_reports($suspend=true)
+	{
+		global $qa_event_reports_suspended;
+		
+		$qa_event_reports_suspended+=($suspend ? 1 : -1);
+	}
+	
+	
 	function qa_report_event($type, $userid, $handle, $cookieid, $params=array())
 /*
 	Send a notification of event $type by $userid, $handle and $cookieid to all event modules, with extra $params
 */
 	{
+		global $qa_event_reports_suspended;
+		
+		if ($qa_event_reports_suspended>0)
+			return;
+		
 		require_once QA_INCLUDE_DIR.'qa-app-cookies.php';
 		
 		$modulenames=qa_list_modules('event');

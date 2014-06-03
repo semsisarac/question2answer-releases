@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-comments.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Controller for page listing recent comments on questions
 
 
@@ -34,23 +34,23 @@
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 	require_once QA_INCLUDE_DIR.'qa-app-q-list.php';
 	
-	$categoryslug=$pass_subrequest;
-	$hascategory=isset($categoryslug);
+	$categoryslugs=$pass_subrequests;
+	$countslugs=count($categoryslugs);
 
 
 //	Get list of comments with related questions, plus category information
 
 	@list($questions, $categories, $categoryid)=qa_db_select_with_pending(
-		qa_db_recent_c_qs_selectspec($qa_login_userid, 0, $categoryslug),
-		qa_db_categories_selectspec(),
-		$hascategory ? qa_db_slug_to_category_id_selectspec($categoryslug) : null
+		qa_db_recent_c_qs_selectspec($qa_login_userid, 0, $categoryslugs),
+		qa_db_category_nav_selectspec($categoryslugs, false),
+		$countslugs ? qa_db_slugs_to_category_id_selectspec($categoryslugs) : null
 	);
 	
-	if ($hascategory) {
+	if ($countslugs) {
 		if (!isset($categoryid))
 			return include QA_INCLUDE_DIR.'qa-page-not-found.php';
 	
-		$categorytitlehtml=qa_category_html($categories[$categoryid]);
+		$categorytitlehtml=qa_html($categories[$categoryid]['title']);
 		$sometitle=qa_lang_html_sub('main/recent_cs_in_x', $categorytitlehtml);
 		$nonetitle=qa_lang_html_sub('main/no_comments_in_x', $categorytitlehtml);
 
@@ -63,9 +63,9 @@
 //	Prepare and return content for theme
 
 	return qa_q_list_page_content(
-		$questions, qa_opt('page_size_home'), 0, null, $sometitle, $nonetitle,
-		$categories, $categoryid, false, 'comments', qa_opt('feed_for_activity') ? 'comments' : null,
-		qa_html_suggest_qs_tags(qa_using_tags(), $hascategory ? $categories[$categoryid]['tags'] : null)
+		qa_any_sort_and_dedupe($questions), qa_opt('page_size_activity'), 0, null, $sometitle, $nonetitle,
+		$categories, $categoryid, false, 'comments/', qa_opt('feed_for_activity') ? 'comments' : null,
+		qa_html_suggest_qs_tags(qa_using_tags(), qa_category_path_request($categories, $categoryid))
 	);
 
 

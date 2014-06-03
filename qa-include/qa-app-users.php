@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: User management (application level) for basic user operations
 
 
@@ -42,6 +42,7 @@
 	define('QA_USER_FLAGS_USER_BLOCKED', 2);
 	define('QA_USER_FLAGS_SHOW_AVATAR', 4);
 	define('QA_USER_FLAGS_SHOW_GRAVATAR', 8);
+	define('QA_USER_FLAGS_NO_MESSAGES', 16);
 	
 	define('QA_FIELD_FLAGS_MULTI_LINE', 1);
 	define('QA_FIELD_FLAGS_LINK_URL', 2);
@@ -92,6 +93,16 @@
 		}
 		
 		
+		function qa_get_logged_in_user_points()
+		{
+			global $qa_cached_logged_in_points;
+			
+			if (!isset($qa_cached_logged_in_points))
+				$qa_cached_logged_in_points=qa_db_select_with_pending(qa_db_user_points_selectspec(qa_get_logged_in_userid(), true));
+			
+			return $qa_cached_logged_in_points['points'];
+		}
+		
 		
 	} else {
 		
@@ -106,6 +117,21 @@
 
 			if (!isset($_SESSION))
 				session_start();
+		}
+		
+		
+		function qa_session_var_suffix()
+	/*
+		Returns a suffix to be used for names of session variables to prevent them being shared between multiple QA sites on the same server
+	*/
+		{
+			return md5(QA_MYSQL_HOSTNAME.'/'.QA_MYSQL_USERNAME.'/'.QA_MYSQL_PASSWORD.'/'.QA_MYSQL_DATABASE.'/'.QA_MYSQL_TABLE_PREFIX);
+		}
+		
+		
+		function qa_session_verify_code($userid)
+		{
+			return sha1($userid.'/'.QA_MYSQL_TABLE_PREFIX.'/'.QA_MYSQL_DATABASE.'/'.QA_MYSQL_PASSWORD.'/'.QA_MYSQL_USERNAME.'/'.QA_MYSQL_HOSTNAME);
 		}
 
 		
@@ -138,10 +164,14 @@
 			require_once QA_INCLUDE_DIR.'qa-app-cookies.php';
 			
 			qa_start_session();
+
+			$suffix=qa_session_var_suffix();
 			
 			if (isset($userid)) {
-				$_SESSION['qa_session_userid']=$userid;
-				$_SESSION['qa_session_source']=$source;
+				$_SESSION['qa_session_userid_'.$suffix]=$userid;
+				$_SESSION['qa_session_source_'.$suffix]=$source;
+				$_SESSION['qa_session_verify_'.$suffix]=qa_session_verify_code($userid);
+					// prevents one account on a shared server being able to create a log in a user to Q2A on another account on same server
 				
 				// PHP sessions time out too quickly on the server side, so we also set a cookie as backup.
 				// Logging in from a second browser will make the previous browser's 'Remember me' no longer
@@ -172,8 +202,9 @@
 
 				qa_clear_session_cookie();
 
-				unset($_SESSION['qa_session_userid']);
-				unset($_SESSION['qa_session_source']);
+				unset($_SESSION['qa_session_userid_'.$suffix]);
+				unset($_SESSION['qa_session_source_'.$suffix]);
+				unset($_SESSION['qa_session_verify_'.$suffix]);
 
 				qa_report_event('u_logout', $olduserid, $oldhandle, qa_cookie_get());
 			}
@@ -228,8 +259,19 @@
 		{
 			global $qa_logged_in_userid_checked;
 			
+			$suffix=qa_session_var_suffix();
+			
 			if (!$qa_logged_in_userid_checked) { // only check once
 				qa_start_session(); // this will load logged in userid from the native PHP session, but that's not enough
+				
+				$sessionuserid=@$_SESSION['qa_session_userid_'.$suffix];
+				
+				if (isset($sessionuserid)) // check verify code matches
+					if (@$_SESSION['qa_session_verify_'.$suffix] != qa_session_verify_code($sessionuserid)) {
+						unset($_SESSION['qa_session_userid_'.$suffix]);
+						unset($_SESSION['qa_session_source_'.$suffix]);
+						unset($_SESSION['qa_session_verify_'.$suffix]);
+					}
 				
 				if (!empty($_COOKIE['qa_session'])) {
 					@list($handle, $sessioncode, $remember)=explode('/', $_COOKIE['qa_session']);
@@ -240,14 +282,15 @@
 					$sessioncode=trim($sessioncode); // trim to prevent passing in blank values to match uninitiated DB rows
 	
 					// Try to recover session from the database if PHP session has timed out
-					if ( (!isset($_SESSION['qa_session_userid'])) && (!empty($handle)) && (!empty($sessioncode)) ) {
+					if ( (!isset($_SESSION['qa_session_userid_'.$suffix])) && (!empty($handle)) && (!empty($sessioncode)) ) {
 						require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 						
 						$userinfo=qa_db_single_select(qa_db_user_account_selectspec($handle, false)); // don't get any pending
 						
 						if (strtolower(trim($userinfo['sessioncode'])) == strtolower($sessioncode)) {
-							$_SESSION['qa_session_userid']=$userinfo['userid'];
-							$_SESSION['qa_session_source']=$userinfo['sessionsource'];
+							$_SESSION['qa_session_userid_'.$suffix]=$userinfo['userid'];
+							$_SESSION['qa_session_source_'.$suffix]=$userinfo['sessionsource'];
+							$_SESSION['qa_session_verify_'.$suffix]=qa_session_verify_code($userinfo['userid']);
 						} else
 							qa_clear_session_cookie(); // if cookie not valid, remove it to save future checks
 					}
@@ -256,7 +299,7 @@
 				$qa_logged_in_userid_checked=true;
 			}
 			
-			return @$_SESSION['qa_session_userid'];
+			return @$_SESSION['qa_session_userid_'.$suffix];
 		}
 		
 		
@@ -266,9 +309,10 @@
 	*/
 		{
 			$userid=qa_get_logged_in_userid();
+			$suffix=qa_session_var_suffix();
 			
 			if (isset($userid))
-				return @$_SESSION['qa_session_source'];
+				return @$_SESSION['qa_session_source_'.$suffix];
 		}
 		
 		
@@ -320,6 +364,12 @@
 			return @$qa_cached_logged_in_user[$field];
 		}
 		
+		
+		function qa_get_logged_in_user_points()
+		{
+			return qa_get_logged_in_user_field('points');
+		}
+
 		
 		function qa_get_mysql_user_column_type()
 	/*
@@ -465,7 +515,7 @@
 	Optionally provide an $actioncode to also check against user or IP rate limits.
 
 	Possible results, in order of priority (i.e. if more than one reason, first given):
-	'level' => a special privilege level (e.g. expert) is required
+	'level' => a special privilege level (e.g. expert) or minimum number of points is required
 	'login' => the user should login or register
 	'userblock' => the user has been blocked
 	'ipblock' => the ip address has been blocked
@@ -474,12 +524,36 @@
 	false => the operation can go ahead
 */
 	{
+		require_once QA_INCLUDE_DIR.'qa-app-limits.php';
+
+		$error=qa_permit_error($permitoption, qa_get_logged_in_userid(), qa_get_logged_in_level(), qa_get_logged_in_flags());
+		
+		if ((!$error) && qa_is_ip_blocked())
+			$error='ipblock';
+		
+		if (isset($actioncode) && !$error)
+			if (qa_limits_remaining(qa_get_logged_in_userid(), $actioncode)<=0)
+				$error='limit';
+		
+		return $error;
+	}
+	
+	
+	function qa_permit_error($permitoption, $userid, $userlevel, $userflags, $userpoints=null)
+	{
 		$permit=isset($permitoption) ? qa_opt($permitoption) : QA_PERMIT_ALL;
 
-		$userid=qa_get_logged_in_userid();
-		$userlevel=qa_get_logged_in_level();
-		$userflags=qa_get_logged_in_flags();
-		
+		if ( ($permit==QA_PERMIT_POINTS) || ($permit==QA_PERMIT_POINTS_CONFIRMED) ) { // deal with points threshold by converting as appropriate
+			$permit=QA_PERMIT_EXPERTS; // by default, only special users pass this, but...
+			
+			if (isset($userid)) {
+				if ( (!isset($userpoints)) && ($userid==qa_get_logged_in_userid()) )
+					$userpoints=qa_get_logged_in_user_points(); // allow late retrieval of points (to avoid unnecessary DB query when using external users)
+			
+				if ($userpoints>=qa_opt($permitoption.'_points'))
+					$permit=($permit==QA_PERMIT_POINTS_CONFIRMED) ? QA_PERMIT_CONFIRMED : QA_PERMIT_USERS; // convert if user has enough points
+			}
+		}
 		
 		if ($permit>=QA_PERMIT_ALL)
 			$error=false;
@@ -493,7 +567,7 @@
 			
 			elseif (
 				QA_EXTERNAL_USERS || // not currently supported by single sign-on integration
-				($userlevel>=QA_USER_LEVEL_EXPERT) || // if assigned to a higher level, no need
+				($userlevel>=QA_USER_LEVEL_EXPERT) || // if user assigned to a higher level, no need
 				($userflags & QA_USER_FLAGS_EMAIL_CONFIRMED) || // actual confirmation
 				(!qa_opt('confirm_user_emails')) // if this option off, we can't ask it of the user
 			)
@@ -517,18 +591,8 @@
 		else
 			$error=(isset($userid) && ($userlevel>=QA_USER_LEVEL_SUPER)) ? false : 'level';
 		
-
 		if (isset($userid) && ($userflags & QA_USER_FLAGS_USER_BLOCKED) && ($error!='level'))
 			$error='userblock';
-		
-		require_once QA_INCLUDE_DIR.'qa-app-limits.php';
-
-		if ((!$error) && qa_is_ip_blocked())
-			$error='ipblock';
-		
-		if (isset($actioncode) && !$error)
-			if (qa_limits_remaining($userid, $actioncode)<=0)
-				$error='limit';
 		
 		return $error;
 	}

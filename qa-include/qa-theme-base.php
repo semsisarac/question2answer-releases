@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-theme-base.php
-	Version: 1.4-dev
-	Date: 2011-04-04 09:06:42 GMT
+	Version: 1.4-beta-1
+	Date: 2011-05-25 07:38:57 GMT
 	Description: Default theme class, broken into lots of little functions for easy overriding
 
 
@@ -228,7 +228,8 @@
 		function head_script()
 		{
 			if (isset($this->content['script']))
-				$this->output_array($this->content['script']);
+				foreach ($this->content['script'] as $scriptline)
+					$this->output_raw($scriptline);
 		}
 		
 		function head_css()
@@ -296,8 +297,9 @@
 		{
 			$class='qa-template-'.qa_html($this->template);
 			
-			if (isset($this->content['categoryid']))
-				$class.=' qa-category-'.qa_html($this->content['categoryid']);
+			if (isset($this->content['categoryids']))
+				foreach ($this->content['categoryids'] as $categoryid)
+					$class.=' qa-category-'.qa_html($categoryid);
 			
 			$this->output('CLASS="'.$class.'"');
 		}
@@ -370,7 +372,7 @@
 			$this->output('<INPUT TYPE="submit" VALUE="'.$search['button_label'].'" CLASS="qa-search-button"/>');
 		}
 		
-		function nav($navtype)
+		function nav($navtype, $level=null)
 		{
 			$navigation=@$this->content['navigation'][$navtype];
 			
@@ -387,19 +389,19 @@
 						$navigation[$key]=$navlink;
 					}
 					
-				$this->nav_list($navigation, $navtype);
+				$this->nav_list($navigation, 'nav-'.$navtype, $level);
 				$this->nav_clear($navtype);
 	
 				$this->output('</DIV>');
 			}
 		}
 		
-		function nav_list($navigation, $navtype)
+		function nav_list($navigation, $class, $level=null)
 		{
-			$this->output('<UL CLASS="qa-nav-'.$navtype.'-list">');
+			$this->output('<UL CLASS="qa-'.$class.'-list'.(isset($level) ? (' qa-'.$class.'-list-'.$level) : '').'">');
 
 			foreach ($navigation as $key => $navlink)
-				$this->nav_item($key, $navlink, $navtype);
+				$this->nav_item($key, $navlink, $class, $level);
 			
 			$this->output('</UL>');
 		}
@@ -412,25 +414,33 @@
 			);
 		}
 		
-		function nav_item($key, $navlink, $navtype)
+		function nav_item($key, $navlink, $class, $level=null)
 		{
-			$this->output('<LI CLASS="qa-nav-'.$navtype.'-item'.(@$navlink['opposite'] ? '-opp' : '').' qa-nav-'.$navtype.'-'.$key.'">');
-			$this->nav_link($navlink, $navtype);
+			$this->output('<LI CLASS="qa-'.$class.'-item'.(@$navlink['opposite'] ? '-opp' : '').
+				(@$navlink['state'] ? (' qa-'.$class.'-'.$navlink['state']) : '').' qa-'.$class.'-'.$key.'">');
+			$this->nav_link($navlink, $class);
+			
+			if (count(@$navlink['subnav']))
+				$this->nav_list($navlink['subnav'], $class, 1+$level);
+			
 			$this->output('</LI>');
 		}
 		
-		function nav_link($navlink, $navtype)
+		function nav_link($navlink, $class)
 		{
-			if (isset($navlink['url']))
+			if (isset($navlink['url'])) {
 				$this->output(
-					'<A HREF="'.$navlink['url'].'" CLASS="qa-nav-'.$navtype.'-link'.
-					(@$navlink['selected'] ? (' qa-nav-'.$navtype.'-selected') : '').'"'.
+					'<A HREF="'.$navlink['url'].'" CLASS="qa-'.$class.'-link'.
+					(@$navlink['selected'] ? (' qa-'.$class.'-selected') : '').'"'.
 					(isset($navlink['target']) ? (' TARGET="'.$navlink['target'].'"') : '').'>'.$navlink['label'].
-					'</A>'.
-					(strlen(@$navlink['note']) ? (' ('.$navlink['note'].')') : '')
+					'</A>'
 				);
-			else
+
+			} else
 				$this->output($navlink['label']);
+
+			if (strlen(@$navlink['note']))
+				$this->output('<SPAN CLASS="qa-'.$class.'-note">'.$navlink['note'].'</SPAN>');
 		}
 		
 		function logged_in()
@@ -452,7 +462,7 @@
 			$this->widgets('side', 'top');
 			$this->sidebar();
 			$this->widgets('side', 'high');
-			$this->nav('cat');
+			$this->nav('cat', 1);
 			$this->widgets('side', 'low');
 			$this->output_raw(@$this->content['sidepanel']);
 			$this->feed();
@@ -553,6 +563,9 @@
 					
 				elseif (strpos($key, 'ranking')===0)
 					$this->ranking($part);
+					
+				elseif (strpos($key, 'nav_list')===0)
+					$this->nav_list($part['nav'], $part['type'], 1);
 			}
 		}
 		
@@ -680,7 +693,7 @@
 				$colspan=null;
 			
 			$prefixed=((@$field['type']=='checkbox') && ($columns==1) && !empty($field['label']));
-			$suffixed=(((@$field['type']=='select') || (@$field['type']=='number')) && ($columns==1) && !empty($field['label']));
+			$suffixed=(((@$field['type']=='select') || (@$field['type']=='number')) && ($columns==1) && !empty($field['label'])) && (!@$field['loose']);
 			$skipdata=@$field['tight'];
 			$tworows=($columns==1) && (!empty($field['label'])) && (!$skipdata);
 			
@@ -711,7 +724,15 @@
 		
 		function form_label($field, $style, $columns, $prefixed, $suffixed, $colspan)
 		{
-			$this->output('<TD CLASS="qa-form-'.$style.'-label"'.(isset($colspan) ? (' COLSPAN="'.$colspan.'"') : '').'>');
+			$extratags='';
+			
+			if ( ($columns>1) && ((@$field['type']=='select-radio') || (@$field['rows']>1)) )
+				$extratags.=' STYLE="vertical-align:top;"';
+				
+			if (isset($colspan))
+				$extratags.=' COLSPAN="'.$colspan.'"';
+			
+			$this->output('<TD CLASS="qa-form-'.$style.'-label"'.$extratags.'>');
 			
 			if ($prefixed)
 				$this->form_field($field, $style);
@@ -1050,6 +1071,7 @@
 		{
 			$this->output('<DIV CLASS="qa-q-item-main">');
 			
+			$this->view_count($question);
 			$this->q_item_title($question);
 			$this->post_avatar($question, 'qa-q-item');
 			$this->post_meta($question, 'qa-q-item');
@@ -1160,6 +1182,13 @@
 				@$post['answer_selected'] ? 'qa-a-count-selected' : null);
 		}
 		
+		function view_count($post)
+		{
+			// You can also use $post['views_raw'] to get a raw integer count of views
+			
+			$this->output_split(@$post['views'], 'qa-view-count');
+		}
+		
 		function avatar($post, $class)
 		{
 			if (isset($post['avatar']))
@@ -1233,6 +1262,8 @@
 						$this->post_meta_who($post, $class);
 						break;
 				}
+				
+			$this->post_meta_flags($post, $class);
 			
 			if (!empty($post['when_2'])) {
 				$this->output($separator);
@@ -1299,6 +1330,11 @@
 	
 				$this->output('</SPAN>');
 			}
+		}
+		
+		function post_meta_flags($post, $class)
+		{
+			$this->output_split(@$post['flags'], $class.'-flags');
 		}
 		
 		function post_tags($post, $class)
@@ -1595,7 +1631,7 @@
 			
 			$this->output('<DIV CLASS="qa-c-item-footer">');
 			$this->post_avatar($c_item, 'qa-c-item');
-			$this->post_meta($c_item, 'qa-c-item', null, '&mdash;');
+			$this->post_meta($c_item, 'qa-c-item');
 			$this->c_item_buttons($c_item);
 			$this->output('</DIV>');
 		}
