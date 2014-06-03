@@ -8,7 +8,7 @@
 	
 	File: qa-include/qa-page-unanswered.php
 	Version: See define()s at top of qa-include/qa-base.php
-	Description: Controller for page listing recent questions without answers
+	Description: Controller for page listing recent questions without upvoted/selected/any answers
 
 
 	This program is free software; you can redistribute it and/or
@@ -127,10 +127,10 @@
 		@$count, // total count
 		$sometitle, // title if some questions
 		$nonetitle, // title if no questions
-		QA_ALLOW_UNINDEXED_QUERIES ? $categories : null, // categories for navigation (null since not shown on this page)
-		QA_ALLOW_UNINDEXED_QUERIES ? $categoryid : null, // selected category id (null since not relevant)
-		false, // show question counts in category navigation (null since not relevant)
-		'unanswered/', // prefix for links in category navigation (null since no navigation)
+		QA_ALLOW_UNINDEXED_QUERIES ? $categories : null, // categories for navigation (null if not shown on this page)
+		QA_ALLOW_UNINDEXED_QUERIES ? $categoryid : null, // selected category id (null if not relevant)
+		false, // show question counts in category navigation
+		QA_ALLOW_UNINDEXED_QUERIES ? 'unanswered/' : null, // prefix for links in category navigation (null if no navigation)
 		$feedpathprefix, // prefix for RSS feed paths (null to hide)
 		qa_html_suggest_qs_tags(qa_using_tags()), // suggest what to do next
 		$linkparams, // extra parameters for page links

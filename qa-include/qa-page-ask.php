@@ -41,9 +41,7 @@
 	$in=array();
 	
 	$followpostid=qa_get('follow');
-	$in['categoryid']=qa_get_category_field_value('category');
-	if (!isset($in['categoryid']))
-		$in['categoryid']=qa_get('cat');
+	$in['categoryid']=qa_clicked('doask') ? qa_get_category_field_value('category') : qa_get('cat');
 	$userid=qa_get_logged_in_userid();
 	
 	list($categories, $followanswer, $completetags)=qa_db_select_with_pending(
@@ -145,7 +143,7 @@
 				$cookieid=isset($userid) ? qa_cookie_get() : qa_cookie_get_create(); // create a new cookie if necessary
 				
 				$questionid=qa_question_create($followanswer, $userid, qa_get_logged_in_handle(), $cookieid,
-					$in['title'], $in['content'], $in['format'], $in['text'], qa_tags_to_tagstring($in['tags']),
+					$in['title'], $in['content'], $in['format'], $in['text'], isset($in['tags']) ? qa_tags_to_tagstring($in['tags']) : '',
 					$in['notify'], $in['email'], $in['categoryid'], $in['extra'], $in['queued'], $in['name']);
 				
 				qa_redirect(qa_q_request($questionid, $in['title'])); // our work is done here
