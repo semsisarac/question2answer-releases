@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-question.php
-	Version: 1.2
-	Date: 2010-07-20 09:24:45 GMT
+	Version: 1.2.1
+	Date: 2010-07-29 03:54:35 GMT
 	Description: Controller for question page (only viewing functionality here)
 
 
@@ -270,14 +270,19 @@
 
 //	Deal with question not found or not viewable
 
-	if ((!isset($question)) || !$question['viewable']) {
+	if (!isset($question)) {
+		header('HTTP/1.0 404 Not Found');
+		$qa_template='not-found';
 		qa_content_prepare();
+		$qa_content['error']=qa_lang_html('question/q_not_found');
+		$qa_content['suggest_next']=qa_html_suggest_qs_tags(qa_using_tags($qa_db));
 
-		$qa_content['error']=qa_lang_html(isset($question)
-			? ($question['authorlast'] ? 'question/q_hidden_author' : 'question/q_hidden_other')
-			: 'question/q_not_found'
-		);
+		return;
+	}
 
+	if (!$question['viewable']) {
+		qa_content_prepare();
+		$qa_content['error']=qa_lang_html($question['authorlast'] ? 'question/q_hidden_author' : 'question/q_hidden_other');
 		$qa_content['suggest_next']=qa_html_suggest_qs_tags(qa_using_tags($qa_db));
 
 		return;

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.2
-	Date: 2010-07-20 09:24:45 GMT
+	Version: 1.2.1
+	Date: 2010-07-29 03:54:35 GMT
 	Description: Sets up Q2A environment, plus many globally useful functions
 
 
@@ -37,7 +37,7 @@
 	
 //	Set the version to be used for internal reference and a suffix for .js and .css requests
 
-	define('QA_VERSION', '1.2');
+	define('QA_VERSION', '1.2.1');
 
 //	Basic PHP configuration checks and unregister globals
 

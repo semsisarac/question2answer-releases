@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-theme-base.php
-	Version: 1.2
-	Date: 2010-07-20 09:24:45 GMT
+	Version: 1.2.1
+	Date: 2010-07-29 03:54:35 GMT
 	Description: Default theme class, broken into lots of little functions for easy overriding
 
 
@@ -373,6 +373,10 @@
 					$this->question_main();
 					break;
 					
+				case 'categories':
+					$this->all_categories();
+					break;
+
 				case 'tags':
 					$this->top_tags();
 					break;
@@ -787,6 +791,11 @@
 			$this->output('<'.$tag.' CLASS="qa-form-'.$style.'-note">'.$field['note'].'</'.$tag.'>');
 		}
 		
+		function all_categories()
+		{
+			$this->ranking($this->content['ranking'], 'qa-top-tags');
+		}
+
 		function top_tags()
 		{
 			$this->ranking($this->content['ranking'], 'qa-top-tags');

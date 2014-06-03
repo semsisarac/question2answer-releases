@@ -6,10 +6,10 @@
 	http://www.question2answer.org/
 
 	
-	File: qa-include/qa-app-cookies.php
+	File: qa-include/qa-page-categories.php
 	Version: 1.2.1
 	Date: 2010-07-29 03:54:35 GMT
-	Description: User cookie management (application level) for tracking anonymous posts
+	Description: Controller for popular tags page
 
 
 	This software is free to use and modify for public websites, so long as a
@@ -36,46 +36,35 @@
 		exit;
 	}
 
+	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
+	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 
-	function qa_cookie_get()
-/*
-	Return the user identification cookie sent by the browser for this page request, or null if none
-*/
-	{
-		return isset($_COOKIE['qa_id']) ? qa_gpc_to_string($_COOKIE['qa_id']) : null;
-	}
 
+//	Get popular tags
 	
-	function qa_cookie_get_create($db)
-/*
-	Return user identification cookie sent by browser if valid, or create a new one if not.
-	Either way, extend for another year (this is used when an anonymous post is created)
-*/
-	{
-		require_once QA_INCLUDE_DIR.'qa-db-cookies.php';
-
-		$cookieid=qa_cookie_get();
-		
-		if (isset($cookieid) && qa_db_cookie_exists($db, $cookieid))
-			; // cookie is valid
-		else
-			$cookieid=qa_db_cookie_create($db, @$_SERVER['REMOTE_ADDR']);
-		
-		setcookie('qa_id', $cookieid, time()+86400*365, '/');
-		
-		return $cookieid;
-	}
-
+	$categories=qa_db_select_with_pending($qa_db,
+		qa_db_categories_selectspec()
+	);
 	
-	function qa_cookie_report_action($db, $cookieid, $action, $questionid, $answerid, $commentid)
-/*
-	Called after a database write $action performed by a user identified by $cookieid,
-	relating to $questionid, $answerid and/or $commentid
-*/
-	{
-		require_once QA_INCLUDE_DIR.'qa-db-cookies.php';
-		
-		qa_db_cookie_written($db, $cookieid, @$_SERVER['REMOTE_ADDR']);
+	
+//	Prepare content for theme
+
+	qa_content_prepare();
+
+	$qa_content['title']=qa_lang_html('main/all_categories');
+	
+	$qa_content['ranking']=array('items' => array(), 'rows' => count($categories));
+	
+	if (count($categories)) {
+		foreach ($categories as $category)
+			$qa_content['ranking']['items'][]=array(
+				'label' => qa_category_html($category),
+				'count' => number_format($category['qcount']),
+			);
+			
+	} else {
+		$qa_content['title']=qa_lang_html('main/no_categories_found');
+		$qa_content['suggest_next']=qa_html_suggest_qs_tags(qa_using_tags($qa_db));
 	}
 
 

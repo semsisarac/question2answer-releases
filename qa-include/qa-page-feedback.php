@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-feedback.php
-	Version: 1.2
-	Date: 2010-07-20 09:24:45 GMT
+	Version: 1.2.1
+	Date: 2010-07-29 03:54:35 GMT
 	Description: Controller for feedback page
 
 
@@ -58,6 +58,8 @@
 //	Check feedback is enabled
 
 	if (!qa_get_option($qa_db, 'feedback_enabled')) {
+		header('HTTP/1.0 404 Not Found');
+		$qa_template='not-found';
 		qa_content_prepare();
 		$qa_content['error']=qa_lang_html('main/page_not_found');
 		return;

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.2
-	Date: 2010-07-20 09:24:45 GMT
+	Version: 1.2.1
+	Date: 2010-07-29 03:54:35 GMT
 	Description: Common functions for creating theme-ready structures from data
 
 
@@ -182,6 +182,7 @@
 			require_once QA_INCLUDE_DIR.'qa-util-string.php';
 		
 		$fields=array();
+		$fields['raw']=$post;
 		
 	//	Useful stuff used throughout function
 
@@ -394,7 +395,7 @@
 			} else
 				$fields['when_2']['prefix']=qa_lang_html($fields['hidden'] ? 'question/hidden' : 'question/edited');
 				
-			$fields['who_2']=qa_who_to_html($post['lastuserid']==$userid, $post['lastuserid'], $usershtml, null, false);
+			$fields['who_2']=qa_who_to_html(isset($userid) && ($post['lastuserid']==$userid), $post['lastuserid'], $usershtml, null, false);
 		}
 		
 	//	That's it!
@@ -408,15 +409,15 @@
 	Return array of split HTML (prefix, data, suffix) to represent author of post
 */
 	{
-		if ($isbyuser)
-			$whohtml=qa_lang_html('main/me');
-
-		elseif (isset($postuserid) && isset($usershtml[$postuserid])) {
+		if (isset($postuserid) && isset($usershtml[$postuserid])) {
 			$whohtml=$usershtml[$postuserid];
 			if ($microformats)
 				$whohtml='<SPAN CLASS="vcard author">'.$whohtml.'</SPAN>';
 
-		} else {
+		} elseif ($isbyuser)
+			$whohtml=qa_lang_html('main/me');
+
+		else {
 			$whohtml=qa_lang_html('main/anonymous');
 			
 			if (isset($ip))
@@ -550,7 +551,7 @@
 	So this is something quick and dirty that should do the trick in most cases
 */
 	{
-		return trim(preg_replace('/([^A-Za-z0-9])((http|https|ftp):\/\/\S+\.[^\s<>]+)/i', '\1<A HREF="\2" rel="nofollow">\2</A>', ' '.$html.' '));
+		return trim(preg_replace('/([^A-Za-z0-9])((http|https|ftp):\/\/([^\s&<>"\'\.])+\.([^\s&<>"\']|&amp;)+)/i', '\1<A HREF="\2" rel="nofollow">\2</A>', ' '.$html.' '));
 	}
 
 	

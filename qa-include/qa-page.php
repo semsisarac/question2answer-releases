@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page.php
-	Version: 1.2
-	Date: 2010-07-20 09:24:45 GMT
+	Version: 1.2.1
+	Date: 2010-07-29 03:54:35 GMT
 	Description: Routing and utility functions for page requests
 
 
@@ -44,6 +44,7 @@
 		'activity' => QA_INCLUDE_DIR.'qa-page-home.php', // not currently in navigation
 		'ask' => QA_INCLUDE_DIR.'qa-page-ask.php',
 		'search' => QA_INCLUDE_DIR.'qa-page-search.php',
+		'categories' => QA_INCLUDE_DIR.'qa-page-categories.php',
 		'tags' => QA_INCLUDE_DIR.'qa-page-tags.php',
 		'users' => QA_INCLUDE_DIR.'qa-page-users.php',
 		'users/special' => QA_INCLUDE_DIR.'qa-page-users-special.php',
@@ -233,12 +234,12 @@
 	$qa_start=min(max(0, (int)qa_get('start')), QA_MAX_LIMIT_START);
 
 	qa_options_set_pending(array('site_language', 'site_title', 'logo_show', 'logo_url', 'logo_width', 'logo_height', 'feedback_enabled',
-		'nav_home', 'nav_qa_is_home', 'nav_qa_not_home', 'nav_questions', 'nav_unanswered', 'nav_activity', 'nav_tags', 'nav_users',
+		'nav_home', 'nav_qa_is_home', 'nav_qa_not_home', 'nav_questions', 'nav_unanswered', 'nav_activity', 'nav_tags', 'nav_categories', 'nav_users',
 		'site_theme', 'neat_urls', 'show_custom_sidebar', 'custom_sidebar', 'show_custom_sidepanel', 'custom_sidepanel',
 		'show_custom_header', 'custom_header', 'show_custom_footer', 'custom_footer', 'show_custom_in_head', 'custom_in_head',
 		'show_custom_home', 'pages_prev_next', 'confirm_user_emails', 'permit_post_q', 'tags_or_categories', 'block_ips_write'));
 
-	$qa_pages_pending=true;
+	$qa_nav_pages_pending=true;
 	$qa_logged_in_pending=true;
 
 	$qa_login_userid=qa_get_logged_in_userid($qa_db);
@@ -251,7 +252,7 @@
 	in the context of $categoryid (if not null)
 */
 	{
-		global $qa_db, $qa_content, $qa_root_url_relative, $qa_request, $qa_login_userid, $qa_vote_error, $qa_pages_cached, $qa_routing;
+		global $qa_db, $qa_content, $qa_root_url_relative, $qa_request, $qa_login_userid, $qa_vote_error, $qa_nav_pages_cached, $qa_routing;
 		
 		if (QA_DEBUG_PERFORMANCE)
 			qa_usage_mark('control');
@@ -276,7 +277,7 @@
 			'sidepanel' => qa_get_option($qa_db, 'show_custom_sidepanel') ? qa_get_option($qa_db, 'custom_sidepanel') : null,
 		);
 		
-		foreach ($qa_pages_cached as $page)
+		foreach ($qa_nav_pages_cached as $page)
 			if ($page['nav']=='B')
 				qa_navigation_add_page($qa_content['navigation']['main'], $page);
 		
@@ -318,6 +319,12 @@
 				'label' => qa_lang_html('main/nav_tags'),
 			);
 			
+		if (qa_using_categories($qa_db) && qa_get_option($qa_db, 'nav_categories'))
+			$qa_content['navigation']['main']['categories']=array(
+				'url' => qa_path_html('categories'),
+				'label' => qa_lang_html('main/nav_categories'),
+			);
+
 		if (qa_get_option($qa_db, 'nav_users'))
 			$qa_content['navigation']['main']['user']=array(
 				'url' => qa_path_html('users'),
@@ -349,7 +356,7 @@
 		if (!qa_get_option($qa_db, 'feedback_enabled'))
 			unset($qa_content['navigation']['footer']['feedback']);
 			
-		foreach ($qa_pages_cached as $page)
+		foreach ($qa_nav_pages_cached as $page)
 			if ( ($page['nav']=='M') || ($page['nav']=='O') || ($page['nav']=='F') )
 				qa_navigation_add_page($qa_content['navigation'][($page['nav']=='F') ? 'footer' : 'main'], $page);
 		

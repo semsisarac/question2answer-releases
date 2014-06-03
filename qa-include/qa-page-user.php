@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-user.php
-	Version: 1.2
-	Date: 2010-07-20 09:24:45 GMT
+	Version: 1.2.1
+	Date: 2010-07-29 03:54:35 GMT
 	Description: Controller for user profile page
 
 
@@ -48,6 +48,7 @@
 	{
 		global $qa_content;
 
+		header('HTTP/1.0 404 Not Found');
 		qa_content_prepare();
 		$qa_content['error']=qa_lang_html('users/user_not_found');
 	}
@@ -286,7 +287,7 @@
 					'type' => 'static',
 					'label' => qa_lang_html('users/about'),
 					'tags' => ' NAME="about" ',
-					'value' => qa_html(isset($inabout) ? $inabout : @$userprofile['about']),
+					'value' => qa_html(@$userprofile['about'], true),
 					'error' => qa_html(@$errors['about']),
 					'rows' => 8,
 				),
@@ -370,6 +371,7 @@
 					$qa_content['form']['fields']['website']['type']='text';
 					$qa_content['form']['fields']['about']['type']='text';
 					
+					$qa_content['form']['fields']['about']['value']=qa_html(isset($inabout) ? $inabout : @$userprofile['about']);
 					$qa_content['form']['fields']['website']['value']=qa_html(isset($inwebsite) ? $inwebsite : @$userprofile['website']);
 				}
 		

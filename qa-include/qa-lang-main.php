@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-main.php
-	Version: 1.2
-	Date: 2010-07-20 09:24:45 GMT
+	Version: 1.2.1
+	Date: 2010-07-29 03:54:35 GMT
 	Description: Language phrases commonly used throughout Q2A, plus a few other misc ones
 
 
@@ -66,6 +66,7 @@
 		'nav_activity' => 'All Activity',
 		'nav_admin' => 'Admin',
 		'nav_ask' => 'Ask a Question',
+		'nav_categories' => 'Categories',
 		'nav_feedback' => 'Send feedback',
 		'nav_home' => 'Home',
 		'nav_login' => 'Login',
@@ -79,6 +80,7 @@
 		'no_active_users' => 'No active users found',
 		'no_answers_found' => 'No answers found',
 		'no_answers_in_x' => 'No answers in ^',
+		'no_categories_found' => 'No categories found',
 		'no_category' => 'No category',
 		'no_comments_found' => 'No comments found',
 		'no_comments_in_x' => 'No comments in ^',

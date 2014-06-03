@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-selects.php
-	Version: 1.2
-	Date: 2010-07-20 09:24:45 GMT
+	Version: 1.2.1
+	Date: 2010-07-29 03:54:35 GMT
 	Description: Builders of selectspec arrays (see qa-db.php) used to specify database SELECTs
 
 
@@ -49,7 +49,7 @@
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 		
-		global $qa_pages_pending, $qa_pages_cached, $qa_logged_in_pending;
+		global $qa_nav_pages_pending, $qa_nav_pages_cached, $qa_logged_in_pending;
 		
 		$selectspecs=array_slice(func_get_args(), 1);
 		$singleresult=(count($selectspecs)==1);
@@ -70,8 +70,8 @@
 		} else
 			$loggedinselectspec=null;
 		
-		if (@$qa_pages_pending && !isset($qa_pages_cached))
-			$selectspecs['_pages']=qa_db_pages_selectspec();
+		if (@$qa_nav_pages_pending && !isset($qa_nav_pages_cached))
+			$selectspecs['_navpages']=qa_db_pages_selectspec(array('B', 'M', 'O', 'F'));
 		
 		$outresults=qa_db_multi_select($db, $selectspecs);
 		
@@ -81,8 +81,8 @@
 		if (is_array($loggedinselectspec))
 			qa_logged_in_user_load($db, $loggedinselectspec, $outresults['_loggedin']);
 			
-		if (@$qa_pages_pending && !isset($qa_pages_cached))
-			$qa_pages_cached=$outresults['_pages'];
+		if (@$qa_nav_pages_pending && !isset($qa_nav_pages_cached))
+			$qa_nav_pages_cached=$outresults['_navpages'];
 		
 		return $singleresult ? $outresults[0] : $outresults;
 	}
@@ -523,17 +523,24 @@
 	}
 	
 	
-	function qa_db_pages_selectspec()
+	function qa_db_pages_selectspec($onlynavin=null)
 /*
 	Return the selectspec to retrieve the list of custom pages or links, ordered for display
 */
 	{
-		return array(
+		$selectspec=array(
 			'columns' => array('pageid', 'title' => 'BINARY title', 'flags', 'nav', 'tags' => 'BINARY tags', 'position'),
-			'source' => '^pages ORDER BY position',
 			'arraykey' => 'pageid',
 			'sortasc' => 'position',
 		);
+		
+		if (isset($onlynavin)) {
+			$selectspec['source']='^pages WHERE nav IN ($) ORDER BY position';
+			$selectspec['arguments']=array($onlynavin);
+		} else
+			$selectspec['source']='^pages ORDER BY position';
+		
+		return $selectspec;
 	}
 	
 	
