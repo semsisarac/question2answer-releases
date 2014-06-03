@@ -1,34 +1,28 @@
 <?php
 
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Sets up Q2A environment, plus many globally useful functions
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 //	Be ultra-strict about error checking
@@ -37,7 +31,7 @@
 	
 //	Set the version to be used for internal reference and a suffix for .js and .css requests
 
-	define('QA_VERSION', '1.2.1');
+	define('QA_VERSION', '1.3-beta-1');
 
 //	Basic PHP configuration checks and unregister globals
 
@@ -65,6 +59,7 @@
 	define('QA_INCLUDE_DIR', QA_BASE_DIR.'qa-include/');
 	define('QA_LANG_DIR', QA_BASE_DIR.'qa-lang/');
 	define('QA_THEME_DIR', QA_BASE_DIR.'qa-theme/');
+	define('QA_PLUGIN_DIR', QA_BASE_DIR.'qa-plugin/');
 
 	if (!file_exists(QA_BASE_DIR.'qa-config.php'))
 		qa_fatal_error('The config file could not be found. Please read the instructions in qa-config-example.php.');
@@ -91,6 +86,14 @@
 		return $html;
 	}
 
+	
+	function qa_sanitize_html($html)
+	{
+		require_once 'qa-htmLawed.php';
+		
+		return htmLawed($html, array('safe' => 1, 'keep_bad' => 0, 'anti_link_spam' => array('/.*/', '')));
+	}
+	
 	
 	function qa_js($value)
 /*
@@ -184,11 +187,7 @@
 	part after the / is the key of the array element to be taken from that file's returned result.
 */
 	{
-		global $qa_db;
-		
-		require_once QA_INCLUDE_DIR.'qa-app-options.php';
-		
-		$languagecode=qa_get_option($qa_db, 'site_language');
+		$languagecode=qa_opt('site_language');
 		
 		list($group, $label)=explode('/', $identifier, 2);
 		
@@ -297,10 +296,12 @@
 	that as the root of the QA site, otherwise use $qa_root_url_relative set elsewhere.
 */
 	{
-		global $qa_db, $qa_root_url_relative;
+		global $qa_root_url_relative;
 		
-		if (!isset($neaturls))
-			$neaturls=qa_get_option($qa_db, 'neat_urls');
+		if (!isset($neaturls)) {
+			require_once QA_INCLUDE_DIR.'qa-app-options.php';
+			$neaturls=qa_opt('neat_urls');
+		}
 		
 		if (!isset($rooturl))
 			$rooturl=$qa_root_url_relative;
@@ -427,12 +428,12 @@
 	}
 	
 	
-	function qa_redirect($request, $params=null, $rooturl=null, $neaturls=null)
+	function qa_redirect($request, $params=null, $rooturl=null, $neaturls=null, $anchor=null)
 /*
 	Redirect the user's web browser to $request and then we're done - see qa_path() for other parameters
 */
 	{
-		header('Location: '.qa_path($request, $params, $rooturl, $neaturls));
+		header('Location: '.qa_path($request, $params, $rooturl, $neaturls, $anchor));
 		exit;
 	}
 	
@@ -453,14 +454,12 @@
 
 	function qa_base_db_connect($failhandler)
 /*
-	Connect to the database with $failhandler and set global $qa_db accordingly
+	Connect to the database with $failhandler
 */
 	{
-		global $qa_db;
-		
 		require_once QA_INCLUDE_DIR.'qa-db.php';
 	
-		$qa_db=qa_db_connect($failhandler);
+		qa_db_connect($failhandler);
 	}
 
 	
@@ -469,12 +468,26 @@
 	Disconnect from the database
 */
 	{
-		global $qa_db;
-		
-		qa_db_disconnect($qa_db);
+		qa_db_disconnect();
 	}
+	
+	
+	function qa_opt($name, $value=null)
+/*
+	Shortcut to get or set an option value without specifying database
+*/
+	{
+		require_once QA_INCLUDE_DIR.'qa-app-options.php';
+		
+		if (isset($value))
+			qa_set_option($name, $value);	
+		
+		$options=qa_get_options(array($name));
 
-
+		return $options[$name];
+	}
+	
+	
 //	Error handling
 
 	function qa_fatal_error($message)
@@ -485,6 +498,88 @@
 		echo '<FONT COLOR="red">'.qa_html($message).'</FONT>';
 		exit;
 	}
+	
+	
+//	Module (and plugin) management
+	
+	function qa_register_module($type, $include, $class, $name, $directory=QA_INCLUDE_DIR, $urltoroot=null)
+	{
+		global $qa_modules;
+		
+		$qa_modules[$type][$name]=array(
+			'directory' => $directory,
+			'urltoroot' => $urltoroot,
+			'include' => $include,
+			'class' => $class,
+		);
+	}
+
+	
+	function qa_list_modules($type)
+	{
+		global $qa_modules;
+		
+		return is_array(@$qa_modules[$type]) ? array_keys($qa_modules[$type]) : array();
+	}
+	
+	
+	function qa_load_module($type, $name)
+	{
+		global $qa_modules, $qa_root_url_relative;
+		
+		$module=@$qa_modules[$type][$name];
+		
+		if (is_array($module)) {
+			if (isset($module['object']))
+				return $module['object'];
+			
+			if (strlen($module['include']))
+				require_once $module['directory'].$module['include'];
+			
+			if (strlen($module['class'])) {
+				$object=new $module['class'];
+				
+				if (method_exists($object, 'load_module'))
+					$object->load_module($module['directory'], $qa_root_url_relative.$module['urltoroot']);
+				
+				$qa_modules[$type][$name]['object']=$object;
+				return $object;
+			}
+		}
+		
+		return null;
+	}
+	
+	
+	function qa_register_plugin_module($type, $include, $class, $name)
+	{
+		global $qa_plugin_directory, $qa_plugin_urltoroot;
+		
+		if (empty($qa_plugin_directory) || empty($qa_plugin_urltoroot))
+			qa_fatal_error('qa_register_plugin_module() can only be called from a plugin qa-plugin.php file');
+
+		qa_register_module($type, $include, $class, $name, $qa_plugin_directory, $qa_plugin_urltoroot);
+	}
+	
+
+	$qa_modules=array();
+
+	qa_register_module('editor', 'qa-editor-basic.php', 'qa_editor_basic', '');
+	qa_register_module('viewer', 'qa-viewer-basic.php', 'qa_viewer_basic', '');
+	
+	$qa_plugin_files=glob(QA_PLUGIN_DIR.'*/qa-plugin.php');
+	
+	foreach ($qa_plugin_files as $pluginfile)
+		if (file_exists($pluginfile)) {
+			if (preg_match('/Plugin[ \t]*Minimum[ \t]*Question2Answer[ \t]*Version\:[ \t]*([0-9\.]+)\s/i', file_get_contents($pluginfile), $matches))
+				if ( ((float)QA_VERSION>0) && ($matches[1]>(float)QA_VERSION) )
+					continue; // skip plugin which requires a later version
+			
+			$qa_plugin_directory=dirname($pluginfile).'/';
+			$qa_plugin_urltoroot=substr($qa_plugin_directory, strlen(QA_BASE_DIR));
+			
+			@include_once $pluginfile;
+		}
 	
 
 /*

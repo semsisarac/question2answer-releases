@@ -1,39 +1,38 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-admin.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Language phrases for admin center
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	return array(
 		'add_category_button' => 'Add Category',
+		'add_field_button' => 'Add Field',
+		'add_title_button' => 'Add Title',
+		'add_new_field' => 'Add new field',
+		'add_new_title' => 'Add new title',
 		'add_link_button' => 'Add Link',
+		'add_link_link' => ' - ^1add link^2',
 		'add_page_button' => 'Add Page',
 		'admin_title' => 'Administration Center',
 		'after_footer' => 'After links in footer',
@@ -54,40 +53,57 @@
 		'category_position' => 'Position in categories:',
 		'category_slug' => 'Category slug (URL fragment):',
 		'click_category_edit' => 'Click a category name to edit:',
-		'click_name_edit' => 'Click a custom page or link to edit:',
+		'click_name_edit' => 'Custom pages or links:',
 		'database_cleanup' => 'Database clean-up operations',
 		'delete_category_reassign' => 'Delete this category and reassign its questions to:',
 		'delete_category' => 'Delete this category',
 		'delete_hidden_complete' => 'All hidden posts without dependents have been deleted',
 		'delete_hidden_note' => ' - all hidden questions, answer and comments without dependents',
 		'delete_hidden' => 'Delete hidden posts',
+		'delete_field' => 'Delete this field',
 		'delete_link' => 'Delete this link',
 		'delete_page' => 'Delete this page',
+		'delete_title' => 'Delete this title',
 		'delete_stop' => 'Stop deleting',
+		'edit_field' => ' - ^1edit field^2',
+		'edit_link' => ' - ^1edit link^2',
+		'edit_page' => ' - ^1edit page^2',
+		'edit_custom_page' => 'Edit custom page',
+		'edit_title' => ' - ^1edit title^2',
 		'emails_title' => 'Emails',
 		'feed_link_example' => 'Example feed',
 		'feed_link' => 'Feed',
 		'feeds_title' => 'RSS feeds',
+		'field_name' => 'Field name for display:',
+		'field_type' => 'Field type:',
+		'field_single_line' => 'Single line of text',
+		'field_multi_line' => 'Multiple lines of text',
+		'field_link_url' => 'Linked URL',
 		'first' => 'First',
 		'from_anon' => 'From anonymous:',
+		'from_plugin' => ' (from plugin: ^)',
 		'from_users' => 'From users:',
 		'general_title' => 'General',
 		'hidden_answers_deleted' => 'Deleted ^1 of ^2 hidden answers without dependents...',
 		'hidden_comments_deleted' => 'Deleted ^1 of ^2 hidden comments...',
 		'hidden_questions_deleted' => 'Deleted ^1 of ^2 hidden questions without dependents...',
 		'hidden_title' => 'Hidden',
+		'installed_plugins' => 'Installed plugins:',
 		'layout_title' => 'Layout',
 		'link_name' => 'Text of link:',
 		'link_new_window' => 'Open link in a new window',
 		'link_url' => 'URL of link (absolute or relative to QA root):',
+		'maintenance_admin_only' => 'Your site is in ^1maintenance^2 and is currently inaccessible to regular users.',
 		'maximum_x' => ' (max ^)',
 		'nav_links_explanation' => 'Show the following navigation links on every page:',
 		'nav_qa_is_home' => 'Q&A (links to home page)',
 		'neat_urls_note' => ' (requires ^1htaccess^2 file)',
 		'no_classification' => 'No classification',
 		'no_hidden_found' => 'No hidden questions, answers or comments found',
+		'no_image_gd' => 'The installed version of PHP was compiled without GD image support, so users cannot upload their avatars directly.',
 		'no_link' => 'No link',
 		'no_multibyte' => 'The installed version of PHP was compiled without multibyte string support. Searching will be less effective for non-Roman characters.',
+		'no_plugin_options' => 'None of your installed plugins have options to display.',
 		'no_privileges' => 'Only administrators may access this page.',
 		'not_logged_in' => 'Please ^1log in^2 as the adminstrator to access this page.',
 		'opposite_main_menu' => 'Far end of tabs at top',
@@ -97,12 +113,19 @@
 		'page_content_html' => 'Content to display in page (HTML allowed):',
 		'page_default_slug' => 'page-^',
 		'page_heading' => 'Heading to display at top of page:',
-		'page_link_position' => 'Position:',
+		'position' => 'Position:',
 		'page_name' => 'Name of page (also used for tab or link):',
 		'page_slug' => 'Page slug (URL fragment):',
 		'pages_explanation' => 'Click the \'Add Page\' button to add custom content to your QA site, or \'Add Link\' to link to any other web page.',
 		'pages_title' => 'Pages',
 		'permissions_title' => 'Permissions',
+		'plugin_pages_explanation' => 'The following pages are available via plugins:',
+		'plugins_title' => 'Plugins',
+		'basic_editor' => 'Basic Editor',
+		'q2a_version' => 'Question2Answer version:',
+		'q2a_db_version' => 'Q2A database version:',
+		'php_version' => 'PHP version:',
+		'mysql_version' => 'MySQL version:',
 		'points_defaults_shown' => 'Defaults shown below but NOT YET APPLIED:',
 		'points_title' => 'Points',
 		'points' => 'points',
@@ -138,21 +161,29 @@
 		'save_recalc_button' => 'Save and Recalculate',
 		'show_defaults_button' => 'Show Defaults',
 		'slug_bad_chars' => 'The slug may not contain these characters: ^',
-		'slug_reserved' => 'This slug is reserved for use by the engine',
+		'slug_reserved' => 'This slug is reserved for use by another page',
 		'spam_title' => 'Spam',
 		'stats_title' => 'Stats',
 		'stop_recalc_warning' => 'A database clean-up operation is running. If you close this page now, the operation will be interrupted.',
 		'tags_and_categories' => 'Tags and Categories',
 		'tags_not_shown' => 'Some questions have tags which will not be displayed.',
 		'tags' => 'Tags',
+		'title_already_used' => 'This value is already being used by another title',
 		'total_as' => 'Total answers:',
 		'total_cs' => 'Total comments:',
 		'total_qs' => 'Total questions:',
+		'unnamed_plugin' => 'Unnamed Plugin',
+		'requires_q2a_version' => 'Disabled - requires Question2Answer ^ or later',
 		'upgrade_db' => 'Your Question2Answer database needs to be ^1upgraded^2 for this version.',
 		'url_format_note' => 'Options with the ^ label are working for your site\'s configuration. For best search engine optimization (SEO), use the first ^ option available.',
 		'users_active' => 'Active users:',
+		'user_titles' => 'User titles based on points:',
+		'profile_fields' => 'Extra fields on user profile:',
 		'users_posted' => 'Users who posted:',
 		'users_registered' => 'Registered users:',
+		'users_title' => 'Users',
+		'user_title' => 'User title (HTML allowed):',
+		'points_required' => 'Points required to receive title:',
 		'users_voted' => 'Users who voted:',
 		'viewing_title' => 'Viewing',
 	);

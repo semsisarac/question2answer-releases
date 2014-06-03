@@ -1,39 +1,41 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-options.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Language phrases for all options, as shown in admin center
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	return array(
 		'allow_multi_answers' => 'Allow multiple answers per user:',
 		'allow_no_category' => 'Allow questions with no category',
+		'avatar_allow_gravatar' => 'Allow ^1Gravatar^2 avatars:',
+		'avatar_allow_upload' => 'Allow users to upload avatars:',
+		'avatar_q_page_q_size' => 'Size of avatars on questions (pixels):',
+		'avatar_q_page_a_size' => 'Size of avatars on answers (pixels):',
+		'avatar_q_page_c_size' => 'Size of avatars on comments (pixels):',
+		'avatar_store_size' => 'Maximum size of stored avatars (pixels):',
+		'avatar_profile_size' => 'Size of avatar on user profile page (pixels):',
+		'avatar_users_size' => 'Size of avatars on top users page (pixels):',
 		'block_bad_words' => 'Censored words (separate by spaces or commas):',
 		'block_ips_write' => 'Blocked IP addresses (separate by spaces or commas):',
 		'captcha_on_anon_post' => 'Use reCAPTCHA for anonymous posts:',
@@ -56,6 +58,9 @@
 		'do_complete_tags' => 'Show matching tags while typing:',
 		'do_example_tags' => 'Show example tags based on question:',
 		'do_related_qs' => 'Show related questions on question page:',
+		'editor_for_qs' => 'Default editor for questions:',
+		'editor_for_as' => 'Default editor for answers:',
+		'editor_for_cs' => 'Default editor for comments:',
 		'email_privacy' => 'Privacy note for email on all forms (HTML allowed):',
 		'feed_for_activity' => 'Feed for recent questions, answers or comments:',
 		'feed_for_qa' => 'Feed for recent questions and answers:',
@@ -109,8 +114,7 @@
 		'page_size_tag_qs' => 'Questions on tag page:',
 		'page_size_tags' => 'Tags page length:',
 		'page_size_una_qs' => 'Unanswered page length:',
-		'page_size_user_as' => 'Answers on user page:',
-		'page_size_user_qs' => 'Questions on user page:',
+		'page_size_user_posts' => 'Posts on user page:',
 		'page_size_users' => 'Users page length:',
 		'pages_prev_next' => 'Links to previous/next pages:',
 		'permit_admins' => 'Administrators',
@@ -171,8 +175,10 @@
 		'show_selected_first' => 'Move selected answer to the top:',
 		'show_url_links' => 'Detect and link URLs in entered text:',
 		'show_user_points' => 'Display points next to usernames:',
+		'show_user_titles' => 'Display titles next to usernames:',
 		'show_when_created' => 'Display age of user content:',
 		'site_language' => 'The language for your site interface:',
+		'site_maintenance' => 'Take site down for maintenance',
 		'site_theme' => 'The visual theme for your site:',
 		'site_title' => 'The name of your website for page titles:',
 		'site_url' => 'The URL to use when referring to your site:',

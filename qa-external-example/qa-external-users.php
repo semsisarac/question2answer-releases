@@ -1,34 +1,28 @@
 <?php
 
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-external-example/qa-external-users.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Example of how to integrate with your own user database
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 /*
@@ -169,13 +163,13 @@
 	}
 	
 
-	function qa_get_logged_in_user($qa_db_connection)
+	function qa_get_logged_in_user()
 /*
 	==========================================================================
 	YOU MUST MODIFY THIS FUNCTION, BUT CAN DO SO AFTER QA CREATES ITS DATABASE
 	==========================================================================
 
-	qa_get_logged_in_user($qa_db_connection)
+	qa_get_logged_in_user()
 	
 	You should check (using $_COOKIE, $_SESSION or whatever is appropriate) whether a user is
 	currently logged in. If not, return null. If so, return an array with the following elements:
@@ -190,7 +184,7 @@
 	The result of this function will be passed to your other function qa_get_logged_in_user_html()
 	so you may add any other elements to the returned array if they will be useful to you.
 
-	$qa_db_connection is an open connection to the QA database. If your database is shared with
+	Call qa_db_connection() to get the connection to the QA database. If your database is shared with
 	QA, you can use this with PHP's MySQL functions such as mysql_query() to run queries.
 	
 	In order to access the admin interface of your QA site, ensure that the array element 'level'
@@ -216,6 +210,8 @@
 		if ($_SESSION['is_logged_in']) {
 			$userid=$_SESSION['logged_in_userid'];
 
+			$qa_db_connection=qa_db_connection();
+			
 			$result=mysql_fetch_assoc(
 				mysql_query(
 					"SELECT email FROM users WHERE userid='".mysql_real_escape_string($userid, $qa_db_connection)."'",
@@ -245,6 +241,8 @@
 		* Your database has a users table that contains usernames, emails and a flag for admin privileges
 		
 		if ($_COOKIE['sessionid']) {
+			$qa_db_connection=qa_db_connection();
+			
 			$result=mysql_fetch_assoc(
 				mysql_query(
 					"SELECT userid, username, email, admin_flag FROM users WHERE userid=".
@@ -268,17 +266,17 @@
 	}
 
 	
-	function qa_get_user_email($qa_db_connection, $userid)
+	function qa_get_user_email($userid)
 /*
 	==========================================================================
 	YOU MUST MODIFY THIS FUNCTION, BUT CAN DO SO AFTER QA CREATES ITS DATABASE
 	==========================================================================
 
-	qa_get_user_email($qa_db_connection, $userid)
+	qa_get_user_email($userid)
 	
 	Return the email address for user $userid, or null if you don't know it.
 	
-	$qa_db_connection is an open connection to the QA database. If your database is shared with
+	Call qa_db_connection() to get the connection to the QA database. If your database is shared with
 	QA, you can use this with PHP's MySQL functions such as mysql_query() to run queries.
 */
 	{
@@ -292,6 +290,8 @@
 		
 		* Your database is shared with the QA site
 		* Your database has a users table that contains emails
+		
+		$qa_db_connection=qa_db_connection();
 		
 		$result=mysql_fetch_assoc(
 			mysql_query(
@@ -309,19 +309,19 @@
 	}
 	
 
-	function qa_get_userids_from_public($qa_db_connection, $publicusernames)
+	function qa_get_userids_from_public($publicusernames)
 /*
 	==========================================================================
 	YOU MUST MODIFY THIS FUNCTION, BUT CAN DO SO AFTER QA CREATES ITS DATABASE
 	==========================================================================
 
-	qa_get_userids_from_public($qa_db_connection, $publicusernames)
+	qa_get_userids_from_public($publicusernames)
 	
 	You should take the array of public usernames in $publicusernames, and return an array which
 	maps those usernames to internal user ids. For each element of this array, the username you
 	were given should be in the key, with the corresponding user id in the value.
 	
-	$qa_db_connection is an open connection to the QA database. If your database is shared with
+	Call qa_db_connection() to get the connection to the QA database. If your database is shared with
 	QA, you can use this with PHP's MySQL functions such as mysql_query() to run queries. If you
 	access this database or any other, try to use a single query instead of one per user.
 */
@@ -354,6 +354,8 @@
 		$publictouserid=array();
 			
 		if (count($publicusernames)) {
+			$qa_db_connection=qa_db_connection();
+			
 			$escapedusernames=array();
 			foreach ($publicusernames as $publicusername)
 				$escapedusernames[]="'".mysql_real_escape_string($publicusername, $qa_db_connection)."'";
@@ -373,13 +375,13 @@
 	}
 
 
-	function qa_get_public_from_userids($qa_db_connection, $userids)
+	function qa_get_public_from_userids($userids)
 /*
 	==========================================================================
 	YOU MUST MODIFY THIS FUNCTION, BUT CAN DO SO AFTER QA CREATES ITS DATABASE
 	==========================================================================
 
-	qa_get_public_from_userids($qa_db_connection, $userids)
+	qa_get_public_from_userids($userids)
 	
 	This is exactly like qa_get_userids_from_public(), but works in the other direction.
 	
@@ -387,7 +389,7 @@
 	those to public usernames. For each element of this array, the userid you were given should
 	be in the key, with the corresponding username in the value.
 	
-	$qa_db_connection is an open connection to the QA database. If your database is shared with
+	Call qa_db_connection() to get the connection to the QA database. If your database is shared with
 	QA, you can use this with PHP's MySQL functions such as mysql_query() to run queries. If you
 	access this database or any other, try to use a single query instead of one per user.
 */
@@ -420,6 +422,8 @@
 		$useridtopublic=array();
 		
 		if (count($userids)) {
+			$qa_db_connection=qa_db_connection();
+			
 			$escapeduserids=array();
 			foreach ($userids as $userid)
 				$escapeduserids[]="'".mysql_real_escape_string($userid, $qa_db_connection)."'";
@@ -439,20 +443,20 @@
 	}
 
 
-	function qa_get_logged_in_user_html($qa_db_connection, $logged_in_user, $relative_url_prefix)
+	function qa_get_logged_in_user_html($logged_in_user, $relative_url_prefix)
 /*
 	==========================================================================
 	     YOU MAY MODIFY THIS FUNCTION, BUT THE DEFAULT BELOW WILL WORK OK
 	==========================================================================
 
-	qa_get_logged_in_user_html($qa_db_connection, $logged_in_user, $relative_url_prefix)
+	qa_get_logged_in_user_html($logged_in_user, $relative_url_prefix)
 
 	You should return HTML code which identifies the logged in user, to be displayed next to the
 	logout link on the QA pages. This HTML will only be shown to the logged in user themselves.
 
 	$logged_in_user is the array that you returned from qa_get_logged_in_user(). Hopefully this
 	contains enough information to generate the HTML without another database query, but if not,
-	$qa_db_connection is an open connection to the QA database.
+	call qa_db_connection() to get the connection to the QA database.
 
 	$relative_url_prefix is a relative URL to the root of the QA site, which may be useful if
 	you want to include a link that uses relative URLs. If the QA site is in a subdirectory of
@@ -499,18 +503,18 @@
 	}
 
 
-	function qa_get_users_html($qa_db_connection, $userids, $should_include_link, $relative_url_prefix)
+	function qa_get_users_html($userids, $should_include_link, $relative_url_prefix)
 /*
 	==========================================================================
 	     YOU MAY MODIFY THIS FUNCTION, BUT THE DEFAULT BELOW WILL WORK OK
 	==========================================================================
 
-	qa_get_users_html($qa_db_connection, $userids, $should_include_link, $relative_url_prefix)
+	qa_get_users_html($userids, $should_include_link, $relative_url_prefix)
 
 	You should return an array of HTML to display for each user in $userids. For each element of
 	this array, the userid should be in the key, with the corresponding HTML in the value.
 	
-	$qa_db_connection is an open connection to the QA database. If your database is shared with
+	Call qa_db_connection() to get the connection to the QA database. If your database is shared with
 	QA, you can use this with PHP's MySQL functions such as mysql_query() to run queries. If you
 	access this database or any other, try to use a single query instead of one per user.
 	
@@ -528,7 +532,7 @@
 
 	//	By default, show the public username linked to the QA profile page for each user
 
-		$useridtopublic=qa_get_public_from_userids($qa_db_connection, $userids);
+		$useridtopublic=qa_get_public_from_userids($userids);
 		
 		$usershtml=array();
 
@@ -550,7 +554,7 @@
 		* Your QA site:        http://www.mysite.com/qa/
 		* Your user pages:     http://www.mysite.com/user/[username]
 	
-		$useridtopublic=qa_get_public_from_userids($qa_db_connection, $userids);
+		$useridtopublic=qa_get_public_from_userids($userids);
 		
 		foreach ($userids as $userid) {
 			$publicusername=$useridtopublic[$userid];
@@ -572,7 +576,7 @@
 		* Your user pages:     http://www.mysite.com/[username]/
 		* User photos (16x16): http://www.mysite.com/[username]/photo-small.jpeg
 	
-		$useridtopublic=qa_get_public_from_userids($qa_db_connection, $userids);
+		$useridtopublic=qa_get_public_from_userids($userids);
 		
 		foreach ($userids as $userid) {
 			$publicusername=$useridtopublic[$userid];
@@ -591,18 +595,18 @@
 	}
 
 
-	function qa_user_report_action($qa_db_connection, $userid, $action, $questionid, $answerid, $commentid)
+	function qa_user_report_action($userid, $action, $questionid, $answerid, $commentid)
 /*
 	==========================================================================
 	     YOU MAY MODIFY THIS FUNCTION, BUT THE DEFAULT BELOW WILL WORK OK
 	==========================================================================
 
-	qa_user_report_action($qa_db_connection, $userid, $action, $questionid, $answerid, $commentid)
+	qa_user_report_action($userid, $action, $questionid, $answerid, $commentid)
 
 	Informs you about an action by user $userid that modified the database, such as posting,
 	voting, etc... If you wish, you may use this to log user activity or monitor for abuse.
 	
-	$qa_db_connection is an open connection to the QA database. If your database is shared with
+	Call qa_db_connection() to get the connection to the QA database. If your database is shared with
 	QA, you can use this with PHP's MySQL functions such as mysql_query() to run queries.
 	
 	$action is one of:

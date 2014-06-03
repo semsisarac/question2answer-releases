@@ -1,34 +1,28 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-pages.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Controller for admin page for editing custom pages and external links
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -41,25 +35,20 @@
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 
 	
-//	Queue requests for pending admin options
-
-	qa_admin_pending();
-	
-
 //	Get current list of pages and determine the state of this admin page
 
 	$pageid=qa_post_text('edit');
 	if (!isset($pageid))
 		$pageid=qa_get('edit');
 		
-	@list($pages, $editpage)=qa_db_select_with_pending($qa_db,
+	@list($pages, $editpage)=qa_db_select_with_pending(
 		qa_db_pages_selectspec(),
 		isset($pageid) ? qa_db_page_full_selectspec($pageid, true) : null
 	);
-		
-	if ((qa_clicked('doaddpage') || qa_clicked('doaddlink') || qa_clicked('dosavepage')) && !isset($editpage)) {
-		$editpage=array();
-		$isexternal=qa_clicked('doaddlink') || qa_post_text('external');
+	
+	if ((qa_clicked('doaddpage') || qa_clicked('doaddlink') || qa_get('doaddlink') || qa_clicked('dosavepage')) && !isset($editpage)) {
+		$editpage=array('title' => qa_get('text'), 'tags' => qa_get('url'), 'nav' => qa_get('nav'), 'position' => 1);
+		$isexternal=qa_clicked('doaddlink') || qa_get('doaddlink') || qa_post_text('external');
 		
 	} elseif (isset($editpage))
 		$isexternal=$editpage['flags'] & QA_PAGE_FLAGS_EXTERNAL;
@@ -67,13 +56,13 @@
 
 //	Check admin privileges (do late to allow one DB query)
 
-	if (!qa_admin_check_privileges())
-		return;
+	if (!qa_admin_check_privileges($qa_content))
+		return $qa_content;
 		
 		
 //	Define an array of navigation settings we can change, option name => language key
 	
-	$hascustomhome=qa_get_option($qa_db, 'show_custom_home');
+	$hascustomhome=qa_opt('show_custom_home');
 	
 	$navoptions=array(
 		'nav_home' => 'main/nav_home',
@@ -86,16 +75,26 @@
 		'nav_users' => 'main/nav_users',
 	);
 	
-	if (!qa_get_option($qa_db, 'show_custom_home'))
+	$navpaths=array(
+		'nav_home' => '',
+		'nav_activity' => 'activity',
+		'nav_qa_not_home' => 'qa',
+		'nav_qa_is_home' => 'qa',
+		'nav_questions' => 'questions',
+		'nav_unanswered' => 'unanswered',
+		'nav_tags' => 'tags',
+		'nav_categories' => 'categories',
+		'nav_users' => 'users',
+	);
+	
+	if (!qa_opt('show_custom_home'))
 		unset($navoptions['nav_home']);
 		
-	if (!qa_using_categories($qa_db))
+	if (!qa_using_categories())
 		unset($navoptions['nav_categories']);
 
-	if (!qa_using_tags($qa_db))
+	if (!qa_using_tags())
 		unset($navoptions['nav_tags']);
-	
-	qa_options_set_pending(array_keys($navoptions));
 
 
 //	Process saving an old or new page
@@ -105,7 +104,7 @@
 
 	elseif (qa_clicked('dosaveoptions') || qa_clicked('doaddpage') || qa_clicked('doaddlink')) {
 		foreach ($navoptions as $optionname => $langkey)
-			qa_set_option($qa_db, $optionname, (int)qa_post_text('option_'.$optionname));
+			qa_set_option($optionname, (int)qa_post_text('option_'.$optionname));
 
 	} elseif (qa_clicked('dosavepage')) {
 		require_once QA_INCLUDE_DIR.'qa-db-admin.php';
@@ -114,7 +113,7 @@
 		$reloadpages=false;
 		
 		if (qa_post_text('dodelete')) {
-			qa_db_page_delete($qa_db, $editpage['pageid']);
+			qa_db_page_delete($editpage['pageid']);
 			$editpage=null;
 			$reloadpages=true;
 		
@@ -177,7 +176,7 @@
 							break;
 					}
 					
-					list($matchcategoryid, $matchpage)=qa_db_select_with_pending($qa_db,
+					list($matchcategoryid, $matchpage)=qa_db_select_with_pending(
 						qa_db_slug_to_category_id_selectspec($inslug),
 						qa_db_page_full_selectspec($inslug, false)
 					);
@@ -206,21 +205,21 @@
 	
 			if (isset($editpage['pageid'])) { // changing existing page
 				if ($isexternal)
-					qa_db_page_set_fields($qa_db, $editpage['pageid'],
+					qa_db_page_set_fields($editpage['pageid'],
 						isset($errors['name']) ? $editpage['title'] : $inname,
 						QA_PAGE_FLAGS_EXTERNAL | ($innewwindow ? QA_PAGE_FLAGS_NEW_WINDOW : 0),
 						isset($errors['url']) ? $editpage['tags'] : $inurl,
 						null, null);
 
 				else
-					qa_db_page_set_fields($qa_db, $editpage['pageid'],
+					qa_db_page_set_fields($editpage['pageid'],
 						isset($errors['name']) ? $editpage['title'] : $inname,
 						0,
 						isset($errors['slug']) ? $editpage['tags'] : $inslug,
 						isset($errors['heading']) ? $editpage['heading'] : $inheading,
 						isset($errors['content']) ? $editpage['content'] : $incontent);
 				
-				qa_db_page_move($qa_db, $editpage['pageid'], substr($inposition, 0, 1), substr($inposition, 1));
+				qa_db_page_move($editpage['pageid'], substr($inposition, 0, 1), substr($inposition, 1));
 				
 				$reloadpages=true;
 	
@@ -232,11 +231,11 @@
 			} else { // creating a new one
 				if (empty($errors)) {
 					if ($isexternal)
-						$pageid=qa_db_page_create($qa_db, $inname, QA_PAGE_FLAGS_EXTERNAL | ($innewwindow ? QA_PAGE_FLAGS_NEW_WINDOW : 0), $inurl, null, null);
+						$pageid=qa_db_page_create($inname, QA_PAGE_FLAGS_EXTERNAL | ($innewwindow ? QA_PAGE_FLAGS_NEW_WINDOW : 0), $inurl, null, null);
 					else
-						$pageid=qa_db_page_create($qa_db, $inname, 0, $inslug, $inheading, $incontent);
+						$pageid=qa_db_page_create($inname, 0, $inslug, $inheading, $incontent);
 						
-					qa_db_page_move($qa_db, $pageid, substr($inposition, 0, 1), substr($inposition, 1));
+					qa_db_page_move($pageid, substr($inposition, 0, 1), substr($inposition, 1));
 
 					$editpage=null;
 					$reloadpages=true;
@@ -246,18 +245,18 @@
 		
 		if ($reloadpages) {
 			unset($qa_nav_pages_cached);
-			$pages=qa_db_select_with_pending($qa_db, qa_db_pages_selectspec());
+			$pages=qa_db_select_with_pending(qa_db_pages_selectspec());
 		}
 	}
 		
 		
 //	Prepare content for theme
 	
-	qa_content_prepare();
+	$qa_content=qa_content_prepare();
 
 	$qa_content['title']=qa_lang_html('admin/admin_title').' - '.qa_lang_html('admin/pages_title');
 	
-	$qa_content['error']=qa_admin_page_error($qa_db);
+	$qa_content['error']=qa_admin_page_error();
 
 	if (isset($editpage)) {
 		$positionoptions=array();
@@ -293,8 +292,8 @@
 					$previous=$page;
 				}
 				
-			if ($nav!=@$editpage['nav']) {
-				$positionvalue=isset($previous) ? qa_lang_html_sub('admin/after_x_tab', $previous['title']) : qa_lang_html($langkey);
+			if ((!isset($editpage['pageid'])) || $nav!=@$editpage['nav']) {
+				$positionvalue=isset($previous) ? qa_lang_html_sub('admin/after_x_tab', qa_html($previous['title'])) : qa_lang_html($langkey);
 				$positionoptions[$nav.(isset($previous) ? (1+$maxposition) : 1)]=$positionvalue;
 			}
 		}
@@ -324,7 +323,7 @@
 				'position' => array(
 					'id' => 'position_display',
 					'tags' => ' NAME="position" ',
-					'label' => qa_lang_html('admin/page_link_position'),
+					'label' => qa_lang_html('admin/position'),
 					'type' => 'select',
 					'options' => $positionoptions,
 					'value' => $positionvalue,
@@ -416,12 +415,9 @@
 		$qa_content['focusid']='name';
 	
 	} else {
-		$pagehtml='<UL STYLE="margin-bottom:0;">';
-		foreach ($pages as $page)
-			$pagehtml.='<LI><A HREF="'.qa_path_html('admin/pages', array('edit' => $page['pageid'])).'">'.
-				qa_html($page['title']).'</A></LI>';
-		$pagehtml.='</UL>';
-		
+
+	//	List of standard navigation links
+
 		$qa_content['form']=array(
 			'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
 			
@@ -455,22 +451,73 @@
 
 		foreach ($navoptions as $optionname => $langkey) {
 			$qa_content['form']['fields'][$optionname]=array(
-				'label' => qa_lang_html($langkey),
+				'label' => '<A HREF="'.qa_path_html($navpaths[$optionname]).'">'.qa_lang_html($langkey).'</A>',
 				'tags' => ' NAME="option_'.$optionname.'" ',
 				'type' => 'checkbox',
-				'value' => qa_get_option($qa_db, $optionname),
+				'value' => qa_opt($optionname),
 			);
 		}
 		
+	//	List of suggested plugin pages
+
+		$listhtml='';
+		
+		$modulenames=qa_list_modules('page');
+		
+		foreach ($modulenames as $tryname) {
+			$trypage=qa_load_module('page', $tryname);
+			
+			if (method_exists($trypage, 'suggest_requests')) {
+				$suggestrequests=$trypage->suggest_requests();
+			
+				foreach ($suggestrequests as $suggestrequest) {
+					$listhtml.='<LI><B><A HREF="'.qa_path_html($suggestrequest['request']).'">'.qa_html($suggestrequest['title']).'</A></B>';
+					
+					$listhtml.=qa_lang_html_sub('admin/from_plugin', qa_html($tryname));
+
+					$listhtml.=strtr(qa_lang_html('admin/add_link_link'), array(
+						'^1' => '<A HREF="'.qa_path_html($qa_request, array('doaddlink' => 1, 'text' => $suggestrequest['title'], 'url' => $suggestrequest['request'], 'nav' => @$suggestrequest['nav'])).'">',
+						'^2' => '</A>',
+					));
+						
+					$listhtml.='</LI>';
+				}
+			}
+		}
+
+		if (strlen($listhtml))
+			$qa_content['form']['fields']['plugins']=array(
+				'label' => qa_lang_html('admin/plugin_pages_explanation'),
+				'type' => 'custom',
+				'html' => '<UL STYLE="margin-bottom:0;">'.$listhtml.'</UL>',
+			);
+		
+	//	List of custom pages or links
+
+		$listhtml='';
+		
+		foreach ($pages as $page) {
+			$listhtml.='<LI><B><A HREF="'.qa_custom_page_url($page).'">'.qa_html($page['title']).'</A></B>';
+			
+			$listhtml.=strtr(qa_lang_html(($page['flags'] & QA_PAGE_FLAGS_EXTERNAL) ? 'admin/edit_link' : 'admin/edit_page'), array(
+				'^1' => '<A HREF="'.qa_path_html('admin/pages', array('edit' => $page['pageid'])).'">',
+				'^2' => '</A>',
+			));
+								
+			$listhtml.='</LI>';
+		}
+		
 		$qa_content['form']['fields']['pages']=array(
-			'label' => count($pages) ? qa_lang_html('admin/click_name_edit') : qa_lang_html('admin/pages_explanation'),
-			'type' => 'static',
-			'value' => count($pages) ? $pagehtml : null,
+			'label' => strlen($listhtml) ? qa_lang_html('admin/click_name_edit') : qa_lang_html('admin/pages_explanation'),
+			'type' => 'custom',
+			'html' => strlen($listhtml) ? '<UL STYLE="margin-bottom:0;">'.$listhtml.'</UL>' : null,
 		);
 	}
 
 
 	$qa_content['navigation']['sub']=qa_admin_sub_navigation();
+	
+	return $qa_content;
 
 
 /*

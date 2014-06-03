@@ -1,34 +1,28 @@
 <?php
 
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-ask.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Controller for ask-a-question page
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -45,22 +39,12 @@
 	require_once QA_INCLUDE_DIR.'qa-app-post-create.php';
 	require_once QA_INCLUDE_DIR.'qa-util-string.php';
 	
-//	Set some pending option requests
-
-	qa_captcha_pending();
-
-	qa_options_set_pending(array('permit_post_q', 'confirm_user_emails', 'min_len_q_title', 'max_len_q_title', 'allow_no_category',
-		'min_len_q_content', 'min_num_q_tags', 'max_num_q_tags', 'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs',
-		'do_example_tags', 'match_example_tags', 'page_size_ask_tags', 'do_complete_tags', 'voting_on_qs', 'voting_on_q_page_only', 'votes_separated',
-		'captcha_on_anon_post', 'captcha_on_unconfirmed', 'show_when_created', 'show_user_created', 'show_user_points',
-		'permit_anon_view_ips', 'block_ips_write', 'block_bad_words'));
-
 
 //	Check whether this is a follow-on question and get some info we need from the database
 
 	$infollow=qa_get('follow');
 	
-	@list($categories, $followanswer)=qa_db_select_with_pending($qa_db,
+	@list($categories, $followanswer)=qa_db_select_with_pending(
 		qa_db_categories_selectspec(),
 		isset($infollow) ? qa_db_full_post_selectspec($qa_login_userid, $infollow) : null
 	);
@@ -71,8 +55,8 @@
 
 //	Check if we have permission to ask and if should use a captcha
 
-	$permiterror=qa_user_permit_error($qa_db, 'permit_post_q', qa_is_http_post() ? 'Q' : null); // only check rate limit later on
-	$usecaptcha=qa_user_use_captcha($qa_db, 'captcha_on_anon_post');
+	$permiterror=qa_user_permit_error('permit_post_q', qa_is_http_post() ? 'Q' : null); // only check rate limit later on
+	$usecaptcha=qa_user_use_captcha('captcha_on_anon_post');
 
 
 //	Check for permission error, otherwise proceed to process input
@@ -112,42 +96,46 @@
 		if (!isset($incategoryid))
 			$incategoryid=qa_get('cat');
 			
-		$intitle=qa_post_text('title');
-		$incontent=qa_post_text('content');
-		$intags=qa_post_text('tags');
 		$innotify=true; // show notify on by default
+		
 	
 	//	Process incoming form
 	
-		if (qa_clicked('doask1') || qa_clicked('doask2') || qa_clicked('doask3')) {
-			
+		if (qa_clicked('doask1') || qa_clicked('doask2') || qa_clicked('doask3')) {			
+			$intitle=qa_post_text('title');
+
 			if (qa_clicked('doask3')) { // process incoming formfor final stage (ready to create question)
 				require_once QA_INCLUDE_DIR.'qa-util-string.php';
 				
+				$intags=qa_post_text('tags');
 				$tagstring=qa_tags_to_tagstring(array_unique(qa_string_to_words(@$intags)));
+
 				$innotify=qa_post_text('notify');
 				$inemail=qa_post_text('email');
 
-				$errors=qa_question_validate($qa_db, $intitle, $incontent, $tagstring, $innotify, $inemail);
+				qa_get_post_content('editor', 'content', $ineditor, $incontent, $informat, $intext);
+				
+				$errors=qa_question_validate($intitle, $incontent, $informat, $intext, $tagstring, $innotify, $inemail);
 				
 				if ($usecaptcha)
-					qa_captcha_validate($qa_db, $_POST, $errors);
+					qa_captcha_validate($_POST, $errors);
 				
 				if (empty($errors)) {
 					if (!isset($qa_login_userid))
-						$qa_cookieid=qa_cookie_get_create($qa_db); // create a new cookie if necessary
+						$qa_cookieid=qa_cookie_get_create(); // create a new cookie if necessary
 		
-					$questionid=qa_question_create($qa_db, $followanswer, $qa_login_userid, $qa_cookieid,
-						$intitle, $incontent, $tagstring, $innotify, $inemail, isset($categories[$incategoryid]) ? $incategoryid : null);
+					$questionid=qa_question_create($followanswer, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid,
+						$intitle, $incontent, $informat, $intext, $tagstring, $innotify, $inemail,
+						isset($categories[$incategoryid]) ? $incategoryid : null);
 					
-					qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'q_post', $questionid, null, null);
+					qa_report_write_action($qa_login_userid, $qa_cookieid, 'q_post', $questionid, null, null);
 					qa_redirect(qa_q_request($questionid, $intitle)); // our work is done here
 				}
 				
 				$stage=3; // redisplay the final stage form
 
 			} else
-				$errors=qa_question_validate($qa_db, $intitle, null, null, null, null); // process an earlier form
+				$errors=qa_question_validate($intitle, null, null, null, null, null, null); // process an earlier form
 			
 
 			if (empty($errors) || ($stage>1)) { // we are ready to move to stage 2 or 3
@@ -155,24 +143,24 @@
 				
 			//	Find out what operations are required (some of these will be ignored, depending on if we show stage 2 or 3)
 				
-				$doaskcheck=qa_clicked('doask1') && qa_get_option($qa_db, 'do_ask_check_qs');
-				$doexampletags=qa_using_tags($qa_db) && qa_get_option($qa_db, 'do_example_tags');
-				$docompletetags=qa_using_tags($qa_db) && qa_get_option($qa_db, 'do_complete_tags');
-				$askchecksize=$doaskcheck ? qa_get_option($qa_db, 'page_size_ask_check_qs') : 0;
+				$doaskcheck=qa_clicked('doask1') && qa_opt('do_ask_check_qs');
+				$doexampletags=qa_using_tags() && qa_opt('do_example_tags');
+				$docompletetags=qa_using_tags() && qa_opt('do_complete_tags');
+				$askchecksize=$doaskcheck ? qa_opt('page_size_ask_check_qs') : 0;
 				$countqs=$doexampletags ? QA_DB_RETRIEVE_ASK_TAG_QS : $askchecksize;
 				
 			//	Find related questions based on the title - for stage 2 (ask check) and/or 3 (example tags)
 			
 				if ($countqs)
-					$relatedquestions=qa_db_select_with_pending($qa_db,
-						qa_db_search_posts_selectspec($qa_db, $qa_login_userid, qa_string_to_words($intitle), null, null, null, 0, false, $countqs)
+					$relatedquestions=qa_db_select_with_pending(
+						qa_db_search_posts_selectspec($qa_login_userid, qa_string_to_words($intitle), null, null, null, 0, false, $countqs)
 					);
 					
 
 				if ($doaskcheck) { // for ask check, find questions to suggest based on their score
 					$suggestquestions=array_slice($relatedquestions, 0, $askchecksize);
 					
-					$minscore=qa_match_to_min_score(qa_get_option($qa_db, 'match_ask_check_qs'));
+					$minscore=qa_match_to_min_score(qa_opt('match_ask_check_qs'));
 					
 					foreach ($suggestquestions as $key => $question)
 						if ($question['score']<$minscore)
@@ -181,7 +169,7 @@
 				
 				if ($doaskcheck && count($suggestquestions)) { // we have something to display for checking duplicate questions
 					$stage=2;
-					$usershtml=qa_userids_handles_html($qa_db, $suggestquestions);
+					$usershtml=qa_userids_handles_html($suggestquestions);
 				
 				} else { // move to the full question form
 					$stage=3;
@@ -189,7 +177,7 @@
 				//	Find the most popular tags, not related to question
 				
 					if ($docompletetags)
-						$populartags=qa_db_select_with_pending($qa_db, qa_db_popular_tags_selectspec(0, QA_DB_RETRIEVE_COMPLETE_TAGS));
+						$populartags=qa_db_select_with_pending(qa_db_popular_tags_selectspec(0, QA_DB_RETRIEVE_COMPLETE_TAGS));
 					
 				//	Find the example tags to suggest based on the question title, if appropriate
 					
@@ -217,12 +205,12 @@
 					
 						arsort($tagweight, SORT_NUMERIC);
 					
-						$minweight=exp(qa_match_to_min_score(qa_get_option($qa_db, 'match_example_tags')));
+						$minweight=exp(qa_match_to_min_score(qa_opt('match_example_tags')));
 						foreach ($tagweight as $tag => $weight)
 							if ($weight<$minweight)
 								unset($tagweight[$tag]);
 								
-						$exampletags=array_slice(array_keys($tagweight), 0, qa_get_option($qa_db, 'page_size_ask_tags'));
+						$exampletags=array_slice(array_keys($tagweight), 0, qa_opt('page_size_ask_tags'));
 
 					} else
 						$exampletags=array();
@@ -241,14 +229,14 @@
 
 //	Prepare content for theme
 
-	qa_content_prepare(false, @$incategoryid);
+	$qa_content=qa_content_prepare(false, @$incategoryid);
 	
 	$qa_content['title']=qa_lang_html(isset($followanswer) ? 'question/ask_follow_title' : 'question/ask_title');
 
 	$qa_content['error']=@$pageerror;
 	
 	if (!$permiterror) {
-		$categoryoptions=qa_category_options($qa_db, $categories);
+		$categoryoptions=qa_category_options($categories);
 
 		if ($stage==1) { // see stages in comment above
 			$qa_content['form']=array(
@@ -290,12 +278,15 @@
 			
 			$qa_content['focusid']='title';
 			
-			if (isset($followanswer))
+			if (isset($followanswer)) {
+				$viewer=qa_load_viewer($followanswer['content'], $followanswer['format']);
+				
 				$qa_content['form']['fields']['follows']=array(
 					'type' => 'static',
 					'label' => qa_lang_html('question/ask_follow_from_a'),
-					'value' => qa_html(qa_block_words_replace($followanswer['content'], qa_get_block_words_preg($qa_db)), true),
+					'value' => $viewer->get_view_html($followanswer['content'], $followanswer['format'], array('blockwordspreg' => qa_get_block_words_preg())),
 				);
+			}
 				
 		} elseif ($stage==2) {
 			$qa_content['title']=qa_html(@$intitle);
@@ -303,12 +294,14 @@
 			$qa_content['q_list']['title']=qa_lang_html('question/ask_same_q');
 			
 			$qa_content['q_list']['qs']=array();
+			
+			$htmloptions=qa_post_html_defaults('Q');
+			$htmloptions['voteview']=qa_get_vote_view('Q', false, false);
 
 			foreach ($suggestquestions as $question)
-				$qa_content['q_list']['qs'][]=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
-					qa_using_tags($qa_db), qa_using_categories($qa_db) ? $categories : null, qa_get_vote_view($qa_db, 'Q', false, false),
-					qa_get_option($qa_db, 'show_when_created'), !qa_user_permit_error($qa_db, 'permit_anon_view_ips'),
-					qa_get_option($qa_db, 'show_user_points'), qa_get_block_words_preg($qa_db));
+				$qa_content['q_list']['qs'][]=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, 
+					qa_using_categories() ? $categories : null, $htmloptions);
+
 		
 			$qa_content['q_list']['form']=array(
 				'tags' => ' NAME="ask" METHOD="POST" ACTION="'.qa_self_html().'" ',
@@ -329,6 +322,9 @@
 			);
 
 		} else {
+			$editorname=isset($ineditor) ? $ineditor : qa_opt('editor_for_qs');
+			$editor=qa_load_editor(@$incontent, @$informat, $editorname);
+
 			$qa_content['form']=array(
 				'tags' => ' NAME="ask" METHOD="POST" ACTION="'.qa_self_html().'" ',
 				
@@ -350,12 +346,12 @@
 						'options' => $categoryoptions,
 					),
 					
-					'content' => array(
-						'label' => qa_lang_html('question/q_content_label'),
-						'tags' => ' NAME="content" ID="content" ',
-						'value' => qa_html(@$incontent),
-						'error' => qa_html(@$errors['content']),
-						'rows' => 12,
+					'content' => array_merge(
+						$editor->get_field($qa_content, @$incontent, @$informat, 'content', 12, true),
+						array(
+							'label' => qa_lang_html('question/q_content_label'),
+							'error' => qa_html(@$errors['content']),
+						)
 					),
 					
 					'tags' => array(
@@ -373,6 +369,7 @@
 				),
 				
 				'hidden' => array(
+					'editor' => qa_html($editorname),
 					'doask3' => '1',
 				),
 			);
@@ -380,21 +377,21 @@
 			if (!isset($categoryoptions))
 				unset($qa_content['form']['fields']['category']);
 				
-			if (qa_using_tags($qa_db))
-				qa_set_up_tag_field($qa_content, $qa_content['form']['fields']['tags'], 'tags', $exampletags, $completetags, qa_get_option($qa_db, 'page_size_ask_tags'));
+			if (qa_using_tags())
+				qa_set_up_tag_field($qa_content, $qa_content['form']['fields']['tags'], 'tags', $exampletags, $completetags, qa_opt('page_size_ask_tags'));
 			else
 				unset($qa_content['form']['fields']['tags']);
 			
-			$qa_content['focusid']='content';
-			
-			qa_set_up_notify_fields($qa_content, $qa_content['form']['fields'], 'Q', qa_get_logged_in_email($qa_db),
+			qa_set_up_notify_fields($qa_content, $qa_content['form']['fields'], 'Q', qa_get_logged_in_email(),
 				@$innotify, @$inemail, @$errors['email']);
 			
 			if ($usecaptcha)
-				qa_set_up_captcha_field($qa_db, $qa_content, $qa_content['form']['fields'], @$errors,
+				qa_set_up_captcha_field($qa_content, $qa_content['form']['fields'], @$errors,
 					qa_insert_login_links(qa_lang_html(isset($qa_login_userid) ? 'misc/captcha_confirm_fix' : 'misc/captcha_login_fix')));
 		}
 	}
+	
+	return $qa_content;
 
 
 /*

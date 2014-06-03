@@ -1,34 +1,28 @@
 <?php
 
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Common functions for creating theme-ready structures from data
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -87,13 +81,13 @@
 		if (@$post['userid'] || $userid)
 			return @$post['userid']==$userid;
 		elseif (@$post['cookieid'])
-			return @$post['cookieid']==$cookieid;
+			return strcmp($post['cookieid'], $cookieid)==0;
 		
 		return false;
 	}
 
 	
-	function qa_userids_handles_html($db, $useridhandles, $microformats=false)
+	function qa_userids_handles_html($useridhandles, $microformats=false)
 /*
 	Return array which maps the ['userid'] and/or ['lastuserid'] in each element of
 	$useridhandles to its HTML representation. For internal user management, corresponding
@@ -116,7 +110,7 @@
 			}
 	
 			if (count($keyuserids))
-				return qa_get_users_html($db, array_keys($keyuserids), true, $qa_root_url_relative, $microformats);
+				return qa_get_users_html(array_keys($keyuserids), true, $qa_root_url_relative, $microformats);
 			else
 				return array();
 		
@@ -164,21 +158,21 @@
 		
 		return '<A HREF="'.qa_path_html('ip/'.$ip).'" TITLE="'.qa_lang_html_sub('main/ip_address_x', qa_html($ip)).'" CLASS="qa-ip-link">'.$anchorhtml.'</A>';
 	}
-
 	
-	function qa_post_html_fields($post, $userid, $cookieid, $usershtml, $tagsview=false, $categories=null, $voteview=false,
-		$whenview=false, $ipview=false, $pointsview=false, $blockwordspreg=null, $showurllinks=false, $microformats=false, $isselected=false)
+	
+	function qa_post_html_fields($post, $userid, $cookieid, $usershtml, $categories, $options=array())
 /*
 	Given $post retrieved from database, return array of mostly HTML to be passed to theme layer.
 	$userid and $cookieid refer to the user *viewing* the page.
 	$usershtml is an array of [user id] => [HTML representation of user] built ahead of time.
 	$categories is an array of [category id] => category information from database
-	$blockwordspreg is a pre-prepared regular expression for censored words
-	Remaining parameters determine what is shown - most are true/false, $voteview is 'updown'/'net'/false.
+	$options is an array of non-required elements which set what is displayed. It can contain true for
+	these keys: tagsview, voteview, whenview, ipview, pointsview, showurllinks, microformats, isselected
+	$options['blockwordspreg'] can be a pre-prepared regular expression for censored words
 	If something is missing from $post (e.g. ['content']), correponding HTML also omitted.
 */
 	{
-		if (isset($blockwordspreg))
+		if (isset($options['blockwordspreg']))
 			require_once QA_INCLUDE_DIR.'qa-util-string.php';
 		
 		$fields=array();
@@ -191,6 +185,8 @@
 		$isanswer=($post['basetype']=='A');
 		$isbyuser=qa_post_is_by_user($post, $userid, $cookieid);
 		$anchor=urlencode(qa_anchor($post['basetype'], $postid));
+		$microformats=@$options['microformats'];
+		$isselected=@$options['isselected'];
 		
 	//	High level information
 
@@ -204,8 +200,8 @@
 	
 		if ($isquestion) {
 			if (isset($post['title'])) {
-				if (isset($blockwordspreg))
-					$post['title']=qa_block_words_replace($post['title'], $blockwordspreg);
+				if (isset($options['blockwordspreg']))
+					$post['title']=qa_block_words_replace($post['title'], $options['blockwordspreg']);
 				
 				$fields['title']=qa_html($post['title']);
 				if ($microformats)
@@ -217,19 +213,19 @@
 					$fields['title'].=' <SMALL>('.$post['score'].')</SMALL>';*/
 			}
 				
-			if ($tagsview && isset($post['tags'])) {
+			if (@$options['tagsview'] && isset($post['tags'])) {
 				$fields['q_tags']=array();
 				
 				$tags=qa_tagstring_to_tags($post['tags']);
 				foreach ($tags as $tag) {
-					if (isset($blockwordspreg) && count(qa_block_words_match_all($tag, $blockwordspreg))) // skip censored tags
+					if (isset($options['blockwordspreg']) && count(qa_block_words_match_all($tag, $options['blockwordspreg']))) // skip censored tags
 						continue;
 						
 					$fields['q_tags'][]=qa_tag_html($tag, $microformats);
 				}
 			}
 		
-			if (isset($post['acount'])) {
+			if (@$options['answersview'] && isset($post['acount'])) {
 				$fields['answers_raw']=$post['acount'];
 				
 				$fields['answers']=($post['acount']==1) ? qa_lang_html_sub_split('main/1_answer', '1', '1')
@@ -255,13 +251,12 @@
 	//	Post content
 		
 		if (!empty($post['content'])) {
-			if (isset($blockwordspreg))
-				$post['content']=qa_block_words_replace($post['content'], $blockwordspreg);
+			$viewer=qa_load_viewer($post['content'], $post['format']);
 			
-			$fields['content']=qa_html($post['content'], true); // also used for rendering content when asking follow-on q
-			
-			if ($showurllinks)
-				$fields['content']=qa_html_convert_urls($fields['content']);
+			$fields['content']=$viewer->get_view_html($post['content'], $post['format'], array(
+				'blockwordspreg' => @$options['blockwordspreg'],
+				'showurllinks' => @$options['showurllinks'],
+			));
 			
 			if ($microformats)
 				$fields['content']='<SPAN CLASS="entry-content">'.$fields['content'].'</SPAN>';
@@ -273,7 +268,8 @@
 		
 	//	Voting stuff
 			
-		if ($voteview) {
+		if (@$options['voteview']) {
+			$voteview=$options['voteview'];
 		
 		//	Calculate raw values and pass through
 		
@@ -360,10 +356,12 @@
 		
 		$fields['meta_order']=qa_lang_html('main/meta_order'); // sets ordering of meta elements which can be language-specific
 		
-		if ($isquestion || $isanswer)
-			$fields['what']=qa_lang_html($isquestion ? 'main/asked' : 'main/answered');
+		$fields['what']=qa_lang_html($isquestion ? 'main/asked' : ($isanswer ? 'main/answered' : 'main/commented'));
+			
+		if (@$options['whatlink'] && !$isquestion)
+			$fields['what_url']='#'.qa_html(urlencode($anchor));
 		
-		if (isset($post['created']) && $whenview) {
+		if (isset($post['created']) && @$options['whenview']) {
 			$whenhtml=qa_html(qa_time_to_string(time()-$post['created']));
 			if ($microformats)
 				$whenhtml='<SPAN CLASS="published"><SPAN CLASS="value-title" TITLE="'.gmdate('Y-m-d\TH:i:sO', $post['created']).'"></SPAN>'.$whenhtml.'</SPAN>';
@@ -371,11 +369,21 @@
 			$fields['when']=qa_lang_html_sub_split('main/x_ago', $whenhtml);
 		}
 		
-		$fields['who']=qa_who_to_html($isbyuser, @$post['userid'], $usershtml, $ipview ? $post['createip'] : null, $microformats);
-		
-		if ($pointsview && isset($post['points']))
-			$fields['points']=($post['points']==1) ? qa_lang_html_sub_split('main/1_point', '1', '1')
-				: qa_lang_html_sub_split('main/x_points', qa_html(number_format($post['points'])));
+		if (@$options['whoview']) {
+			$fields['who']=qa_who_to_html($isbyuser, @$post['userid'], $usershtml, @$options['ipview'] ? @$post['createip'] : null, $microformats);
+			
+			if (isset($post['points'])) {
+				if (@$options['pointsview'])
+					$fields['who']['points']=($post['points']==1) ? qa_lang_html_sub_split('main/1_point', '1', '1')
+						: qa_lang_html_sub_split('main/x_points', qa_html(number_format($post['points'])));
+				
+				if (isset($options['pointstitle']))
+					$fields['who']['title']=qa_get_points_title_html($post['points'], $options['pointstitle']);
+			}
+		}
+
+		if ((!QA_EXTERNAL_USERS) && isset($options['avatarsize']) && isset($post['flags']))
+			$fields['avatar']=qa_get_user_avatar_html($post, $options['avatarsize']);
 
 	//	Updated when and by whom
 		
@@ -385,7 +393,7 @@
 			(abs($post['updated']-$post['created'])>300) || // ... or over 5 minutes passed between create and update times
 			($post['lastuserid']!=$post['userid']) // ... or it was updated by a different user
 		)) {
-			if ($whenview) {
+			if (@$options['whenview']) {
 				$whenhtml=qa_html(qa_time_to_string(time()-$post['updated']));
 				if ($microformats)
 					$whenhtml='<SPAN CLASS="updated"><SPAN CLASS="value-title" TITLE="'.gmdate('Y-m-d\TH:i:sO', $post['updated']).'"></SPAN>'.$whenhtml.'</SPAN>';
@@ -395,7 +403,7 @@
 			} else
 				$fields['when_2']['prefix']=qa_lang_html($fields['hidden'] ? 'question/hidden' : 'question/edited');
 				
-			$fields['who_2']=qa_who_to_html(isset($userid) && ($post['lastuserid']==$userid), $post['lastuserid'], $usershtml, null, false);
+			$fields['who_2']=qa_who_to_html(isset($userid) && ($post['lastuserid']==$userid), $post['lastuserid'], $usershtml, @$options['ipview'] ? $post['lastip'] : null, false);
 		}
 		
 	//	That's it!
@@ -428,59 +436,108 @@
 	}
 	
 
-	function qa_a_or_c_to_q_html_fields($question, $userid, $cookieid, $usershtml, $tagsview=false, $categories=null, $voteview=false, $whenview=false, $ipview=false, $pointsview=false, $blockwordspreg=null, $basetype, $acpostid, $accreated, $acuserid, $accookieid, $accreateip, $acpoints)
+	function qa_other_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options,
+		$basetype, $edited, $opostid, $otime, $ouserid, $ocookieid, $oip, $opoints)
 /*
 	Return array of mostly HTML to be passed to theme layer, to *link* to an answer or comment
 	on $question retrieved from database. $basetype is 'A' for answer or 'C' for comment.
-	$userid, $cookieid, $usershtml, $voteview, $pointsview are passed through to qa_post_html_fields().
-	The $ac* parameters relate to the answer or comment and its author.
+	$userid, $cookieid, $usershtml, $categories, $options are passed through to qa_post_html_fields().
+	The $o* parameters relate to the answer or comment and its author.
 */
 	{
-		$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $tagsview, $categories, $voteview, $whenview, $ipview, $pointsview, $blockwordspreg);
+		$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options);
 		
-		if ( ($basetype=='C') || ($basetype=='A') )
+		if ($edited) {
+			switch ($basetype) {
+				case 'Q':
+					$fields['what']=qa_lang_html('main/edited');
+					break;
+					
+				case 'A':
+					$fields['what']=qa_lang_html('main/answer_edited');
+					break;
+					
+				case 'C':
+					$fields['what']=qa_lang_html('main/comment_edited');
+					break;
+			}
+	
+		} elseif ( ($basetype=='C') || ($basetype=='A') )
 			$fields['what']=qa_lang_html(($basetype=='A') ? 'main/answered' : 'main/commented');
 			
-		$fields['what_url']=$fields['url'].'#'.qa_html(urlencode(qa_anchor($basetype, $acpostid)));
+		if ($basetype!='Q')
+			$fields['what_url']=$fields['url'].'#'.qa_html(urlencode(qa_anchor($basetype, $opostid)));
 
-		if ($whenview)
-			$fields['when']=qa_lang_html_sub_split('main/x_ago', qa_html(qa_time_to_string(time()-$accreated)));
+		if (@$options['whenview'])
+			$fields['when']=qa_lang_html_sub_split('main/x_ago', qa_html(qa_time_to_string(time()-$otime)));
 		
-		$isbyuser=qa_post_is_by_user(array('userid' => $acuserid, 'cookieid' => $accookieid), $userid, $cookieid);
+		$isbyuser=qa_post_is_by_user(array('userid' => $ouserid, 'cookieid' => $ocookieid), $userid, $cookieid);
 		
-		$fields['who']=qa_who_to_html($isbyuser, $acuserid, $usershtml, $ipview ? $accreateip : null, false);
-
-		if ($pointsview && isset($acpoints))
-			$fields['points']=($acpoints==1) ? qa_lang_html_sub_split('main/1_point', '1', '1')
-				: qa_lang_html_sub_split('main/x_points', qa_html(number_format($acpoints)));
-		else
-			unset($fields['points']);
+		if (@$options['whoview']) {
+			$fields['who']=qa_who_to_html($isbyuser, $ouserid, $usershtml, @$options['ipview'] ? $oip : null, false);
+	
+			if (isset($opoints)) {
+				if (@$options['pointsview'])
+					$fields['who']['points']=($opoints==1) ? qa_lang_html_sub_split('main/1_point', '1', '1')
+						: qa_lang_html_sub_split('main/x_points', qa_html(number_format($opoints)));
+						
+				if (isset($options['pointstitle']))
+					$fields['who']['title']=qa_get_points_title_html($opoints, $options['pointstitle']);
+			}
+		}
 		
 		return $fields;
 	}
-
 	
-	function qa_any_to_q_html_fields($question, $userid, $cookieid, $usershtml, $tagsview=false, $categories=nul, $voteview=false, $whenview=false, $ipview=false, $pointsview=false, $blockwordspreg=null)
+	
+	function qa_any_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options)
 /*
 	Based on the elements in $question, return HTML to be passed to theme layer to link
 	to the question, or to an answer or comment thereon.
 */
 	{
 		if (isset($question['cpostid']))
-			$fields=qa_a_or_c_to_q_html_fields($question, $userid, $cookieid, $usershtml, $tagsview, $categories, $voteview, $whenview, $ipview, $pointsview, $blockwordspreg, 'C',
-				$question['cpostid'], @$question['ccreated'], @$question['cuserid'], @$question['ccookieid'], @$question['ccreateip'], @$question['cpoints']);
+			$fields=qa_other_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options,
+				'C', false, $question['cpostid'], @$question['ccreated'], @$question['cuserid'], @$question['ccookieid'], @$question['ccreateip'], @$question['cpoints']);
 
 		elseif (isset($question['apostid']))
-			$fields=qa_a_or_c_to_q_html_fields($question, $userid, $cookieid, $usershtml, $tagsview, $categories, $voteview, $whenview, $ipview, $pointsview, $blockwordspreg, 'A',
-				$question['apostid'], @$question['acreated'], @$question['auserid'], @$question['acookieid'], @$question['acreateip'], @$question['apoints']);
+			$fields=qa_other_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options,
+				'A', false, $question['apostid'], @$question['acreated'], @$question['auserid'], @$question['acookieid'], @$question['acreateip'], @$question['apoints']);
+
+		elseif (isset($question['editpostid']))
+			$fields=qa_other_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options,
+				$question['editbasetype'], true, $question['editpostid'], @$question['editupdated'], @$question['editlastuserid'], @$question['editcookieid'], @$question['editlastip'], @$question['editpoints']);
 
 		else
-			$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $tagsview, $categories, $voteview, $whenview, $ipview, $pointsview, $blockwordspreg);
+			$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options);
 
 		return $fields;
 	}
 	
 
+	function qa_any_sort_by_date($questions)
+	{
+		require_once QA_INCLUDE_DIR.'qa-util-sort.php';
+		
+		foreach ($questions as $key => $question) { // collect information about action referenced by each $question
+			if (isset($question['editpostid']))
+				$otime=$question['editupdated'];
+			elseif (isset($question['cpostid']))
+				$otime=$question['ccreated'];
+			elseif (isset($question['apostid']))
+				$otime=$question['acreated'];
+			else
+				$otime=$question['created'];
+				
+			$questions[$key]['sort']=-$otime;
+		}
+		
+		qa_sort_by($questions, 'sort');
+		
+		return $questions;
+	}
+	
+	
 	function qa_any_sort_and_dedupe($questions)
 /*
 	Each element in $questions represents a question or an answer or comment thereon, as retrieved from database.
@@ -489,27 +546,54 @@
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-sort.php';
 		
-		foreach ($questions as $key => $question) { // sort by appropriate created date
-			if (isset($question['cpostid']))
-				$created=$question['ccreated'];
-			elseif (isset($question['apostid']))
-				$created=$question['acreated'];
-			else
-				$created=$question['created'];
+		foreach ($questions as $key => $question) { // collect information about action referenced by each $question
+			if (isset($question['editpostid'])) {
+				$otime=$question['editupdated'];
+				$otype=$question['editbasetype'];
+				$ouserid=$question['editlastuserid'];
+
+			} elseif (isset($question['cpostid'])) {
+				$otime=$question['ccreated'];
+				$otype='C';
+				$ouserid=$question['cuserid'];
+
+			} elseif (isset($question['apostid'])) {
+				$otime=$question['acreated'];
+				$otype='A';
+				$ouserid=$question['auserid'];
+
+			} else {
+				$otime=$question['created'];
+				$otype='Q';
+				$ouserid=$question['userid'];
+			}
 				
-			$questions[$key]['sort']=-$created;
+			$questions[$key]['otype']=-$otype;
+			$questions[$key]['otime']=$otime;
+			$questions[$key]['ouserid']=$ouserid;
+
+			$questions[$key]['sort']=-$otime;
 		}
 		
 		qa_sort_by($questions, 'sort');
 		
-		$keyseenq=array(); // now remove duplicate references to same question
-		foreach ($questions as $key => $question)
-			if (isset($keyseenq[$question['postid']]))
-				unset($questions[$key]);
-			else
-				$keyseenq[$question['postid']]=true;
+		$keepquestions=array(); // now remove duplicate references to same question
+		foreach ($questions as $question) { // going in order from most recent to oldest
+			$laterquestion=@$keepquestions[$question['postid']];
+			
+			if ((!isset($laterquestion)) || // keep this reference if there is no more recent one, or...
+				(
+					(isset($laterquestion['editupdated'])) && // the more recent reference was an edit
+					(!isset($question['editupdated'])) && // this is not an edit
+					($laterquestion['otype']==$question['otype']) && // the same part (Q/A/C) is referenced here 
+					($laterquestion['ouserid']==$question['ouserid']) && // the same user made the later edit
+					(abs($laterquestion['otime']-$question['otime'])<300) // the edit was within 5 minutes of creation
+				)
+			)
+				$keepquestions[$question['postid']]=$question;
+		}
 				
-		return $questions;
+		return $keepquestions;
 	}
 
 	
@@ -524,19 +608,25 @@
 		foreach ($questions as $question)
 			if (isset($question['cpostid']))
 				$userids_handles[]=array(
-					'userid' => $question['cuserid'],
+					'userid' => @$question['cuserid'],
 					'handle' => @$question['chandle'],
 				);
 			
 			elseif (isset($question['apostid']))
 				$userids_handles[]=array(
-					'userid' => $question['auserid'],
+					'userid' => @$question['auserid'],
 					'handle' => @$question['ahandle'],
+				);
+			
+			elseif (isset($question['editpostid']))
+				$userids_handles[]=array(
+					'userid' => @$question['editlastuserid'],
+					'handle' => @$question['edithandle'],
 				);
 			
 			else
 				$userids_handles[]=array(
-					'userid' => $question['userid'],
+					'userid' => @$question['userid'],
 					'handle' => @$question['handle'],
 				);
 			
@@ -723,14 +813,14 @@
 	}
 	
 	
-	function qa_users_sub_navigation($db)
+	function qa_users_sub_navigation()
 /*
 	Return the sub navigation structure for user pages
 */
 	{
 		global $qa_login_userid;
 		
-		if ((!QA_EXTERNAL_USERS) && isset($qa_login_userid) && (qa_get_logged_in_level($db)>=QA_USER_LEVEL_MODERATOR)) {
+		if ((!QA_EXTERNAL_USERS) && isset($qa_login_userid) && (qa_get_logged_in_level()>=QA_USER_LEVEL_MODERATOR)) {
 			return array(
 				'users$' => array(
 					'url' => qa_path_html('users'),
@@ -753,17 +843,23 @@
 	}
 	
 	
+	function qa_custom_page_url($page)
+	{
+		global $qa_root_url_relative;
+		
+		return ($page['flags'] & QA_PAGE_FLAGS_EXTERNAL)
+			? is_numeric(strpos($page['tags'], '://')) ? $page['tags'] : $qa_root_url_relative.$page['tags']
+			: qa_path($page['tags']);
+	}
+	
+	
 	function qa_navigation_add_page(&$navigation, $page)
 /*
 	Add an element to the $navigation array corresponding to $page retrieved from the database
 */
 	{
-		global $qa_root_url_relative;
-		
 		$navigation[($page['flags'] & QA_PAGE_FLAGS_EXTERNAL) ? ('custom-'.$page['pageid']) : $page['tags']]=array(
-			'url' => ($page['flags'] & QA_PAGE_FLAGS_EXTERNAL)
-				? qa_html(is_numeric(strpos($page['tags'], '://')) ? $page['tags'] : $qa_root_url_relative.$page['tags'])
-				: qa_path_html($page['tags']),
+			'url' => qa_html(qa_custom_page_url($page)),
 			'label' => qa_html($page['title']),
 			'opposite' => ($page['nav']=='O'),
 			'target' => ($page['flags'] & QA_PAGE_FLAGS_NEW_WINDOW) ? '_blank' : null,
@@ -836,7 +932,7 @@
 	{
 		$template='<A HREF="#" CLASS="qa-tag-link" onClick="return qa_tag_click(this);">^</A>';
 
-		$qa_content['script_src'][]='qa-ask.js?'.QA_VERSION;
+		$qa_content['script_rel'][]='qa-content/qa-ask.js?'.QA_VERSION;
 		$qa_content['script_var']['qa_tag_template']=$template;
 		$qa_content['script_var']['qa_tags_examples']=qa_html(implode(' ', $exampletags));
 		$qa_content['script_var']['qa_tags_complete']=qa_html(implode(' ', $completetags));
@@ -945,6 +1041,131 @@
 		}
 		
 		return $themeclass;
+	}
+	
+	
+	function qa_load_editor($content, $format, &$editorname)
+	{
+		$maxeditor=qa_load_module('editor', $editorname); // take preferred one first
+		
+		if (isset($maxeditor) && method_exists($maxeditor, 'calc_quality')) {
+			$maxquality=$maxeditor->calc_quality($content, $format);		
+			if ($maxquality>=0.5)
+				return $maxeditor;
+
+		} else
+			$maxquality=0;
+		
+		$modulenames=qa_list_modules('editor');
+		foreach ($modulenames as $tryname) {
+			$tryeditor=qa_load_module('editor', $tryname);
+			
+			if (method_exists($tryeditor, 'calc_quality')) {
+				$tryquality=$tryeditor->calc_quality($content, $format);
+				
+				if ($tryquality>$maxquality) {
+					$maxeditor=$tryeditor;
+					$maxquality=$tryquality;
+					$editorname=$tryname;
+				}
+			}
+		}
+				
+		return $maxeditor;
+	}
+	
+	
+	function qa_load_viewer($content, $format)
+	{
+		$maxviewer=null;
+		$maxquality=0;
+		
+		$modulenames=qa_list_modules('viewer');
+		
+		foreach ($modulenames as $tryname) {
+			$tryviewer=qa_load_module('viewer', $tryname);
+			$tryquality=$tryviewer->calc_view_quality($content, $format);
+			
+			if ($tryquality>$maxquality) {
+				$maxviewer=$tryviewer;
+				$maxquality=$tryquality;
+			}
+		}
+		
+		return $maxviewer;
+	}
+	
+	
+	function qa_viewer_text($content, $format, $options=array())
+	{
+		$viewer=qa_load_viewer($content, $format);
+		return $viewer->get_view_text($content, $format, $options);
+	}
+	
+	
+	function qa_viewer_html($content, $format, $options=array())
+	{
+		$viewer=qa_load_viewer($content, $format);
+		return $viewer->get_view_html($content, $format, $options);
+	}
+	
+	
+	function qa_get_post_content($editorfield, $contentfield, &$ineditor, &$incontent, &$informat, &$intext)
+	{
+		$ineditor=qa_post_text($editorfield);
+
+		$editor=qa_load_module('editor', $ineditor);
+		$readdata=$editor->read_post($contentfield);
+		$incontent=$readdata['content'];
+		$informat=$readdata['format'];
+
+		$viewer=qa_load_viewer($incontent, $informat);
+		$intext=$viewer->get_view_text($incontent, $informat);
+	}
+	
+	
+	function qa_get_avatar_blob_html($blobid, $width, $height, $size, $padding=false)
+	{
+		require_once QA_INCLUDE_DIR.'qa-util-image.php';
+		
+		if ($size>0) {
+			qa_image_constrain($width, $height, $size);
+			
+			$html='<IMG SRC="'.qa_path('image/'.$blobid, array('s' => $size)).
+				'" WIDTH="'.$width.'" HEIGHT="'.$height.'" CLASS="qa-avatar-image"/>';
+				
+			if ($padding) {
+				$padleft=floor(($size-$width)/2);
+				$padright=$size-$width-$padleft;
+				$padtop=floor(($size-$height)/2);
+				$padbottom=$size-$height-$padtop;
+				$html='<SPAN STYLE="display:inline-block; padding:'.$padtop.'px '.$padright.'px '.$padbottom.'px '.$padleft.'px;">'.$html.'</SPAN>';
+			}
+		
+			return $html;
+
+		} else
+			return null;
+	}
+	
+	
+	function qa_get_gravatar_html($email, $size)
+	{
+		if ($size>0)
+			return '<IMG SRC="http://www.gravatar.com/avatar/'.md5(strtolower(trim($email))).'?s='.(int)$size.
+				'" WIDTH="'.(int)$size.'" HEIGHT="'.(int)$size.'" CLASS="qa-avatar-image"/>';
+		else
+			return null;
+	}
+	
+	
+	function qa_get_points_title_html($userpoints, $pointstitle)
+	{
+		foreach ($pointstitle as $points => $title)
+			if ($userpoints>=$points)
+				return $title;
+				
+		return null;
 	}
 	
 

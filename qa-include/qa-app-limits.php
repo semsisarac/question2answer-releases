@@ -1,34 +1,28 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-limits.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Monitoring and rate-limiting user actions (application level)
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -39,7 +33,7 @@
 	require_once QA_INCLUDE_DIR.'qa-db-limits.php';
 
 	
-	function qa_limits_remaining($db, $userid, $actioncode)
+	function qa_limits_remaining($userid, $actioncode)
 /*
 	Return how many more times user $userid and/or the requesting IP can perform $actioncode this hour,
 	where $actioncode is Q/A/C/V/L for posting a question, answer, comment, voting or logging in.
@@ -48,35 +42,35 @@
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 
 		$period=(int)(time()/3600);
-		$dblimits=qa_db_limits_get($db, $userid, @$_SERVER['REMOTE_ADDR'], $actioncode);
+		$dblimits=qa_db_limits_get($userid, @$_SERVER['REMOTE_ADDR'], $actioncode);
 		
 		switch ($actioncode) {
 			case 'Q':
-				$options=qa_get_options($db, array('max_rate_user_qs', 'max_rate_ip_qs'));
+				$options=qa_get_options(array('max_rate_user_qs', 'max_rate_ip_qs'));
 				$userlimit=$options['max_rate_user_qs'];
 				$iplimit=$options['max_rate_ip_qs'];
 				break;
 				
 			case 'A':
-				$options=qa_get_options($db, array('max_rate_user_as', 'max_rate_ip_as'));
+				$options=qa_get_options(array('max_rate_user_as', 'max_rate_ip_as'));
 				$userlimit=$options['max_rate_user_as'];
 				$iplimit=$options['max_rate_ip_as'];
 				break;
 				
 			case 'C':
-				$options=qa_get_options($db, array('max_rate_user_cs', 'max_rate_ip_cs'));
+				$options=qa_get_options(array('max_rate_user_cs', 'max_rate_ip_cs'));
 				$userlimit=$options['max_rate_user_cs'];
 				$iplimit=$options['max_rate_ip_cs'];
 				break;
 
 			case 'V':
-				$options=qa_get_options($db, array('max_rate_user_votes', 'max_rate_ip_votes'));
+				$options=qa_get_options(array('max_rate_user_votes', 'max_rate_ip_votes'));
 				$userlimit=$options['max_rate_user_votes'];
 				$iplimit=$options['max_rate_ip_votes'];
 				break;
 				
 			case 'L':
-				$options=qa_get_options($db, array('max_rate_ip_logins'));
+				$options=qa_get_options(array('max_rate_ip_logins'));
 				$userlimit=1; // not really relevant
 				$iplimit=$options['max_rate_ip_logins'];
 				break;
@@ -89,12 +83,12 @@
 	}
 	
 	
-	function qa_is_ip_blocked($db)
+	function qa_is_ip_blocked()
 /*
 	Return whether the requesting IP address has been blocked from write operations
 */
 	{
-		$blockipclauses=qa_block_ips_explode(qa_get_option($db, 'block_ips_write'));
+		$blockipclauses=qa_block_ips_explode(qa_opt('block_ips_write'));
 		
 		foreach ($blockipclauses as $blockipclause)
 			if (qa_block_ip_match(@$_SERVER['REMOTE_ADDR'], $blockipclause))
@@ -139,7 +133,7 @@
 	}
 	
 	
-	function qa_report_write_action($db, $userid, $cookieid, $action, $questionid, $answerid, $commentid)
+	function qa_report_write_action($userid, $cookieid, $action, $questionid, $answerid, $commentid)
 /*
 	Called after a database write $action performed by a user identified by $userid and/or $cookieid,
 	relating to $questionid, $answerid and/or $commentid.
@@ -148,18 +142,18 @@
 		switch ($action) {
 			case 'q_post':
 			case 'q_claim':
-				qa_limits_increment($db, $userid, 'Q');
+				qa_limits_increment($userid, 'Q');
 				break;
 			
 			case 'a_post':
 			case 'a_claim':
-				qa_limits_increment($db, $userid, 'A');
+				qa_limits_increment($userid, 'A');
 				break;
 				
 			case 'c_post':
 			case 'c_claim':
 			case 'a_to_c':
-				qa_limits_increment($db, $userid, 'C');
+				qa_limits_increment($userid, 'C');
 				break;
 			
 			case 'q_vote_up':
@@ -168,25 +162,25 @@
 			case 'a_vote_up':
 			case 'a_vote_down':
 			case 'a_vote_nil':
-				qa_limits_increment($db, $userid, 'V');
+				qa_limits_increment($userid, 'V');
 				break;
 		}
 
 		if (isset($userid)) {
 			require_once QA_INCLUDE_DIR.'qa-app-users.php';
 			
-			qa_user_report_action($db, $userid, $action, $questionid, $answerid, $commentid);
+			qa_user_report_action($userid, $action, $questionid, $answerid, $commentid);
 		}
 		
 		if (isset($cookieid)) {
 			require_once QA_INCLUDE_DIR.'qa-app-cookies.php';
 
-			qa_cookie_report_action($db, $cookieid, $action, $questionid, $answerid, $commentid);
+			qa_cookie_report_action($cookieid, $action, $questionid, $answerid, $commentid);
 		}
 	}
 
 	
-	function qa_limits_increment($db, $userid, $actioncode)
+	function qa_limits_increment($userid, $actioncode)
 /*
 	Take note for rate limits that user $userid and/or the requesting IP just performed $actioncode
 */
@@ -194,9 +188,9 @@
 		$period=(int)(time()/3600);
 		
 		if (isset($userid))
-			qa_db_limits_user_add($db, $userid, $actioncode, $period, 1);
+			qa_db_limits_user_add($userid, $actioncode, $period, 1);
 		
-		qa_db_limits_ip_add($db, @$_SERVER['REMOTE_ADDR'], $actioncode, $period, 1);
+		qa_db_limits_ip_add(@$_SERVER['REMOTE_ADDR'], $actioncode, $period, 1);
 	}
 
 

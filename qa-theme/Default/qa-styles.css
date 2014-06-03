@@ -1,32 +1,26 @@
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-theme/Default/qa-styles.css
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: CSS file for included Candy theme
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 
@@ -36,6 +30,7 @@ body {background:#cfd1c4; margin:0; padding:0; text-align:center;}
 body,td,input,textarea {font-size:12px; font-family:Verdana, Arial, Helvetica, sans-serif;}
 a:link,a:active,a:visited {text-decoration:none;}
 a:hover {text-decoration:underline;}
+p {margin-top:0;}
 
 .qa-body-wrapper {background:#fff; border-left:1px solid #293d39; border-right:1px solid #293d39; width:980px; margin:0 auto; text-align:left;}
 
@@ -133,7 +128,9 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-form-tall-text {width:480px; border:1px solid #658296;}
 .qa-form-tall-number {width:48px; border:1px solid #658296;}
 .qa-form-tall-checkbox {float:left; margin-right:6px;}
-.qa-form-tall-error {background:#fee; border:1px solid #c00; color:#c00; font-size:14px; margin-top:6px; padding:.5em; float:left;}
+.qa-form-tall-image {text-align:center; margin-top:12px;}
+	.qa-form-tall-image img {border:1px solid #000;}
+.qa-form-tall-error {background:#fee; border:1px solid #c00; color:#c00; font-size:14px; margin-top:6px; padding:.5em; display:inline-block;}
 .qa-form-tall-note {margin-top:6px;}
 	.qa-form-tall-note a {color:#293D39; text-decoration:underline;}
 	.qa-form-tall-note a:hover {color:#396E63;}
@@ -173,8 +170,9 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-q-item-main {float:left; width:550px;}
 .qa-q-item-title {color:#235272; font-weight:bold; font-size:16px;}
 	.qa-q-item-title a {color:#235272;}
-.qa-q-item-meta {margin-top:4px;}
+.qa-q-item-meta {display:block; margin-top:4px;}
 .qa-q-item-when-data {font-weight:bold;}
+.qa-q-item-who-title {font-size:80%; font-weight:bold; color:#900707;}
 .qa-q-item-points-data {font-weight:bold;}
 .qa-q-item-tags {margin-top:8px;}
 .qa-q-item-tag-list {list-style:none; margin:0; padding:0;}
@@ -245,21 +243,24 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 
 .qa-q-view-main {float:left; width:600px;}
 .qa-q-view-content {font-size:14px; margin-bottom:16px;}
-.qa-q-view-meta {font-size:13px;}
-.qa-q-view-follows {font-size:13px; margin-top:12px;}
+.qa-q-view-avatar {display:inline-block; vertical-align:middle; margin-right:8px;}
+.qa-q-view-meta {display:inline-block; vertical-align:middle; font-size:13px;}
+.qa-q-view-follows {font-size:13px; margin-bottom:12px;}
 .qa-q-view-when-data {font-weight:bold;}
+.qa-q-view-who-title {font-size:80%; font-weight:bold; color:#900707;}
 .qa-q-view-points-data {font-weight:bold;}
-.qa-q-view-tags {margin-top:16px;}
+.qa-q-view-tags {margin-bottom:12px;}
 .qa-q-view-tag-list {list-style:none; margin:0; padding:0;}
 .qa-q-view-tag-item {display:inline;}
-.qa-q-view-buttons {float:right; margin-top:18px; margin-bottom:6px;}
+.qa-q-view-buttons {text-align:right; clear:both;}
 .qa-q-view-c-list {clear:both; margin:24px 0 0 24px; border-top:1px dotted #666;}
 
 .qa-q-view-hidden {}
 	.qa-q-view-hidden .qa-voting {background:#fff; border:1px solid #ccc; color:#ccc;}
 	.qa-q-view-hidden .qa-q-view-content {color:#999;}
 	.qa-q-view-hidden .qa-q-view-meta {color:#ccc;}
-	.qa-q-view-hidden .qa-q-view-meta .qa-user-link {color:#999;}
+	.qa-q-view-hidden .qa-user-link {color:#999;}
+	.qa-q-view-hidden .qa-q-view-who-title {color:#999;}
 	.qa-q-view-hidden .qa-category-link {color:#999;}
 	.qa-q-view-hidden .qa-tag-link {background-color:#ccc;}
 
@@ -269,14 +270,18 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-a-list-item-hidden {}
 	.qa-a-list-item-hidden .qa-voting {background:#FFF; border:1px solid #ccc; color:#ccc;}
 	.qa-a-list-item-hidden .qa-a-item-content {color:#999;}
+	.qa-a-list-item-hidden .qa-a-item-what {color:#ccc;}
 	.qa-a-list-item-hidden .qa-a-item-meta {color:#ccc;}
-	.qa-a-list-item-hidden .qa-a-item-meta .qa-user-link {color:#999;}
+	.qa-a-list-item-hidden .qa-a-item-who-title {color:#999;}
+	.qa-a-list-item-hidden .qa-user-link {color:#999;}
 
 .qa-a-item-main {float:left; width:600px; display:inline-block;} /* inline-block for IE */
 .qa-a-item-selected {background-color:#d7e3e1; border:1px dashed #486a63; padding:10px;}
 .qa-a-item-content {font-size:14px; margin-bottom:12px;}
-.qa-a-item-meta {font-size:13px;}
+.qa-a-item-avatar {display:inline-block; vertical-align:middle; margin-right:8px;}
+.qa-a-item-meta {display:inline-block; vertical-align:middle; font-size:13px;}
 .qa-a-item-when-data {font-weight:bold;}
+.qa-a-item-who-title {font-size:80%; font-weight:bold; color:#900707;}
 .qa-a-item-points-data {font-weight:bold;}
 .qa-a-item-buttons {text-align:right; margin-top:12px; clear:both;}
 .qa-a-item-c-list {clear:both; margin:12px 0 0 12px; border-top:1px dotted #666;}
@@ -301,14 +306,20 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-c-list-item {border-bottom:1px dotted #666; padding:6px; padding-right:0;}
 .qa-c-item-hidden {}
 	.qa-c-item-hidden .qa-c-item-content {color:#bbb;}
+	.qa-c-item-hidden .qa-c-item-link {color:#aaf;}
+	.qa-c-item-hidden .qa-c-item-what {color:#ccc;}
 	.qa-c-item-hidden .qa-c-item-meta {color:#ccc;}
-	.qa-c-item-hidden .qa-c-item-meta .qa-user-link {color:#999;}
+	.qa-c-item-hidden .qa-c-item-who-title {color:#999;}
+	.qa-c-item-hidden .qa-user-link {color:#999;}
 
-.qa-c-item-link {}
-.qa-c-item-content {color:#333; font-size:12px;}
-.qa-c-item-meta {font-size:10px; display:inline; color:#666;}
-.qa-c-item-points {display:none;}
-.qa-c-item-buttons {float:right; display:inline;}
+.qa-c-item-link {display:block; margin-bottom:6px;}
+.qa-c-item-content {display:block; color:#333; font-size:12px; margin-bottom:6px;}
+.qa-c-item-footer {position:relative; height:1%;} /* height for IE6 */
+.qa-c-item-avatar {display:inline-block; vertical-align:middle; margin-right:4px;}
+.qa-c-item-meta {display:inline-block; vertical-align:middle; font-size:10px; color:#666;}
+.qa-c-item-who-title {font-size:80%; font-weight:bold; color:#900707;}
+.qa-c-item-who-points {display:none;}
+.qa-c-item-buttons {display:block; position:absolute; bottom:0px; right:0px;}
 
 /* Footer parts */
 
@@ -326,3 +337,5 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-category-link {color:#473A9F; font-weight:bold;}
 .qa-tag-link {font-size:11px; color:#FFF !important; font-weight:bold; padding:3px 5px; margin-bottom:3px; background-color:#658296; display:-moz-inline-stack; display:inline-block; vertical-align:middle; text-decoration:none !important;} /* inline-block for IE, -moz-inline-stack for early FF */
 	.qa-tag-link:hover {text-decoration:none; background-color:#235272;}
+.qa-avatar-image {border:0; vertical-align:middle;}
+.qa-avatar-link,.qa-avatar-link:hover {text-decoration:none;}

@@ -1,34 +1,28 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Controller for most admin pages which just contain options
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -43,10 +37,16 @@
 	require_once QA_INCLUDE_DIR.'qa-app-admin.php';
 	
 
-//	Queue requests for pending admin options
-
-	qa_admin_pending();
+//	Get list of categories and all options
 	
+	$categories=qa_db_select_with_pending(qa_db_categories_selectspec());
+	
+
+//	Check admin privileges (do late to allow one DB query)
+
+	if (!qa_admin_check_privileges($qa_content))
+		return $qa_content;
+
 
 //	Define the options to show (and some other visual stuff) based on request
 	
@@ -81,25 +81,54 @@
 			);
 			break;
 			
+		case 'users':
+			$subtitle='admin/users_title';
+
+			if (!QA_EXTERNAL_USERS) {
+				require_once QA_INCLUDE_DIR.'qa-util-image.php';
+				
+				$showoptions=array('avatar_allow_gravatar');
+				
+				if (qa_has_gd_image())
+					array_push($showoptions, 'avatar_allow_upload', 'avatar_store_size');
+					
+				array_push($showoptions, '', 'avatar_profile_size', 'avatar_users_size', 'avatar_q_page_q_size', 'avatar_q_page_a_size', 'avatar_q_page_c_size', '');
+	
+				$checkboxtodisplay=array(
+					'avatar_store_size' => 'option_avatar_allow_upload',
+					'avatar_profile_size' => 'option_avatar_allow_gravatar || option_avatar_allow_upload',
+					'avatar_users_size' => 'option_avatar_allow_gravatar || option_avatar_allow_upload',
+					'avatar_q_page_q_size' => 'option_avatar_allow_gravatar || option_avatar_allow_upload',
+					'avatar_q_page_a_size' => 'option_avatar_allow_gravatar || option_avatar_allow_upload',
+					'avatar_q_page_c_size' => 'option_avatar_allow_gravatar || option_avatar_allow_upload',
+				);
+			} else
+				$showoptions=array();
+	
+			$formstyle='wide';
+			break;
+			
 		case 'viewing':
-			$getoptions=qa_get_options($qa_db, array('tags_or_categories'));
+			$getoptions=qa_get_options(array('tags_or_categories'));
 
 			$subtitle='admin/viewing_title';
 			$showoptions=array('voting_on_qs', 'voting_on_q_page_only', 'voting_on_as', 'votes_separated', '', 'page_size_home', 'page_size_qs', 'page_size_una_qs', '');
 			
-			if (qa_using_tags($qa_db))
+			if (qa_using_tags())
 				array_push($showoptions, 'page_size_tags', 'columns_tags');
 				
 			array_push($showoptions, 'page_size_users', 'columns_users', '');
 			
-			if (qa_using_tags($qa_db))
+			if (qa_using_tags())
 				$showoptions[]='page_size_tag_qs';
 				
-			array_push($showoptions,
-				'page_size_user_qs', 'page_size_user_as', 'page_size_search', '',
-				'show_url_links', 'show_when_created', 'show_user_points', '',
-				'sort_answers_by', 'show_selected_first', 'show_a_form_immediate', 'show_c_reply_buttons', '',
-				'do_related_qs', 'match_related_qs', 'page_size_related_qs', '', 'pages_prev_next'
+			array_push($showoptions, 'page_size_user_posts', 'page_size_search', '', 'show_url_links', 'show_when_created');
+			
+			if (count(qa_get_points_to_titles()))
+				$showoptions[]='show_user_titles';
+			
+			array_push($showoptions, 'show_user_points', '', 'sort_answers_by', 'show_selected_first', 'show_a_form_immediate',
+				'show_c_reply_buttons', '', 'do_related_qs', 'match_related_qs', 'page_size_related_qs', '', 'pages_prev_next'
 			);
 
 			$formstyle='wide';
@@ -113,20 +142,23 @@
 			break;
 		
 		case 'posting':
-			$getoptions=qa_get_options($qa_db, array('tags_or_categories'));
+			$getoptions=qa_get_options(array('tags_or_categories'));
 			
 			$subtitle='admin/posting_title';
 
-			$showoptions=array('allow_multi_answers', 'comment_on_qs', 'comment_on_as', 'follow_on_as', '', 'min_len_q_title', 'max_len_q_title');
+			$showoptions=array('allow_multi_answers', 'comment_on_qs', 'comment_on_as', 'follow_on_as', '');
 			
-			$showoptions[]='min_len_q_content';
+			if (count(qa_list_modules('editor'))>1)
+				array_push($showoptions, 'editor_for_qs', 'editor_for_as', 'editor_for_cs', '');
 			
-			if (qa_using_tags($qa_db))
+			array_push($showoptions, 'min_len_q_title', 'max_len_q_title', 'min_len_q_content');
+			
+			if (qa_using_tags())
 				array_push($showoptions, 'min_num_q_tags', 'max_num_q_tags');
 			
 			array_push($showoptions, 'min_len_a_content', 'min_len_c_content', 'block_bad_words', '', 'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs', '');
 
-			if (qa_using_tags($qa_db))
+			if (qa_using_tags())
 				array_push($showoptions, 'do_example_tags', 'match_example_tags', 'do_complete_tags', 'page_size_ask_tags');
 
 			$formstyle='wide';
@@ -145,7 +177,7 @@
 			
 			$showoptions=array('permit_post_q', 'permit_post_a');
 			
-			$getoptions=qa_get_options($qa_db, array('comment_on_qs', 'comment_on_as', 'voting_on_qs', 'voting_on_as'));
+			$getoptions=qa_get_options(array('comment_on_qs', 'comment_on_as', 'voting_on_qs', 'voting_on_as'));
 			
 			if ($getoptions['comment_on_qs'] || $getoptions['comment_on_as'])
 				$showoptions[]='permit_post_c';
@@ -171,10 +203,10 @@
 			
 			$showoptions=array('feed_for_qa', 'feed_for_questions', 'feed_for_unanswered', 'feed_for_activity');
 			
-			if (qa_using_categories($qa_db))
+			if (qa_using_categories())
 				$showoptions[]='feed_per_category';
 			
-			if (qa_using_tags($qa_db))
+			if (qa_using_tags())
 				$showoptions[]='feed_for_tag_qs';
 				
 			array_push($showoptions, 'feed_for_search', 'feed_number_items', 'feed_full_text');
@@ -191,7 +223,7 @@
 			
 			$showoptions=array();
 			
-			$getoptions=qa_get_options($qa_db, array('feedback_enabled', 'permit_post_q', 'permit_post_a', 'permit_post_c'));
+			$getoptions=qa_get_options(array('feedback_enabled', 'permit_post_q', 'permit_post_a', 'permit_post_c'));
 			
 			if (!QA_EXTERNAL_USERS)
 				array_push($showoptions, 'confirm_user_emails', '');
@@ -236,9 +268,7 @@
 		
 		default:
 			$subtitle='admin/general_title';
-			$showoptions=array('site_title', 'site_url', 'neat_urls', 'site_language', 'site_theme', 'tags_or_categories');
-			
-			qa_options_set_pending(array('cache_tagcount'));
+			$showoptions=array('site_title', 'site_url', 'neat_urls', 'site_language', 'site_theme', 'tags_or_categories', 'site_maintenance');
 			break;
 	}
 	
@@ -246,6 +276,12 @@
 //	Option types and maxima
 	
 	$optiontype=array(
+		'avatar_store_size' => 'number',
+		'avatar_profile_size' => 'number',
+		'avatar_users_size' => 'number',
+		'avatar_q_page_q_size' => 'number',
+		'avatar_q_page_a_size' => 'number',
+		'avatar_q_page_c_size' => 'number',
 		'columns_tags' => 'number',
 		'columns_users' => 'number',
 		'feed_number_items' => 'number',
@@ -276,11 +312,12 @@
 		'page_size_tag_qs' => 'number',
 		'page_size_tags' => 'number',
 		'page_size_una_qs' => 'number',
-		'page_size_user_as' => 'number',
-		'page_size_user_qs' => 'number',
+		'page_size_user_posts' => 'number',
 		'page_size_users' => 'number',
 		'pages_prev_next' => 'number',
 		
+		'avatar_allow_gravatar' => 'checkbox',
+		'avatar_allow_upload' => 'checkbox',
 		'captcha_on_anon_post' => 'checkbox',
 		'captcha_on_feedback' => 'checkbox',
 		'captcha_on_register' => 'checkbox',
@@ -317,8 +354,10 @@
 		'notify_admin_q_post' => 'checkbox',
 		'show_url_links' => 'checkbox',
 		'show_user_points' => 'checkbox',
+		'show_user_titles' => 'checkbox',
 		'show_selected_first' => 'checkbox',
 		'show_when_created' => 'checkbox',
+		'site_maintenance' => 'checkbox',
 		'votes_separated' => 'checkbox',
 		'voting_on_as' => 'checkbox',
 		'voting_on_qs' => 'checkbox',
@@ -335,8 +374,7 @@
 		'page_size_tag_qs' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_tags' => QA_DB_RETRIEVE_TAGS,
 		'page_size_una_qs' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_user_as' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_user_qs' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_user_posts' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_users' => QA_DB_RETRIEVE_USERS,
 		'feed_number_items' => QA_DB_RETRIEVE_QS_AS,
 		'max_len_q_title' => QA_DB_MAX_TITLE_LENGTH,
@@ -361,22 +399,12 @@
 	foreach ($showoptions as $optionname)
 		if (!empty($optionname)) // empties represent spacers in forms
 			$getoptions[]=$optionname;
-	
-	qa_options_set_pending($getoptions);
-	
-	$categories=qa_db_select_with_pending($qa_db, qa_db_categories_selectspec());
-	
-
-//	Check admin privileges (do late to allow one DB query)
-
-	if (!qa_admin_check_privileges())
-		return;
 
 
 //	Process user actions
 
 	if (qa_clicked('doresetoptions'))
-		qa_reset_options($qa_db, $getoptions);
+		qa_reset_options($getoptions);
 
 	elseif (qa_clicked('dosaveoptions'))
 		foreach ($getoptions as $optionname) {
@@ -395,6 +423,10 @@
 			if (isset($optionminimum[$optionname]))
 				$optionvalue=max($optionminimum[$optionname], $optionvalue);
 				
+			if ($optionname=='site_url')
+				if (substr($optionvalue, -1)!='/')
+					$optionvalue.='/';
+			
 			if ($optionname=='block_ips_write') {
 				require_once QA_INCLUDE_DIR.'qa-app-limits.php';
 				
@@ -407,19 +439,19 @@
 				$optionvalue=implode(' , ', qa_block_words_explode($optionvalue));
 			}
 				
-			qa_set_option($qa_db, $optionname, $optionvalue);
+			qa_set_option($optionname, $optionvalue);
 		}
 
-	$options=qa_get_options($qa_db, $getoptions);
+	$options=qa_get_options($getoptions);
 
 	
 //	Prepare content for theme
 
-	qa_content_prepare();
+	$qa_content=qa_content_prepare();
 
 	$qa_content['title']=qa_lang_html('admin/admin_title').' - '.qa_lang_html($subtitle);
 	
-	$qa_content['error']=qa_admin_page_error($qa_db);
+	$qa_content['error']=qa_admin_page_error();
 
 	$qa_content['form']=array(
 		'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
@@ -537,10 +569,10 @@
 
 					$optionfield['error']='';
 					
-					if (qa_get_option($qa_db, 'cache_tagcount') && !qa_using_tags($qa_db))
+					if (qa_opt('cache_tagcount') && !qa_using_tags())
 						$optionfield['error'].=qa_lang_html('admin/tags_not_shown').' ';
 					
-					if (!qa_using_categories($qa_db))
+					if (!qa_using_categories())
 						foreach ($categories as $category)
 							if ($category['qcount']) {
 								$optionfield['error'].=qa_lang_html('admin/categories_not_shown');
@@ -564,6 +596,18 @@
 					
 				case 'custom_welcome':
 					$optionfield['rows']=3;
+					break;
+				
+				case 'avatar_allow_gravatar':
+					$optionfield['label']=strtr($optionfield['label'], array(
+						'^1' => '<A HREF="http://www.gravatar.com/" TARGET="_blank">',
+						'^2' => '</A>',
+					));
+					
+					if (!qa_has_gd_image()) {
+						$optionfield['style']='tall';
+						$optionfield['error']=qa_lang_html('admin/no_image_gd');
+					}
 					break;
 				
 				case 'pages_prev_next':
@@ -601,6 +645,18 @@
 					$optionfield['rows']=4;
 					$optionfield['note']=qa_lang_html('admin/block_words_note');
 					break;
+					
+				case 'editor_for_qs':
+				case 'editor_for_as':
+				case 'editor_for_cs':
+					$editors=qa_list_modules('editor');
+					
+					$selectoptions=array();
+					foreach ($editors as $editor)
+						$selectoptions[$editor]=strlen($editor) ? $editor : qa_lang_html('admin/basic_editor');
+						
+					qa_optionfield_make_select($optionfield, $selectoptions, $value, '');
+					break;
 				
 				case 'recaptcha_public_key':
 					$optionfield['style']='tall';
@@ -610,7 +666,7 @@
 					require_once QA_INCLUDE_DIR.'qa-app-captcha.php';
 
 					$optionfield['style']='tall';
-					$optionfield['error']=qa_captcha_error($qa_db);
+					$optionfield['error']=qa_captcha_error();
 					break;
 					
 				case 'block_ips_write':
@@ -651,7 +707,7 @@
 					else
 						$narrowest=QA_PERMIT_EXPERTS;
 					
-					$permitoptions=qa_admin_permit_options($widest, $narrowest, (!QA_EXTERNAL_USERS) && qa_get_option($qa_db, 'confirm_user_emails'));
+					$permitoptions=qa_admin_permit_options($widest, $narrowest, (!QA_EXTERNAL_USERS) && qa_opt('confirm_user_emails'));
 					
 					if (count($permitoptions)>1)
 						qa_optionfield_make_select($optionfield, $permitoptions, $value,
@@ -686,11 +742,11 @@
 					} else
 						$categoryslug='example-category';
 						
-					if (qa_get_option($qa_db, 'feed_for_qa'))
+					if (qa_opt('feed_for_qa'))
 						$feedrequest='qa';
-					elseif (qa_get_option($qa_db, 'feed_for_questions'))
+					elseif (qa_opt('feed_for_questions'))
 						$feedrequest='questions';
-					elseif (qa_get_option($qa_db, 'feed_for_unanswered'))
+					elseif (qa_opt('feed_for_unanswered'))
 						$feedrequest='unanswered';
 					else
 						$feedrequest='activity';
@@ -700,7 +756,7 @@
 					break;
 					
 				case 'feed_for_tag_qs':
-					$populartags=qa_db_select_with_pending($qa_db, qa_db_popular_tags_selectspec(0, 1));
+					$populartags=qa_db_select_with_pending(qa_db_popular_tags_selectspec(0, 1));
 					
 					if (count($populartags)) {
 						reset($populartags);
@@ -724,47 +780,108 @@
 		}
 		
 
-	if ( (@$qa_request_lc_parts[1]=='permissions')) { // some static items added here
+//	Extra items for specific pages
 
-		$qa_content['form']['fields']['permit_block']=array(
-			'type' => 'static',
-			'label' => qa_lang_html('options/permit_block'),
-			'value' => qa_lang_html('options/permit_moderators'),
-		);
-		
-		if (!QA_EXTERNAL_USERS) {
-			$qa_content['form']['fields']['permit_create_experts']=array(
+	switch (@$qa_request_lc_parts[1]) {
+		case 'users':
+			if (!QA_EXTERNAL_USERS) {
+				$userfields=qa_db_single_select(qa_db_userfields_selectspec());
+	
+				$listhtml='';
+				
+				foreach ($userfields as $userfield) {
+					$listhtml.='<LI><B>'.qa_html(qa_user_userfield_label($userfield)).'</B>';
+	
+					$listhtml.=strtr(qa_lang_html('admin/edit_field'), array(
+						'^1' => '<A HREF="'.qa_path_html('admin/userfields', array('edit' => $userfield['fieldid'])).'">',
+						'^2' => '</A>',
+					));
+	
+					$listhtml.='</LI>';
+				}
+				
+				$listhtml.='<LI><B><A HREF="'.qa_path_html('admin/userfields').'">'.qa_lang_html('admin/add_new_field').'</A></B></LI>';
+	
+				$qa_content['form']['fields']['userfields']=array(
+					'label' => qa_lang_html('admin/profile_fields'),
+					'style' => 'tall',
+					'type' => 'custom',
+					'html' => strlen($listhtml) ? '<UL STYLE="margin-bottom:0;">'.$listhtml.'</UL>' : null,
+				);
+			}
+			
+			$qa_content['form']['fields'][]=array('type' => 'blank');
+
+			$pointstitle=qa_get_points_to_titles();
+
+			$listhtml='';
+			
+			foreach ($pointstitle as $points => $title) {
+				$listhtml.='<LI><B>'.$title.'</B> - '.(($points==1) ? qa_lang_html_sub('main/1_point', '1', '1')
+				: qa_lang_html_sub('main/x_points', qa_html(number_format($points))));
+
+				$listhtml.=strtr(qa_lang_html('admin/edit_title'), array(
+					'^1' => '<A HREF="'.qa_path_html('admin/usertitles', array('edit' => $points)).'">',
+					'^2' => '</A>',
+				));
+
+				$listhtml.='</LI>';
+			}
+
+			$listhtml.='<LI><B><A HREF="'.qa_path_html('admin/usertitles').'">'.qa_lang_html('admin/add_new_title').'</A></B></LI>';
+
+			$qa_content['form']['fields']['usertitles']=array(
+				'label' => qa_lang_html('admin/user_titles'),
+				'style' => 'tall',
+				'type' => 'custom',
+				'html' => strlen($listhtml) ? '<UL STYLE="margin-bottom:0;">'.$listhtml.'</UL>' : null,
+			);
+			break;
+			
+		case 'permissions':
+			$qa_content['form']['fields']['permit_block']=array(
 				'type' => 'static',
-				'label' => qa_lang_html('options/permit_create_experts'),
+				'label' => qa_lang_html('options/permit_block'),
 				'value' => qa_lang_html('options/permit_moderators'),
 			);
-
-			$qa_content['form']['fields']['permit_see_emails']=array(
-				'type' => 'static',
-				'label' => qa_lang_html('options/permit_see_emails'),
-				'value' => qa_lang_html('options/permit_admins'),
-			);
+			
+			if (!QA_EXTERNAL_USERS) {
+				$qa_content['form']['fields']['permit_create_experts']=array(
+					'type' => 'static',
+					'label' => qa_lang_html('options/permit_create_experts'),
+					'value' => qa_lang_html('options/permit_moderators'),
+				);
 	
-			$qa_content['form']['fields']['permit_create_eds_mods']=array(
-				'type' => 'static',
-				'label' => qa_lang_html('options/permit_create_eds_mods'),
-				'value' => qa_lang_html('options/permit_admins'),
-			);
+				$qa_content['form']['fields']['permit_see_emails']=array(
+					'type' => 'static',
+					'label' => qa_lang_html('options/permit_see_emails'),
+					'value' => qa_lang_html('options/permit_admins'),
+				);
+		
+				$qa_content['form']['fields']['permit_create_eds_mods']=array(
+					'type' => 'static',
+					'label' => qa_lang_html('options/permit_create_eds_mods'),
+					'value' => qa_lang_html('options/permit_admins'),
+				);
+		
+				$qa_content['form']['fields']['permit_create_admins']=array(
+					'type' => 'static',
+					'label' => qa_lang_html('options/permit_create_admins'),
+					'value' => qa_lang_html('options/permit_supers'),
+				);
 	
-			$qa_content['form']['fields']['permit_create_admins']=array(
-				'type' => 'static',
-				'label' => qa_lang_html('options/permit_create_admins'),
-				'value' => qa_lang_html('options/permit_supers'),
-			);
-
-		}
+			}
+			break;
 	}
 	
+
 	if (isset($checkboxtodisplay))
 		qa_checkbox_to_display($qa_content, $checkboxtodisplay);
 		
 
 	$qa_content['navigation']['sub']=qa_admin_sub_navigation();
+	
+	return $qa_content;
 
 
 /*

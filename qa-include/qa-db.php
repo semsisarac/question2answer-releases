@@ -1,34 +1,28 @@
 <?php
 
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Common functions for connecting to and access database
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -37,62 +31,78 @@
 	}
 
 
+	$qa_db=null;
+	
+	
 	function qa_db_connect($failhandler)
 /*
-	Connect to the QA database, select the right database, and return the link identifier.
-	Install the $failhandler into a global (and call it if necessary)
+	Connect to the QA database, select the right database, install the $failhandler (and call it if necessary)
 */
 	{
-		global $qa_db_fail_handler;
+		global $qa_db, $qa_db_fail_handler;
 		
-		$qa_db_fail_handler=$failhandler;
+		if (!is_resource($qa_db)) {
+			$qa_db_fail_handler=$failhandler;
+			
+			if (QA_PERSISTENT_CONN_DB)
+				$db=mysql_pconnect(QA_MYSQL_HOSTNAME, QA_MYSQL_USERNAME, QA_MYSQL_PASSWORD);
+			else
+				$db=mysql_connect(QA_MYSQL_HOSTNAME, QA_MYSQL_USERNAME, QA_MYSQL_PASSWORD);
+			
+			if (is_resource($db)) {
+				if (!mysql_select_db(QA_MYSQL_DATABASE, $db)) {
+					mysql_close($db);
+					$qa_db_fail_handler('select');
+				}
+					
+			} else
+				$qa_db_fail_handler('connect');
 		
-		if (QA_PERSISTENT_CONN_DB)
-			$connection=mysql_pconnect(QA_MYSQL_HOSTNAME, QA_MYSQL_USERNAME, QA_MYSQL_PASSWORD);
-		else
-			$connection=mysql_connect(QA_MYSQL_HOSTNAME, QA_MYSQL_USERNAME, QA_MYSQL_PASSWORD);
-		
-		if (is_resource($connection)) {
-			if (!mysql_select_db(QA_MYSQL_DATABASE, $connection))
-				$qa_db_fail_handler('select');
-				
-		} else
-			$qa_db_fail_handler('connect');
-		
-		return $connection;
+			$qa_db=$db;
+		}
+	}
+	
+	
+	function qa_db_connection()
+	{
+		global $qa_db;
+		return $qa_db;
 	}
 
 	
-	function qa_db_disconnect($db)
+	function qa_db_disconnect()
 /*
-	Disconnect from the QA database with link identifier $db
+	Disconnect from the QA database
 */
 	{
-		if (!QA_PERSISTENT_CONN_DB) {
-			if (is_resource($db)) {
-	
-				if (!mysql_close($db))
+		global $qa_db;
+		
+		if (is_resource($qa_db)) {
+			if (!QA_PERSISTENT_CONN_DB)
+				if (!mysql_close($qa_db))
 					qa_fatal_error('Database disconnect failed');
-				
-			} else
-				qa_fatal_error('Database connection invalid');
+					
+			$qa_db=null;
 		}
 	}
 
 	
-	function qa_db_query_raw($db, $query)
+	function qa_db_query_raw($query)
 /*
-	Run the raw $query over the $db link, call the global failure handler if necessary, otherwise return the result resource.
+	Run the raw $query, call the global failure handler if necessary, otherwise return the result resource.
 	If appropriate, also track the resources used by database queries, and the queries themselves, for performance debugging.
 */
 	{
-		global $qa_db_fail_handler;
+		global $qa_db, $qa_db_fail_handler;
+		
+		if (!is_resource($qa_db))
+			qa_fatal_error('Trying to run query before connecting to database');
 		
 		if (QA_DEBUG_PERFORMANCE) {
 			global $qa_database_usage, $qa_database_queries;
 			
 			$oldtime=array_sum(explode(' ', microtime()));
-			$result=mysql_query($query, $db);
+			$result=mysql_query($query, $qa_db);
 			$usedtime=array_sum(explode(' ', microtime()))-$oldtime;
 
 			if (is_array($qa_database_usage)) {
@@ -105,18 +115,29 @@
 			}
 		
 		} else
-			$result=mysql_query($query, $db);
+			$result=mysql_query($query, $qa_db);
 	
 		if ($result===false)
-			$qa_db_fail_handler('query', mysql_errno($db), mysql_error($db), $query);
+			$qa_db_fail_handler('query', mysql_errno($qa_db), mysql_error($qa_db), $query);
 			
 		return $result;
 	}
+	
+	
+	function qa_db_escape_string($string)
+	{
+		global $qa_db;
+		
+		if (!is_resource($qa_db))
+			qa_fatal_error('Called qa_db_escape() before connecting to database');
+		
+		return mysql_real_escape_string($string, $qa_db);
+	}
 
 	
-	function qa_db_argument_to_mysql($db, $argument, $alwaysquote, $arraybrackets=false)
+	function qa_db_argument_to_mysql($argument, $alwaysquote, $arraybrackets=false)
 /*
-	Return $argument escaped for link $db. Add quotes around it if $alwaysquote is true or it's not numeric.
+	Return $argument escaped. Add quotes around it if $alwaysquote is true or it's not numeric.
 	If $argument is an array, return a comma-separated list of escaped elements, with or without $arraybrackets.
 */
 	{
@@ -124,7 +145,7 @@
 			$parts=array();
 			
 			foreach ($argument as $subargument)
-				$parts[]=qa_db_argument_to_mysql($db, $subargument, $alwaysquote, true);
+				$parts[]=qa_db_argument_to_mysql($subargument, $alwaysquote, true);
 			
 			if ($arraybrackets)
 				$result='('.implode(',', $parts).')';
@@ -133,9 +154,9 @@
 		
 		} elseif (isset($argument)) {
 			if ($alwaysquote || !is_numeric($argument)) // use _utf8 introducer to save having to set charset of connection
-				$result="_utf8 '".mysql_real_escape_string($argument, $db)."'";
+				$result="_utf8 '".qa_db_escape_string($argument)."'";
 			else
-				$result=mysql_real_escape_string($argument, $db);
+				$result=qa_db_escape_string($argument);
 		
 		} else
 			$result='NULL';
@@ -144,11 +165,11 @@
 	}
 
 	
-	function qa_db_apply_sub($db, $query, $arguments)
+	function qa_db_apply_sub($query, $arguments)
 /*
 	Substitute ^, $ and # symbols in $query. ^ symbols are replaced with the table prefix set in qa-config.php.
 	$ and # symbols are replaced in order by the corresponding element in $arguments (if the element is an array,
-	it is converted recursively into comma-separated list). Each element in $arguments is escaped for link $db.
+	it is converted recursively into comma-separated list). Each element in $arguments is escaped.
 	$ is replaced by the argument in quotes (even if it's a number), # only adds quotes if the argument is non-numeric.
 	It's important to use $ when matching a textual column since MySQL won't use indexes to compare text against numbers.
 */
@@ -175,7 +196,7 @@
 				if (!is_numeric($position))
 					qa_fatal_error('Insufficient parameters in query: '.$query);
 				
-				$value=qa_db_argument_to_mysql($db, $arguments[$argument], $alwaysquote);
+				$value=qa_db_argument_to_mysql($arguments[$argument], $alwaysquote);
 				$query=substr_replace($query, $value, $position, 1);
 				$offset=$position+strlen($value); // allows inserting strings which contain #/$ character
 			}
@@ -185,32 +206,34 @@
 	}
 
 	
-	function qa_db_query_sub($db, $query) // arguments for substitution retrieved using func_get_args()
+	function qa_db_query_sub($query) // arguments for substitution retrieved using func_get_args()
 /*
-	Run $query over the $db link after substituting ^, # and $ symbols, and return the result resource (or call fail handler)
+	Run $query after substituting ^, # and $ symbols, and return the result resource (or call fail handler)
 */
 	{
 		$funcargs=func_get_args();
 
-		return qa_db_query_raw($db, qa_db_apply_sub($db, $query, array_slice($funcargs, 2)));
+		return qa_db_query_raw(qa_db_apply_sub($query, array_slice($funcargs, 1)));
 	}
 
 	
-	function qa_db_last_insert_id($db)
+	function qa_db_last_insert_id()
 /*
-	Return the value of the auto-increment column for the last inserted row for database link $db
+	Return the value of the auto-increment column for the last inserted row
 */
 	{
-		return qa_db_read_one_value(qa_db_query_raw($db, 'SELECT LAST_INSERT_ID()'));
+		return qa_db_read_one_value(qa_db_query_raw('SELECT LAST_INSERT_ID()'));
 	}
 	
 
-	function qa_db_insert_on_duplicate_inserted($db)
+	function qa_db_insert_on_duplicate_inserted()
 /*
-	For the previous INSERT ... ON DUPLICATE KEY UPDATE query over link $db, return whether an insert operation took place
+	For the previous INSERT ... ON DUPLICATE KEY UPDATE query, return whether an insert operation took place
 */
 	{
-		return mysql_affected_rows($db)==1;
+		global $qa_db;
+		
+		return mysql_affected_rows($qa_db)==1;
 	}
 
 	
@@ -269,9 +292,9 @@
 */
 
 
-	function qa_db_single_select($db, $selectspec)
+	function qa_db_single_select($selectspec)
 /*
-	Return the data specified by a single $selectspec from database link $db - see long comment above.
+	Return the data specified by a single $selectspec - see long comment above.
 */
 	{
 		$query='SELECT ';
@@ -279,7 +302,7 @@
 		foreach ($selectspec['columns'] as $columnas => $columnfrom)
 			$query.=$columnfrom.(is_int($columnas) ? '' : (' AS '.$columnas)).', ';
 		
-		$results=qa_db_read_all_assoc(qa_db_query_raw($db, qa_db_apply_sub($db,
+		$results=qa_db_read_all_assoc(qa_db_query_raw(qa_db_apply_sub(
 			substr($query, 0, -2).' FROM '.$selectspec['source'], @$selectspec['arguments'])
 		), @$selectspec['arraykey']); // arrayvalue is applied in qa_db_post_select()
 		
@@ -289,9 +312,9 @@
 	}
 
 	
-	function qa_db_multi_select($db, $selectspecs)
+	function qa_db_multi_select($selectspecs)
 /*
-	Return the data specified by each element of $selectspecs from database link $db, where the keys of the
+	Return the data specified by each element of $selectspecs, where the keys of the
 	returned array match the keys of the supplied $selectspecs array. See long comment above.
 */
 	{
@@ -302,7 +325,7 @@
 			$outresults=array();
 		
 			foreach ($selectspecs as $selectkey => $selectspec)
-				$outresults[$selectkey]=qa_db_single_select($db, $selectspec);
+				$outresults[$selectkey]=qa_db_single_select($selectspec);
 				
 			return $outresults;
 		}
@@ -345,7 +368,7 @@
 	
 		$query='';
 		foreach ($selectspecs as $selectkey => $selectspec) {
-			$subquery="(SELECT '".mysql_real_escape_string($selectkey, $db)."'".(empty($query) ? ' AS selectkey' : '');
+			$subquery="(SELECT '".qa_db_escape_string($selectkey)."'".(empty($query) ? ' AS selectkey' : '');
 			
 			foreach ($outcolumns as $columnas) {
 				$subquery.=', '.(isset($selectspec['outcolumns'][$columnas]) ? $selectspec['outcolumns'][$columnas] : 'NULL');
@@ -359,12 +382,12 @@
 			if (strlen($query))
 				$query.=' UNION ALL ';
 				
-			$query.=qa_db_apply_sub($db, $subquery, @$selectspec['arguments']);
+			$query.=qa_db_apply_sub($subquery, @$selectspec['arguments']);
 		}
 		
 	//	Perform query and extract results
 		
-		$rawresults=qa_db_read_all_assoc(qa_db_query_raw($db, $query));
+		$rawresults=qa_db_read_all_assoc(qa_db_query_raw($query));
 		
 		$outresults=array();
 		foreach ($selectspecs as $selectkey => $selectspec)

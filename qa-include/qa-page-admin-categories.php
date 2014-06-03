@@ -1,34 +1,28 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-categories.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Controller for admin page for editing categories
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -40,21 +34,15 @@
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 
 	
-//	Queue requests for pending admin options
-
-	qa_admin_pending();
-	qa_options_set_pending(array('allow_no_category'));
-	
-
 //	Get current list of categories
 
-	$categories=qa_db_select_with_pending($qa_db, qa_db_categories_selectspec());
+	$categories=qa_db_select_with_pending(qa_db_categories_selectspec());
 	
 
 //	Check admin privileges (do late to allow one DB query)
 
-	if (!qa_admin_check_privileges())
-		return;
+	if (!qa_admin_check_privileges($qa_content))
+		return $qa_content;
 		
 		
 //	Work out the appropriate state for the page
@@ -74,7 +62,7 @@
 //	Process saving options
 
 	if (count($categories) && (qa_clicked('dosaveoptions') || qa_clicked('doaddcategory')))
-		qa_set_option($qa_db, 'allow_no_category', (int)qa_post_text('option_allow_no_category'));
+		qa_set_option('allow_no_category', (int)qa_post_text('option_allow_no_category'));
 
 
 //	Process saving an old or new category
@@ -90,10 +78,10 @@
 		if (qa_post_text('dodelete')) {
 			$inreassign=qa_post_text('reassign');
 
-			qa_db_category_delete($qa_db, $editcategory['categoryid'], strlen($inreassign) ? $inreassign : null);
-			qa_db_ifcategory_qcount_update($qa_db, strlen($inreassign) ? $inreassign : null);
+			qa_db_category_delete($editcategory['categoryid'], strlen($inreassign) ? $inreassign : null);
+			qa_db_ifcategory_qcount_update(strlen($inreassign) ? $inreassign : null);
 
-			$categories=qa_db_select_with_pending($qa_db, qa_db_categories_selectspec()); // reload after changes
+			$categories=qa_db_select_with_pending(qa_db_categories_selectspec()); // reload after changes
 			$editcategory=null;
 		
 		} else {
@@ -135,7 +123,7 @@
 						break;
 				}
 				
-				list($matchcategoryid, $matchpage)=qa_db_select_with_pending($qa_db,
+				list($matchcategoryid, $matchpage)=qa_db_select_with_pending(
 					qa_db_slug_to_category_id_selectspec($inslug),
 					qa_db_page_full_selectspec($inslug, false)
 				);
@@ -162,13 +150,13 @@
 		//	Perform appropriate database action
 	
 			if (isset($editcategory['categoryid'])) { // changing existing category
-				qa_db_category_rename($qa_db, $editcategory['categoryid'],
+				qa_db_category_rename($editcategory['categoryid'],
 					isset($errors['name']) ? $editcategory['title'] : $inname,
 					isset($errors['slug']) ? $editcategory['tags'] : $inslug);
 				
-				qa_db_category_move($qa_db, $editcategory['categoryid'], $inposition);
+				qa_db_category_move($editcategory['categoryid'], $inposition);
 				
-				$categories=qa_db_select_with_pending($qa_db, qa_db_categories_selectspec()); // reload after changes
+				$categories=qa_db_select_with_pending(qa_db_categories_selectspec()); // reload after changes
 	
 				if (empty($errors))
 					$editcategory=null;
@@ -177,12 +165,12 @@
 	
 			} else { // creating a new one
 				if (empty($errors)) {
-					$categoryid=qa_db_category_create($qa_db, $inname, $inslug);
+					$categoryid=qa_db_category_create($inname, $inslug);
 					
 					if (isset($inposition))
-						qa_db_category_move($qa_db, $categoryid, $inposition);
+						qa_db_category_move($categoryid, $inposition);
 					
-					$categories=qa_db_select_with_pending($qa_db, qa_db_categories_selectspec()); // reload after changes
+					$categories=qa_db_select_with_pending(qa_db_categories_selectspec()); // reload after changes
 					$editcategory=null;
 				}
 			}
@@ -192,11 +180,11 @@
 	
 //	Prepare content for theme
 	
-	qa_content_prepare();
+	$qa_content=qa_content_prepare();
 
 	$qa_content['title']=qa_lang_html('admin/admin_title').' - '.qa_lang_html('admin/categories_title');
 	
-	$qa_content['error']=qa_admin_page_error($qa_db);
+	$qa_content['error']=qa_admin_page_error();
 	
 	if (isset($editcategory)) {
 		$positionoptions=array();
@@ -225,7 +213,7 @@
 			$positionvalue=$positionoptions[$editcategory['position']];
 
 		else {
-			$positionvalue=isset($previous) ? qa_lang_html_sub('admin/after_x', $previous['title']) : qa_lang_html('admin/first');
+			$positionvalue=isset($previous) ? qa_lang_html_sub('admin/after_x', qa_html($previous['title'])) : qa_lang_html('admin/first');
 			$positionoptions[1+@max(array_keys($positionoptions))]=$positionvalue;
 		}
 		
@@ -243,14 +231,6 @@
 					'error' => qa_html(@$errors['name']),
 				),
 				
-				'slug' => array(
-					'id' => 'slug_display',
-					'tags' => ' NAME="slug" ',
-					'label' => qa_lang_html('admin/category_slug'),
-					'value' => qa_html(isset($inslug) ? $inslug : @$editcategory['tags']),
-					'error' => qa_html(@$errors['slug']),
-				),
-				
 				'delete' => array(
 					'tags' => ' NAME="dodelete" ID="dodelete" ',
 					'label' =>
@@ -258,6 +238,14 @@
 						'<SPAN ID="reassign_hidden" STYLE="display:none;">'.qa_lang_html('admin/delete_category').'</SPAN>',
 					'value' => 0,
 					'type' => 'checkbox',
+				),
+				
+				'slug' => array(
+					'id' => 'slug_display',
+					'tags' => ' NAME="slug" ',
+					'label' => qa_lang_html('admin/category_slug'),
+					'value' => qa_html(isset($inslug) ? $inslug : @$editcategory['tags']),
+					'error' => qa_html(@$errors['slug']),
 				),
 				
 				'reassign' => array(
@@ -342,7 +330,7 @@
 					'label' => qa_lang_html('options/allow_no_category'),
 					'tags' => ' NAME="option_allow_no_category" ',
 					'type' => 'checkbox',
-					'value' => qa_get_option($qa_db, 'allow_no_category'),
+					'value' => qa_opt('allow_no_category'),
 				),
 				
 			),
@@ -371,6 +359,8 @@
 
 
 	$qa_content['navigation']['sub']=qa_admin_sub_navigation();
+	
+	return $qa_content;
 
 
 /*

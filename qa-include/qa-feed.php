@@ -1,34 +1,28 @@
 <?php
 
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-feed.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Handles all requests to RSS feeds, first checking if they should be available
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -68,18 +62,19 @@
 	}
 
 	
-	function qa_feed_load_ifcategory($allkey, $catkey, $questionselectspec1=null, $questionselectspec2=null, $questionselectspec3=null)
+	function qa_feed_load_ifcategory($allkey, $catkey, $questionselectspec1=null, $questionselectspec2=null, $questionselectspec3=null, $questionselectspec4=null)
 /*
 	Common function to load appropriate set of questions for requested feed, check category exists, and set up page title
 */
 	{
-		global $qa_db, $categoryslug, $categories, $categoryid, $title, $questions;
+		global $categoryslug, $categories, $categoryid, $title, $questions;
 		
-		@list($questions1, $questions2, $questions3, $categories, $categoryid)=qa_db_select_with_pending($qa_db,
+		@list($questions1, $questions2, $questions3, $questions4, $categories, $categoryid)=qa_db_select_with_pending(
 			$questionselectspec1,
 			$questionselectspec2,
 			$questionselectspec3,
-			qa_using_categories($qa_db) ? qa_db_categories_selectspec() : null,
+			$questionselectspec4,
+			qa_using_categories() ? qa_db_categories_selectspec() : null,
 			isset($categoryslug) ? qa_db_slug_to_category_id_selectspec($categoryslug) : null
 		);
 
@@ -89,7 +84,8 @@
 		$questions=array_merge(
 			is_array($questions1) ? $questions1 : array(),
 			is_array($questions2) ? $questions2 : array(),
-			is_array($questions3) ? $questions3 : array()
+			is_array($questions3) ? $questions3 : array(),
+			is_array($questions4) ? $questions4 : array()
 		);
 
 		if (isset($allkey) && isset($catkey))
@@ -154,17 +150,11 @@
 		qa_feed_not_found();
 	
 
-//	Queue the chosen option and some others that will be needed
-	
-	qa_options_set_pending(array($feedoption, 'feed_per_category', 'feed_number_items', 'feed_full_text', 'show_url_links',
-		'tags_or_categories', 'site_url', 'site_title', 'site_language', 'neat_urls', 'block_bad_words'));
-	
-
 //	Check that all the appropriate options are in place to allow this feed to be retrieved
 
 	if (!(
-		(qa_get_option($qa_db, $feedoption)) &&
-		(isset($categoryslug) ? (qa_using_categories($qa_db) && qa_get_option($qa_db, 'feed_per_category')) : true)
+		(qa_opt($feedoption)) &&
+		(isset($categoryslug) ? (qa_using_categories() && qa_opt('feed_per_category')) : true)
 	))
 		qa_feed_not_found();
 
@@ -173,11 +163,11 @@
 
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 
-	$sitetitle=qa_get_option($qa_db, 'site_title');
-	$siteurl=qa_get_option($qa_db, 'site_url');
-	$full=qa_get_option($qa_db, 'feed_full_text');
-	$count=qa_get_option($qa_db, 'feed_number_items');
-	$showurllinks=qa_get_option($qa_db, 'show_url_links');
+	$sitetitle=qa_opt('site_title');
+	$siteurl=qa_opt('site_url');
+	$full=qa_opt('feed_full_text');
+	$count=qa_opt('feed_number_items');
+	$showurllinks=qa_opt('show_url_links');
 	
 	$linkrequest=$feedtype.(isset($categoryslug) ? ('/'.$categoryslug) : '');
 	$linkparams=null;
@@ -218,7 +208,8 @@
 			qa_feed_load_ifcategory('main/recent_activity_title', 'main/recent_activity_in_x',
 				qa_db_recent_qs_selectspec(null, 0, $categoryslug, null, false, $full, $count),
 				qa_db_recent_a_qs_selectspec(null, 0, $categoryslug, null, false, $full, $count),
-				qa_db_recent_c_qs_selectspec(null, 0, $categoryslug, null, false, $full, $count)
+				qa_db_recent_c_qs_selectspec(null, 0, $categoryslug, null, false, $full, $count),
+				qa_db_recent_edit_qs_selectspec(null, 0, $categoryslug, null, true, $full, $count)
 			);
 			break;
 			
@@ -242,7 +233,7 @@
 			$words=qa_string_to_words($query);
 
 			qa_feed_load_ifcategory(null, null,
-				qa_db_search_posts_selectspec($qa_db, null, $words, $words, $words, $words, 0, $full, $count)
+				qa_db_search_posts_selectspec(null, $words, $words, $words, $words, 0, $full, $count)
 			);
 		
 			$title=qa_lang_sub('main/results_for_x', $query);
@@ -263,7 +254,7 @@
 		$questions=qa_any_sort_and_dedupe($questions);
 	
 	$questions=array_slice($questions, 0, $count);
-	$blockwordspreg=qa_get_block_words_preg($qa_db);
+	$blockwordspreg=qa_get_block_words_preg();
 
 
 //	Prepare the XML output
@@ -282,35 +273,57 @@
 
 	//	Determine whether this is a question, answer or comment, and act accordingly
 	
-		if (isset($question['cpostid'])) {
+		$options=array('blockwordspreg' => @$blockwordspreg, 'showurllinks' => $showurllinks);
+	
+		if (isset($question['editpostid'])) {
+			$anchor=qa_anchor($question['editbasetype'], $question['editpostid']);
+			
+			switch ($question['editbasetype']) {
+				case 'A':
+					$titleprefix=qa_lang('misc/feed_a_edited_prefix');
+					break;
+					
+				case 'C':
+					$titleprefix=qa_lang('misc/feed_c_edited_prefix');
+					break;
+					
+				default:
+					$titleprefix=qa_lang('misc/feed_edited_prefix');
+					break;
+			}
+				
+			$time=$question['editupdated'];
+			
+			if ($full)
+				$htmlcontent=qa_viewer_html($question['editcontent'], $question['editformat'], $options);			
+		
+		} elseif (isset($question['cpostid'])) {
 			$anchor=qa_anchor('C', $question['cpostid']);
 			$titleprefix=qa_lang('misc/feed_c_prefix');
-			$created=$question['ccreated'];
+			$time=$question['ccreated'];
 
 			if ($full)
-				$content=$question['ccontent'];
+				$htmlcontent=qa_viewer_html($question['ccontent'], $question['cformat'], $options);
 			
 		} elseif (isset($question['apostid'])) {
 			$anchor=qa_anchor('A', $question['apostid']);
 			$titleprefix=qa_lang('misc/feed_a_prefix');
-			$created=$question['acreated'];
+			$time=$question['acreated'];
 
 			if ($full)
-				$content=$question['acontent'];
+				$htmlcontent=qa_viewer_html($question['acontent'], $question['aformat'], $options);
 
 		} else {
 			$anchor=null;
 			$titleprefix='';
-			$created=$question['created'];
+			$time=$question['created'];
 
 			if ($full)
-				$content=$question['content'];
+				$htmlcontent=qa_viewer_html($question['content'], $question['format'], $options);
 		}
 		
-		if (isset($blockwordspreg)) {
+		if (isset($blockwordspreg))
 			$question['title']=qa_block_words_replace($question['title'], $blockwordspreg);
-			$content=qa_block_words_replace($content, $blockwordspreg);
-		}
 		
 		$urlhtml=qa_path_html(qa_q_request($question['postid'], $question['title']), null, $siteurl, null, $anchor);
 		
@@ -320,20 +333,14 @@
 		$lines[]='<title>'.qa_html($titleprefix.$question['title']).'</title>';
 		$lines[]='<link>'.$urlhtml.'</link>';
 
-		if ($full && isset($content)) {
-			$htmlcontent=qa_html($content, true);
-			
-			if ($showurllinks)
-				$htmlcontent=qa_html_convert_urls($htmlcontent);
-				
+		if ($full && isset($htmlcontent))
 			$lines[]='<description>'.qa_html($htmlcontent).'</description>'; // qa_html() a second time to put HTML code inside XML wrapper
-		}
 			
 		if (isset($question['categoryid']) && isset($categories[$question['categoryid']]))
 			$lines[]='<category>'.qa_html($categories[$question['categoryid']]['title']).'</category>';
 			
 		$lines[]='<guid isPermaLink="true">'.$urlhtml.'</guid>';
-		$lines[]='<pubDate>'.qa_html(gmdate('r', $created)).'</pubDate>';
+		$lines[]='<pubDate>'.qa_html(gmdate('r', $time)).'</pubDate>';
 		$lines[]='</item>';
 	}
 	

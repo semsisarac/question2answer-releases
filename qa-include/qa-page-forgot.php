@@ -1,34 +1,28 @@
 <?php
 
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-forgot.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Controller for 'forgot my password' page
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -51,9 +45,6 @@
 
 //	Queue appropriate options requests
 	
-	qa_captcha_pending();
-	qa_options_set_pending(array('captcha_on_reset_password'));
-
 	if (qa_clicked('doforgot')) {
 		require_once QA_INCLUDE_DIR.'qa-app-users-edit.php';
 		
@@ -62,19 +53,19 @@
 		$errors=array();
 		
 		if (strpos($inemailhandle, '@')===false) // handles can't contain @ symbols
-			$matchusers=qa_db_user_find_by_handle($qa_db, $inemailhandle);
+			$matchusers=qa_db_user_find_by_handle($inemailhandle);
 		else
-			$matchusers=qa_db_user_find_by_email($qa_db, $inemailhandle);
+			$matchusers=qa_db_user_find_by_email($inemailhandle);
 			
 		if (count($matchusers)!=1) // if we get more than one match (should be impossible) also give an error
 			$errors['emailhandle']=qa_lang('users/user_not_found');
 
-		if (qa_get_option($qa_db, 'captcha_on_reset_password'))
-			qa_captcha_validate($qa_db, $_POST, $errors);
+		if (qa_opt('captcha_on_reset_password'))
+			qa_captcha_validate($_POST, $errors);
 
 		if (empty($errors)) {
 			$inuserid=$matchusers[0];
-			qa_start_reset_user($qa_db, $inuserid);
+			qa_start_reset_user($inuserid);
 			qa_redirect('reset', array('e' => $inemailhandle)); // redirect to page where code is entered
 		}
 			
@@ -85,7 +76,7 @@
 	
 //	Prepare content for theme
 	
-	qa_content_prepare();
+	$qa_content=qa_content_prepare();
 
 	$qa_content['title']=qa_lang_html('users/reset_title');
 
@@ -115,10 +106,12 @@
 		),
 	);
 	
-	if (qa_get_option($qa_db, 'captcha_on_reset_password'))
-		qa_set_up_captcha_field($qa_db, $qa_content, $qa_content['form']['fields'], @$errors);
+	if (qa_opt('captcha_on_reset_password'))
+		qa_set_up_captcha_field($qa_content, $qa_content['form']['fields'], @$errors);
 	
 	$qa_content['focusid']='emailhandle';
+	
+	return $qa_content;
 
 
 /*

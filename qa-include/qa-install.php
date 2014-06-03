@@ -1,34 +1,28 @@
 <?php
 
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-install.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: User interface for installing, upgrading and fixing the database
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -62,8 +56,6 @@
 		
 	}
 	
-
-	global $qa_db; // this file could be included from inside qa_db_fail_handler() function, so ensure we can access this
 
 	header('Content-type: text/html; charset=utf-8');
 
@@ -100,7 +92,7 @@
 		qa_base_db_connect('qa_install_db_fail_handler');
 		
 		if (qa_clicked('create')) {
-			qa_db_install_tables($qa_db);
+			qa_db_install_tables();
 			
 			if (QA_EXTERNAL_USERS)
 				$success.='Your Question2Answer database has been created for external user identity management. Please read the documentation to complete integration.';
@@ -109,12 +101,12 @@
 		}
 		
 		if (qa_clicked('upgrade')) {
-			qa_db_upgrade_tables($qa_db);
+			qa_db_upgrade_tables();
 			$success.='Your Question2Answer database has been updated.';
 		}
 
 		if (qa_clicked('repair')) {
-			qa_db_install_tables($qa_db);
+			qa_db_install_tables();
 			$success.='The Question2Answer database tables have been repaired.';
 		}
 
@@ -127,25 +119,25 @@
 			$inhandle=qa_post_text('handle');
 			
 			$fielderrors=array_merge(
-				qa_handle_email_validate($qa_db, $inhandle, $inemail),
+				qa_handle_email_validate($inhandle, $inemail),
 				qa_password_validate($inpassword)
 			);
 			
 			if (empty($fielderrors)) {
 				require_once QA_INCLUDE_DIR.'qa-app-users.php';
 				
-				$userid=qa_create_new_user($qa_db, $inemail, $inpassword, $inhandle, QA_USER_LEVEL_SUPER);
-				qa_set_logged_in_user($qa_db, $userid, $inhandle);
+				$userid=qa_create_new_user($inemail, $inpassword, $inhandle, QA_USER_LEVEL_SUPER);
+				qa_set_logged_in_user($userid, $inhandle);
 				
-				qa_set_option($qa_db, 'feedback_email', $inemail);
+				qa_set_option('feedback_email', $inemail);
 				
 				$success.="Congratulations - Your Question2Answer site is ready to go!\n\nYou are logged in as the super administrator and can start changing settings.\n\nThank you for installing Question2Answer.";
 			}
 		}
 	}
 	
-	if (isset($qa_db) && !@$pass_failure_from_install) {
-		$check=qa_db_check_tables($qa_db); // see where the database is at
+	if (is_resource(qa_db_connection()) && !@$pass_failure_from_install) {
+		$check=qa_db_check_tables(); // see where the database is at
 		
 		switch ($check) {
 			case 'none':
@@ -184,7 +176,7 @@
 			default:
 				require_once QA_INCLUDE_DIR.'qa-db-admin.php';
 
-				if ( (!QA_EXTERNAL_USERS) && (qa_db_count_users($qa_db)==0) ) {
+				if ( (!QA_EXTERNAL_USERS) && (qa_db_count_users()==0) ) {
 					$error.="There are currently no users in the Question2Answer database.\n\nPlease enter your details below to create the super administrator:";
 					$fields=array('handle' => 'Username:', 'password' => 'Password:', 'email' => 'Email address:');
 					$buttons=array('super' => 'Create Super Administrator');

@@ -1,34 +1,28 @@
 <?php
 
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-points.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Database-level access to user points and statistics
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -52,7 +46,7 @@
 	}
 
 	
-	function qa_db_points_calculations($db)
+	function qa_db_points_calculations()
 /*
 	Returns an array containing all the calculation formulae for the userpoints table. Each element of this
 	array is for one column - the key contains the column name, and the value is a further array of two elements.
@@ -63,7 +57,7 @@
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 		
-		$options=qa_get_options($db, qa_db_points_option_names());
+		$options=qa_get_options(qa_db_points_option_names());
 		
 		return array(
 			'qposts' => array(
@@ -142,7 +136,7 @@
 	}
 
 	
-	function qa_db_points_update_ifuser($db, $userid, $columns)
+	function qa_db_points_update_ifuser($userid, $columns)
 /*
 	Update the userpoints table in the database for $userid and $columns, plus the summary points column.
 	Set $columns to true for all, empty for none, an array for several, or a single value for one.
@@ -152,7 +146,7 @@
 		if (isset($userid)) {
 			require_once QA_INCLUDE_DIR.'qa-app-options.php';
 
-			$calculations=qa_db_points_calculations($db);
+			$calculations=qa_db_points_calculations();
 			
 			if ($columns===true)
 				$keycolumns=$calculations;
@@ -165,7 +159,7 @@
 			
 			$insertfields='userid, ';
 			$insertvalues='$, ';
-			$insertpoints=(int)qa_get_option($db, 'points_base');
+			$insertpoints=(int)qa_opt('points_base');
 
 			$updates='';
 			$updatepoints=$insertpoints;
@@ -186,20 +180,20 @@
 			$query='INSERT INTO ^userpoints ('.$insertfields.'points) VALUES ('.$insertvalues.$insertpoints.') '.
 				'ON DUPLICATE KEY UPDATE '.$updates.'points='.$updatepoints;
 			
-			qa_db_query_sub($db, str_replace('~', "=_utf8 '".mysql_real_escape_string($userid, $db)."'", $query), $userid);
+			qa_db_query_sub(str_replace('~', "=_utf8 '".qa_db_escape_string($userid)."'", $query), $userid);
 			
-			if (qa_db_insert_on_duplicate_inserted($db))
-				qa_db_userpointscount_update($db);
+			if (qa_db_insert_on_duplicate_inserted())
+				qa_db_userpointscount_update();
 		}
 	}
 
 
-	function qa_db_userpointscount_update($db)
+	function qa_db_userpointscount_update()
 /*
 	Update the cached count in the database of the number of rows in the userpoints table
 */
 	{
-		qa_db_query_sub($db, "REPLACE ^options (title, content) SELECT 'cache_userpointscount', COUNT(*) FROM ^userpoints");
+		qa_db_query_sub("REPLACE ^options (title, content) SELECT 'cache_userpointscount', COUNT(*) FROM ^userpoints");
 	}
 
 

@@ -1,34 +1,28 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-options.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Getting and setting admin options (application level)
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -49,38 +43,44 @@
 	define('QA_PERMIT_SUPERS', 0);
 
 	
-	function qa_get_option($db, $name)
-/*
-	Return the setting for the single option $name, see qa_get_options() for more details
-*/
-	{
-		$options=qa_get_options($db, array($name));
-
-		return $options[$name];
-	}
-
-
-	function qa_get_options($db, $names)
+	function qa_get_options($names)
 /*
 	Return an array [name] => [value] of settings for each option in $names.
 	If any options are missing from the database, set them to their defaults
 */
 	{
-		global $qa_options_cache;
+		global $qa_options_cache, $qa_options_loaded;
 		
 	//	If any options not cached, retrieve them from database via standard pending mechanism
 
-		if (qa_options_set_pending($names)) {
+		if (!@$qa_options_loaded) {
 			require_once QA_INCLUDE_DIR.'qa-db-selects.php';
-			
-			qa_db_select_with_pending($db);
+			qa_db_select_with_pending();
 		}
 		
 	//	Pull out the options specifically requested here
 
 		$options=array();
-		foreach ($names as $name)
+		foreach ($names as $name) {
+			if (!isset($qa_options_cache[$name])) {
+				$todatabase=true;
+				
+				switch ($name) { // don't write default to database if option was deprecated, or depends on site language (which could be changed)
+					case 'custom_sidebar':
+					case 'site_title':
+					case 'email_privacy':
+					case 'answer_needs_login':
+					case 'ask_needs_login':
+					case 'comment_needs_login':
+						$todatabase=false;
+						break;
+				}
+				
+				qa_set_option($name, qa_default_option($name), $todatabase);
+			}
+			
 			$options[$name]=$qa_options_cache[$name];
+		}
 		
 		return $options;
 	}
@@ -88,20 +88,10 @@
 	
 	function qa_options_set_pending($names)
 /*
-	Queue the options in $names to be retrieved during next database query
+	This is deprecated now that all options are retrieved for every page requested.
+	Function kept for backwards compatibility with modified Q2A code bases.
 */
 	{
-		global $qa_options_cache, $qa_options_pending;
-		
-		$needtoload=false;
-		
-		foreach ($names as $name)
-			if (!isset($qa_options_cache[$name])) {
-				$qa_options_pending[$name]=true;
-				$needtoload=true;
-			}
-			
-		return $needtoload;
 	}
 
 	
@@ -110,87 +100,61 @@
 	Return selectspec array (see qa-db.php) to get queued options from database
 */
 	{
-		global $qa_options_pending;
+		global $qa_options_loaded;
 		
-		if (count($qa_options_pending))
+		if (@$qa_options_loaded)
+			return null;
+		else
 			return array(
 				'columns' => array('title', 'content' => 'BINARY content'),
-				'source' => '^options WHERE title IN ($)',
-				'arguments' => array(array_keys($qa_options_pending)),
+				'source' => '^options',
 				'arraykey' => 'title',
 				'arrayvalue' => 'content',
 			);
-		else
-			return false;
 	}
 
 	
-	function qa_options_load_options($db, $selectspec, $gotoptions)
+	function qa_options_load_options($selectspec, $gotoptions)
 /*
 	Called after the options are retrieved from the database using $selectspec which returned $gotoptions
 */
 	{
-		global $qa_options_cache, $qa_options_pending;
+		global $qa_options_cache, $qa_options_loaded;
 		
-		if (is_array($selectspec)) {
-			foreach ($selectspec['arguments'][0] as $name) {
-				unset($qa_options_pending[$name]);
+		if (is_array($selectspec))
+			foreach ($gotoptions as $name => $value)
+				$qa_options_cache[$name]=$value;
 				
-				if (isset($gotoptions[$name])) // sets those successfully retrieved
-					$qa_options_cache[$name]=$gotoptions[$name];
-			}
-			
-			foreach ($selectspec['arguments'][0] as $name)
-				if (!isset($qa_options_cache[$name])) { // set others to default values
-
-					switch ($name) { // don't write default to database if option was deprecated, or depends on site language (which could be changed)
-						case 'custom_sidebar':
-						case 'site_title':
-						case 'email_privacy':
-						case 'answer_needs_login':
-						case 'ask_needs_login':
-						case 'comment_needs_login':
-							$todatabase=false;
-							break;
-						
-						default:
-							$todatabase=true;
-							break;
-					}
-					
-					qa_set_option($db, $name, qa_default_option($db, $name), $todatabase);
-				}
-		}
+		$qa_options_loaded=true;
 	}
 
 
-	function qa_set_option($db, $name, $value, $todatabase=true)
+	function qa_set_option($name, $value, $todatabase=true)
 /*
 	Set an option $name to $value (application level) in both cache and database, unless
 	$todatabase=false, in which case set it in the cache only
 */
 	{
-		global $qa_options_cache, $qa_options_pending;
+		global $qa_options_cache;
 		
 		if ($todatabase && isset($value))
-			qa_db_set_option($db, $name, $value);
+			qa_db_set_option($name, $value);
 
 		$qa_options_cache[$name]=$value;
-		unset($qa_options_pending[$name]);
 	}
 
 	
-	function qa_reset_options($db, $names)
+	function qa_reset_options($names)
 /*
 	Reset the options in $names
 */
 	{
 		foreach ($names as $name)
-			qa_set_option($db, $name, qa_default_option($db, $name));
+			qa_set_option($name, qa_default_option($name));
 	}
 
 	
-	function qa_default_option($db, $name)
+	function qa_default_option($name)
 /*
 	Return the default value for option $name
 */
@@ -199,6 +163,14 @@
 		
 		$fixed_defaults=array(
 			'allow_multi_answers' => 1,
+			'avatar_allow_gravatar' => 1,
+			'avatar_allow_upload' => 1,
+			'avatar_store_size' => 400,
+			'avatar_profile_size' => 200,
+			'avatar_q_page_q_size' => 50,
+			'avatar_q_page_a_size' => 40,
+			'avatar_q_page_c_size' => 20,
+			'avatar_users_size' => 30,
 			'captcha_on_anon_post' => 1,
 			'captcha_on_feedback' => 1,
 			'captcha_on_register' => 1,
@@ -257,8 +229,7 @@
 			'page_size_tag_qs' => 20,
 			'page_size_tags' => 30,
 			'page_size_una_qs' => 20,
-			'page_size_user_as' => 20,
-			'page_size_user_qs' => 20,
+			'page_size_user_posts' => 20,
 			'page_size_users' => 20,
 			'pages_prev_next' => 3,
 			'permit_anon_view_ips' => QA_PERMIT_EDITORS,
@@ -283,10 +254,12 @@
 			'points_q_voted_max_loss' => 3,
 			'points_select_a' => 3,
 			'show_c_reply_buttons' => 1,
+			'show_a_c_links' => 1,
 			'show_a_form_immediate' => 'if_no_as',
 			'show_selected_first' => 1,
 			'show_url_links' => 1,
 			'show_user_points' => 1,
+			'show_user_titles' => 1,
 			'show_when_created' => 1,
 			'site_theme' => 'Default',
 			'sort_answers_by' => 'created',
@@ -322,46 +295,54 @@
 					break;
 				
 				case 'show_custom_sidebar':
-					$value=strlen(qa_get_option($db, 'custom_sidebar')) ? true : false;
+					$value=strlen(qa_opt('custom_sidebar')) ? true : false;
 					break;
 					
 				case 'show_custom_header':
-					$value=strlen(qa_get_option($db, 'custom_header')) ? true : false;
+					$value=strlen(qa_opt('custom_header')) ? true : false;
 					break;
 					
 				case 'show_custom_footer':
-					$value=strlen(qa_get_option($db, 'custom_footer')) ? true : false;
+					$value=strlen(qa_opt('custom_footer')) ? true : false;
 					break;
 					
 				case 'show_custom_in_head':
-					$value=strlen(qa_get_option($db, 'custom_in_head')) ? true : false;
+					$value=strlen(qa_opt('custom_in_head')) ? true : false;
 					break;
 					
 				case 'custom_sidebar':
-					$value=qa_lang_sub('options/default_sidebar', qa_html(qa_get_option($db, 'site_title')));
+					$value=qa_lang_sub('options/default_sidebar', qa_html(qa_opt('site_title')));
 					break;
 					
+				case 'editor_for_qs':
+				case 'editor_for_as':
+					require_once QA_INCLUDE_DIR.'qa-app-format.php';
+					
+					$value='-'; // to match none by default, i.e. choose based on who is best with HTML
+					qa_load_editor('', 'html', $value);
+					break;
+				
 				case 'permit_post_q': // convert from deprecated option if available
-					$value=qa_get_option($db, 'ask_needs_login') ? QA_PERMIT_USERS : QA_PERMIT_ALL;
+					$value=qa_opt('ask_needs_login') ? QA_PERMIT_USERS : QA_PERMIT_ALL;
 					break;
 					
 				case 'permit_post_a': // convert from deprecated option if available
-					$value=qa_get_option($db, 'answer_needs_login') ? QA_PERMIT_USERS : QA_PERMIT_ALL;
+					$value=qa_opt('answer_needs_login') ? QA_PERMIT_USERS : QA_PERMIT_ALL;
 					break;
 				
 				case 'permit_post_c': // convert from deprecated option if available
-					$value=qa_get_option($db, 'comment_needs_login') ? QA_PERMIT_USERS : QA_PERMIT_ALL;
+					$value=qa_opt('comment_needs_login') ? QA_PERMIT_USERS : QA_PERMIT_ALL;
 					break;
 					
 				case 'points_vote_up_q':
 				case 'points_vote_down_q':
-					$oldvalue=qa_get_option($db, 'points_vote_on_q');
+					$oldvalue=qa_opt('points_vote_on_q');
 					$value=is_numeric($oldvalue) ? $oldvalue : 1;
 					break;
 					
 				case 'points_vote_up_a':
 				case 'points_vote_down_a':
-					$oldvalue=qa_get_option($db, 'points_vote_on_a');
+					$oldvalue=qa_opt('points_vote_on_a');
 					$value=is_numeric($oldvalue) ? $oldvalue : 1;
 					break;
 				
@@ -390,46 +371,71 @@
 	}
 
 	
-	function qa_get_vote_view($db, $basetype, $full=false, $enabledif=true)
+	function qa_post_html_defaults($basetype, $full=false)
+/*
+
+*/
+	{
+		require_once QA_INCLUDE_DIR.'qa-app-users.php';
+		
+		return array(
+			'tagsview' => ($basetype=='Q') && qa_using_tags(),
+			'voteview' => (($basetype=='Q') || ($basetype=='A')) ? qa_get_vote_view($basetype, $full) : false,
+			'answersview' => $basetype=='Q',
+			'whatlink' => qa_opt('show_a_c_links'),
+			'whenview' => qa_opt('show_when_created'),
+			'ipview' => !qa_user_permit_error('permit_anon_view_ips'),
+			'whoview' => true,
+			'pointsview' => qa_opt('show_user_points'),
+			'pointstitle' => qa_opt('show_user_titles') ? qa_get_points_to_titles() : array(),
+			'blockwordspreg' => qa_get_block_words_preg(),
+			'showurllinks' => qa_opt('show_url_links'),
+			'microformats' => $full,
+		);
+	}
+	
+	
+
+	function qa_get_vote_view($basetype, $full=false, $enabledif=true)
 /*
 	Return $voteview parameter to pass to qa_post_html_fields() in qa-app-format.php for posts of $basetype (Q/A/C),
 	with buttons enabled if appropriate (based on whether $full post shown) unless $enabledif is false.
 */
 	{
 		if ($basetype=='Q') {
-			$view=qa_get_option($db, 'voting_on_qs');
-			$enabled=$enabledif && $view && ($full || !qa_get_option($db, 'voting_on_q_page_only'));
+			$view=qa_opt('voting_on_qs');
+			$enabled=$enabledif && $view && ($full || !qa_opt('voting_on_q_page_only'));
 
 		} elseif ($basetype=='A') {
-			$view=qa_get_option($db, 'voting_on_as');
+			$view=qa_opt('voting_on_as');
 			$enabled=$enabledif;
 			
 		} else
 			$view=false;
 		
-		return $view ? (qa_get_option($db, 'votes_separated') ? ($enabled ? 'updown' : 'updown-disabled') : ($enabled ? 'net' : 'net-disabled')) : false;
+		return $view ? (qa_opt('votes_separated') ? ($enabled ? 'updown' : 'updown-disabled') : ($enabled ? 'net' : 'net-disabled')) : false;
 	}
 	
 	
-	function qa_using_tags($db)
+	function qa_using_tags()
 /*
 	Return whether the option is set to classify questions by tags
 */
 	{
-		return strpos(qa_get_option($db, 'tags_or_categories'), 't')!==false;
+		return strpos(qa_opt('tags_or_categories'), 't')!==false;
 	}
 	
 	
-	function qa_using_categories($db)
+	function qa_using_categories()
 /*
 	Return whether the option is set to classify questions by categories
 */
 	{
-		return strpos(qa_get_option($db, 'tags_or_categories'), 'c')!==false;
+		return strpos(qa_opt('tags_or_categories'), 'c')!==false;
 	}
 	
 	
-	function qa_get_block_words_preg($db)
+	function qa_get_block_words_preg()
 /*
 	Return the regular expression to match the blocked words options set in the database
 */
@@ -437,7 +443,7 @@
 		global $qa_blockwordspreg, $qa_blockwordspreg_set;
 		
 		if (!@$qa_blockwordspreg_set) {
-			$blockwordstring=qa_get_option($db, 'block_bad_words');
+			$blockwordstring=qa_opt('block_bad_words');
 			
 			if (strlen($blockwordstring)) {
 				require_once QA_INCLUDE_DIR.'qa-util-string.php';
@@ -450,6 +456,32 @@
 		}
 		
 		return $qa_blockwordspreg;
+	}
+	
+	
+	function qa_get_points_to_titles()
+	{
+		global $qa_points_title_cache;
+		
+		if (!is_array($qa_points_title_cache)) {
+			$qa_points_title_cache=array();
+	
+			$pairs=explode(',', qa_opt('points_to_titles'));
+			foreach ($pairs as $pair) {
+				$spacepos=strpos($pair, ' ');
+				if (is_numeric($spacepos)) {
+					$points=trim(substr($pair, 0, $spacepos));
+					$title=trim(substr($pair, $spacepos));
+	
+					if (is_numeric($points) && strlen($title))
+						$qa_points_title_cache[(int)$points]=$title;
+				}
+			}
+			
+			krsort($qa_points_title_cache, SORT_NUMERIC);
+		}
+		
+		return $qa_points_title_cache;
 	}
 
 

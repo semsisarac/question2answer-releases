@@ -1,34 +1,28 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-users-special.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Controller for admin page showing users with non-standard privileges
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -47,37 +41,32 @@
 		qa_fatal_error('User accounts are handled by external code');
 		
 
-//	Queue requests for pending options
-
-	qa_options_set_pending(array('page_size_users', 'columns_users'));
-	
-
 //	Get list of special users
 
-	$users=qa_db_select_with_pending($qa_db, qa_db_users_from_level_selectspec(QA_USER_LEVEL_EXPERT));
+	$users=qa_db_select_with_pending(qa_db_users_from_level_selectspec(QA_USER_LEVEL_EXPERT));
 
 
 //	Check we have permission to view this page (moderator or above)
 
-	if ( (!isset($qa_login_userid)) || (qa_get_logged_in_level($qa_db)<QA_USER_LEVEL_MODERATOR) ) {
-		qa_content_prepare();
+	if ( (!isset($qa_login_userid)) || (qa_get_logged_in_level()<QA_USER_LEVEL_MODERATOR) ) {
+		$qa_content=qa_content_prepare();
 		$qa_content['error']=qa_lang_html('users/no_permission');
-		return;
+		return $qa_content;
 	}
 
 
 //	Get userids and handles of retrieved users
 
-	$usershtml=qa_userids_handles_html($qa_db, $users);
+	$usershtml=qa_userids_handles_html($users);
 
 
 //	Prepare content for theme
 
-	qa_content_prepare();
+	$qa_content=qa_content_prepare();
 
 	$qa_content['title']=qa_lang_html('users/special_users');
 	
-	$qa_content['ranking']=array('items' => array(), 'rows' => ceil(qa_get_option($qa_db, 'page_size_users')/qa_get_option($qa_db, 'columns_users')));
+	$qa_content['ranking']=array('items' => array(), 'rows' => ceil(qa_opt('page_size_users')/qa_opt('columns_users')), 'type' => 'users');
 	
 	foreach ($users as $user) {
 		$qa_content['ranking']['items'][]=array(
@@ -86,7 +75,9 @@
 		);
 	}
 
-	$qa_content['navigation']['sub']=qa_users_sub_navigation($qa_db);
+	$qa_content['navigation']['sub']=qa_users_sub_navigation();
+	
+	return $qa_content;
 
 
 /*

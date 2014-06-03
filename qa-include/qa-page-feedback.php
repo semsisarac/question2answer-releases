@@ -1,34 +1,28 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-feedback.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Controller for feedback page
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -42,27 +36,23 @@
 
 //	Queue required options and get useful information on the logged in user
 
-	qa_captcha_pending();
-
-	qa_options_set_pending(array('email_privacy', 'from_email', 'feedback_enabled', 'feedback_email', 'site_url', 'captcha_on_feedback'));
-	
 	if (isset($qa_login_userid) && !QA_EXTERNAL_USERS)
-		list($useraccount, $userprofile)=qa_db_select_with_pending($qa_db,
+		list($useraccount, $userprofile)=qa_db_select_with_pending(
 			qa_db_user_account_selectspec($qa_login_userid, true),
 			qa_db_user_profile_selectspec($qa_login_userid, true)
 		);
 
-	$usecaptcha=qa_user_use_captcha($qa_db, 'captcha_on_feedback');
+	$usecaptcha=qa_user_use_captcha('captcha_on_feedback');
 
 
 //	Check feedback is enabled
 
-	if (!qa_get_option($qa_db, 'feedback_enabled')) {
+	if (!qa_opt('feedback_enabled')) {
 		header('HTTP/1.0 404 Not Found');
 		$qa_template='not-found';
-		qa_content_prepare();
+		$qa_content=qa_content_prepare();
 		$qa_content['error']=qa_lang_html('main/page_not_found');
-		return;
+		return $qa_content;
 	}
 
 
@@ -83,7 +73,7 @@
 			$errors['message']=qa_lang('misc/feedback_empty');
 		
 		if ($usecaptcha)
-			qa_captcha_validate($qa_db, $_POST, $errors);
+			qa_captcha_validate($_POST, $errors);
 
 		if (empty($errors)) {
 			$subs=array(
@@ -91,17 +81,17 @@
 				'^name' => empty($inname) ? '-' : $inname,
 				'^email' => empty($inemail) ? '-' : $inemail,
 				'^previous' => empty($inreferer) ? '-' : $inreferer,
-				'^url' => isset($qa_login_userid) ? qa_path('user/'.qa_get_logged_in_handle($qa_db), null, qa_get_option($qa_db, 'site_url')) : '-',
+				'^url' => isset($qa_login_userid) ? qa_path('user/'.qa_get_logged_in_handle(), null, qa_opt('site_url')) : '-',
 				'^ip' => @$_SERVER['REMOTE_ADDR'],
 				'^browser' => @$_SERVER['HTTP_USER_AGENT'],
 			);
 			
 			if (qa_send_email(array(
-				'fromemail' => qa_email_validate(@$inemail) ? $inemail : qa_get_option($qa_db, 'from_email'),
+				'fromemail' => qa_email_validate(@$inemail) ? $inemail : qa_opt('from_email'),
 				'fromname' => $inname,
-				'toemail' => qa_get_option($qa_db, 'feedback_email'),
-				'toname' => qa_get_option($qa_db, 'site_title'),
-				'subject' => qa_lang_sub('emails/feedback_subject', qa_get_option($qa_db, 'site_title')),
+				'toemail' => qa_opt('feedback_email'),
+				'toname' => qa_opt('site_title'),
+				'subject' => qa_lang_sub('emails/feedback_subject', qa_opt('site_title')),
 				'body' => strtr(qa_lang('emails/feedback_body'), $subs),
 				'html' => false,
 			)))
@@ -114,7 +104,7 @@
 	
 //	Prepare content for theme
 
-	qa_content_prepare();
+	$qa_content=qa_content_prepare();
 
 	$qa_content['title']=qa_lang_html('misc/feedback_title');
 	
@@ -128,7 +118,7 @@
 		'fields' => array(
 			'message' => array(
 				'type' => $feedbacksent ? 'static' : '',
-				'label' => qa_lang_html_sub('misc/feedback_message', qa_get_option($qa_db, 'site_title')),
+				'label' => qa_lang_html_sub('misc/feedback_message', qa_opt('site_title')),
 				'tags' => ' NAME="message" ID="message" ',
 				'value' => qa_html(@$inmessage),
 				'rows' => 8,
@@ -146,8 +136,8 @@
 				'type' => $feedbacksent ? 'static' : '',
 				'label' => qa_lang_html('misc/feedback_email'),
 				'tags' => ' NAME="email" ',
-				'value' => qa_html(isset($inemail) ? $inemail : qa_get_logged_in_email($qa_db)),
-				'note' => $feedbacksent ? null : qa_get_option($qa_db, 'email_privacy'),
+				'value' => qa_html(isset($inemail) ? $inemail : qa_get_logged_in_email()),
+				'note' => $feedbacksent ? null : qa_opt('email_privacy'),
 			),
 		),
 		
@@ -164,7 +154,7 @@
 	);
 	
 	if ($usecaptcha && !$feedbacksent)
-		qa_set_up_captcha_field($qa_db, $qa_content, $qa_content['form']['fields'], @$errors);
+		qa_set_up_captcha_field($qa_content, $qa_content['form']['fields'], @$errors);
 
 	$qa_content['focusid']='message';
 	
@@ -172,7 +162,9 @@
 		$qa_content['form']['ok']=qa_lang_html('misc/feedback_sent');
 		unset($qa_content['form']['buttons']);
 	}
-
+	
+	return $qa_content;
+	
 
 /*
 	Omit PHP closing tag to help avoid accidental output

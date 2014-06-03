@@ -1,34 +1,28 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-points.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Controller for admin page for user points
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -42,28 +36,21 @@
 	require_once QA_INCLUDE_DIR.'qa-app-admin.php';
 	
 	
-//	Queue requests for pending admin options
-
-	qa_admin_pending();
-
-	$optionnames=qa_db_points_option_names();
-	
-	qa_options_set_pending($optionnames);
-	
-
 //	Check admin privileges
 
-	if (!qa_admin_check_privileges())
-		return;
+	if (!qa_admin_check_privileges($qa_content))
+		return $qa_content;
 
 
 //	Process user actions
+
+	$optionnames=qa_db_points_option_names();
 
 	if (qa_clicked('doshowdefaults')) {
 		$options=array();
 		
 		foreach ($optionnames as $optionname)
-			$options[$optionname]=qa_default_option($qa_db, $optionname);
+			$options[$optionname]=qa_default_option($optionname);
 		
 	} else {
 		if (qa_clicked('docancel'))
@@ -71,23 +58,23 @@
 
 		elseif (qa_clicked('dosaverecalc')) {
 			foreach ($optionnames as $optionname)
-				qa_set_option($qa_db, $optionname, (int)qa_post_text('option_'.$optionname));
+				qa_set_option($optionname, (int)qa_post_text('option_'.$optionname));
 				
 			if (!qa_post_text('has_js'))
 				qa_redirect('admin/recalc', array('dorecalcpoints' => 1));
 		}
 	
-		$options=qa_get_options($qa_db, $optionnames);
+		$options=qa_get_options($optionnames);
 	}
 	
 	
 //	Prepare content for theme
 
-	qa_content_prepare();
+	$qa_content=qa_content_prepare();
 
 	$qa_content['title']=qa_lang_html('admin/admin_title').' - '.qa_lang_html('admin/points_title');
 
-	$qa_content['error']=qa_admin_page_error($qa_db);
+	$qa_content['error']=qa_admin_page_error();
 
 	$qa_content['form']=array(
 		'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" NAME="points_form" onsubmit="document.forms.points_form.has_js.value=1; return true;" ',
@@ -122,8 +109,8 @@
 		elseif (qa_clicked('dosaverecalc')) {
 			$qa_content['form']['ok']='<SPAN ID="recalc_points_ok"></SPAN>';
 			
-			$qa_content['script_src'][]='jxs_compressed.js';
-			$qa_content['script_src'][]='qa-admin.js?'.QA_VERSION;
+			$qa_content['script_rel'][]='qa-content/jxs_compressed.js';
+			$qa_content['script_rel'][]='qa-content/qa-admin.js?'.QA_VERSION;
 			$qa_content['script_var']['qa_warning_recalc']=qa_lang('admin/stop_recalc_warning');
 			
 			$qa_content['script_onloads'][]=array(
@@ -183,6 +170,8 @@
 	}
 	
 	$qa_content['navigation']['sub']=qa_admin_sub_navigation();
+	
+	return $qa_content;
 
 
 /*

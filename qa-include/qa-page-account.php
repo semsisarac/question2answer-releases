@@ -1,34 +1,28 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-account.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Controller for user account page
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -40,6 +34,7 @@
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 	require_once QA_INCLUDE_DIR.'qa-app-users.php';
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
+	require_once QA_INCLUDE_DIR.'qa-util-image.php';
 	
 	
 //	Check we're not using single-sign on integration, that we're logged in, and we're not blocked
@@ -50,24 +45,24 @@
 	if (!isset($qa_login_userid))
 		qa_redirect('login');
 		
-	if (qa_user_permit_error($qa_db)) {
-		qa_content_prepare();
+	if (qa_user_permit_error()) {
+		$qa_content=qa_content_prepare();
 		$qa_content['error']=qa_lang_html('users/no_permission');
-		return;
+		return $qa_content;
 	}
 
 	
 //	Get current information on user
 
-	qa_options_set_pending(array('confirm_user_emails'));
-
-	list($useraccount, $userprofile)=qa_db_select_with_pending($qa_db,
+	list($useraccount, $userprofile, $userfields)=qa_db_select_with_pending(
 		qa_db_user_account_selectspec($qa_login_userid, true),
-		qa_db_user_profile_selectspec($qa_login_userid, true)
+		qa_db_user_profile_selectspec($qa_login_userid, true),
+		qa_db_userfields_selectspec()
 	);
 	
-	$doconfirms=qa_get_option($qa_db, 'confirm_user_emails') && ($useraccount['level']<QA_USER_LEVEL_EXPERT);
+	$doconfirms=qa_opt('confirm_user_emails') && ($useraccount['level']<QA_USER_LEVEL_EXPERT);
 	$isconfirmed=($useraccount['flags'] & QA_USER_FLAGS_EMAIL_CONFIRMED) ? true : false;
+	$haspassword=isset($useraccount['passsalt']) && isset($useraccount['passcheck']);
 
 	
 //	Process profile if saved
@@ -77,42 +72,45 @@
 		
 		$inhandle=qa_post_text('handle');
 		$inemail=qa_post_text('email');
-		$inname=qa_post_text('name');
-		$inlocation=qa_post_text('location');
-		$inwebsite=qa_post_text('website');
-		$inabout=qa_post_text('about');
+		$inavatar=qa_post_text('avatar');
 		
-		$errors=array_merge(
-			qa_handle_email_validate($qa_db, $inhandle, $inemail, $qa_login_userid),
-			qa_profile_fields_validate($qa_db, $inname, $inlocation, $inwebsite, $inabout)
-		);
+		$errors=qa_handle_email_validate($inhandle, $inemail, $qa_login_userid);
 
 		if (!isset($errors['handle']))
-			qa_db_user_set($qa_db, $qa_login_userid, 'handle', $inhandle);
+			qa_db_user_set($qa_login_userid, 'handle', $inhandle);
 
 		if (!isset($errors['email']))
 			if ($inemail != $useraccount['email']) {
-				qa_db_user_set($qa_db, $qa_login_userid, 'email', $inemail);
-				qa_db_user_set_flag($qa_db, $qa_login_userid, QA_USER_FLAGS_EMAIL_CONFIRMED, false);
+				qa_db_user_set($qa_login_userid, 'email', $inemail);
+				qa_db_user_set_flag($qa_login_userid, QA_USER_FLAGS_EMAIL_CONFIRMED, false);
 				$isconfirmed=false;
 				
 				if ($doconfirms)
-					qa_send_new_confirm($qa_db, $qa_login_userid);
+					qa_send_new_confirm($qa_login_userid);
 			}
+			
+		qa_db_user_set_flag($qa_login_userid, QA_USER_FLAGS_SHOW_AVATAR, ($inavatar=='uploaded'));
+		qa_db_user_set_flag($qa_login_userid, QA_USER_FLAGS_SHOW_GRAVATAR, ($inavatar=='gravatar'));
+
+		if (is_array($_FILES['file']) && $_FILES['file']['size'])
+			qa_set_user_avatar($qa_login_userid, file_get_contents($_FILES['file']['tmp_name']), $useraccount['avatarblobid']);
+
+		$infield=array();
+		foreach ($userfields as $userfield) {
+			$fieldname='field_'.$userfield['fieldid'];
+			$fieldvalue=qa_post_text($fieldname);
+
+			$infield[$fieldname]=$fieldvalue;
+			qa_profile_field_validate($fieldname, $fieldvalue, $errors);
+
+			if (!isset($errors[$fieldname]))
+				qa_db_user_profile_set($qa_login_userid, $userfield['title'], $fieldvalue);
+		}
 		
-		if (!isset($errors['name']))
-			qa_db_user_profile_set($qa_db, $qa_login_userid, 'name', $inname);
+		if (empty($errors))
+			qa_redirect('account', array('state' => 'profile-saved'));
 
-		if (!isset($errors['location']))
-			qa_db_user_profile_set($qa_db, $qa_login_userid, 'location', $inlocation);
-
-		if (!isset($errors['website']))
-			qa_db_user_profile_set($qa_db, $qa_login_userid, 'website', $inwebsite);
-
-		if (!isset($errors['about']))
-			qa_db_user_profile_set($qa_db, $qa_login_userid, 'about', $inabout);
-
-		list($useraccount, $userprofile)=qa_db_select_with_pending($qa_db,
+		list($useraccount, $userprofile)=qa_db_select_with_pending(
 			qa_db_user_account_selectspec($qa_login_userid, true),
 			qa_db_user_profile_selectspec($qa_login_userid, true)
 		);
@@ -132,7 +130,7 @@
 		
 		$errors=array();
 		
-		if (strtolower(qa_db_calc_passcheck($inoldpassword, $useraccount['passsalt'])) != strtolower($useraccount['passcheck']))
+		if ($haspassword && (strtolower(qa_db_calc_passcheck($inoldpassword, $useraccount['passsalt'])) != strtolower($useraccount['passcheck'])))
 			$errors['oldpassword']=qa_lang_html('users/password_wrong');
 
 		$errors=array_merge($errors, qa_password_validate($innewpassword1));
@@ -141,20 +139,21 @@
 			$errors['newpassword2']=qa_lang_html('users/password_mismatch');
 			
 		if (empty($errors)) {
-			qa_db_user_set_password($qa_db, $qa_login_userid, $innewpassword1);
+			qa_db_user_set_password($qa_login_userid, $innewpassword1);
 			unset($inoldpassword);
+			qa_redirect('account', array('state' => 'password-changed'));
 		}
 	}
 
 
 //	Prepare content for theme
 
-	qa_content_prepare();
+	$qa_content=qa_content_prepare();
 
 	$qa_content['title']=qa_lang_html('profile/my_account_title');
-
+	
 	$qa_content['form']=array(
-		'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
+		'tags' => ' ENCTYPE="multipart/form-data" METHOD="POST" ACTION="'.qa_self_html().'" ',
 		
 		'style' => 'wide',
 		
@@ -185,35 +184,8 @@
 				'error' => isset($errors['email']) ? qa_html($errors['email']) :
 					(($doconfirms && !$isconfirmed) ? qa_insert_login_links(qa_lang_html('users/email_please_confirm')) : null),
 			),
-		
-			'name' => array(
-				'label' => qa_lang_html('users/full_name'),
-				'tags' => ' NAME="name" ',
-				'value' => qa_html(isset($inname) ? $inname : @$userprofile['name']),
-				'error' => qa_html(@$errors['name']),
-			),
-		
-			'location' => array(
-				'label' => qa_lang_html('users/location'),
-				'tags' => ' NAME="location" ',
-				'value' => qa_html(isset($inlocation) ? $inlocation : @$userprofile['location']),
-				'error' => qa_html(@$errors['location']),
-			),
-
-			'website' => array(
-				'label' => qa_lang_html('users/website'),
-				'tags' => ' NAME="website" ',
-				'value' => qa_html(isset($inwebsite) ? $inwebsite : @$userprofile['website']),
-				'error' => qa_html(@$errors['website']),
-			),
-
-			'about' => array(
-				'label' => qa_lang_html('users/about'),
-				'tags' => ' NAME="about" ',
-				'value' => qa_html(isset($inabout) ? $inabout : @$userprofile['about']),
-				'error' => qa_html(@$errors['about']),
-				'rows' => 8,
-			),
+			
+			'avatar' => null, // for positioning
 		),
 		
 		'buttons' => array(
@@ -227,10 +199,76 @@
 		),
 	);
 	
-	if (qa_clicked('dosaveprofile') && empty($errors))
+	if ($qa_state=='profile-saved')
 		$qa_content['form']['ok']=qa_lang_html('users/profile_saved');
+		
 
+//	Avatar upload stuff
+
+	if (qa_opt('avatar_allow_gravatar') || qa_opt('avatar_allow_upload')) {
+		$avataroptions=array('' => qa_lang_html('users/avatar_none'));
+		$avatarvalue=$avataroptions[''];
 	
+		if (qa_opt('avatar_allow_gravatar')) {
+			$avataroptions['gravatar']='<SPAN STYLE="margin:2px 0; display:inline-block;">'.
+				qa_get_gravatar_html($useraccount['email'], 32).' '.strtr(qa_lang_html('users/avatar_gravatar'), array(
+					'^1' => '<A HREF="http://www.gravatar.com/" TARGET="_blank">',
+					'^2' => '</A>',
+				)).'</SPAN>';
+
+			if ($useraccount['flags'] & QA_USER_FLAGS_SHOW_GRAVATAR)
+				$avatarvalue=$avataroptions['gravatar'];
+		}
+
+		if (qa_has_gd_image() && qa_opt('avatar_allow_upload')) {
+			$avataroptions['uploaded']='<INPUT NAME="file" TYPE="file">';
+
+			if (isset($useraccount['avatarblobid']))
+				$avataroptions['uploaded']='<SPAN STYLE="margin:2px 0; display:inline-block;">'.
+					qa_get_avatar_blob_html($useraccount['avatarblobid'], $useraccount['avatarwidth'], $useraccount['avatarheight'], 32).
+					'</SPAN>'.$avataroptions['uploaded'];
+
+			if ($useraccount['flags'] & QA_USER_FLAGS_SHOW_AVATAR)
+				$avatarvalue=$avataroptions['uploaded'];
+		}
+		
+		$qa_content['form']['fields']['avatar']=array(
+			'type' => 'select-radio',
+			'label' => qa_lang_html('users/avatar_label'),
+			'tags' => ' NAME="avatar" ',
+			'options' => $avataroptions,
+			'value' => $avatarvalue,
+		);
+		
+	} else
+		unset($qa_content['form']['fields']['avatar']);
+
+
+//	Other profile fields
+
+	foreach ($userfields as $userfield) {
+		$fieldname='field_'.$userfield['fieldid'];
+		
+		$value=@$infield[$fieldname];
+		if (!isset($value))
+			$value=@$userprofile[$userfield['title']];
+			
+		$label=trim(qa_user_userfield_label($userfield), ':');
+		if (strlen($label))
+			$label.=':';
+			
+		$qa_content['form']['fields'][$userfield['title']]=array(
+			'label' => qa_html($label),
+			'tags' => ' NAME="'.$fieldname.'" ',
+			'value' => qa_html($value),
+			'error' => qa_html(@$errors[$fieldname]),
+			'rows' => ($userfield['flags'] & QA_FIELD_FLAGS_MULTI_LINE) ? 8 : null,
+		);
+	}
+	
+
+//	Change password form
+
 	$qa_content['form_2']=array(
 		'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
 		
@@ -273,8 +311,15 @@
 		),
 	);
 	
-	if (qa_clicked('dochangepassword') && empty($errors))
+	if (!$haspassword) {
+		$qa_content['form_2']['fields']['old']['type']='static';
+		$qa_content['form_2']['fields']['old']['value']=qa_lang_html('users/password_none');
+	}
+	
+	if ($qa_state=='password-changed')
 		$qa_content['form']['ok']=qa_lang_html('users/password_changed');
+		
+	return $qa_content;
 	
 
 /*

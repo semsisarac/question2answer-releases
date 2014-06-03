@@ -1,34 +1,28 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-stats.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Controller for admin page showing usage statistics and clean-up buttons
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -41,43 +35,62 @@
 	require_once QA_INCLUDE_DIR.'qa-db-admin.php';
 
 	
-//	Queue requests for pending admin options
-
-	qa_admin_pending();
-	
-	qa_options_set_pending(array('cache_qcount', 'cache_acount', 'cache_ccount', 'cache_userpointscount'));
-
-
 //	Check admin privileges (do late to allow one DB query)
 
-	if (!qa_admin_check_privileges())
-		return;
+	if (!qa_admin_check_privileges($qa_content))
+		return $qa_content;
 
 
 //	Get the information to display
 
-	$qcount=(int)qa_get_option($qa_db, 'cache_qcount');
-	$qcount_anon=qa_db_count_posts($qa_db, 'Q', false);
+	$qcount=(int)qa_opt('cache_qcount');
+	$qcount_anon=qa_db_count_posts('Q', false);
 
-	$acount=(int)qa_get_option($qa_db, 'cache_acount');
-	$acount_anon=qa_db_count_posts($qa_db, 'A', false);
+	$acount=(int)qa_opt('cache_acount');
+	$acount_anon=qa_db_count_posts('A', false);
 
-	$ccount=(int)qa_get_option($qa_db, 'cache_ccount');
-	$ccount_anon=qa_db_count_posts($qa_db, 'C', false);
+	$ccount=(int)qa_opt('cache_ccount');
+	$ccount_anon=qa_db_count_posts('C', false);
+	
+	$mysqlversion=qa_db_read_one_value(qa_db_query_raw('SELECT VERSION()'));
 
 	
 //	Prepare content for theme
 
-	qa_content_prepare();
+	$qa_content=qa_content_prepare();
 
 	$qa_content['title']=qa_lang_html('admin/admin_title').' - '.qa_lang_html('admin/stats_title');
 	
-	$qa_content['error']=qa_admin_page_error($qa_db);
+	$qa_content['error']=qa_admin_page_error();
 
 	$qa_content['form']=array(
 		'style' => 'wide',
 		
 		'fields' => array(
+			'q2a_version' => array(
+				'label' => qa_lang_html('admin/q2a_version'),
+				'value' => qa_html(QA_VERSION),
+			),
+			
+			'db_version' => array(
+				'label' => qa_lang_html('admin/q2a_db_version'),
+				'value' => qa_html(qa_opt('db_version')),
+			),
+			
+			'php_version' => array(
+				'label' => qa_lang_html('admin/php_version'),
+				'value' => qa_html(phpversion()),
+			),
+			
+			'mysql_version' => array(
+				'label' => qa_lang_html('admin/mysql_version'),
+				'value' => qa_html($mysqlversion),
+			),
+			
+			'break0' => array(
+				'type' => 'blank',
+			),
+	
 			'qcount' => array(
 				'label' => qa_lang_html('admin/total_qs'),
 				'value' => qa_html(number_format($qcount)),
@@ -137,22 +150,22 @@
 			
 			'users' => array(
 				'label' => qa_lang_html('admin/users_registered'),
-				'value' => QA_EXTERNAL_USERS ? '' : qa_html(number_format(qa_db_count_users($qa_db))),
+				'value' => QA_EXTERNAL_USERS ? '' : qa_html(number_format(qa_db_count_users())),
 			),
 	
 			'users_active' => array(
 				'label' => qa_lang_html('admin/users_active'),
-				'value' => qa_html(number_format((int)qa_get_option($qa_db, 'cache_userpointscount'))),
+				'value' => qa_html(number_format((int)qa_opt('cache_userpointscount'))),
 			),
 			
 			'users_posted' => array(
 				'label' => qa_lang_html('admin/users_posted'),
-				'value' => qa_html(number_format(qa_db_count_active_users($qa_db, 'posts'))),
+				'value' => qa_html(number_format(qa_db_count_active_users('posts'))),
 			),
 	
 			'users_voted' => array(
 				'label' => qa_lang_html('admin/users_voted'),
-				'value' => qa_html(number_format(qa_db_count_active_users($qa_db, 'uservotes'))),
+				'value' => qa_html(number_format(qa_db_count_active_users('uservotes'))),
 			),
 		),
 	);
@@ -206,14 +219,16 @@
 		),
 	);
 	
-	if (!qa_using_categories($qa_db))
+	if (!qa_using_categories())
 		unset($qa_content['form_2']['buttons']['recalc_categories']);
 	
-	$qa_content['script_src'][]='jxs_compressed.js';
-	$qa_content['script_src'][]='qa-admin.js?'.QA_VERSION;
+	$qa_content['script_rel'][]='qa-content/jxs_compressed.js';
+	$qa_content['script_rel'][]='qa-content/qa-admin.js?'.QA_VERSION;
 	$qa_content['script_var']['qa_warning_recalc']=qa_lang('admin/stop_recalc_warning');
 	
 	$qa_content['navigation']['sub']=qa_admin_sub_navigation();
+	
+	return $qa_content;
 
 
 /*

@@ -1,38 +1,35 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-users.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Language phrases for user management
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	return array(
-		'about' => 'About:',
+		'about' => 'About',
+		'avatar_label' => 'Avatar:',
+		'avatar_none' => 'None',
+		'avatar_gravatar' => 'Show my ^1Gravatar^2',
 		'block_user_button' => 'Block User',
 		'blocked_users' => 'Blocked users',
 		'change_password' => 'Change Password',
@@ -52,7 +49,7 @@
 		'email_please_confirm' => 'Please ^5confirm^6',
 		'email_required' => 'Email address required - not public',
 		'forgot_link' => 'I forgot my password',
-		'full_name' => 'Full name:',
+		'full_name' => 'Full name',
 		'handle_empty' => 'Username must not be empty',
 		'handle_exists' => 'Username is taken - please try another',
 		'handle_has_bad' => 'Username may not contain: ^',
@@ -64,7 +61,7 @@
 		'level_expert' => 'Expert',
 		'level_moderator' => 'Moderator',
 		'level_super' => 'Super Administrator',
-		'location' => 'Location:',
+		'location' => 'Location',
 		'log_in_to_access' => 'You may now ^1log in^2 to access your account.',
 		'login_button' => 'Log In',
 		'login_limit' => 'Too many login attempts - please try again in an hour',
@@ -84,6 +81,7 @@
 		'password_mismatch' => 'New passwords do not match',
 		'password_sent' => 'Your new password was emailed to you',
 		'password_wrong' => 'Password not correct',
+		'password_none' => 'None. To log in directly, set a password below.',
 		'profile_saved' => 'Profile saved',
 		'register_button' => 'Register',
 		'register_title' => 'Register as a new user',
@@ -105,7 +103,7 @@
 		'user_blocked' => '(blocked)',
 		'user_not_found' => 'User not found',
 		'view_account_page' => 'Return to ^1your account^2 page.',
-		'website' => 'Website:',
+		'website' => 'Website',
 		'x_ago_from_y' => '^1 ago from ^2',
 	);
 	

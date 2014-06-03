@@ -1,34 +1,28 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-ip.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Controller for page showing activity for an IP address
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -43,69 +37,67 @@
 	$ip=$pass_ip; // picked up from qa-page.php
 
 
-//	Queue requests for pending options
-	
-	qa_options_set_pending(array('show_when_created', 'show_user_points', 'permit_anon_view_ips', 'block_ips_write', 'block_bad_words'));
+//	Find recently (hidden or not) questions, answers, comments
 
-
-//	Find recently hidden questions, answers, comments
-
-	list($qs, $qs_hidden, $a_qs, $a_hidden_qs, $c_qs, $c_hidden_qs, $categories)=qa_db_select_with_pending($qa_db,
+	list($qs, $qs_hidden, $a_qs, $a_hidden_qs, $c_qs, $c_hidden_qs, $edit_qs, $categories)=qa_db_select_with_pending(
 		qa_db_recent_qs_selectspec($qa_login_userid, 0, null, $ip, false),
 		qa_db_recent_qs_selectspec($qa_login_userid, 0, null, $ip, true),
 		qa_db_recent_a_qs_selectspec($qa_login_userid, 0, null, $ip, false),
 		qa_db_recent_a_qs_selectspec($qa_login_userid, 0, null, $ip, true),
 		qa_db_recent_c_qs_selectspec($qa_login_userid, 0, null, $ip, false),
 		qa_db_recent_c_qs_selectspec($qa_login_userid, 0, null, $ip, true),
+		qa_db_recent_edit_qs_selectspec($qa_login_userid, 0, null, $ip, false),
 		qa_db_categories_selectspec()
 	);
 	
 	
 //	Check we have permission to view this page, and whether we can block or unblock users
 
-	if (qa_user_permit_error($qa_db, 'permit_anon_view_ips')) {
-		qa_content_prepare();
+	if (qa_user_permit_error('permit_anon_view_ips')) {
+		$qa_content=qa_content_prepare();
 		$qa_content['error']=qa_lang_html('users/no_permission');
-		return;
+		return $qa_content;
 	}
 	
-	$blockable=qa_get_logged_in_level($qa_db)>=QA_USER_LEVEL_MODERATOR;
+	$blockable=qa_get_logged_in_level()>=QA_USER_LEVEL_MODERATOR;
 		
 
 //	Perform blocking or unblocking operations as appropriate
 
 	if ($blockable) {
 		if (qa_clicked('doblock')) {
-			$oldblocked=qa_get_option($qa_db, 'block_ips_write');
-			qa_set_option($qa_db, 'block_ips_write', (strlen($oldblocked) ? ($oldblocked.' , ') : '').$ip);
+			$oldblocked=qa_opt('block_ips_write');
+			qa_set_option('block_ips_write', (strlen($oldblocked) ? ($oldblocked.' , ') : '').$ip);
+			qa_redirect($qa_request);
 		}
 		
 		if (qa_clicked('dounblock')) {
 			require_once QA_INCLUDE_DIR.'qa-app-limits.php';
 			
-			$blockipclauses=qa_block_ips_explode(qa_get_option($qa_db, 'block_ips_write'));
+			$blockipclauses=qa_block_ips_explode(qa_opt('block_ips_write'));
 			
 			foreach ($blockipclauses as $key => $blockipclause)
 				if (qa_block_ip_match($ip, $blockipclause))
 					unset($blockipclauses[$key]);
 					
-			qa_set_option($qa_db, 'block_ips_write', implode(' , ', $blockipclauses));
+			qa_set_option('block_ips_write', implode(' , ', $blockipclauses));
+			qa_redirect($qa_request);
 		}
 	}
 	
 
 //	Combine sets of questions and get information for users
 
-	$questions=qa_any_sort_and_dedupe(array_merge($qs, $qs_hidden, $a_qs, $a_hidden_qs, $c_qs, $c_hidden_qs));
+	$questions=qa_any_sort_by_date(array_merge($qs, $qs_hidden, $a_qs, $a_hidden_qs, $c_qs, $c_hidden_qs, $edit_qs));
 	
-	$usershtml=qa_userids_handles_html($qa_db, qa_any_get_userids_handles($questions));
+	$usershtml=qa_userids_handles_html(qa_any_get_userids_handles($questions));
 
 	$hostname=gethostbyaddr($ip);
-
+	
 
 //	Prepare content for theme
 	
-	qa_content_prepare();
+	$qa_content=qa_content_prepare();
 
 	$qa_content['title']=qa_lang_html_sub('main/ip_address_x', qa_html($ip));
 
@@ -127,7 +119,7 @@
 	if ($blockable) {
 		require_once QA_INCLUDE_DIR.'qa-app-limits.php';
 		
-		$blockipclauses=qa_block_ips_explode(qa_get_option($qa_db, 'block_ips_write'));
+		$blockipclauses=qa_block_ips_explode(qa_opt('block_ips_write'));
 		$matchclauses=array();
 		
 		foreach ($blockipclauses as $blockipclause)
@@ -157,14 +149,17 @@
 	$qa_content['q_list']['qs']=array();
 	
 	if (count($questions)) {
-		$qa_content['q_list']['title']=qa_lang_html_sub('misc/recent_posts_from_x', qa_html($ip));
+		$qa_content['q_list']['title']=qa_lang_html_sub('misc/recent_activity_from_x', qa_html($ip));
 	
 		foreach ($questions as $question) {
-			$htmlfields=qa_any_to_q_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
-				false, qa_using_categories($qa_db) ? $categories : null, false, qa_get_option($qa_db, 'show_when_created'),
-				false, qa_get_option($qa_db, 'show_user_points'), qa_get_block_words_preg($qa_db));
+			$htmloptions=qa_post_html_defaults('Q');
+			$htmloptions['tagsview']=false;
+			$htmloptions['voteview']=false;
+			$htmloptions['ipview']=false;
+			$htmloptions['answersview']=false;
 			
-			unset($htmlfields['answers']); // show less info than usual
+			$htmlfields=qa_any_to_q_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
+				qa_using_categories() ? $categories : null, $htmloptions);
 			
 			if (isset($htmlfields['what_url'])) // link directly to relevant content
 				$htmlfields['url']=$htmlfields['what_url'];
@@ -173,7 +168,9 @@
 		}
 
 	} else
-		$qa_content['q_list']['title']=qa_lang_html_sub('main/no_posts_from_x', qa_html($ip));
+		$qa_content['q_list']['title']=qa_lang_html_sub('misc/no_activity_from_x', qa_html($ip));
+		
+	return $qa_content;
 	
 
 /*

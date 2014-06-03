@@ -1,34 +1,28 @@
 <?php
 
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Routing and utility functions for page requests
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 
@@ -41,7 +35,7 @@
 		'unanswered' => QA_INCLUDE_DIR.'qa-page-home.php',
 		'answers' => QA_INCLUDE_DIR.'qa-page-home.php', // not currently in navigation
 		'comments' => QA_INCLUDE_DIR.'qa-page-home.php', // not currently in navigation
-		'activity' => QA_INCLUDE_DIR.'qa-page-home.php', // not currently in navigation
+		'activity' => QA_INCLUDE_DIR.'qa-page-home.php',
 		'ask' => QA_INCLUDE_DIR.'qa-page-ask.php',
 		'search' => QA_INCLUDE_DIR.'qa-page-search.php',
 		'categories' => QA_INCLUDE_DIR.'qa-page-categories.php',
@@ -55,6 +49,7 @@
 		'admin' => QA_INCLUDE_DIR.'qa-page-admin.php',
 		'admin/emails' => QA_INCLUDE_DIR.'qa-page-admin.php',
 		'admin/layout' => QA_INCLUDE_DIR.'qa-page-admin.php',
+		'admin/users' => QA_INCLUDE_DIR.'qa-page-admin.php',
 		'admin/viewing' => QA_INCLUDE_DIR.'qa-page-admin.php',
 		'admin/posting' => QA_INCLUDE_DIR.'qa-page-admin.php',
 		'admin/permissions' => QA_INCLUDE_DIR.'qa-page-admin.php',
@@ -63,8 +58,11 @@
 		'admin/spam' => QA_INCLUDE_DIR.'qa-page-admin.php',
 		'admin/hidden' => QA_INCLUDE_DIR.'qa-page-admin-hidden.php',
 		'admin/stats' => QA_INCLUDE_DIR.'qa-page-admin-stats.php',
+		'admin/plugins' => QA_INCLUDE_DIR.'qa-page-admin-plugins.php',
 		'admin/recalc' => QA_INCLUDE_DIR.'qa-page-admin-recalc.php',
 		'admin/categories' => QA_INCLUDE_DIR.'qa-page-admin-categories.php',
+		'admin/userfields' => QA_INCLUDE_DIR.'qa-page-admin-userfields.php',
+		'admin/usertitles' => QA_INCLUDE_DIR.'qa-page-admin-usertitles.php',
 		'admin/pages' => QA_INCLUDE_DIR.'qa-page-admin-pages.php',
 		'login' => QA_INCLUDE_DIR.'qa-page-login.php',
 		'forgot' => QA_INCLUDE_DIR.'qa-page-forgot.php',
@@ -76,7 +74,7 @@
 
 	function qa_self_html()
 /*
-	Return an HTML-ready relative URL for the current page, preserving GET parameters - this i useful for ACTION in FORMs
+	Return an HTML-ready relative URL for the current page, preserving GET parameters - this is useful for ACTION in FORMs
 */
 	{
 		global $qa_used_url_format, $qa_request;
@@ -232,19 +230,34 @@
 //	Get common parameters, queue many common options for retrieval and get the ID/cookie of the current user (if any)
 
 	$qa_start=min(max(0, (int)qa_get('start')), QA_MAX_LIMIT_START);
-
-	qa_options_set_pending(array('site_language', 'site_title', 'logo_show', 'logo_url', 'logo_width', 'logo_height', 'feedback_enabled',
-		'nav_home', 'nav_qa_is_home', 'nav_qa_not_home', 'nav_questions', 'nav_unanswered', 'nav_activity', 'nav_tags', 'nav_categories', 'nav_users',
-		'site_theme', 'neat_urls', 'show_custom_sidebar', 'custom_sidebar', 'show_custom_sidepanel', 'custom_sidepanel',
-		'show_custom_header', 'custom_header', 'show_custom_footer', 'custom_footer', 'show_custom_in_head', 'custom_in_head',
-		'show_custom_home', 'pages_prev_next', 'confirm_user_emails', 'permit_post_q', 'tags_or_categories', 'block_ips_write'));
+	$qa_state=qa_get('state');
+	unset($_GET['state']); // to prevent being passed through on forms
 
 	$qa_nav_pages_pending=true;
 	$qa_logged_in_pending=true;
 
-	$qa_login_userid=qa_get_logged_in_userid($qa_db);
+	$qa_login_userid=qa_get_logged_in_userid();
 	$qa_cookieid=qa_cookie_get();
+	
+
+// 	If not logged in as anyone via Q2A, see if any of the login plugins can help
+	
+	if (!isset($qa_login_userid)) {
+		$modulenames=qa_list_modules('login');
 		
+		foreach ($modulenames as $tryname) {
+			$module=qa_load_module('login', $tryname);
+			
+			if (method_exists($module, 'check_cookie')) {
+				$module->check_cookie();
+				$qa_login_userid=qa_get_logged_in_userid();
+	
+				if (isset($qa_login_userid)) // stop and reload page if it worked
+					qa_redirect($qa_request, $_GET);
+			}
+		}
+	}
+
 	
 	function qa_content_prepare($voting=false, $categoryid=null)
 /*
@@ -252,7 +265,7 @@
 	in the context of $categoryid (if not null)
 */
 	{
-		global $qa_db, $qa_content, $qa_root_url_relative, $qa_request, $qa_login_userid, $qa_vote_error, $qa_nav_pages_cached, $qa_routing;
+		global $qa_root_url_relative, $qa_request, $qa_login_userid, $qa_vote_error, $qa_nav_pages_cached, $qa_routing;
 		
 		if (QA_DEBUG_PERFORMANCE)
 			qa_usage_mark('control');
@@ -272,73 +285,73 @@
 	
 			),
 			
-			'sidebar' => qa_get_option($qa_db, 'show_custom_sidebar') ? qa_get_option($qa_db, 'custom_sidebar') : null,
+			'sidebar' => qa_opt('show_custom_sidebar') ? qa_opt('custom_sidebar') : null,
 			
-			'sidepanel' => qa_get_option($qa_db, 'show_custom_sidepanel') ? qa_get_option($qa_db, 'custom_sidepanel') : null,
+			'sidepanel' => qa_opt('show_custom_sidepanel') ? qa_opt('custom_sidepanel') : null,
 		);
 		
 		foreach ($qa_nav_pages_cached as $page)
 			if ($page['nav']=='B')
 				qa_navigation_add_page($qa_content['navigation']['main'], $page);
 		
-		$hascustomhome=qa_get_option($qa_db, 'show_custom_home');
+		$hascustomhome=qa_opt('show_custom_home');
 		
-		if (qa_get_option($qa_db, 'nav_home') && $hascustomhome)
+		if (qa_opt('nav_home') && $hascustomhome)
 			$qa_content['navigation']['main']['$']=array(
 				'url' => qa_path_html(''),
 				'label' => qa_lang_html('main/nav_home'),
 			);
 
-		if (qa_get_option($qa_db, 'nav_activity'))
+		if (qa_opt('nav_activity'))
 			$qa_content['navigation']['main']['activity']=array(
 				'url' => qa_path_html('activity'),
 				'label' => qa_lang_html('main/nav_activity'),
 			);
 			
-		if (qa_get_option($qa_db, $hascustomhome ? 'nav_qa_not_home' : 'nav_qa_is_home'))
+		if (qa_opt($hascustomhome ? 'nav_qa_not_home' : 'nav_qa_is_home'))
 			$qa_content['navigation']['main'][$hascustomhome ? 'qa' : '$']=array(
 				'url' => qa_path_html($hascustomhome ? 'qa' : ''),
 				'label' => qa_lang_html('main/nav_qa'),
 			);
 			
-		if (qa_get_option($qa_db, 'nav_questions'))
+		if (qa_opt('nav_questions'))
 			$qa_content['navigation']['main']['questions']=array(
 				'url' => qa_path_html('questions'),
 				'label' => qa_lang_html('main/nav_qs'),
 			);
 
-		if (qa_get_option($qa_db, 'nav_unanswered'))
+		if (qa_opt('nav_unanswered'))
 			$qa_content['navigation']['main']['unanswered']=array(
 				'url' => qa_path_html('unanswered'),
 				'label' => qa_lang_html('main/nav_unanswered'),
 			);
 			
-		if (qa_using_tags($qa_db) && qa_get_option($qa_db, 'nav_tags'))
+		if (qa_using_tags() && qa_opt('nav_tags'))
 			$qa_content['navigation']['main']['tag']=array(
 				'url' => qa_path_html('tags'),
 				'label' => qa_lang_html('main/nav_tags'),
 			);
 			
-		if (qa_using_categories($qa_db) && qa_get_option($qa_db, 'nav_categories'))
+		if (qa_using_categories() && qa_opt('nav_categories'))
 			$qa_content['navigation']['main']['categories']=array(
 				'url' => qa_path_html('categories'),
 				'label' => qa_lang_html('main/nav_categories'),
 			);
 
-		if (qa_get_option($qa_db, 'nav_users'))
+		if (qa_opt('nav_users'))
 			$qa_content['navigation']['main']['user']=array(
 				'url' => qa_path_html('users'),
 				'label' => qa_lang_html('main/nav_users'),
 			);
 			
-		if (qa_user_permit_error($qa_db, 'permit_post_q')!='level')
+		if (qa_user_permit_error('permit_post_q')!='level')
 			$qa_content['navigation']['main']['ask']=array(
-				'url' => qa_path_html('ask', (qa_using_categories($qa_db) && strlen($categoryid)) ? array('cat' => $categoryid) : null),
+				'url' => qa_path_html('ask', (qa_using_categories() && strlen($categoryid)) ? array('cat' => $categoryid) : null),
 				'label' => qa_lang_html('main/nav_ask'),
 			);
 		
 		
-		if (qa_get_logged_in_level($qa_db)>=QA_USER_LEVEL_ADMIN)
+		if (qa_get_logged_in_level()>=QA_USER_LEVEL_ADMIN)
 			$qa_content['navigation']['main']['admin']=array(
 				'url' => qa_path_html((isset($_COOKIE['qa_admin_last']) && isset($qa_routing[$_COOKIE['qa_admin_last']]))
 					? $_COOKIE['qa_admin_last'] : 'admin'), // use previously requested admin page if valid
@@ -353,25 +366,25 @@
 			'button_label' => qa_lang_html('main/search_button'),
 		);
 		
-		if (!qa_get_option($qa_db, 'feedback_enabled'))
+		if (!qa_opt('feedback_enabled'))
 			unset($qa_content['navigation']['footer']['feedback']);
 			
 		foreach ($qa_nav_pages_cached as $page)
 			if ( ($page['nav']=='M') || ($page['nav']=='O') || ($page['nav']=='F') )
 				qa_navigation_add_page($qa_content['navigation'][($page['nav']=='F') ? 'footer' : 'main'], $page);
 		
-		$logoshow=qa_get_option($qa_db, 'logo_show');
-		$logourl=qa_get_option($qa_db, 'logo_url');
-		$logowidth=qa_get_option($qa_db, 'logo_width');
-		$logoheight=qa_get_option($qa_db, 'logo_height');
+		$logoshow=qa_opt('logo_show');
+		$logourl=qa_opt('logo_url');
+		$logowidth=qa_opt('logo_width');
+		$logoheight=qa_opt('logo_height');
 		
 		if ($logoshow)
-			$qa_content['logo']='<A HREF="'.qa_path_html('').'" CLASS="qa-logo-link" TITLE="'.qa_html(qa_get_option($qa_db, 'site_title')).'">'.
+			$qa_content['logo']='<A HREF="'.qa_path_html('').'" CLASS="qa-logo-link" TITLE="'.qa_html(qa_opt('site_title')).'">'.
 				'<IMG SRC="'.qa_html(is_numeric(strpos($logourl, '://')) ? $logourl : $qa_root_url_relative.$logourl).'"'.
 				($logowidth ? (' WIDTH="'.$logowidth.'"') : '').($logoheight ? (' HEIGHT="'.$logoheight.'"') : '').
 				' BORDER="0"/></A>';
 		else
-			$qa_content['logo']='<A HREF="'.qa_path_html('').'" CLASS="qa-logo-link">'.qa_html(qa_get_option($qa_db, 'site_title')).'</A>';
+			$qa_content['logo']='<A HREF="'.qa_path_html('').'" CLASS="qa-logo-link">'.qa_html(qa_opt('site_title')).'</A>';
 
 		$topath=qa_get('to'); // lets user switch between login and register without losing destination page
 
@@ -381,8 +394,8 @@
 			
 		if (isset($qa_login_userid)) {
 			$qa_content['loggedin']=qa_lang_html_sub_split('main/logged_in_x', QA_EXTERNAL_USERS
-				? qa_get_logged_in_user_html($qa_db, qa_get_logged_in_user_cache($qa_db), $qa_root_url_relative, false)
-				: qa_get_one_user_html(qa_get_logged_in_handle($qa_db), false)
+				? qa_get_logged_in_user_html(qa_get_logged_in_user_cache(), $qa_root_url_relative, false)
+				: qa_get_one_user_html(qa_get_logged_in_handle(), false)
 			);
 			
 			if (!QA_EXTERNAL_USERS)
@@ -396,8 +409,36 @@
 					'url' => qa_html(@$userlinks['logout']),
 					'label' => qa_lang_html('main/nav_logout'),
 				);
+			
+			if (!QA_EXTERNAL_USERS) {
+				$source=qa_get_logged_in_source();
 				
+				$modulenames=qa_list_modules('login');
+				
+				foreach ($modulenames as $tryname) {
+					$module=qa_load_module('login', $tryname);
+					
+					if (method_exists($module, 'match_source') && $module->match_source($source) && method_exists($module, 'logout_html')) {
+						ob_start();
+						$module->logout_html(qa_path('logout'));
+						$qa_content['navigation']['user']['logout']=array('label' => ob_get_clean());
+					}
+				}
+			}
+			
 		} else {
+			$modulenames=qa_list_modules('login');
+			
+			foreach ($modulenames as $tryname) {
+				$module=qa_load_module('login', $tryname);
+				
+				if (method_exists($module, 'login_html')) {
+					ob_start();
+					$module->login_html(isset($topath) ? ($qa_root_url_relative.$topath) : qa_path($qa_request, $_GET));
+					$qa_content['navigation']['user'][$tryname]=array('label' => ob_get_clean());
+				}
+			}
+			
 			if (!empty($userlinks['login']))
 				$qa_content['navigation']['user']['login']=array(
 					'url' => qa_html(@$userlinks['login']),
@@ -413,14 +454,16 @@
 		
 		if ($voting) {
 			$qa_content['error']=@$qa_vote_error;
-			$qa_content['script_src']=array('jxs_compressed.js', 'qa-votes.js?'.QA_VERSION);
+			$qa_content['script_rel']=array('qa-content/jxs_compressed.js', 'qa-content/qa-votes.js?'.QA_VERSION);
 		} else
-			$qa_content['script_src']=array();
+			$qa_content['script_rel']=array();
 			
 		$qa_content['script_var']=array(
 			'qa_root' => $qa_root_url_relative,
 			'qa_request' => $qa_request,
 		);
+		
+		return $qa_content;
 	}
 
 
@@ -435,50 +478,55 @@
 	if (qa_is_http_post())
 		foreach ($_POST as $field => $value)
 			if (strpos($field, 'vote_')===0) {
-				@list($dummy, $postid, $vote)=explode('_', $field);
+				@list($dummy, $postid, $vote, $anchor)=explode('_', $field);
 				
 				if (isset($postid) && isset($vote)) {
 					require_once QA_INCLUDE_DIR.'qa-app-votes.php';
-					$qa_vote_error=qa_user_vote_error($qa_db, $qa_login_userid, $postid, $vote, $qa_request);
+					$qa_vote_error=qa_user_vote_error($qa_login_userid, $postid, $vote, $qa_request);
+
+					if (!$qa_vote_error)
+						qa_redirect($qa_request, $_GET, null, null, $anchor);
 					break;
 				}
 			}
 
 
-//	Now include the appropriate PHP file for the page in the request
+//	Otherwise include the appropriate PHP file for the page in the request
 	
-	if (isset($qa_routing[$qa_request_lc])) {
-		if ($qa_request_lc_parts[0]=='admin') {
-			$_COOKIE['qa_admin_last']=$qa_request_lc; // for navigation tab now...
-			setcookie('qa_admin_last', $_COOKIE['qa_admin_last'], 0, '/'); // ...and in future
+	if (!isset($qa_content)) {
+		if (isset($qa_routing[$qa_request_lc])) {
+			if ($qa_request_lc_parts[0]=='admin') {
+				$_COOKIE['qa_admin_last']=$qa_request_lc; // for navigation tab now...
+				setcookie('qa_admin_last', $_COOKIE['qa_admin_last'], 0, '/'); // ...and in future
+			}
+			
+			$qa_template=$qa_request_lc_parts[0];
+			$qa_content=require $qa_routing[$qa_request_lc];
+	
+		} elseif (is_numeric($qa_request_parts[0])) {
+			$pass_questionid=$qa_request_parts[0]; // effectively a parameter that is passed to file
+			$qa_template='question';
+			$qa_content=require QA_INCLUDE_DIR.'qa-page-question.php';
+	
+		} elseif ( ($qa_request_lc_parts[0]=='tag') && strlen($qa_request_parts[1]) ) {
+			$pass_tag=$qa_request_parts[1]; // effectively a parameter that is passed to file
+			$qa_template='tag';
+			$qa_content=require QA_INCLUDE_DIR.'qa-page-tag.php';
+	
+		} elseif ( ($qa_request_lc_parts[0]=='user') && strlen($qa_request_parts[1]) ) {
+			$pass_handle=$qa_request_parts[1]; // effectively a parameter that is passed to file
+			$qa_template='user';
+			$qa_content=require QA_INCLUDE_DIR.'qa-page-user.php';
+	
+		} elseif ( ($qa_request_lc_parts[0]=='ip') && (long2ip(ip2long(@$qa_request_parts[1]))==@$qa_request_parts[1]) ) {
+			$pass_ip=$qa_request_parts[1]; // effectively a parameter that is passed to file
+			$qa_template='ip';
+			$qa_content=require QA_INCLUDE_DIR.'qa-page-ip.php';
+	
+		} else {
+			$qa_template='home';
+			$qa_content=require QA_INCLUDE_DIR.'qa-page-home.php'; // handles many other pages
 		}
-		
-		$qa_template=$qa_request_lc_parts[0];
-		require $qa_routing[$qa_request_lc];
-
-	} elseif (is_numeric($qa_request_parts[0])) {
-		$pass_questionid=$qa_request_parts[0]; // effectively a parameter that is passed to file
-		$qa_template='question';
-		require QA_INCLUDE_DIR.'qa-page-question.php';
-
-	} elseif ( ($qa_request_lc_parts[0]=='tag') && !empty($qa_request_parts[1]) ) {
-		$pass_tag=$qa_request_parts[1]; // effectively a parameter that is passed to file
-		$qa_template='tag';
-		require QA_INCLUDE_DIR.'qa-page-tag.php';
-
-	} elseif ( ($qa_request_lc_parts[0]=='user') && !empty($qa_request_parts[1]) ) {
-		$pass_handle=$qa_request_parts[1]; // effectively a parameter that is passed to file
-		$qa_template='user';
-		require QA_INCLUDE_DIR.'qa-page-user.php';
-
-	} elseif ( ($qa_request_lc_parts[0]=='ip') && (long2ip(ip2long(@$qa_request_parts[1]))==@$qa_request_parts[1]) ) {
-		$pass_ip=$qa_request_parts[1]; // effectively a parameter that is passed to file
-		$qa_template='ip';
-		require QA_INCLUDE_DIR.'qa-page-ip.php';
-
-	} else {
-		$qa_template='home';
-		require QA_INCLUDE_DIR.'qa-page-home.php'; // handles many other pages
 	}
 	
 	
@@ -491,8 +539,30 @@
 		
 		$requestpart=trim(strtolower($requestpart));
 		
-		return isset($qa_routing[$requestpart]) || is_numeric($requestpart) ||
-			($requestpart=='tag') || ($requestpart=='user') || ($requestpart=='ip') || ($requestpart=='feed') || ($requestpart=='install') || ($requestpart=='url');
+		if (isset($qa_routing[$requestpart]) || is_numeric($requestpart))
+			return true;
+			
+		switch ($requestpart) {
+			case 'tag':
+			case 'user':
+			case 'ip':
+			case 'feed':
+			case 'install':
+			case 'url':
+			case 'image':
+				return true;
+		}
+		
+		$modulenames=qa_list_modules('page');
+		
+		foreach ($modulenames as $tryname) {
+			$trypage=qa_load_module('page', $tryname);
+
+			if (method_exists($trypage, 'match_request') && $trypage->match_request($requestpart))
+				return true;
+		}
+			
+		return false;
 	}
 	
 	
@@ -511,9 +581,26 @@
 					$qa_content['navigation'][$navtype][$navprefix]['selected']=true;
 
 
+//	Handle maintenance mode
+
+	if (qa_opt('site_maintenance') && ($qa_request_lc!='login')) {
+		if (qa_get_logged_in_level()>=QA_USER_LEVEL_ADMIN) {
+			if (!isset($qa_content['error']))
+				$qa_content['error']=strtr(qa_lang_html('admin/maintenance_admin_only'), array(
+					'^1' => '<A HREF="'.qa_path_html('admin').'">',
+					'^2' => '</A>',
+				));
+
+		} else {
+			$qa_content=qa_content_prepare();
+			$qa_content['error']=qa_lang_html('misc/site_in_maintenance');
+		}
+	}
+
+
 //	Load the appropriate theme class
 
-	$themeclass=qa_load_theme_class(qa_get_option($qa_db, 'site_theme'), $qa_template, $qa_content, $qa_request);
+	$themeclass=qa_load_theme_class(qa_opt('site_theme'), $qa_template, $qa_content, $qa_request);
 
 
 //	Set HTTP header and output start of HTML document
@@ -532,7 +619,7 @@
 	$themeclass->output(
 		'<HEAD>',
 		'<META HTTP-EQUIV="Content-type" CONTENT="text/html; charset=utf-8"/>',
-		'<TITLE>'.((empty($qa_content['title']) || empty($qa_request)) ? '' : (strip_tags($qa_content['title']).' - ')).qa_html(qa_get_option($qa_db, 'site_title')).'</TITLE>'
+		'<TITLE>'.((empty($qa_content['title']) || empty($qa_request)) ? '' : (strip_tags($qa_content['title']).' - ')).qa_html(qa_opt('site_title')).'</TITLE>'
 	);
 	
 	if (!empty($qa_content['description']))
@@ -541,7 +628,13 @@
 	if (!empty($qa_content['keywords']))
 		$themeclass->output('<META NAME="keywords" CONTENT="'.$qa_content['keywords'].'"/>');
 			// as far as I know, META keywords have zero effect on search rankings or listings
-	
+			
+	if (!empty($qa_content['canonical']))
+		$themeclass->output('<LINK REL="canonical" HREF="'.$qa_content['canonical'].'"/>');
+		
+	if (!empty($qa_content['feed']['url']))
+		$themeclass->output('<LINK REL="alternate" TYPE="application/rss+xml" HREF="'.$qa_content['feed']['url'].'" TITLE="'.@$qa_content['feed']['label'].'"/>');
+		
 	$themeclass->output('<SCRIPT TYPE="text/javascript"><!--');
 
 	if (isset($qa_content['script_var']))
@@ -575,7 +668,7 @@
 		foreach ($qa_content['script_onloads'] as $script) {
 			$themeclass->output("\t");
 			
-			foreach ($script as $scriptline)
+			foreach ((array)$script as $scriptline)
 				$themeclass->output("\t".$scriptline);
 		}
 
@@ -584,15 +677,19 @@
 
 	$themeclass->output('--></SCRIPT>');
 	
+	if (isset($qa_content['script_rel']))
+		foreach ($qa_content['script_rel'] as $script_rel)
+			$themeclass->output('<SCRIPT SRC="'.qa_html($qa_root_url_relative.$script_rel).'" TYPE="text/javascript"></SCRIPT>');
+
 	if (isset($qa_content['script_src']))
 		foreach ($qa_content['script_src'] as $script_src)
-			$themeclass->output('<SCRIPT SRC="'.qa_html($qa_root_url_relative.'qa-content/'.$script_src).'" TYPE="text/javascript"></SCRIPT>');
+			$themeclass->output('<SCRIPT SRC="'.qa_html($script_src).'" TYPE="text/javascript"></SCRIPT>');
 
 	$themeclass->head_css();
 	$themeclass->head_custom();
 
-	if (qa_get_option($qa_db, 'show_custom_in_head'))
-		$themeclass->output_raw(qa_get_option($qa_db, 'custom_in_head'));
+	if (qa_opt('show_custom_in_head'))
+		$themeclass->output_raw(qa_opt('custom_in_head'));
 
 	$themeclass->output('</HEAD>');
 
@@ -603,13 +700,13 @@
 	$themeclass->body_tags();
 	$themeclass->output('>');
 
-	if (qa_get_option($qa_db, 'show_custom_header'))
-		$themeclass->output_raw(qa_get_option($qa_db, 'custom_header'));
+	if (qa_opt('show_custom_header'))
+		$themeclass->output_raw(qa_opt('custom_header'));
 
 	$themeclass->body_content();
 
-	if (qa_get_option($qa_db, 'show_custom_footer'))
-		$themeclass->output_raw(qa_get_option($qa_db, 'custom_footer'));
+	if (qa_opt('show_custom_footer'))
+		$themeclass->output_raw(qa_opt('custom_footer'));
 
 	$themeclass->output('</BODY>');
 

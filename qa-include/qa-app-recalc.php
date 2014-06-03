@@ -1,34 +1,28 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-recalc.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Managing database recalculations (clean-up operations) and status messages
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 	
 /*
@@ -72,7 +66,7 @@
 	require_once QA_INCLUDE_DIR.'qa-app-post-update.php';
 
 
-	function qa_recalc_perform_step($db, &$state)
+	function qa_recalc_perform_step(&$state)
 /*
 	Advance the recalculation operation represented by $state by a single step.
 	$state can also be the name of a recalculation operation on its own.
@@ -84,201 +78,204 @@
 		
 		switch ($operation) {
 			case 'doreindexposts':
-				qa_recalc_transition($db, $state, 'doreindexposts_postcount');
+				qa_recalc_transition($state, 'doreindexposts_postcount');
 				break;
 				
 			case 'doreindexposts_postcount':
-				qa_db_qcount_update($db);
-				qa_db_acount_update($db);
-				qa_db_ccount_update($db);
+				qa_db_qcount_update();
+				qa_db_acount_update();
+				qa_db_ccount_update();
 
-				qa_recalc_transition($db, $state, 'doreindexposts_reindex');
+				qa_recalc_transition($state, 'doreindexposts_reindex');
 				break;
 				
 			case 'doreindexposts_reindex':
-				$posts=qa_db_posts_get_for_reindexing($db, $next, 10);
+				$posts=qa_db_posts_get_for_reindexing($next, 10);
 				
 				if (count($posts)) {
+					require_once QA_INCLUDE_DIR.'qa-app-format.php';
+
 					$lastpostid=max(array_keys($posts));
 					
-					qa_db_prepare_for_reindexing($db, $next, $lastpostid);
+					qa_db_prepare_for_reindexing($next, $lastpostid);
 		
 					foreach ($posts as $postid => $post)
-						qa_post_index($db, $postid, $post['type'], $post['questionid'], $post['title'], $post['content'], $post['tags'], true);
+						qa_post_index($postid, $post['type'], $post['questionid'], $post['title'],
+							qa_viewer_text($post['content'], $post['format']), $post['tags'], true);
 					
 					$next=1+$lastpostid;
 					$done+=count($posts);
 					$continue=true;
 
 				} else {
-					qa_db_truncate_indexes($db, $next);
-					qa_recalc_transition($db, $state, 'doreindexposts_wordcount');
+					qa_db_truncate_indexes($next);
+					qa_recalc_transition($state, 'doreindexposts_wordcount');
 				}
 				break;
 				
 			case 'doreindexposts_wordcount':
-				$wordids=qa_db_words_prepare_for_recounting($db, $next, 1000);
+				$wordids=qa_db_words_prepare_for_recounting($next, 1000);
 				
 				if (count($wordids)) {
 					$lastwordid=max($wordids);
 					
-					qa_db_words_recount($db, $next, $lastwordid);
+					qa_db_words_recount($next, $lastwordid);
 					
 					$next=1+$lastwordid;
 					$done+=count($wordids);
 					$continue=true;
 			
 				} else {
-					qa_db_tagcount_update($db); // this is quick so just do it here
-					qa_recalc_transition($db, $state, 'doreindexposts_complete');
+					qa_db_tagcount_update(); // this is quick so just do it here
+					qa_recalc_transition($state, 'doreindexposts_complete');
 				}
 				break;
 				
 			case 'dorecountposts':
-				qa_recalc_transition($db, $state, 'dorecountposts_postcount');
+				qa_recalc_transition($state, 'dorecountposts_postcount');
 				break;
 				
 			case 'dorecountposts_postcount':
-				qa_db_qcount_update($db);
-				qa_db_acount_update($db);
-				qa_db_ccount_update($db);
-				qa_db_unaqcount_update($db);
+				qa_db_qcount_update();
+				qa_db_acount_update();
+				qa_db_ccount_update();
+				qa_db_unaqcount_update();
 
-				qa_recalc_transition($db, $state, 'dorecountposts_recount');
+				qa_recalc_transition($state, 'dorecountposts_recount');
 				break;
 				
 			case 'dorecountposts_recount':
-				$postids=qa_db_posts_get_for_recounting($db, $next, 1000);
+				$postids=qa_db_posts_get_for_recounting($next, 1000);
 				
 				if (count($postids)) {
 					$lastpostid=max($postids);
 					
-					qa_db_posts_recount($db, $next, $lastpostid);
+					qa_db_posts_recount($next, $lastpostid);
 					
 					$next=1+$lastpostid;
 					$done+=count($postids);
 					$continue=true;
 
 				} else {
-					qa_recalc_transition($db, $state, 'dorecountposts_complete');
+					qa_recalc_transition($state, 'dorecountposts_complete');
 				}
 				break;
 			
 			case 'dorecalcpoints':
-				qa_recalc_transition($db, $state, 'dorecalcpoints_usercount');
+				qa_recalc_transition($state, 'dorecalcpoints_usercount');
 				break;
 				
 			case 'dorecalcpoints_usercount':
-				qa_db_userpointscount_update($db); // for progress update - not necessarily accurate
-				qa_recalc_transition($db, $state, 'dorecalcpoints_recalc');
+				qa_db_userpointscount_update(); // for progress update - not necessarily accurate
+				qa_recalc_transition($state, 'dorecalcpoints_recalc');
 				break;
 				
 			case 'dorecalcpoints_recalc':
-				$userids=qa_db_users_get_for_recalc_points($db, $next, 10);
+				$userids=qa_db_users_get_for_recalc_points($next, 10);
 				
 				if (count($userids)) {
 					$lastuserid=max($userids);
 					
-					qa_db_users_recalc_points($db, $next, $lastuserid);
+					qa_db_users_recalc_points($next, $lastuserid);
 					
 					$next=1+$lastuserid;
 					$done+=count($userids);
 					$continue=true;
 				
 				} else {
-					qa_db_truncate_userpoints($db, $next);
-					qa_db_userpointscount_update($db); // quick so just do it here
-					qa_recalc_transition($db, $state, 'dorecalcpoints_complete');
+					qa_db_truncate_userpoints($next);
+					qa_db_userpointscount_update(); // quick so just do it here
+					qa_recalc_transition($state, 'dorecalcpoints_complete');
 				}
 				break;
 				
 			case 'dorecalccategories':
-				qa_recalc_transition($db, $state, 'dorecalccategories_postcount');
+				qa_recalc_transition($state, 'dorecalccategories_postcount');
 				break;
 			
 			case 'dorecalccategories_postcount':
-				qa_db_acount_update($db);
-				qa_db_ccount_update($db);
+				qa_db_acount_update();
+				qa_db_ccount_update();
 				
-				qa_recalc_transition($db, $state, 'dorecalccategories_postupdate');
+				qa_recalc_transition($state, 'dorecalccategories_postupdate');
 				break;
 				
 			case 'dorecalccategories_postupdate':
-				$postids=qa_db_posts_get_for_recategorizing($db, $next, 1000);
+				$postids=qa_db_posts_get_for_recategorizing($next, 1000);
 				
 				if (count($postids)) {
 					$lastpostid=max($postids);
 					
-					qa_db_posts_recategorize($db, $next, $lastpostid);
+					qa_db_posts_recategorize($next, $lastpostid);
 					
 					$next=1+$lastpostid;
 					$done+=count($postids);
 					$continue=true;
 				
 				} else {
-					qa_recalc_transition($db, $state, 'dorecalccategories_recount');
+					qa_recalc_transition($state, 'dorecalccategories_recount');
 				}
 				break;
 			
 			case 'dorecalccategories_recount':
-				qa_db_categories_recount($db);
-				qa_recalc_transition($db, $state, 'dorecalccategories_complete');
+				qa_db_categories_recount();
+				qa_recalc_transition($state, 'dorecalccategories_complete');
 				break;
 				
 			case 'dodeletehidden':
-				qa_recalc_transition($db, $state, 'dodeletehidden_comments');
+				qa_recalc_transition($state, 'dodeletehidden_comments');
 				break;
 				
 			case 'dodeletehidden_comments':
-				$posts=qa_db_posts_get_for_deleting($db, 'C', $next, 1);
+				$posts=qa_db_posts_get_for_deleting('C', $next, 1);
 				
 				if (count($posts)) {
 					$postid=$posts[0];
 					
-					$oldcomment=qa_db_single_select($db, qa_db_full_post_selectspec(null, $postid));
-					qa_comment_delete($db, $oldcomment);
+					$oldcomment=qa_db_single_select(qa_db_full_post_selectspec(null, $postid));
+					qa_comment_delete($oldcomment);
 					
 					$next=1+$postid;
 					$done++;
 					$continue=true;
 				
 				} else
-					qa_recalc_transition($db, $state, 'dodeletehidden_answers');
+					qa_recalc_transition($state, 'dodeletehidden_answers');
 				break;
 			
 			case 'dodeletehidden_answers':
-				$posts=qa_db_posts_get_for_deleting($db, 'A', $next, 1);
+				$posts=qa_db_posts_get_for_deleting('A', $next, 1);
 				
 				if (count($posts)) {
 					$postid=$posts[0];
 					
-					$oldanswer=qa_db_single_select($db, qa_db_full_post_selectspec(null, $postid));
-					$question=qa_db_single_select($db, qa_db_full_post_selectspec(null, $oldanswer['parentid']));
-					qa_answer_delete($db, $oldanswer, $question);
+					$oldanswer=qa_db_single_select(qa_db_full_post_selectspec(null, $postid));
+					$question=qa_db_single_select(qa_db_full_post_selectspec(null, $oldanswer['parentid']));
+					qa_answer_delete($oldanswer, $question);
 					
 					$next=1+$postid;
 					$done++;
 					$continue=true;
 				
 				} else
-					qa_recalc_transition($db, $state, 'dodeletehidden_questions');
+					qa_recalc_transition($state, 'dodeletehidden_questions');
 				break;
 
 			case 'dodeletehidden_questions':
-				$posts=qa_db_posts_get_for_deleting($db, 'Q', $next, 1);
+				$posts=qa_db_posts_get_for_deleting('Q', $next, 1);
 				
 				if (count($posts)) {
 					$postid=$posts[0];
 					
-					$oldquestion=qa_db_single_select($db, qa_db_full_post_selectspec(null, $postid));
-					qa_question_delete($db, $oldquestion);
+					$oldquestion=qa_db_single_select(qa_db_full_post_selectspec(null, $postid));
+					qa_question_delete($oldquestion);
 					
 					$next=1+$postid;
 					$done++;
 					$continue=true;
 				
 				} else
-					qa_recalc_transition($db, $state, 'dodeletehidden_complete');
+					qa_recalc_transition($state, 'dodeletehidden_complete');
 				break;
 
 			default:
@@ -293,16 +290,16 @@
 	}
 	
 
-	function qa_recalc_transition($db, &$state, $operation)
+	function qa_recalc_transition(&$state, $operation)
 /*
 	Change the $state to represent the beginning of a new $operation
 */
 	{
-		$state=$operation.','.qa_recalc_stage_length($db, $operation).',0,0';
+		$state=$operation.','.qa_recalc_stage_length($operation).',0,0';
 	}
 
 		
-	function qa_recalc_stage_length($db, $operation)
+	function qa_recalc_stage_length($operation)
 /*
 	Return how many steps there will be in recalculation $operation
 */
@@ -310,32 +307,32 @@
 		switch ($operation) {
 			case 'doreindexposts_reindex':
 			case 'dorecountposts_recount':
-				$length=qa_get_option($db, 'cache_qcount')+qa_get_option($db, 'cache_acount')+qa_get_option($db, 'cache_ccount');
+				$length=qa_opt('cache_qcount')+qa_opt('cache_acount')+qa_opt('cache_ccount');
 				break;
 			
 			case 'doreindexposts_wordcount':
-				$length=qa_db_count_words($db);
+				$length=qa_db_count_words();
 				break;
 				
 			case 'dorecalcpoints_recalc':
-				$length=qa_get_option($db, 'cache_userpointscount');
+				$length=qa_opt('cache_userpointscount');
 				break;
 				
 			case 'dorecalccategories_postupdate':
-				$length=qa_get_option($db, 'cache_acount')+qa_get_option($db, 'cache_ccount')+
-					qa_db_count_posts($db, 'A_HIDDEN')+qa_db_count_posts($db, 'C_HIDDEN');
+				$length=qa_opt('cache_acount')+qa_opt('cache_ccount')+
+					qa_db_count_posts('A_HIDDEN')+qa_db_count_posts('C_HIDDEN');
 				break;
 				
 			case 'dodeletehidden_comments':
-				$length=count(qa_db_posts_get_for_deleting($db, 'C'));
+				$length=count(qa_db_posts_get_for_deleting('C'));
 				break;
 				
 			case 'dodeletehidden_answers':
-				$length=count(qa_db_posts_get_for_deleting($db, 'A'));
+				$length=count(qa_db_posts_get_for_deleting('A'));
 				break;
 				
 			case 'dodeletehidden_questions':
-				$length=count(qa_db_posts_get_for_deleting($db, 'Q'));
+				$length=count(qa_db_posts_get_for_deleting('Q'));
 				break;
 			
 			default:

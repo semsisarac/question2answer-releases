@@ -1,34 +1,28 @@
 <?php
 
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-question-post.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: More control for question page if it's submitted by HTTP POST
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -44,63 +38,70 @@
 
 //	Process incoming answer (or button)
 
-	if ((qa_clicked('doansweradd') || qa_clicked('doanswerq')) && $question['answerbutton'])
-		switch (qa_user_permit_error($qa_db, 'permit_post_a', 'A')) {
-			case 'login':
-				$pageerror=qa_insert_login_links(qa_lang_html('question/answer_must_login'), $qa_request);
-				break;
-				
-			case 'confirm':
-				$pageerror=qa_insert_login_links(qa_lang_html('question/answer_must_confirm'), $qa_request);
-				break;
-				
-			case 'limit':
-				$pageerror=qa_lang_html('question/answer_limit');
-				break;
-			
-			default:
-				$pageerror=qa_lang_html('users/no_permission');
-				break;
-				
-			case false:
-				if (qa_clicked('doansweradd')) {
-					$incontent=qa_post_text('content');
-					$innotify=qa_post_text('notify') ? true : false;
-					$inemail=qa_post_text('email');
-				
-					$errors=qa_answer_validate($qa_db, $incontent, $innotify, $inemail);
+	if ($question['answerbutton']) {
+		if (qa_clicked('doanswerq'))
+			qa_redirect($qa_request, array('state' => 'answer'));
+		
+		if (qa_clicked('doansweradd') || ($qa_state=='answer'))
+			switch (qa_user_permit_error('permit_post_a', 'A')) {
+				case 'login':
+					$pageerror=qa_insert_login_links(qa_lang_html('question/answer_must_login'), $qa_request);
+					break;
 					
-					if ($usecaptcha)
-						qa_captcha_validate($qa_db, $_POST, $errors);
+				case 'confirm':
+					$pageerror=qa_insert_login_links(qa_lang_html('question/answer_must_confirm'), $qa_request);
+					break;
 					
-					if (empty($errors)) {
-						$isduplicate=false;
-						foreach ($answers as $answer)
-							if (!$answer['hidden'])
-								if (implode(' ', qa_string_to_words($answer['content'])) == implode(' ', qa_string_to_words($incontent)))
-									$isduplicate=true;
+				case 'limit':
+					$pageerror=qa_lang_html('question/answer_limit');
+					break;
+				
+				default:
+					$pageerror=qa_lang_html('users/no_permission');
+					break;
+					
+				case false:
+					if (qa_clicked('doansweradd')) {
+						$innotify=qa_post_text('notify') ? true : false;
+						$inemail=qa_post_text('email');
 						
-						if (!$isduplicate) {
-							if (!isset($qa_login_userid))
-								$qa_cookieid=qa_cookie_get_create($qa_db); // create a new cookie if necessary
-				
-							$answerid=qa_answer_create($qa_db, $qa_login_userid, $qa_cookieid, $incontent, $innotify, $inemail, $question);
-							qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'a_post', $questionid, $answerid, null);
-							$jumptoanchor=qa_anchor('A', $answerid);
+						qa_get_post_content('editor', 'content', $ineditor, $incontent, $informat, $intext);
+						
+						$errors=qa_answer_validate($incontent, $informat, $intext, $innotify, $inemail);
+						
+						if ($usecaptcha)
+							qa_captcha_validate($_POST, $errors);
+						
+						if (empty($errors)) {
+							$isduplicate=false;
+							foreach ($answers as $answer)
+								if (!$answer['hidden'])
+									if (implode(' ', qa_string_to_words($answer['content'])) == implode(' ', qa_string_to_words($incontent)))
+										$isduplicate=true;
 							
+							if (!$isduplicate) {
+								if (!isset($qa_login_userid))
+									$qa_cookieid=qa_cookie_get_create(); // create a new cookie if necessary
+					
+								$answerid=qa_answer_create($qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid,
+									$incontent, $informat, $intext, $innotify, $inemail, $question);
+								qa_report_write_action($qa_login_userid, $qa_cookieid, 'a_post', $questionid, $answerid, null);
+								qa_redirect($qa_request, null, null, null, qa_anchor('A', $answerid));
+								
+							} else {
+								$pageerror=qa_lang_html('question/duplicate_content');
+							}
+	
 						} else {
-							$pageerror=qa_lang_html('question/duplicate_content');
+							$formtype='a_add'; // show form again
 						}
 
 					} else {
-						$formtype='a_add'; // show form again
+						$formtype='a_add'; // show form as if first time
 					}
-
-				} else {
-					$formtype='a_add'; // show form as if first time
-				}
-				break;
-		}
+					break;
+			}
+	}
 
 
 //	Process incoming selection of the best answer
@@ -116,9 +117,10 @@
 			}
 	
 		if (isset($inselect)) {
-			qa_question_set_selchildid($qa_db, $qa_login_userid, $qa_cookieid, $question, strlen($inselect) ? $inselect : null, $answers);
-			qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, strlen($inselect) ? 'a_select' : 'a_unselect',
+			qa_question_set_selchildid($qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $question, strlen($inselect) ? $inselect : null, $answers);
+			qa_report_write_action($qa_login_userid, $qa_cookieid, strlen($inselect) ? 'a_select' : 'a_unselect',
 				$questionid, strlen($inselect) ? $answerid : $question['selchildid'], null);
+			qa_redirect($qa_request, null, null, null, qa_anchor('A', $answerid));
 		}
 	}
 
@@ -126,25 +128,28 @@
 //	Process hiding or showing or claiming or comment on a question
 		
 	if (qa_clicked('dohideq') && $question['hideable']) {
-		qa_question_set_hidden($qa_db, $question, true, $qa_login_userid, $answers, $commentsfollows);
-		qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'q_hide', $questionid, null, null);
+		qa_question_set_hidden($question, true, $qa_login_userid, $answers, $commentsfollows);
+		qa_report_write_action($qa_login_userid, $qa_cookieid, 'q_hide', $questionid, null, null);
+		qa_redirect($qa_request);
 	}
 	
 	if (qa_clicked('doshowq') && $question['reshowable']) {
-		qa_question_set_hidden($qa_db, $question, false, $qa_login_userid, $answers, $commentsfollows);
-		qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'q_reshow', $questionid, null, null);
+		qa_question_set_hidden($question, false, $qa_login_userid, $answers, $commentsfollows);
+		qa_report_write_action($qa_login_userid, $qa_cookieid, 'q_reshow', $questionid, null, null);
+		qa_redirect($qa_request);
 	}
 	
 	if (qa_clicked('dodeleteq') && $question['deleteable']) {
-		qa_question_delete($qa_db, $question);
-		qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'q_delete', $questionid, null, null);
+		qa_question_delete($question);
+		qa_report_write_action($qa_login_userid, $qa_cookieid, 'q_delete', $questionid, null, null);
 		qa_redirect(''); // redirect since question has gone
 	}
 	
 	if (qa_clicked('doclaimq') && $question['claimable']) {
-		if (qa_limits_remaining($qa_db, $qa_login_userid, 'Q')) { // already checked 'permit_post_q'
-			qa_question_set_userid($qa_db, $question, $qa_login_userid);
-			qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'q_claim', $questionid, null, null);
+		if (qa_limits_remaining($qa_login_userid, 'Q')) { // already checked 'permit_post_q'
+			qa_question_set_userid($question, $qa_login_userid);
+			qa_report_write_action($qa_login_userid, $qa_cookieid, 'q_claim', $questionid, null, null);
+			qa_redirect($qa_request);
 
 		} else
 			$pageerror=qa_lang_html('question/ask_limit');
@@ -155,42 +160,48 @@
 
 	if ($question['editbutton']) {
 		if (qa_clicked('docancel'))
-			;
+			qa_redirect($qa_request);
 		
-		elseif (qa_clicked('doeditq') && qa_page_q_permit_edit($question, 'permit_edit_q'))
-			$formtype='q_edit';
+		elseif (qa_clicked('doeditq'))
+			qa_redirect($qa_request, array('state' => 'edit-'.$questionid));
 			
 		elseif (qa_clicked('dosaveq') && qa_page_q_permit_edit($question, 'permit_edit_q')) {
 			$incategoryid=qa_post_text('category');
 			$inqtitle=qa_post_text('qtitle');
-			$inqcontent=qa_post_text('qcontent');
+
 			$inqtags=qa_post_text('qtags');
-			
-			$tagstring=qa_using_tags($qa_db) ? qa_tags_to_tagstring(array_unique(qa_string_to_words($inqtags))) : $question['tags'];
+			$tagstring=qa_using_tags() ? qa_tags_to_tagstring(array_unique(qa_string_to_words($inqtags))) : $question['tags'];
+	
+			qa_get_post_content('editor', 'qcontent', $ineditor, $inqcontent, $inqformat, $inqtext);
+
 			$innotify=qa_post_text('notify') ? true : false;
 			$inemail=qa_post_text('email');
 			
-			$qerrors=qa_question_validate($qa_db, $inqtitle, $inqcontent, $tagstring, $innotify, $inemail);
+			$qerrors=qa_question_validate($inqtitle, $inqcontent, $inqformat, $inqtext, $tagstring, $innotify, $inemail);
 			
 			if (empty($qerrors)) {
 				$setnotify=$question['isbyuser'] ? qa_combine_notify_email($question['userid'], $innotify, $inemail) : $question['notify'];
 				
-				if (qa_using_categories($qa_db) && ($incategoryid!=$question['categoryid']))
-					qa_question_set_category($qa_db, $question, strlen($incategoryid) ? $incategoryid : null, $qa_login_userid, $answers, $commentsfollows);
+				if (qa_using_categories() && ($incategoryid!=$question['categoryid']))
+					qa_question_set_category($question, strlen($incategoryid) ? $incategoryid : null, $qa_login_userid, $answers, $commentsfollows);
 				
-				qa_question_set_text($qa_db, $question, $inqtitle, $inqcontent, $tagstring, $setnotify, $qa_login_userid);
-				qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'q_edit', $questionid, null, null);
+				qa_question_set_content($question, $inqtitle, $inqcontent, $inqformat, $inqtext, $tagstring, $setnotify, $qa_login_userid);
+				qa_report_write_action($qa_login_userid, $qa_cookieid, 'q_edit', $questionid, null, null);
 				
 				if (qa_q_request($questionid, $question['title']) != qa_q_request($questionid, $inqtitle))
 					qa_redirect(qa_q_request($questionid, $inqtitle)); // redirect if URL changed
+				else
+					qa_redirect($qa_request);
 			
 			} else
 				$formtype='q_edit'; // keep editing if an error
-		}
+
+		} else if (($qa_state==('edit-'.$questionid)) && qa_page_q_permit_edit($question, 'permit_edit_q'))
+			$formtype='q_edit';
 		
 		if ($formtype=='q_edit') { // get tags for auto-completion
-			if (qa_get_option($qa_db, 'do_complete_tags'))
-				$completetags=array_keys(qa_db_select_with_pending($qa_db, qa_db_popular_tags_selectspec(0, QA_DB_RETRIEVE_COMPLETE_TAGS)));
+			if (qa_opt('do_complete_tags'))
+				$completetags=array_keys(qa_db_select_with_pending(qa_db_popular_tags_selectspec(0, QA_DB_RETRIEVE_COMPLETE_TAGS)));
 			else
 				$completetags=array();
 		}
@@ -198,36 +209,42 @@
 	
 
 //	Process adding a comment to question (shows form or processes it)
-
-	if (qa_clicked('docommentq'))
-		qa_page_q_do_comment(null);
+	
+	if ($question['commentbutton']) {
+		if (qa_clicked('docommentq'))
+			qa_redirect($qa_request, array('state' => 'comment-'.$questionid));
+			
+		if (qa_clicked('docommentaddq') || ($qa_state==('comment-'.$questionid)))
+			qa_page_q_do_comment(null);
+	}
 
 
 //	Process hide, show, delete, edit, save, comment or follow-on button for answers
 
 	foreach ($answers as $answerid => $answer) {
 		if (qa_clicked('dohidea_'.$answerid) && $answer['hideable']) {
-			qa_answer_set_hidden($qa_db, $answer, true, $qa_login_userid, $question, $commentsfollows);
-			qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'a_hide', $questionid, $answerid, null);
-			$jumptoanchor=qa_anchor('A', $answerid);
+			qa_answer_set_hidden($answer, true, $qa_login_userid, $question, $commentsfollows);
+			qa_report_write_action($qa_login_userid, $qa_cookieid, 'a_hide', $questionid, $answerid, null);
+			qa_redirect($qa_request, null, null, null, qa_anchor('A', $answerid));
 		}
 		
 		if (qa_clicked('doshowa_'.$answerid) && $answer['reshowable']) {
-			qa_answer_set_hidden($qa_db, $answer, false, $qa_login_userid, $question, $commentsfollows);
-			qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'a_reshow', $questionid, $answerid, null);
-			$jumptoanchor=qa_anchor('A', $answerid);
+			qa_answer_set_hidden($answer, false, $qa_login_userid, $question, $commentsfollows);
+			qa_report_write_action($qa_login_userid, $qa_cookieid, 'a_reshow', $questionid, $answerid, null);
+			qa_redirect($qa_request, null, null, null, qa_anchor('A', $answerid));
 		}
 		
 		if (qa_clicked('dodeletea_'.$answerid) && $answer['deleteable']) {
-			qa_answer_delete($qa_db, $answer, $question);
-			qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'a_delete', $questionid, $answerid, null);
+			qa_answer_delete($answer, $question);
+			qa_report_write_action($qa_login_userid, $qa_cookieid, 'a_delete', $questionid, $answerid, null);
+			qa_redirect($qa_request);
 		}
 		
 		if (qa_clicked('doclaima_'.$answerid) && $answer['claimable']) {
-			if (qa_limits_remaining($qa_db, $qa_login_userid, 'A')) { // already checked 'permit_post_a'
-				qa_answer_set_userid($qa_db, $answer, $qa_login_userid);
-				qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'a_claim', $questionid, $answerid, null);
-				$jumptoanchor=qa_anchor('A', $answerid);
+			if (qa_limits_remaining($qa_login_userid, 'A')) { // already checked 'permit_post_a'
+				qa_answer_set_userid($answer, $qa_login_userid);
+				qa_report_write_action($qa_login_userid, $qa_cookieid, 'a_claim', $questionid, $answerid, null);
+				qa_redirect($qa_request, null, null, null, qa_anchor('A', $answerid));
 			
 			} else
 				$pageerror=qa_lang_html('question/answer_limit');
@@ -235,20 +252,20 @@
 		
 		if ($answer['editbutton']) {
 			if (qa_clicked('docancel'))
-				;
+				qa_redirect($qa_request);
 			
-			elseif (qa_clicked('doedita_'.$answerid) && qa_page_q_permit_edit($answer, 'permit_edit_a')) {
-				$formtype='a_edit';
-				$formpostid=$answerid;
+			elseif (qa_clicked('doedita_'.$answerid))
+				qa_redirect($qa_request, array('state' => 'edit-'.$answerid));
 				
-			} elseif (qa_clicked('dosavea_'.$answerid) && qa_page_q_permit_edit($answer, 'permit_edit_a')) {
-				$inacontent=qa_post_text('acontent');
-				$innotify=qa_post_text('notify') ? true : false;;
+			elseif (qa_clicked('dosavea_'.$answerid) && qa_page_q_permit_edit($answer, 'permit_edit_a')) {
+				$innotify=qa_post_text('notify') ? true : false;
 				$inemail=qa_post_text('email');
 				$intocomment=qa_post_text('tocomment');
 				$incommenton=qa_post_text('commenton');
 				
-				$aerrors=qa_answer_validate($qa_db, $inacontent, $innotify, $inemail);
+				qa_get_post_content('editor', 'acontent', $ineditor, $inacontent, $inaformat, $inatext);
+				
+				$aerrors=qa_answer_validate($inacontent, $inaformat, $inatext, $innotify, $inemail);
 				
 				if (empty($aerrors)) {
 					$setnotify=$answer['isbyuser'] ? qa_combine_notify_email($answer['userid'], $innotify, $inemail) : $answer['notify'];
@@ -257,31 +274,40 @@
 						(($incommenton==$questionid) && $question['commentable']) ||
 						(($incommenton!=$answerid) && @$answers[$incommenton]['commentable'])
 					)) { // convert to a comment
-						if (qa_limits_remaining($qa_db, $qa_login_userid, 'C')) { // already checked 'permit_post_c'
-							qa_answer_to_comment($qa_db, $answer, $incommenton, $inacontent, $setnotify, $qa_login_userid, $question, $answers, $commentsfollows);
-							qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'a_to_c', $questionid, $answerid, null);
-							$jumptoanchor=qa_anchor('C', $answerid);
+						if (qa_limits_remaining($qa_login_userid, 'C')) { // already checked 'permit_post_c'
+							qa_answer_to_comment($answer, $incommenton, $inacontent, $inaformat, $inatext, $setnotify, $qa_login_userid, $question, $answers, $commentsfollows);
+							qa_report_write_action($qa_login_userid, $qa_cookieid, 'a_to_c', $questionid, $answerid, null);
+							qa_redirect($qa_request, null, null, null, qa_anchor('C', $answerid));
 
 						} else {
 							$pageerror=qa_lang_html('question/comment_limit');
 						}
 					
 					} else {
-						qa_answer_set_text($qa_db, $answer, $inacontent, $setnotify, $qa_login_userid, $question);
-						qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'a_edit', $questionid, $answerid, null);
-						$jumptoanchor=qa_anchor('A', $answerid);
+						qa_answer_set_content($answer, $inacontent, $inaformat, $inatext, $setnotify, $qa_login_userid, $question);
+						qa_report_write_action($qa_login_userid, $qa_cookieid, 'a_edit', $questionid, $answerid, null);
+						qa_redirect($qa_request, null, null, null, qa_anchor('A', $answerid));
 					}
 
 				} else {
 					$formtype='a_edit';
 					$formpostid=$answerid; // keep editing if an error
 				}
+
+			} elseif (($qa_state==('edit-'.$answerid)) && qa_page_q_permit_edit($answer, 'permit_edit_a')) {
+				$formtype='a_edit';
+				$formpostid=$answerid;
 			}
 		}
 		
-		if (qa_clicked('docommenta_'.$answerid))
-			qa_page_q_do_comment($answer);
-			
+		if ($answer['commentbutton']) {
+			if (qa_clicked('docommenta_'.$answerid))
+				qa_redirect($qa_request, array('state' => 'comment-'.$answerid));
+				
+			if (qa_clicked('docommentadda_'.$answerid) || ($qa_state==('comment-'.$answerid)))
+				qa_page_q_do_comment($answer);
+		}
+
 		if (qa_clicked('dofollowa_'.$answerid))
 			qa_redirect('ask', array('follow' => $answerid));
 	}
@@ -306,28 +332,28 @@
 			$commentanswerid=$commentanswer['postid'];
 			
 			if (qa_clicked('dohidec_'.$commentid) && $comment['hideable']) {
-				qa_comment_set_hidden($qa_db, $comment, true, $qa_login_userid, $question, $commentanswer);
-				qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'c_hide', $questionid, $commentanswerid, $commentid);
-				$jumptoanchor=qa_anchor($commentparenttype, $comment['parentid']);
+				qa_comment_set_hidden($comment, true, $qa_login_userid, $question, $commentanswer);
+				qa_report_write_action($qa_login_userid, $qa_cookieid, 'c_hide', $questionid, $commentanswerid, $commentid);
+				qa_redirect($qa_request, null, null, null, qa_anchor($commentparenttype, $comment['parentid']));
 			}
 			
 			if (qa_clicked('doshowc_'.$commentid) && $comment['reshowable']) {
-				qa_comment_set_hidden($qa_db, $comment, false, $qa_login_userid, $question, $commentanswer);
-				qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'c_reshow', $questionid, $commentanswerid, $commentid);
-				$jumptoanchor=qa_anchor($commentparenttype, $comment['parentid']);
+				qa_comment_set_hidden($comment, false, $qa_login_userid, $question, $commentanswer);
+				qa_report_write_action($qa_login_userid, $qa_cookieid, 'c_reshow', $questionid, $commentanswerid, $commentid);
+				qa_redirect($qa_request, null, null, null, qa_anchor($commentparenttype, $comment['parentid']));
 			}
 			
 			if (qa_clicked('dodeletec_'.$commentid) && $comment['deleteable']) {
-				qa_comment_delete($qa_db, $comment);
-				qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'c_delete', $questionid, $commentanswerid, $commentid);
-				$jumptoanchor=qa_anchor($commentparenttype, $comment['parentid']);
+				qa_comment_delete($comment);
+				qa_report_write_action($qa_login_userid, $qa_cookieid, 'c_delete', $questionid, $commentanswerid, $commentid);
+				qa_redirect($qa_request, null, null, null, qa_anchor($commentparenttype, $comment['parentid']));
 			}
 			
 			if (qa_clicked('doclaimc_'.$commentid) && $comment['claimable']) {
-				if (qa_limits_remaining($qa_db, $qa_login_userid, 'C')) {
-					qa_comment_set_userid($qa_db, $comment, $qa_login_userid);
-					qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'c_claim', $questionid, $commentanswerid, $commentid);
-					$jumptoanchor=qa_anchor($commentparenttype, $comment['parentid']);
+				if (qa_limits_remaining($qa_login_userid, 'C')) {
+					qa_comment_set_userid($comment, $qa_login_userid);
+					qa_report_write_action($qa_login_userid, $qa_cookieid, 'c_claim', $questionid, $commentanswerid, $commentid);
+					qa_redirect($qa_request, null, null, null, qa_anchor($commentparenttype, $comment['parentid']));
 					
 				} else
 					$pageerror=qa_lang_html('question/comment_limit');
@@ -335,31 +361,34 @@
 			
 			if ($comment['editbutton']) {
 				if (qa_clicked('docancel'))
-					;
+					qa_redirect($qa_request);
 					
-				elseif (qa_clicked('doeditc_'.$commentid) && qa_page_q_permit_edit($comment, 'permit_edit_c')) {
-					$formtype='c_edit';
-					$formpostid=$commentid;
+				elseif (qa_clicked('doeditc_'.$commentid))
+					qa_redirect($qa_request, array('state' => 'edit-'.$commentid));
 				
-				} elseif (qa_clicked('dosavec_'.$commentid) && qa_page_q_permit_edit($comment, 'permit_edit_c')) {
-					$incomment=qa_post_text('comment');
+				elseif (qa_clicked('dosavec_'.$commentid) && qa_page_q_permit_edit($comment, 'permit_edit_c')) {
 					$innotify=qa_post_text('notify') ? true : false;
 					$inemail=qa_post_text('email');
 					
-					$errors=qa_comment_validate($qa_db, $incomment, $innotify, $inemail);
+					qa_get_post_content('editor', 'comment', $ineditor, $incomment, $informat, $intext);
+					
+					$errors=qa_comment_validate($incomment, $informat, $intext, $innotify, $inemail);
 					
 					if (empty($errors)) {
 						$setnotify=$comment['isbyuser'] ? qa_combine_notify_email($comment['userid'], $innotify, $inemail) : $comment['notify'];
 						
-						qa_comment_set_text($qa_db, $comment, $incomment, $setnotify, $qa_login_userid, $question, $commentanswer);
-						qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'c_edit', $questionid, $commentanswerid, $commentid);
-						
-						$jumptoanchor=qa_anchor($commentparenttype, $comment['parentid']);
+						qa_comment_set_content($comment, $incomment, $informat, $intext, $setnotify, $qa_login_userid, $question, $commentanswer);
+						qa_report_write_action($qa_login_userid, $qa_cookieid, 'c_edit', $questionid, $commentanswerid, $commentid);
+						qa_redirect($qa_request, null, null, null, qa_anchor($commentparenttype, $comment['parentid']));
 					
 					} else {
 						$formtype='c_edit';
 						$formpostid=$commentid; // keep editing if an error
 					}
+
+				} elseif (($qa_state==('edit-'.$commentid)) && qa_page_q_permit_edit($comment, 'permit_edit_c')) {
+					$formtype='c_edit';
+					$formpostid=$commentid;
 				}
 			}
 		}
@@ -371,9 +400,9 @@
 	If not, set the $pageerror variable appropriately
 */
 	{
-		global $qa_db, $pageerror, $qa_request;
+		global $pageerror, $qa_request;
 		
-		$permiterror=qa_user_permit_error($qa_db, $post['isbyuser'] ? null : $permitoption);
+		$permiterror=qa_user_permit_error($post['isbyuser'] ? null : $permitoption);
 			// if it's by the user, this will only check whether they are blocked
 		
 		switch ($permiterror) {
@@ -404,9 +433,15 @@
 	Return form for editing the question and set up $qa_content accordingly
 */
 	{
-		global $qa_content, $qa_db, $question, $inqtitle, $inqcontent, $inqtags, $qerrors, $innotify, $inemail, $completetags, $categories;
+		global $qa_content, $question, $inqtitle, $inqcontent, $inqformat, $inqeditor, $inqtags, $qerrors, $innotify, $inemail, $completetags, $categories;
 		
-		$categoryoptions=qa_category_options($qa_db, $categories);
+		$categoryoptions=qa_category_options($categories);
+		
+		$content=isset($inqcontent) ? $inqcontent : $question['content'];
+		$format=isset($inqformat) ? $inqformat : $question['format'];
+		
+		$editorname=isset($inqeditor) ? $inqeditor : qa_opt('editor_for_qs');
+		$editor=qa_load_editor($content, $format, $editorname);
 
 		$form=array(
 			'style' => 'tall',
@@ -427,12 +462,12 @@
 					'options' => $categoryoptions,
 				),
 				
-				'content' => array(
-					'label' => qa_lang_html('question/q_content_label'),
-					'tags' => ' NAME="qcontent" ',
-					'value' => qa_html(isset($inqcontent) ? $inqcontent : $question['content']),
-					'error' => qa_html(@$qerrors['content']),
-					'rows' => 12,
+				'content' => array_merge(
+					$editor->get_field($qa_content, $content, $format, 'qcontent', 12, true),
+					array(
+						'label' => qa_lang_html('question/q_content_label'),
+						'error' => qa_html(@$qerrors['content']),
+					)
 				),
 				
 				'tags' => array(
@@ -455,6 +490,7 @@
 			),
 			
 			'hidden' => array(
+				'editor' => qa_html($editorname),
 				'dosaveq' => '1',
 			),
 		);
@@ -462,14 +498,14 @@
 		if (!isset($categoryoptions))
 			unset($form['fields']['category']);
 			
-		if (qa_using_tags($qa_db))
+		if (qa_using_tags())
 			qa_set_up_tag_field($qa_content, $form['fields']['tags'], 'qtags', array(),
-				$completetags, qa_get_option($qa_db, 'page_size_ask_tags'));
+				$completetags, qa_opt('page_size_ask_tags'));
 		else
 			unset($form['fields']['tags']);
 				
 		if ($question['isbyuser'])
-			qa_set_up_notify_fields($qa_content, $form['fields'], 'Q', qa_get_logged_in_email($qa_db),
+			qa_set_up_notify_fields($qa_content, $form['fields'], 'Q', qa_get_logged_in_email(),
 				isset($innotify) ? $innotify : !empty($question['notify']),
 				isset($inemail) ? $inemail : @$question['notify'], @$qerrors['email']);
 		
@@ -484,9 +520,15 @@
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 
-		global $qa_db, $questionid, $question, $answers, $inacontent, $aerrors, $qa_content, $innotify, $inemail, $jumptoanchor, $commentsfollows;
+		global $questionid, $question, $answers, $inacontent, $inaformat, $inaeditor, $aerrors, $qa_content, $innotify, $inemail, $jumptoanchor, $commentsfollows;
 		
 		$answer=$answers[$answerid];
+		
+		$content=isset($inacontent) ? $inacontent : $answer['content'];
+		$format=isset($inaformat) ? $inaformat : $answer['format'];
+		
+		$editorname=isset($inaeditor) ? $inaeditor : qa_opt('editor_for_as');
+		$editor=qa_load_editor($content, $format, $editorname);
 		
 		$hascomments=false;
 		foreach ($commentsfollows as $commentfollow)
@@ -499,11 +541,11 @@
 			'style' => 'tall',
 			
 			'fields' => array(
-				'content' => array(
-					'tags' => ' NAME="acontent" ',
-					'value' => qa_html(isset($inacontent) ? $inacontent : $answer['content']),
-					'error' => qa_html(@$aerrors['content']),
-					'rows' => 12,
+				'content' => array_merge(
+					$editor->get_field($qa_content, $content, $format, 'acontent', 12, true),
+					array(
+						'error' => qa_html(@$aerrors['content']),
+					)
 				),
 			),
 			
@@ -519,6 +561,7 @@
 			),
 			
 			'hidden' => array(
+				'editor' => qa_html($editorname),
 				'dosavea_'.qa_html($answerid) => '1',
 			),
 		);
@@ -537,7 +580,7 @@
 		foreach ($answers as $otheranswer)
 			if (($otheranswer['postid']!=$answerid) && ($otheranswer['created']<$answer['created']) && $otheranswer['commentable'] && !$otheranswer['hidden']) {
 				$commentonoptions[$otheranswer['postid']]=
-					qa_lang_html('question/comment_on_a').qa_html(qa_shorten_string_line($otheranswer['content'], 80));
+					qa_lang_html('question/comment_on_a').qa_html(qa_shorten_string_line(qa_viewer_text($otheranswer['content'], $otheranswer['format']), 80));
 				
 				if ($otheranswer['created']>$lastbeforetime) {
 					$lastbeforeid=$otheranswer['postid'];
@@ -573,7 +616,7 @@
 	//	Show notification field if appropriate
 		
 		if ($answer['isbyuser'])
-			qa_set_up_notify_fields($qa_content, $form['fields'], 'A', qa_get_logged_in_email($qa_db),
+			qa_set_up_notify_fields($qa_content, $form['fields'], 'A', qa_get_logged_in_email(),
 				isset($innotify) ? $innotify : !empty($answer['notify']),
 				isset($inemail) ? $inemail : @$answer['notify'], @$aerrors['email']);
 		
@@ -592,72 +635,72 @@
 	Process an incoming new comment form for $answer, or question if it is null
 */
 	{
-		global $qa_db, $qa_login_userid, $qa_cookieid, $question, $questionid, $formtype, $formpostid,
-			$errors, $reloadquestion, $pageerror, $qa_request, $incomment, $innotify, $inemail, $commentsfollows, $jumptoanchor, $usecaptcha;
+		global $qa_login_userid, $qa_cookieid, $question, $questionid, $formtype, $formpostid,
+			$errors, $reloadquestion, $pageerror, $qa_request, $ineditor, $incomment, $informat, $innotify, $inemail, $commentsfollows, $jumptoanchor, $usecaptcha;
 		
 		$parent=isset($answer) ? $answer : $question;
 		
-		if ($parent['commentbutton'])
-			switch (qa_user_permit_error($qa_db, 'permit_post_c', 'C')) {
-				case 'login':
-					$pageerror=qa_insert_login_links(qa_lang_html('question/comment_must_login'), $qa_request);
-					break;
-					
-				case 'confirm':
-					$pageerror=qa_insert_login_links(qa_lang_html('question/comment_must_confirm'), $qa_request);
-					break;
-					
-				case 'limit':
-					$pageerror=qa_lang_html('question/comment_limit');
-					break;
-					
-				default:
-					$pageerror=qa_lang_html('users/no_permission');
-					break;
-					
-				case false:
-					$incomment=qa_post_text('comment');
-		
-					if (!isset($incomment)) {
-						$formtype='c_add';
-						$formpostid=$parent['postid']; // show form first time
-					
-					} else {
-						$innotify=qa_post_text('notify') ? true : false;
-						$inemail=qa_post_text('email');
-
-						$errors=qa_comment_validate($qa_db, $incomment, $innotify, $inemail);
-						
-						if ($usecaptcha)
-							qa_captcha_validate($qa_db, $_POST, $errors);
-
-						if (empty($errors)) {
-							$isduplicate=false;
-							foreach ($commentsfollows as $comment)
-								if (($comment['basetype']=='C') && ($comment['parentid']==$parent['postid']) && (!$comment['hidden']))
-									if (implode(' ', qa_string_to_words($comment['content'])) == implode(' ', qa_string_to_words($incomment)))
-										$isduplicate=true;
-										
-							if (!$isduplicate) {
-								if (!isset($qa_login_userid))
-									$qa_cookieid=qa_cookie_get_create($qa_db); // create a new cookie if necessary
-								
-								$commentid=qa_comment_create($qa_db, $qa_login_userid, $qa_cookieid, $incomment, $innotify, $inemail, $question, $answer, $commentsfollows);
-								qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'c_post', $questionid, @$answer['postid'], $commentid);
+		switch (qa_user_permit_error('permit_post_c', 'C')) {
+			case 'login':
+				$pageerror=qa_insert_login_links(qa_lang_html('question/comment_must_login'), $qa_request);
+				break;
+				
+			case 'confirm':
+				$pageerror=qa_insert_login_links(qa_lang_html('question/comment_must_confirm'), $qa_request);
+				break;
+				
+			case 'limit':
+				$pageerror=qa_lang_html('question/comment_limit');
+				break;
+				
+			default:
+				$pageerror=qa_lang_html('users/no_permission');
+				break;
+				
+			case false:
+				$incomment=qa_post_text('comment');
 	
-								$jumptoanchor=qa_anchor(isset($answer) ? 'A' : 'Q', $parent['postid']);
+				if (!isset($incomment)) {
+					$formtype='c_add';
+					$formpostid=$parent['postid']; // show form first time
+				
+				} else {
+					$innotify=qa_post_text('notify') ? true : false;
+					$inemail=qa_post_text('email');
+	
+					qa_get_post_content('editor', 'comment', $ineditor, $incomment, $informat, $intext);
+	
+					$errors=qa_comment_validate($incomment, $informat, $intext, $innotify, $inemail);
+					
+					if ($usecaptcha)
+						qa_captcha_validate($_POST, $errors);
+	
+					if (empty($errors)) {
+						$isduplicate=false;
+						foreach ($commentsfollows as $comment)
+							if (($comment['basetype']=='C') && ($comment['parentid']==$parent['postid']) && (!$comment['hidden']))
+								if (implode(' ', qa_string_to_words($comment['content'])) == implode(' ', qa_string_to_words($incomment)))
+									$isduplicate=true;
+									
+						if (!$isduplicate) {
+							if (!isset($qa_login_userid))
+								$qa_cookieid=qa_cookie_get_create(); // create a new cookie if necessary
 							
-							} else {
-								$pageerror=qa_lang_html('question/duplicate_content');
-							}
+							$commentid=qa_comment_create($qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $incomment, $informat, $intext, $innotify, $inemail, $question, $answer, $commentsfollows);
+							qa_report_write_action($qa_login_userid, $qa_cookieid, 'c_post', $questionid, @$answer['postid'], $commentid);
+							qa_redirect($qa_request, null, null, null, qa_anchor(isset($answer) ? 'A' : 'Q', $parent['postid']));
 						
 						} else {
-							$formtype='c_add';
-							$formpostid=$parent['postid']; // show form again
+							$pageerror=qa_lang_html('question/duplicate_content');
 						}
+					
+					} else {
+						$formtype='c_add';
+						$formpostid=$parent['postid']; // show form again
 					}
-					break;
-			}
+				}
+				break;
+		}
 	}
 
 	
@@ -666,10 +709,13 @@
 	Return form for adding a comment on $answerid (or the question if $answerid is null), and set up $qa_content accordingly
 */
 	{
-		global $qa_content, $qa_db, $incomment, $errors, $questionid, $innotify, $inemail, $jumptoanchor, $focusonid, $usecaptcha, $qa_login_userid;
+		global $qa_content, $incomment, $informat, $errors, $questionid, $ineditor, $innotify, $inemail, $jumptoanchor, $focusonid, $usecaptcha, $qa_login_userid;
 		
 		$jumptoanchor=isset($answerid) ? qa_anchor('A', $answerid) : qa_anchor('Q', $questionid);
 		$focusonid='comment';
+		
+		$editorname=isset($ineditor) ? $ineditor : qa_opt('editor_for_cs');
+		$editor=qa_load_editor(@$incomment, @$informat, $editorname);
 
 		$form=array(
 			'title' => qa_lang_html(isset($answerid) ? 'question/your_comment_a' : 'question/your_comment_q'),
@@ -677,17 +723,17 @@
 			'style' => 'tall',
 			
 			'fields' => array(
-				'content' => array(
-					'tags' => ' NAME="comment" ID="comment" ',
-					'value' => qa_html(@$incomment),
-					'error' => qa_html(@$errors['content']),
-					'rows' => 4,
+				'content' => array_merge(
+					$editor->get_field($qa_content, @$incomment, @$informat, 'comment', 4, true),
+					array(
+						'error' => qa_html(@$errors['content']),
+					)
 				),
 			),
 			
 			'buttons' => array(
 				'comment' => array(
-					'tags' => ' NAME="'.(isset($answerid) ? ('docommenta_'.$answerid) : 'docommentq').'" ',
+					'tags' => ' NAME="'.(isset($answerid) ? ('docommentadda_'.$answerid) : 'docommentaddq').'" ',
 					'label' => qa_lang_html('question/add_comment_button'),
 				),
 				
@@ -696,13 +742,17 @@
 					'label' => qa_lang_html('main/cancel_button'),
 				),
 			),
+			
+			'hidden' => array(
+				'editor' => qa_html($editorname),
+			),
 		);
 
-		qa_set_up_notify_fields($qa_content, $form['fields'], 'C', qa_get_logged_in_email($qa_db),
+		qa_set_up_notify_fields($qa_content, $form['fields'], 'C', qa_get_logged_in_email(),
 			isset($innotify) ? $innotify : true, @$inemail, @$errors['email']);
 		
 		if ($usecaptcha)
-			qa_set_up_captcha_field($qa_db, $qa_content, $form['fields'], @$errors,
+			qa_set_up_captcha_field($qa_content, $form['fields'], @$errors,
 				qa_insert_login_links(qa_lang_html(isset($qa_login_userid) ? 'misc/captcha_confirm_fix' : 'misc/captcha_login_fix')));
 				
 		return $form;
@@ -714,12 +764,17 @@
 	Return form for editing $commentid on $answerid (or the question if $answerid is null), and set up $qa_content accordingly
 */
 	{
-		global $qa_db, $commentsfollows, $qa_content, $errors, $incomment, $questionid, $jumptoanchor, $focusonid, $innotify, $inemail;
+		global $commentsfollows, $qa_content, $errors, $incomment, $informat, $ineditor, $questionid, $jumptoanchor, $focusonid, $innotify, $inemail;
 		
 		$comment=$commentsfollows[$commentid];
 		
+		$content=isset($incomment) ? $incomment : $comment['content'];
+		$format=isset($informat) ? $informat : $comment['format'];
+		
+		$editorname=isset($ineditor) ? $ineditor : qa_opt('editor_for_cs');
+		$editor=qa_load_editor($content, $format, $editorname);
+		
 		$jumptoanchor=isset($answerid) ? qa_anchor('A', $answerid) : qa_anchor('Q', $questionid);
-		$focusonid='comment';
 		
 		$form=array(
 			'title' => '<A NAME="edit">'.qa_lang_html('question/edit_c_title').'</A>',
@@ -727,11 +782,11 @@
 			'style' => 'tall',
 			
 			'fields' => array(
-				'content' => array(
-					'tags' => ' NAME="comment" ID="comment" ',
-					'value' => qa_html(isset($incomment) ? $incomment : $comment['content']),
-					'error' => qa_html($errors['content']),
-					'rows' => 4,
+				'content' => array_merge(
+					$editor->get_field($qa_content, $content, $format, 'comment', 4, true),
+					array(
+						'error' => qa_html($errors['content']),
+					)
 				),
 			),
 			
@@ -747,12 +802,13 @@
 			),
 			
 			'hidden' => array(
+				'editor' => qa_html($editorname),
 				'dosavec_'.qa_html($commentid) => '1',
 			),
 		);
 		
 		if ($comment['isbyuser'])
-			qa_set_up_notify_fields($qa_content, $form['fields'], 'C', qa_get_logged_in_email($qa_db),
+			qa_set_up_notify_fields($qa_content, $form['fields'], 'C', qa_get_logged_in_email(),
 				isset($innotify) ? $innotify : !empty($comment['notify']),
 				isset($inemail) ? $inemail : @$comment['notify'], @$errors['email']);
 

@@ -1,34 +1,28 @@
 <?php
 
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-install.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Database-level functions for installation and upgrading
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -37,7 +31,7 @@
 	}
 
 
-	define('QA_DB_VERSION_CURRENT', 15);
+	define('QA_DB_VERSION_CURRENT', 21);
 
 
 	function qa_db_user_column_type_verify()
@@ -119,8 +113,11 @@
 				'createip' => 'INT UNSIGNED NOT NULL', // INET_ATON of IP address when created
 				'email' => 'VARCHAR('.QA_DB_MAX_EMAIL_LENGTH.') NOT NULL',
 				'handle' => 'VARCHAR('.QA_DB_MAX_HANDLE_LENGTH.') NOT NULL', // username
-				'passsalt' => 'BINARY(16) NOT NULL', // salt used to calculate passcheck
-				'passcheck' => 'BINARY(20) NOT NULL', // checksum from password and passsalt
+				'avatarblobid' => 'BIGINT UNSIGNED', // blobid of stored avatar
+				'avatarwidth' => 'SMALLINT UNSIGNED', // pixel width of stored avatar
+				'avatarheight' => 'SMALLINT UNSIGNED', // pixel height of stored avatar
+				'passsalt' => 'BINARY(16)', // salt used to calculate passcheck - null if no passowrd set for direct login
+				'passcheck' => 'BINARY(20)', // checksum from password and passsalt - null if no passowrd set for direct login
 				'level' => 'TINYINT UNSIGNED NOT NULL', // basic, editor, admin, etc...
 				'loggedin' => 'DATETIME NOT NULL', // time of last login
 				'loginip' => 'INT UNSIGNED NOT NULL', // INET_ATON of IP address of last login
@@ -128,11 +125,20 @@
 				'writeip' => 'INT UNSIGNED', // INET_ATON of IP address of last write action done by user
 				'emailcode' => 'CHAR(8) CHARACTER SET ascii NOT NULL DEFAULT \'\'', // for email confirmation or password reset
 				'sessioncode' => 'CHAR(8) CHARACTER SET ascii NOT NULL DEFAULT \'\'', // for comparing against session cookie in browser
-				'flags' => 'TINYINT UNSIGNED NOT NULL DEFAULT 0', // email confirmed and/or blocked?
+				'flags' => 'TINYINT UNSIGNED NOT NULL DEFAULT 0', // email confirmed, user blocked, show gravatar?
 				'PRIMARY KEY (userid)',
 				'KEY email (email)',
 				'KEY handle (handle)',
 				'KEY level (level)',
+			),
+			
+			'userlogins' => array(
+				'userid' => $useridcoltype.' NOT NULL',
+				'source' => 'VARCHAR (16) CHARACTER SET ascii NOT NULL', // e.g. facebook, openid, etc...
+				'identifier' => 'VARBINARY (1024) NOT NULL', // depends on source, e.g. Facebook uid or OpenID url
+				'identifiermd5' => 'BINARY (16) NOT NULL', // used to reduce size of index on identifier
+				'KEY source (source, identifiermd5)',
+				'KEY userid (userid)',
 			),
 			
 			'userprofile' => array(
@@ -140,6 +146,15 @@
 				'title' => 'VARCHAR('.QA_DB_MAX_PROFILE_TITLE_LENGTH.') NOT NULL', // profile field name
 				'content' => 'VARCHAR('.QA_DB_MAX_PROFILE_CONTENT_LENGTH.') NOT NULL', // profile field value
 				'UNIQUE userid (userid,title)',
+			),
+			
+			'userfields' => array(
+				'fieldid' => 'SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT',
+				'title' => 'VARCHAR('.QA_DB_MAX_PROFILE_TITLE_LENGTH.') NOT NULL', // to match title column in userprofile table
+				'content' => 'VARCHAR('.QA_DB_MAX_PROFILE_TITLE_LENGTH.')', // for display on user profile pages - NULL means use default
+				'position' => 'SMALLINT UNSIGNED NOT NULL',
+				'flags' => 'TINYINT UNSIGNED NOT NULL',
+				'PRIMARY KEY (fieldid)',
 			),
 
 			'cookies' => array(
@@ -187,9 +202,10 @@
 				'cookieid' => 'BIGINT UNSIGNED', // which cookie wrote it, if an anonymous post
 				'createip' => 'INT UNSIGNED', // INET_ATON of IP address used to create the post
 				'lastuserid' => $useridcoltype, // which user last modified it
+				'lastip' => 'INT UNSIGNED', // INET_ATON of IP address which last modified the post
 				'upvotes' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0',
 				'downvotes' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0',
-				'format' => 'CHAR(1) CHARACTER SET ascii NOT NULL DEFAULT \'\'', // for future use, ignored for now
+				'format' => 'VARCHAR('.QA_DB_MAX_FORMAT_LENGTH.') CHARACTER SET ascii NOT NULL DEFAULT \'\'', // format of content, e.g. 'html'
 				'created' => 'DATETIME NOT NULL',
 				'updated' => 'DATETIME', // time of last update
 				'title' => 'VARCHAR('.QA_DB_MAX_TITLE_LENGTH.')',
@@ -203,9 +219,19 @@
 				'KEY selchildid (selchildid)', // for counting how many of a user's answers have been selected
 				'KEY type_2 (type, acount, created)', // for getting unanswered questions
 				'KEY categoryid (categoryid, type, created)', // for getting question, answers or comment in a specific category
-				'KEY createip (createip, created)', // for getting posts creating by a specific IP address
+				'KEY createip (createip, created)', // for getting posts created by a specific IP address
+				'KEY updated (updated, type)', // for getting recent edits across all categories
+				'KEY categoryid_2 (categoryid, updated, type)', // for getting recent edits in a specific category
+				'KEY lastip (lastip, updated, type)', // for getting posts edited by a specific IP address
 				'CONSTRAINT ^posts_ibfk_2 FOREIGN KEY (parentid) REFERENCES ^posts(postid)', // ^posts_ibfk_1 is set later on userid
 				'CONSTRAINT ^posts_ibfk_3 FOREIGN KEY (categoryid) REFERENCES ^categories(categoryid) ON DELETE SET NULL',
+			),
+			
+			'blobs' => array(
+				'blobid' => 'BIGINT UNSIGNED NOT NULL',
+				'format' => 'VARCHAR('.QA_DB_MAX_FORMAT_LENGTH.') CHARACTER SET ascii NOT NULL', // format e.g. 'jpeg', 'gif', 'png'
+				'content' => 'MEDIUMBLOB NOT NULL',
+				'PRIMARY KEY (blobid)',
 			),
 			
 			'words' => array(
@@ -283,7 +309,7 @@
 				
 			'userlimits' => array(
 				'userid' => $useridcoltype.' NOT NULL',
-				'action' => "CHAR(1) CHARACTER SET ascii NOT NULL", // Q/A/C = post question/answer/comment, V=vote, L=login
+				'action' => 'CHAR(1) CHARACTER SET ascii NOT NULL', // Q/A/C = post question/answer/comment, V=vote, L=login
 				'period' => 'INT UNSIGNED NOT NULL', // integer representing hour of last action
 				'count' => 'SMALLINT UNSIGNED NOT NULL', // how many of this action has been performed within that hour
 				'UNIQUE userid (userid, action)',
@@ -293,7 +319,7 @@
 			
 			'iplimits' => array(
 				'ip' => 'INT UNSIGNED NOT NULL', // INET_ATON of IP address
-				'action' => "CHAR(1) CHARACTER SET ascii NOT NULL",
+				'action' => 'CHAR(1) CHARACTER SET ascii NOT NULL',
 				'period' => 'INT UNSIGNED NOT NULL',
 				'count' => 'SMALLINT UNSIGNED NOT NULL',
 				'UNIQUE ip (ip, action)',
@@ -304,15 +330,27 @@
 				'content' => 'VARCHAR('.QA_DB_MAX_CONTENT_LENGTH.') NOT NULL', // value of option
 				'PRIMARY KEY (title)',
 			),
+			
+			'cache' => array(
+				'type' => 'CHAR(8) CHARACTER SET ascii NOT NULL', // e.g. 'avXXX' for avatar sized to XXX pixels square
+				'cacheid' => 'BIGINT UNSIGNED DEFAULT 0', // optional further identifier, e.g. blobid on which cache entry is based
+				'content' => 'MEDIUMBLOB NOT NULL',
+				'created' => 'DATETIME NOT NULL',
+				'lastread' => 'DATETIME NOT NULL',
+				'PRIMARY KEY (type,cacheid)',
+				'KEY (lastread)',
+			),
 		);
 		
 		if (QA_EXTERNAL_USERS) {
 			unset($tables['users']);
+			unset($tables['userlogins']);
 			unset($tables['userprofile']);
 
 		} else {
 			$userforeignkey='FOREIGN KEY (userid) REFERENCES ^users(userid)';
 			
+			$tables['userlogins'][]='CONSTRAINT ^userlogins_ibfk_1 '.$userforeignkey.' ON DELETE CASCADE';
 			$tables['userprofile'][]='CONSTRAINT ^userprofile_ibfk_1 '.$userforeignkey.' ON DELETE CASCADE';
 			$tables['posts'][]='CONSTRAINT ^posts_ibfk_1 '.$userforeignkey.' ON DELETE SET NULL';
 			$tables['uservotes'][]='CONSTRAINT ^uservotes_ibfk_2 '.$userforeignkey.' ON DELETE CASCADE';
@@ -337,12 +375,12 @@
 	}
 
 	
-	function qa_db_missing_tables($db, $definitions)
+	function qa_db_missing_tables($definitions)
 /*
 	Return a list of tables missing from the database, [table name] => [column/index definitions]
 */
 	{
-		$keydbtables=qa_array_to_lower_keys(qa_db_read_all_values(qa_db_query_raw($db, 'SHOW TABLES')));
+		$keydbtables=qa_array_to_lower_keys(qa_db_read_all_values(qa_db_query_raw('SHOW TABLES')));
 		
 		$missing=array();
 		
@@ -354,12 +392,12 @@
 	}
 
 	
-	function qa_db_missing_columns($db, $table, $definition)
+	function qa_db_missing_columns($table, $definition)
 /*
 	Return a list of columns missing from $table in the database, given the full definition set in $definition
 */
 	{
-		$keycolumns=qa_array_to_lower_keys(qa_db_read_all_values(qa_db_query_sub($db, 'SHOW COLUMNS FROM ^'.$table)));
+		$keycolumns=qa_array_to_lower_keys(qa_db_read_all_values(qa_db_query_sub('SHOW COLUMNS FROM ^'.$table)));
 		
 		$missing=array();
 		
@@ -371,15 +409,15 @@
 	}
 
 	
-	function qa_db_get_db_version($db)
+	function qa_db_get_db_version()
 /*
 	Return the current version of the database, to determine need for DB upgrades
 */
 	{
 		$definitions=qa_db_table_definitions();
 		
-		if (count(qa_db_missing_columns($db, 'options', $definitions['options']))==0) {
-			$version=(int)qa_db_read_one_value(qa_db_query_sub($db, "SELECT content FROM ^options WHERE title='db_version'"), true);
+		if (count(qa_db_missing_columns('options', $definitions['options']))==0) {
+			$version=(int)qa_db_read_one_value(qa_db_query_sub("SELECT content FROM ^options WHERE title='db_version'"), true);
 			
 			if ($version>0)
 				return $version;
@@ -389,36 +427,36 @@
 	}
 
 	
-	function qa_db_set_db_version($db, $version)
+	function qa_db_set_db_version($version)
 /*
 	Set the current version in the database
 */
 	{
-		qa_db_query_sub($db, "REPLACE ^options (title,content) VALUES ('db_version', #)", $version);
+		qa_db_query_sub("REPLACE ^options (title,content) VALUES ('db_version', #)", $version);
 	}
 
 	
-	function qa_db_check_tables($db)
+	function qa_db_check_tables()
 /*
 	Return a string describing what is wrong with the database, or false if everything is just fine
 */
 	{
-		qa_db_query_raw($db, 'UNLOCK TABLES'); // we could be inside a lock tables block
+		qa_db_query_raw('UNLOCK TABLES'); // we could be inside a lock tables block
 		
-		$version=qa_db_read_one_value(qa_db_query_raw($db, 'SELECT VERSION()'));
+		$version=qa_db_read_one_value(qa_db_query_raw('SELECT VERSION()'));
 		
 		if (((float)$version)<4.1)
 			qa_fatal_error('MySQL version 4.1 or later is required - you appear to be running MySQL '.$version);
 		
 		$definitions=qa_db_table_definitions();
-		$missing=qa_db_missing_tables($db, $definitions);
+		$missing=qa_db_missing_tables($definitions);
 		
 		if (count($missing) == count($definitions))
 			return 'none';
 		
 		else {
 			if (!isset($missing['options'])) {
-				$version=qa_db_get_db_version($db);
+				$version=qa_db_get_db_version();
 				
 				if (isset($version) && ($version<QA_DB_VERSION_CURRENT))
 					return 'old-version';
@@ -429,7 +467,7 @@
 				
 			else
 				foreach ($definitions as $table => $definition)
-					if (count(qa_db_missing_columns($db, $table, $definition)))
+					if (count(qa_db_missing_columns($table, $definition)))
 						return 'column-missing';
 		}
 				
@@ -437,7 +475,7 @@
 	}
 
 	
-	function qa_db_install_tables($db)
+	function qa_db_install_tables()
 /*
 	Install any missing database tables and/or columns and automatically set version as latest.
 	This is not suitable for use if the database needs upgrading.
@@ -445,19 +483,23 @@
 	{
 		$definitions=qa_db_table_definitions();
 		
-		$missingtables=qa_db_missing_tables($db, $definitions);
+		$missingtables=qa_db_missing_tables($definitions);
 		
-		foreach ($missingtables as $rawname => $definition)
-			qa_db_query_sub($db, qa_db_create_table_sql($rawname, $definition));
-		
-		foreach ($definitions as $table => $definition) {
-			$missingcolumns=qa_db_missing_columns($db, $table, $definition);
-			
-			foreach ($missingcolumns as $colname => $coldefn)
-				qa_db_query_sub($db, 'ALTER TABLE ^'.$table.' ADD COLUMN '.$colname.' '.$coldefn);
+		foreach ($missingtables as $rawname => $definition) {
+			qa_db_query_sub(qa_db_create_table_sql($rawname, $definition));
+
+			if ($rawname=='userfields')
+				qa_db_query_sub(qa_db_default_userfields_sql());
 		}
 		
-		qa_db_set_db_version($db, QA_DB_VERSION_CURRENT);
+		foreach ($definitions as $table => $definition) {
+			$missingcolumns=qa_db_missing_columns($table, $definition);
+			
+			foreach ($missingcolumns as $colname => $coldefn)
+				qa_db_query_sub('ALTER TABLE ^'.$table.' ADD COLUMN '.$colname.' '.$coldefn);
+		}
+		
+		qa_db_set_db_version(QA_DB_VERSION_CURRENT);
 	}
 
 	
@@ -474,7 +516,26 @@
 	}
 	
 	
-	function qa_db_upgrade_tables($db)
+	function qa_db_default_userfields_sql()
+	{
+		$oldprofileflags=array(
+			'name' => 0,
+			'location' => 0,
+			'website' => QA_FIELD_FLAGS_LINK_URL,
+			'about' => QA_FIELD_FLAGS_MULTI_LINE,
+		);
+		
+		$sql='INSERT INTO ^userfields (title, position, flags) VALUES '; // content column will be NULL, meaning use default from lang files
+		
+		$index=0;
+		foreach ($oldprofileflags as $title => $flags)
+			$sql.=($index ? ', ' : '')."('".qa_db_escape_string($title)."', ".(++$index).", ".(int)@$oldprofileflags[$title].")";
+				
+		return $sql;
+	}
+	
+	
+	function qa_db_upgrade_tables()
 /*
 	Upgrade the database schema to the latest version, outputting progress to the browser
 */
@@ -486,7 +547,7 @@
 		
 	//	Write-lock all QA tables before we start so no one can read or write anything
 
-		$tables=qa_db_read_all_values(qa_db_query_raw($db, 'SHOW TABLES'));
+		$tables=qa_db_read_all_values(qa_db_query_raw('SHOW TABLES'));
 
 		$locks=array();
 		foreach ($tables as $table)
@@ -495,12 +556,12 @@
 				
 		$locktablesquery='LOCK TABLES '.implode(', ', $locks);
 			
-		qa_db_upgrade_query($db, $locktablesquery);
+		qa_db_upgrade_query($locktablesquery);
 		
 	//	Upgrade it step-by-step until it's up to date (do LOCK TABLES after ALTER TABLE because the lock can sometimes be lost)
 
 		while (1) {
-			$version=qa_db_get_db_version($db);
+			$version=qa_db_get_db_version();
 			
 			if ($version>=QA_DB_VERSION_CURRENT)
 				break;
@@ -514,49 +575,49 @@
 			//	Up to here: Version 1.0 beta 1
 				
 				case 2:
-					qa_db_upgrade_query($db, 'ALTER TABLE ^posts DROP COLUMN votes, ADD COLUMN (upvotes '.$definitions['posts']['upvotes'].
+					qa_db_upgrade_query('ALTER TABLE ^posts DROP COLUMN votes, ADD COLUMN (upvotes '.$definitions['posts']['upvotes'].
 						', downvotes '.$definitions['posts']['downvotes'].')');
-					qa_db_upgrade_query($db, $locktablesquery);
+					qa_db_upgrade_query($locktablesquery);
 					$keyrecalc['dorecountposts']=true;
 					break;
 					
 				case 3:
-					qa_db_upgrade_query($db, 'ALTER TABLE ^userpoints ADD COLUMN (upvoteds '.$definitions['userpoints']['upvoteds'].
+					qa_db_upgrade_query('ALTER TABLE ^userpoints ADD COLUMN (upvoteds '.$definitions['userpoints']['upvoteds'].
 						', downvoteds '.$definitions['userpoints']['downvoteds'].')');
-					qa_db_upgrade_query($db, $locktablesquery);
+					qa_db_upgrade_query($locktablesquery);
 					$keyrecalc['dorecalcpoints']=true;
 					break;
 					
 				case 4:
-					qa_db_upgrade_query($db, 'ALTER TABLE ^posts ADD COLUMN lastuserid '.$definitions['posts']['lastuserid'].', CHANGE COLUMN updated updated '.$definitions['posts']['updated']);
-					qa_db_upgrade_query($db, $locktablesquery);
-					qa_db_upgrade_query($db, 'UPDATE ^posts SET updated=NULL WHERE updated=0 OR updated=created');
+					qa_db_upgrade_query('ALTER TABLE ^posts ADD COLUMN lastuserid '.$definitions['posts']['lastuserid'].', CHANGE COLUMN updated updated '.$definitions['posts']['updated']);
+					qa_db_upgrade_query($locktablesquery);
+					qa_db_upgrade_query('UPDATE ^posts SET updated=NULL WHERE updated=0 OR updated=created');
 					break;
 					
 				case 5:
-					qa_db_upgrade_query($db, 'ALTER TABLE ^contentwords ADD COLUMN (type '.$definitions['contentwords']['type'].', questionid '.$definitions['contentwords']['questionid'].')');
-					qa_db_upgrade_query($db, $locktablesquery);
+					qa_db_upgrade_query('ALTER TABLE ^contentwords ADD COLUMN (type '.$definitions['contentwords']['type'].', questionid '.$definitions['contentwords']['questionid'].')');
+					qa_db_upgrade_query($locktablesquery);
 					$keyrecalc['doreindexposts']=true;
 					break;
 					
 			//	Up to here: Version 1.0 beta 2
 				
 				case 6:
-					qa_db_upgrade_query($db, 'ALTER TABLE ^userpoints ADD COLUMN cposts '.$definitions['userpoints']['cposts']);
-					qa_db_upgrade_query($db, $locktablesquery);
+					qa_db_upgrade_query('ALTER TABLE ^userpoints ADD COLUMN cposts '.$definitions['userpoints']['cposts']);
+					qa_db_upgrade_query($locktablesquery);
 					$keyrecalc['dorecalcpoints']=true;
 					break;
 					
 				case 7:
 					if (!QA_EXTERNAL_USERS) {
-						qa_db_upgrade_query($db, 'ALTER TABLE ^users ADD COLUMN sessioncode '.$definitions['users']['sessioncode']);
-						qa_db_upgrade_query($db, $locktablesquery);
+						qa_db_upgrade_query('ALTER TABLE ^users ADD COLUMN sessioncode '.$definitions['users']['sessioncode']);
+						qa_db_upgrade_query($locktablesquery);
 					}
 					break;
 					
 				case 8:
-					qa_db_upgrade_query($db, 'ALTER TABLE ^posts ADD KEY (type, acount, created)');
-					qa_db_upgrade_query($db, $locktablesquery);
+					qa_db_upgrade_query('ALTER TABLE ^posts ADD KEY (type, acount, created)');
+					qa_db_upgrade_query($locktablesquery);
 					$keyrecalc['dorecountposts']=true; // for unanswered question count
 					break;
 
@@ -564,14 +625,14 @@
 			
 				case 9:
 					if (!QA_EXTERNAL_USERS) {
-						qa_db_upgrade_query($db, 'ALTER TABLE ^users CHANGE COLUMN resetcode emailcode '.$definitions['users']['emailcode'].', ADD COLUMN flags '.$definitions['users']['flags']);
-						qa_db_upgrade_query($db, $locktablesquery);
-						qa_db_upgrade_query($db, 'UPDATE ^users SET flags=1');
+						qa_db_upgrade_query('ALTER TABLE ^users CHANGE COLUMN resetcode emailcode '.$definitions['users']['emailcode'].', ADD COLUMN flags '.$definitions['users']['flags']);
+						qa_db_upgrade_query($locktablesquery);
+						qa_db_upgrade_query('UPDATE ^users SET flags=1');
 					}
 					break;
 				
 				case 10:
-					qa_db_upgrade_query($db, qa_db_create_table_sql('categories', array(
+					qa_db_upgrade_query(qa_db_create_table_sql('categories', array(
 						'categoryid' => $definitions['categories']['categoryid'],
 						'title' => $definitions['categories']['title'],
 						'tags' => $definitions['categories']['tags'],
@@ -583,17 +644,17 @@
 					))); // hard-code list of columns and indexes to ensure we ignore any added at a later stage
 
 					$locktablesquery.=', ^categories WRITE';
-					qa_db_upgrade_query($db, $locktablesquery);
+					qa_db_upgrade_query($locktablesquery);
 					break;
 				
 				case 11:
-					qa_db_upgrade_query($db, 'ALTER TABLE ^posts ADD CONSTRAINT ^posts_ibfk_2 FOREIGN KEY (parentid) REFERENCES ^posts(postid), ADD COLUMN categoryid '.$definitions['posts']['categoryid'].', ADD KEY categoryid (categoryid, type, created), ADD CONSTRAINT ^posts_ibfk_3 FOREIGN KEY (categoryid) REFERENCES ^categories(categoryid) ON DELETE SET NULL');
+					qa_db_upgrade_query('ALTER TABLE ^posts ADD CONSTRAINT ^posts_ibfk_2 FOREIGN KEY (parentid) REFERENCES ^posts(postid), ADD COLUMN categoryid '.$definitions['posts']['categoryid'].', ADD KEY categoryid (categoryid, type, created), ADD CONSTRAINT ^posts_ibfk_3 FOREIGN KEY (categoryid) REFERENCES ^categories(categoryid) ON DELETE SET NULL');
 						// foreign key on parentid important now that deletion is possible
-					qa_db_upgrade_query($db, $locktablesquery);
+					qa_db_upgrade_query($locktablesquery);
 					break;
 					
 				case 12:
-					qa_db_upgrade_query($db, qa_db_create_table_sql('pages', array(
+					qa_db_upgrade_query(qa_db_create_table_sql('pages', array(
 						'pageid' => $definitions['pages']['pageid'],
 						'title' => $definitions['pages']['title'],
 						'nav' => $definitions['pages']['nav'],
@@ -607,17 +668,17 @@
 						'UNIQUE position (position)',
 					))); // hard-code list of columns and indexes to ensure we ignore any added at a later stage
 					$locktablesquery.=', ^pages WRITE';
-					qa_db_upgrade_query($db, $locktablesquery);
+					qa_db_upgrade_query($locktablesquery);
 					break;
 					
 				case 13:
-					qa_db_upgrade_query($db, 'ALTER TABLE ^posts ADD COLUMN createip '.$definitions['posts']['createip'].', ADD KEY createip (createip, created)');
-					qa_db_upgrade_query($db, $locktablesquery);
+					qa_db_upgrade_query('ALTER TABLE ^posts ADD COLUMN createip '.$definitions['posts']['createip'].', ADD KEY createip (createip, created)');
+					qa_db_upgrade_query($locktablesquery);
 					break;
 					
 				case 14:
-					qa_db_upgrade_query($db, 'ALTER TABLE ^userpoints DROP COLUMN qvotes, DROP COLUMN avotes, ADD COLUMN (qupvotes '.$definitions['userpoints']['qupvotes'].', qdownvotes '.$definitions['userpoints']['qdownvotes'].', aupvotes '.$definitions['userpoints']['aupvotes'].', adownvotes '.$definitions['userpoints']['adownvotes'].')');
-					qa_db_upgrade_query($db, $locktablesquery);
+					qa_db_upgrade_query('ALTER TABLE ^userpoints DROP COLUMN qvotes, DROP COLUMN avotes, ADD COLUMN (qupvotes '.$definitions['userpoints']['qupvotes'].', qdownvotes '.$definitions['userpoints']['qdownvotes'].', aupvotes '.$definitions['userpoints']['aupvotes'].', adownvotes '.$definitions['userpoints']['adownvotes'].')');
+					qa_db_upgrade_query($locktablesquery);
 					$keyrecalc['dorecalcpoints']=true;
 					break;
 					
@@ -625,27 +686,110 @@
 			
 				case 15:
 					if (!QA_EXTERNAL_USERS)
-						qa_db_upgrade_table_columns($db, $definitions, 'users', array('emailcode', 'sessioncode', 'flags'));
+						qa_db_upgrade_table_columns($definitions, 'users', array('emailcode', 'sessioncode', 'flags'));
 					
-					qa_db_upgrade_table_columns($db, $definitions, 'posts', array('acount', 'upvotes', 'downvotes', 'format'));
-					qa_db_upgrade_table_columns($db, $definitions, 'categories', array('qcount'));
-					qa_db_upgrade_table_columns($db, $definitions, 'words', array('titlecount', 'contentcount', 'tagcount'));
-					qa_db_upgrade_table_columns($db, $definitions, 'userpoints', array('points', 'qposts', 'aposts', 'cposts',
+					qa_db_upgrade_table_columns($definitions, 'posts', array('acount', 'upvotes', 'downvotes', 'format'));
+					qa_db_upgrade_table_columns($definitions, 'categories', array('qcount'));
+					qa_db_upgrade_table_columns($definitions, 'words', array('titlecount', 'contentcount', 'tagcount'));
+					qa_db_upgrade_table_columns($definitions, 'userpoints', array('points', 'qposts', 'aposts', 'cposts',
 						'aselects', 'aselecteds', 'qupvotes', 'qdownvotes', 'aupvotes', 'adownvotes', 'qvoteds', 'avoteds', 'upvoteds', 'downvoteds'));
-					qa_db_upgrade_query($db, $locktablesquery);
+					qa_db_upgrade_query($locktablesquery);
 					break;
 
 			//	Up to here: Version 1.2 (release)
 			
+				case 16:
+					qa_db_upgrade_table_columns($definitions, 'posts', array('format'));
+					qa_db_upgrade_query($locktablesquery);
+					$keyrecalc['doreindexposts']=true; // because of new treatment of apostrophes in words
+					break;
+					
+				case 17:
+					qa_db_upgrade_query('ALTER TABLE ^posts ADD KEY updated (updated, type), ADD KEY categoryid_2 (categoryid, updated, type)');
+					qa_db_upgrade_query($locktablesquery);
+					break;
+					
+				case 18:
+					qa_db_upgrade_query('ALTER TABLE ^posts ADD COLUMN lastip '.$definitions['posts']['lastip'].', ADD KEY lastip (lastip, updated, type)');
+					qa_db_upgrade_query($locktablesquery);
+					break;
+					
+				case 19:
+					if (!QA_EXTERNAL_USERS)
+						qa_db_upgrade_query('ALTER TABLE ^users ADD COLUMN avatarblobid '.$definitions['users']['avatarblobid'].', ADD COLUMN avatarwidth '.$definitions['users']['avatarwidth'].', ADD COLUMN avatarheight '.$definitions['users']['avatarheight']);
+					
+					// hard-code list of columns and indexes to ensure we ignore any added at a later stage
+
+					qa_db_upgrade_query(qa_db_create_table_sql('blobs', array(
+						'blobid' => $definitions['blobs']['blobid'],
+						'format' => $definitions['blobs']['format'],
+						'content' => $definitions['blobs']['content'],
+						'PRIMARY KEY (blobid)'
+					)));
+
+					qa_db_upgrade_query(qa_db_create_table_sql('cache', array(
+						'type' => $definitions['cache']['type'],
+						'cacheid' => $definitions['cache']['cacheid'],
+						'content' => $definitions['cache']['content'],
+						'created' => $definitions['cache']['created'],
+						'lastread' => $definitions['cache']['lastread'],
+						'PRIMARY KEY (type,cacheid)',
+						'KEY (lastread)',
+					))); // hard-code list of columns and indexes to ensure we ignore any added at a later stage
+
+					$locktablesquery.=', ^blobs WRITE, ^cache WRITE';
+					qa_db_upgrade_query($locktablesquery);
+					break;
+					
+				case 20:
+					if (!QA_EXTERNAL_USERS) {
+						qa_db_upgrade_query(qa_db_create_table_sql('userlogins', array(
+							'userid' => $definitions['userlogins']['userid'],
+							'source' => $definitions['userlogins']['source'],
+							'identifier' => $definitions['userlogins']['identifier'],
+							'identifiermd5' => $definitions['userlogins']['identifiermd5'],
+							'KEY source (source, identifiermd5)',
+							'KEY userid (userid)',
+							'CONSTRAINT ^userlogins_ibfk_1 FOREIGN KEY (userid) REFERENCES ^users(userid) ON DELETE CASCADE',
+						)));
+						
+						qa_db_upgrade_query('ALTER TABLE ^users CHANGE COLUMN passsalt passsalt '.$definitions['users']['passsalt'].', CHANGE COLUMN passcheck passcheck '.$definitions['users']['passcheck']);
+						
+						$locktablesquery.=', ^userlogins WRITE';
+						qa_db_upgrade_query($locktablesquery);
+					}
+					break;
+					
+				case 21:
+					if (!QA_EXTERNAL_USERS) {
+						qa_db_upgrade_query(qa_db_create_table_sql('userfields', array(
+							'fieldid' => $definitions['userfields']['fieldid'],
+							'title' => $definitions['userfields']['title'],
+							'content' => $definitions['userfields']['content'],
+							'position' => $definitions['userfields']['position'],
+							'flags' => $definitions['userfields']['flags'],
+							'PRIMARY KEY (fieldid)',
+						)));
+						
+						$locktablesquery.=', ^userfields WRITE';
+						qa_db_upgrade_query($locktablesquery);
+						
+						qa_db_upgrade_query(qa_db_default_userfields_sql());
+					}
+					break;
+					
+			//	Up to here: Version 1.3 beta 1
+			
+					
 			}
 			
-			qa_db_set_db_version($db, $newversion);
+			qa_db_set_db_version($newversion);
 			
-			if (qa_db_get_db_version($db)!=$newversion)
+			if (qa_db_get_db_version()!=$newversion)
 				qa_fatal_error('Could not increment database version');
 		}
 		
-		qa_db_upgrade_query($db, 'UNLOCK TABLES');
+		qa_db_upgrade_query('UNLOCK TABLES');
 
 	//	Perform any necessary recalculations, as determined by upgrade steps
 		
@@ -655,7 +799,7 @@
 			
 				$stoptime=time()+2;
 				
-				while ( qa_recalc_perform_step($db, $state) && (time()<$stoptime) )
+				while ( qa_recalc_perform_step($state) && (time()<$stoptime) )
 					;
 				
 				qa_db_upgrade_progress(qa_recalc_get_message($state));
@@ -663,7 +807,7 @@
 	}
 	
 	
-	function qa_db_upgrade_table_columns($db, $definitions, $table, $columns)
+	function qa_db_upgrade_table_columns($definitions, $table, $columns)
 /*
 	Reset the definitions of $columns in $table according to the $definitions array
 */
@@ -673,17 +817,17 @@
 		foreach ($columns as $column)
 			$sqlchanges[]='CHANGE COLUMN '.$column.' '.$column.' '.$definitions[$table][$column];
 
-		qa_db_upgrade_query($db, 'ALTER TABLE ^'.$table.' '.implode(', ', $sqlchanges));
+		qa_db_upgrade_query('ALTER TABLE ^'.$table.' '.implode(', ', $sqlchanges));
 	}
 
 	
-	function qa_db_upgrade_query($db, $query)
+	function qa_db_upgrade_query($query)
 /*
 	Perform upgrade $query and output progress to the browser
 */
 	{
 		qa_db_upgrade_progress('Running query: '.strtr($query, array('^' => QA_MYSQL_TABLE_PREFIX)).' ...');
-		qa_db_query_sub($db, $query);
+		qa_db_query_sub($query);
 	}
 
 	

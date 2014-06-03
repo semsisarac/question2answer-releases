@@ -1,34 +1,28 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-create.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Creating questions, answers and comments (application level)
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -66,27 +60,29 @@
 			
 			if ($length < $minlength)
 				$errors[$field]=($minlength==1) ? qa_lang('main/field_required') : qa_lang_sub('main/min_length_x', $minlength);
-			elseif ($length > $maxlength)
+			elseif (isset($maxlength) && ($length > $maxlength))
 				$errors[$field]=qa_lang_sub('main/max_length_x', $maxlength);
 		}
 	}
 
 	
-	function qa_question_validate($db, $title, $content, $tagstring, $notify, $email)
+	function qa_question_validate($title, $content, $format, $text, $tagstring, $notify, $email)
 /*
 	Return $errors fields for any invalid aspect of user-entered question
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 
-		$options=qa_get_options($db, array('min_len_q_title', 'max_len_q_title', 'min_len_q_content', 'min_num_q_tags', 'max_num_q_tags'));
+		$options=qa_get_options(array('min_len_q_title', 'max_len_q_title', 'min_len_q_content', 'min_num_q_tags', 'max_num_q_tags'));
 		
 		$errors=array();
 		
 		$maxtitlelength=max($options['min_len_q_title'], min($options['max_len_q_title'], QA_DB_MAX_TITLE_LENGTH));
 		
 		qa_length_validate($errors, 'title', $title, $options['min_len_q_title'], $maxtitlelength);
-		qa_length_validate($errors, 'content', $content, $options['min_len_q_content'], QA_DB_MAX_CONTENT_LENGTH);
+		
+		qa_length_validate($errors, 'content', $content, 0, QA_DB_MAX_CONTENT_LENGTH); // for storage
+		qa_length_validate($errors, 'content', $text, $options['min_len_q_content'], null); // for display
 		
 		if (isset($tagstring)) {
 			$counttags=count(qa_tagstring_to_tags($tagstring));
@@ -116,15 +112,15 @@
 	}
 	
 	
-	function qa_category_options($db, $categories)
+	function qa_category_options($categories)
 /*
 	Return the appropriate list of category options to be shown, [id] => [title] - returns null if none to show
 */
 	{
-		if (qa_using_categories($db) && count($categories)) {
+		if (qa_using_categories() && count($categories)) {
 			$categoryoptions=array();
 
-			if (qa_get_option($db, 'allow_no_category'))
+			if (qa_opt('allow_no_category'))
 				$categoryoptions['']=qa_lang_html('main/no_category');
 
 			foreach ($categories as $category)
@@ -137,7 +133,7 @@
 	}
 
 	
-	function qa_question_create($db, $followanswer, $userid, $cookieid, $title, $content, $tagstring, $notify, $email, $categoryid=null)
+	function qa_question_create($followanswer, $userid, $handle, $cookieid, $title, $content, $format, $text, $tagstring, $notify, $email, $categoryid=null)
 /*
 	Add a question (application level) - create record, update appropriate counts, index it, send notifications.
 	If question is follow-on from an answer, $followanswer should contain answer database record, otherwise null.
@@ -146,38 +142,38 @@
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 		require_once QA_INCLUDE_DIR.'qa-app-emails.php';
 
-		$postid=qa_db_post_create($db, 'Q', @$followanswer['postid'], $userid, isset($userid) ? null : $cookieid,
-			@$_SERVER['REMOTE_ADDR'], $title, $content, $tagstring, qa_combine_notify_email($userid, $notify, $email), $categoryid);
+		$postid=qa_db_post_create('Q', @$followanswer['postid'], $userid, isset($userid) ? null : $cookieid,
+			@$_SERVER['REMOTE_ADDR'], $title, $content, $format, $tagstring, qa_combine_notify_email($userid, $notify, $email), $categoryid);
 		
-		qa_db_ifcategory_qcount_update($db, $categoryid);
-		qa_post_index($db, $postid, 'Q', $postid, $title, $content, $tagstring);
-		qa_db_points_update_ifuser($db, $userid, 'qposts');
-		qa_db_qcount_update($db);
-		qa_db_unaqcount_update($db);
-		
-		qa_notification_pending();
-		qa_options_set_pending(array('notify_admin_q_post', 'from_email', 'site_title', 'site_url', 'feedback_email', 'block_bad_words'));
+		qa_db_ifcategory_qcount_update($categoryid);
+		qa_post_index($postid, 'Q', $postid, $title, $text, $tagstring);
+		qa_db_points_update_ifuser($userid, 'qposts');
+		qa_db_qcount_update();
+		qa_db_unaqcount_update();
 		
 		if (isset($followanswer['notify']) && !qa_post_is_by_user($followanswer, $userid, $cookieid)) {
 			require_once QA_INCLUDE_DIR.'qa-app-emails.php';
+			require_once QA_INCLUDE_DIR.'qa-app-format.php';
 			require_once QA_INCLUDE_DIR.'qa-util-string.php';
 			
-			$blockwordspreg=qa_get_block_words_preg($db);
+			$blockwordspreg=qa_get_block_words_preg();
 			$sendtitle=qa_block_words_replace($title, $blockwordspreg);
-			$sendcontent=qa_block_words_replace($followanswer['content'], $blockwordspreg);
+			$sendtext=qa_viewer_text($followanswer['content'], $followanswer['format'], array('blockwordspreg' => $blockwordspreg));
 			
-			qa_send_notification($db, $followanswer['userid'], $followanswer['notify'], @$followanswer['handle'], qa_lang('emails/a_followed_subject'), qa_lang('emails/a_followed_body'), array(
+			qa_send_notification($followanswer['userid'], $followanswer['notify'], @$followanswer['handle'], qa_lang('emails/a_followed_subject'), qa_lang('emails/a_followed_body'), array(
+				'^q_handle' => isset($handle) ? $handle : qa_lang('main/anonymous'),
 				'^q_title' => $sendtitle,
-				'^a_content' => $sendcontent,
-				'^url' => qa_path(qa_q_request($postid, $sendtitle), null, qa_get_option($db, 'site_url')),
+				'^a_content' => $sendtext,
+				'^url' => qa_path(qa_q_request($postid, $sendtitle), null, qa_opt('site_url')),
 			));
 		}
 		
-		if (qa_get_option($db, 'notify_admin_q_post'))
-			qa_send_notification($db, null, qa_get_option($db, 'feedback_email'), null, qa_lang('emails/q_posted_subject'), qa_lang('emails/q_posted_body'), array(
+		if (qa_opt('notify_admin_q_post'))
+			qa_send_notification(null, qa_opt('feedback_email'), null, qa_lang('emails/q_posted_subject'), qa_lang('emails/q_posted_body'), array(
+				'^q_handle' => isset($handle) ? $handle : qa_lang('main/anonymous'),
 				'^q_title' => $title, // don't censor title or content since we want the admin to see bad words
-				'^q_content' => $content,
-				'^url' => qa_path(qa_q_request($postid, $title), null, qa_get_option($db, 'site_url')),
+				'^q_content' => $text,
+				'^url' => qa_path(qa_q_request($postid, $title), null, qa_opt('site_url')),
 			));
 		
 		return $postid;
@@ -199,7 +195,7 @@
 	}
 
 	
-	function qa_post_index($db, $postid, $type, $questionid, $title, $content, $tagstring, $skipcounts=false)
+	function qa_post_index($postid, $type, $questionid, $title, $content, $tagstring, $skipcounts=false)
 /*
 	Add post $postid (which comes under $questionid) of $type (Q/A/C) to the database index, with $title, $content
 	and $tagstring. Set $skipcounts to true to not update counts - useful during recalculationss.
@@ -215,12 +211,12 @@
 	//	Map all words to their word IDs
 		
 		$words=array_unique(array_merge($titlewords, array_keys($contentcount), $tagwords));
-		$wordtoid=qa_db_word_mapto_ids_add($db, $words);
+		$wordtoid=qa_db_word_mapto_ids_add($words);
 		
 	//	Add to title words index
 		
 		$titlewordids=qa_array_filter_by_keys($wordtoid, $titlewords);
-		qa_db_titlewords_add_post_wordids($db, $postid, $titlewordids);
+		qa_db_titlewords_add_post_wordids($postid, $titlewordids);
 	
 	//	Add to content words index (including word counts)
 	
@@ -229,25 +225,25 @@
 			if (isset($wordtoid[$word]))
 				$contentwordidcounts[$wordtoid[$word]]=$count;
 
-		qa_db_contentwords_add_post_wordidcounts($db, $postid, $type, $questionid, $contentwordidcounts);
+		qa_db_contentwords_add_post_wordidcounts($postid, $type, $questionid, $contentwordidcounts);
 		
 	//	Add to tag words index
 
 		$tagwordids=qa_array_filter_by_keys($wordtoid, $tagwords);
-		qa_db_posttags_add_post_wordids($db, $postid, $tagwordids);
+		qa_db_posttags_add_post_wordids($postid, $tagwordids);
 		
 	//	Update counts cached in database
 		
 		if (!$skipcounts) {
-			qa_db_word_titlecount_update($db, $titlewordids);
-			qa_db_word_contentcount_update($db, array_keys($contentwordidcounts));
-			qa_db_word_tagcount_update($db, $tagwordids);
-			qa_db_tagcount_update($db);
+			qa_db_word_titlecount_update($titlewordids);
+			qa_db_word_contentcount_update(array_keys($contentwordidcounts));
+			qa_db_word_tagcount_update($tagwordids);
+			qa_db_tagcount_update();
 		}
 	}
 
 		
-	function qa_answer_validate($db, $content, $notify, $email)
+	function qa_answer_validate($content, $format, $text, $notify, $email)
 /*
 	Return $errors fields for any invalid aspect of user-entered answer
 */
@@ -256,46 +252,45 @@
 
 		$errors=array();
 		
-		qa_length_validate($errors, 'content', $content, qa_get_option($db, 'min_len_a_content'), QA_DB_MAX_CONTENT_LENGTH);
+		qa_length_validate($errors, 'content', $content, 0, QA_DB_MAX_CONTENT_LENGTH); // for storage
+		qa_length_validate($errors, 'content', $text, qa_opt('min_len_a_content'), null); // for display
 		qa_notify_validate($errors, $notify, $email);
 		
 		return $errors;
 	}
 
 	
-	function qa_answer_create($db, $userid, $cookieid, $content, $notify, $email, $question)
+	function qa_answer_create($userid, $handle, $cookieid, $content, $format, $text, $notify, $email, $question)
 /*
 	Add an answer (application level) - create record, update appropriate counts, index it, send notifications.
 	$question should contain database record for the question this is an answer to.
 */
 	{
-		$postid=qa_db_post_create($db, 'A', $question['postid'], $userid, isset($userid) ? null : $cookieid,
-			@$_SERVER['REMOTE_ADDR'], null, $content, null, qa_combine_notify_email($userid, $notify, $email), $question['categoryid']);
+		$postid=qa_db_post_create('A', $question['postid'], $userid, isset($userid) ? null : $cookieid,
+			@$_SERVER['REMOTE_ADDR'], null, $content, $format, null, qa_combine_notify_email($userid, $notify, $email), $question['categoryid']);
 		
 		if (!$question['hidden']) // don't index answer if parent question is hidden
-			qa_post_index($db, $postid, 'A', $question['postid'], null, $content, null);
+			qa_post_index($postid, 'A', $question['postid'], null, $text, null);
 		
-		qa_db_post_acount_update($db, $question['postid']);
-		qa_db_points_update_ifuser($db, $userid, 'aposts');
-		qa_db_acount_update($db);
-		qa_db_unaqcount_update($db);
+		qa_db_post_acount_update($question['postid']);
+		qa_db_points_update_ifuser($userid, 'aposts');
+		qa_db_acount_update();
+		qa_db_unaqcount_update();
 		
 		if (isset($question['notify']) && !qa_post_is_by_user($question, $userid, $cookieid)) {
 			require_once QA_INCLUDE_DIR.'qa-app-emails.php';
 			require_once QA_INCLUDE_DIR.'qa-app-options.php';
 			require_once QA_INCLUDE_DIR.'qa-util-string.php';
 			
-			qa_notification_pending();
-			qa_options_set_pending(array('site_url', 'block_bad_words'));
-			
-			$blockwordspreg=qa_get_block_words_preg($db);
+			$blockwordspreg=qa_get_block_words_preg();
 			$sendtitle=qa_block_words_replace($question['title'], $blockwordspreg);
-			$sendcontent=qa_block_words_replace($content, $blockwordspreg);
+			$sendtext=qa_block_words_replace($text, $blockwordspreg);
 
-			qa_send_notification($db, $question['userid'], $question['notify'], @$question['handle'], qa_lang('emails/q_answered_subject'), qa_lang('emails/q_answered_body'), array(
+			qa_send_notification($question['userid'], $question['notify'], @$question['handle'], qa_lang('emails/q_answered_subject'), qa_lang('emails/q_answered_body'), array(
+				'^a_handle' => isset($handle) ? $handle : qa_lang('main/anonymous'),
 				'^q_title' => $sendtitle,
-				'^a_content' => $sendcontent,
-				'^url' => qa_path(qa_q_request($question['postid'], $sendtitle), null, qa_get_option($db, 'site_url'), null, qa_anchor('A', $postid)),
+				'^a_content' => $sendtext,
+				'^url' => qa_path(qa_q_request($question['postid'], $sendtitle), null, qa_opt('site_url'), null, qa_anchor('A', $postid)),
 			));
 		}
 		
@@ -303,7 +298,7 @@
 	}
 
 	
-	function qa_comment_validate($db, $content, $notify, $email)
+	function qa_comment_validate($content, $format, $text, $notify, $email)
 /*
 	Return $errors fields for any invalid aspect of user-entered comment
 */
@@ -312,14 +307,15 @@
 
 		$errors=array();
 		
-		qa_length_validate($errors, 'content', $content, qa_get_option($db, 'min_len_c_content'), QA_DB_MAX_CONTENT_LENGTH);
+		qa_length_validate($errors, 'content', $content, 0, QA_DB_MAX_CONTENT_LENGTH); // for storage
+		qa_length_validate($errors, 'content', $text, qa_opt('min_len_c_content'), null); // for display
 		qa_notify_validate($errors, $notify, $email);
 			
 		return $errors;
 	}
 
 	
-	function qa_comment_create($db, $userid, $cookieid, $content, $notify, $email, $question, $answer, $commentsfollows)
+	function qa_comment_create($userid, $handle, $cookieid, $content, $format, $text, $notify, $email, $question, $answer, $commentsfollows)
 /*
 	Add a comment (application level) - create record, update appropriate counts, index it, send notifications.
 	$question should contain database record for the question this is part of (as direct or comment on Q's answer).
@@ -330,18 +326,19 @@
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-emails.php';
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
+		require_once QA_INCLUDE_DIR.'qa-app-format.php';
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 
 		$parent=isset($answer) ? $answer : $question;
 		
-		$postid=qa_db_post_create($db, 'C', $parent['postid'], $userid, isset($userid) ? null : $cookieid,
-			@$_SERVER['REMOTE_ADDR'], null, $content, null, qa_combine_notify_email($userid, $notify, $email), $question['categoryid']);
+		$postid=qa_db_post_create('C', $parent['postid'], $userid, isset($userid) ? null : $cookieid,
+			@$_SERVER['REMOTE_ADDR'], null, $content, $format, null, qa_combine_notify_email($userid, $notify, $email), $question['categoryid']);
 		
 		if (!($question['hidden'] || @$answer['hidden'])) // don't index comment if parent or parent of parent is hidden
-			qa_post_index($db, $postid, 'C', $question['postid'], null, $content, null);
+			qa_post_index($postid, 'C', $question['postid'], null, $text, null);
 		
-		qa_db_points_update_ifuser($db, $userid, 'cposts');
-		qa_db_ccount_update($db);
+		qa_db_points_update_ifuser($userid, 'cposts');
+		qa_db_ccount_update();
 		
 	//	$senttoemail and $senttouserid ensure each user or email gets only one notification about an added comment,
 	//	even if they have several previous comments in the same thread and asked for notifications for the parent.
@@ -351,9 +348,6 @@
 		$senttoemail=array();
 		$senttouserid=array();
 		
-		qa_notification_pending();
-		qa_options_set_pending(array('site_url', 'block_bad_words'));
-			
 		switch ($parent['basetype']) {
 			case 'Q':
 				$subject=qa_lang('emails/q_commented_subject');
@@ -364,16 +358,17 @@
 			case 'A':
 				$subject=qa_lang('emails/a_commented_subject');
 				$body=qa_lang('emails/a_commented_body');
-				$context=$parent['content'];
+				$context=qa_viewer_text($parent['content'], $parent['format']);
 				break;
 		}
 		
-		$blockwordspreg=qa_get_block_words_preg($db);
+		$blockwordspreg=qa_get_block_words_preg();
+		$sendhandle=isset($handle) ? $handle : qa_lang('main/anonymous');
 		$sendcontext=qa_block_words_replace($context, $blockwordspreg);
-		$sendcontent=qa_block_words_replace($content, $blockwordspreg);
+		$sendtext=qa_block_words_replace($text, $blockwordspreg);
 		$sendtitle=qa_block_words_replace($question['title'], $blockwordspreg);
 		$sendurl=qa_path(qa_q_request($question['postid'], $sendtitle), null,
-			qa_get_option($db, 'site_url'), null, qa_anchor($parent['basetype'], $parent['postid']));
+			qa_opt('site_url'), null, qa_anchor($parent['basetype'], $parent['postid']));
 			
 		if (isset($parent['notify']) && !qa_post_is_by_user($parent, $userid, $cookieid)) {
 			$senduserid=$parent['userid'];
@@ -384,9 +379,10 @@
 			elseif (isset($senduserid))
 				$senttouserid[$senduserid]=true;
 
-			qa_send_notification($db, $senduserid, $sendemail, @$parent['handle'], $subject, $body, array(
+			qa_send_notification($senduserid, $sendemail, @$parent['handle'], $subject, $body, array(
+				'^c_handle' => $sendhandle,
 				'^c_context' => $sendcontext,
-				'^c_content' => $sendcontent,
+				'^c_content' => $sendtext,
 				'^url' => $sendurl,
 			));
 		}
@@ -410,9 +406,10 @@
 						$senttouserid[$senduserid]=true;
 					}
 
-					qa_send_notification($db, $senduserid, $sendemail, @$comment['handle'], qa_lang('emails/c_commented_subject'), qa_lang('emails/c_commented_body'), array(
+					qa_send_notification($senduserid, $sendemail, @$comment['handle'], qa_lang('emails/c_commented_subject'), qa_lang('emails/c_commented_body'), array(
+						'^c_handle' => $sendhandle,
 						'^c_context' => $sendcontext,
-						'^c_content' => $sendcontent,
+						'^c_content' => $sendtext,
 						'^url' => $sendurl,
 					));
 				}

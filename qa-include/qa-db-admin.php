@@ -1,34 +1,28 @@
 <?php
 	
 /*
-	Question2Answer 1.2.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-admin.php
-	Version: 1.2.1
-	Date: 2010-07-29 03:54:35 GMT
+	Version: 1.3-beta-1
+	Date: 2010-11-04 12:12:11 GMT
 	Description: Database access functions which are specific to the admin center
 
 
-	This software is free to use and modify for public websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page. It may
-	not be redistributed or resold, nor may any works derived from it.
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
 	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
 	More about this license: http://www.question2answer.org/license.php
-
-
-	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-	THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -37,7 +31,7 @@
 	}
 
 
-	function qa_db_count_posts($db, $type, $fromuser=null)
+	function qa_db_count_posts($type, $fromuser=null)
 /*
 	Return count of number of posts of $type in database.
 	Set $fromuser to true to only count non-anonymous posts, false to only count anonymous posts
@@ -48,25 +42,25 @@
 		if (isset($fromuser))
 			$otherparams.=' AND userid '.($fromuser ? 'IS NOT' : 'IS').' NULL';
 		
-		return qa_db_read_one_value(qa_db_query_sub($db,
+		return qa_db_read_one_value(qa_db_query_sub(
 			'SELECT COUNT(*) FROM ^posts WHERE type=$'.$otherparams,
 			$type
 		));
 	}
 
 
-	function qa_db_count_users($db)
+	function qa_db_count_users()
 /*
 	Return number of registered users in database.
 */
 	{
-		return qa_db_read_one_value(qa_db_query_sub($db,
+		return qa_db_read_one_value(qa_db_query_sub(
 			'SELECT COUNT(*) FROM ^users'
 		));
 	}
 	
 
-	function qa_db_count_active_users($db, $table)
+	function qa_db_count_active_users($table)
 /*
 	Return number of active users in database $table
 */
@@ -82,149 +76,183 @@
 				break;
 		}
 		
-		return qa_db_read_one_value(qa_db_query_sub($db,
+		return qa_db_read_one_value(qa_db_query_sub(
 			'SELECT COUNT(DISTINCT(userid)) FROM ^'.$table
 		));
 	}
 	
 	
-	function qa_db_category_create($db, $title, $tags)
+	function qa_db_category_create($title, $tags)
 /*
 	Create a new category with $title (=name) and $tags (=slug)
 */
 	{
-		$position=qa_db_read_one_value(qa_db_query_sub($db, 'SELECT 1+COALESCE(MAX(position), 0) FROM ^categories'));
+		$position=qa_db_read_one_value(qa_db_query_sub('SELECT 1+COALESCE(MAX(position), 0) FROM ^categories'));
 
-		qa_db_query_sub($db,
+		qa_db_query_sub(
 			'INSERT INTO ^categories (title, tags, position) VALUES ($, $, #)',
 			$title, $tags, $position
 		);
 		
-		return qa_db_last_insert_id($db);
+		return qa_db_last_insert_id();
 	}
 	
 	
-	function qa_db_category_rename($db, $categoryid, $title, $tags)
+	function qa_db_category_rename($categoryid, $title, $tags)
 /*
 	Set the name of $categoryid to $title and its slug to $tags
 */
 	{
-		qa_db_query_sub($db,
+		qa_db_query_sub(
 			'UPDATE ^categories SET title=$, tags=$ WHERE categoryid=#',
 			$title, $tags, $categoryid
 		);
 	}
 	
 	
-	function qa_db_category_move($db, $categoryid, $newposition)
+	function qa_db_category_move($categoryid, $newposition)
 /*
 	Move the category $categoryid into position $newposition
 */
 	{
-		qa_db_ordered_move($db, 'categories', 'categoryid', $categoryid, $newposition);
+		qa_db_ordered_move('categories', 'categoryid', $categoryid, $newposition);
 	}
 	
 	
-	function qa_db_category_delete($db, $categoryid, $reassignid)
+	function qa_db_category_delete($categoryid, $reassignid)
 /*
 	Delete the category $categoryid and reassign its posts to category $reassignid (which can also be null)
 */
 	{
-		qa_db_query_sub($db, 'UPDATE ^posts SET categoryid=# WHERE categoryid=#', $reassignid, $categoryid);
-		qa_db_ordered_delete($db, 'categories', 'categoryid', $categoryid);
+		qa_db_query_sub('UPDATE ^posts SET categoryid=# WHERE categoryid=#', $reassignid, $categoryid);
+		qa_db_ordered_delete('categories', 'categoryid', $categoryid);
 	}
 	
 	
-	function qa_db_page_create($db, $title, $flags, $tags, $heading, $content)
+	function qa_db_page_create($title, $flags, $tags, $heading, $content)
 /*
 	Create a new page with $title, $flags, $tags, $heading and $content
 */
 	{
-		$position=qa_db_read_one_value(qa_db_query_sub($db, 'SELECT 1+COALESCE(MAX(position), 0) FROM ^pages'));
+		$position=qa_db_read_one_value(qa_db_query_sub('SELECT 1+COALESCE(MAX(position), 0) FROM ^pages'));
 		
-		qa_db_query_sub($db,
+		qa_db_query_sub(
 			'INSERT INTO ^pages (title, nav, flags, tags, heading, content, position) VALUES ($, \'\', #, $, $, $, #)',
 			$title, $flags, $tags, $heading, $content, $position
 		);
 		
-		return qa_db_last_insert_id($db);
+		return qa_db_last_insert_id();
 	}
 	
 	
-	function qa_db_page_set_fields($db, $pageid, $title, $flags, $tags, $heading, $content)
+	function qa_db_page_set_fields($pageid, $title, $flags, $tags, $heading, $content)
 /*
 	Set the fields of $pageid to $title, $flags, $tags, $heading, $content
 */
 	{
-		qa_db_query_sub($db,
+		qa_db_query_sub(
 			'UPDATE ^pages SET title=$, flags=#, tags=$, heading=$, content=$ WHERE pageid=#',
 			$title, $flags, $tags, $heading, $content, $pageid
 		);
 	}
 	
 	
-	function qa_db_page_move($db, $pageid, $nav, $newposition)
+	function qa_db_page_move($pageid, $nav, $newposition)
 /*
 	Move the page $pageid into navigation menu $nav and position $newposition
 */
 	{
-		qa_db_query_sub($db,
+		qa_db_query_sub(
 			'UPDATE ^pages SET nav=$ WHERE pageid=#',
 			$nav, $pageid
 		);
 
-		qa_db_ordered_move($db, 'pages', 'pageid', $pageid, $newposition);
+		qa_db_ordered_move('pages', 'pageid', $pageid, $newposition);
 	}
 	
 	
-	function qa_db_page_delete($db, $pageid)
+	function qa_db_page_delete($pageid)
 /*
 	Delete the page $pageid
 */
 	{
-		qa_db_ordered_delete($db, 'pages', 'pageid', $pageid);
+		qa_db_ordered_delete('pages', 'pageid', $pageid);
 	}
 	
 	
-	function qa_db_ordered_move($db, $table, $idcolumn, $id, $newposition)
+	function qa_db_ordered_move($table, $idcolumn, $id, $newposition)
 /*
 	Move the entity identified by $idcolumn=$id into position $newposition in $table
 */
 	{
-		qa_db_query_sub($db, 'LOCK TABLES ^'.$table.' WRITE');
+		qa_db_query_sub('LOCK TABLES ^'.$table.' WRITE');
 		
-		$oldposition=qa_db_read_one_value(qa_db_query_sub($db, 'SELECT position FROM ^'.$table.' WHERE '.$idcolumn.'=#', $id));
+		$oldposition=qa_db_read_one_value(qa_db_query_sub('SELECT position FROM ^'.$table.' WHERE '.$idcolumn.'=#', $id));
 		
-		$tempposition=qa_db_read_one_value(qa_db_query_sub($db, 'SELECT 1+MAX(position) FROM ^'.$table));
+		$tempposition=qa_db_read_one_value(qa_db_query_sub('SELECT 1+MAX(position) FROM ^'.$table));
 		
-		qa_db_query_sub($db, 'UPDATE ^'.$table.' SET position=# WHERE '.$idcolumn.'=#', $tempposition, $id);
+		qa_db_query_sub('UPDATE ^'.$table.' SET position=# WHERE '.$idcolumn.'=#', $tempposition, $id);
 			// move it temporarily off the top because we have a unique key on the position column
 		
 		if ($newposition<$oldposition)
-			qa_db_query_sub($db, 'UPDATE ^'.$table.' SET position=position+1 WHERE position BETWEEN # AND # ORDER BY position DESC', $newposition, $oldposition);
+			qa_db_query_sub('UPDATE ^'.$table.' SET position=position+1 WHERE position BETWEEN # AND # ORDER BY position DESC', $newposition, $oldposition);
 		else
-			qa_db_query_sub($db, 'UPDATE ^'.$table.' SET position=position-1 WHERE position BETWEEN # AND # ORDER BY position', $oldposition, $newposition);
+			qa_db_query_sub('UPDATE ^'.$table.' SET position=position-1 WHERE position BETWEEN # AND # ORDER BY position', $oldposition, $newposition);
 
-		qa_db_query_sub($db, 'UPDATE ^'.$table.' SET position=# WHERE '.$idcolumn.'=#', $newposition, $id);
+		qa_db_query_sub('UPDATE ^'.$table.' SET position=# WHERE '.$idcolumn.'=#', $newposition, $id);
 		
-		qa_db_query_sub($db, 'UNLOCK TABLES');
+		qa_db_query_sub('UNLOCK TABLES');
 	}
 	
 	
-	function qa_db_ordered_delete($db, $table, $idcolumn, $id)
+	function qa_db_ordered_delete($table, $idcolumn, $id)
 /*
 	Delete the entity identified by $idcolumn=$id in $table
 */
 	{
-		qa_db_query_sub($db, 'LOCK TABLES ^'.$table.' WRITE');
+		qa_db_query_sub('LOCK TABLES ^'.$table.' WRITE');
 		
-		$oldposition=qa_db_read_one_value(qa_db_query_sub($db, 'SELECT position FROM ^'.$table.' WHERE '.$idcolumn.'=#', $id));
+		$oldposition=qa_db_read_one_value(qa_db_query_sub('SELECT position FROM ^'.$table.' WHERE '.$idcolumn.'=#', $id));
 		
-		qa_db_query_sub($db, 'DELETE FROM ^'.$table.' WHERE '.$idcolumn.'=#', $id);
+		qa_db_query_sub('DELETE FROM ^'.$table.' WHERE '.$idcolumn.'=#', $id);
 		
-		qa_db_query_sub($db, 'UPDATE ^'.$table.' SET position=position-1 WHERE position># ORDER BY position', $oldposition);
+		qa_db_query_sub('UPDATE ^'.$table.' SET position=position-1 WHERE position># ORDER BY position', $oldposition);
 		
-		qa_db_query_sub($db, 'UNLOCK TABLES');
+		qa_db_query_sub('UNLOCK TABLES');
+	}
+	
+	
+	function qa_db_userfield_create($title, $content, $flags)
+	{
+		$position=qa_db_read_one_value(qa_db_query_sub('SELECT 1+COALESCE(MAX(position), 0) FROM ^userfields'));
+		
+		qa_db_query_sub(
+			'INSERT INTO ^userfields (title, content, position, flags) VALUES ($, $, #, #)',
+			$title, $content, $position, $flags
+		);
+
+		return qa_db_last_insert_id();
+	}
+	
+	
+	function qa_db_userfield_set_fields($fieldid, $content, $flags)
+	{
+		qa_db_query_sub(
+			'UPDATE ^userfields SET content=$, flags=# WHERE fieldid=#',
+			$content, $flags, $fieldid
+		);
+	}
+	
+	
+	function qa_db_userfield_move($fieldid, $newposition)
+	{
+		qa_db_ordered_move('userfields', 'fieldid', $fieldid, $newposition);
+	}
+
+	
+	function qa_db_userfield_delete($fieldid)
+	{
+		qa_db_ordered_delete('userfields', 'fieldid', $fieldid);
 	}
 	
 
