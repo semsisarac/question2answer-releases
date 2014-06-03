@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.3
-	Date: 2010-11-23 06:34:00 GMT
+	Version: 1.3.1
+	Date: 2011-02-01 12:56:28 GMT
 	Description: Common functions for creating theme-ready structures from data
 
 
@@ -232,6 +232,8 @@
 				
 				$fields['answers']=($post['acount']==1) ? qa_lang_html_sub_split('main/1_answer', '1', '1')
 					: qa_lang_html_sub_split('main/x_answers', number_format($post['acount']));
+					
+				$fields['answer_selected']=isset($post['selchildid']);
 			}
 
 			if (isset($post['categoryid'])) {
@@ -382,6 +384,9 @@
 				if (isset($options['pointstitle']))
 					$fields['who']['title']=qa_get_points_title_html($post['points'], $options['pointstitle']);
 			}
+				
+			if (isset($post['level']))
+				$fields['who']['level']=qa_html(qa_user_level_string($post['level']));
 		}
 
 		if ((!QA_EXTERNAL_USERS) && (@$options['avatarsize']>0))
@@ -481,6 +486,9 @@
 				if (isset($options['pointstitle']))
 					$fields['who']['title']=qa_get_points_title_html($question['opoints'], $options['pointstitle']);
 			}
+
+			if (isset($question['olevel']))
+				$fields['who']['level']=qa_html(qa_user_level_string($question['olevel']));
 		}
 		
 		unset($fields['avatar']);

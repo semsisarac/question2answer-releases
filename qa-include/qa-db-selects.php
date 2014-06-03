@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-selects.php
-	Version: 1.3
-	Date: 2010-11-23 06:34:00 GMT
+	Version: 1.3.1
+	Date: 2011-02-01 12:56:28 GMT
 	Description: Builders of selectspec arrays (see qa-db.php) used to specify database SELECTs
 
 
@@ -124,12 +124,13 @@
 			$selectspec['columns'][]='^userpoints.points';
 
 			if (!QA_EXTERNAL_USERS) {
-				$selectspec['columns']['flags']='^users.flags';
+				$selectspec['columns'][]='^users.flags';
+				$selectspec['columns'][]='^users.level';
 				$selectspec['columns']['email']='BINARY ^users.email';
 				$selectspec['columns']['handle']='BINARY ^users.handle';
-				$selectspec['columns']['avatarblobid']='^users.avatarblobid';
-				$selectspec['columns']['avatarwidth']='^users.avatarwidth';
-				$selectspec['columns']['avatarheight']='^users.avatarheight';
+				$selectspec['columns'][]='^users.avatarblobid';
+				$selectspec['columns'][]='^users.avatarwidth';
+				$selectspec['columns'][]='^users.avatarheight';
 				$selectspec['source'].=' LEFT JOIN ^users ON ^posts.userid=^users.userid';
 				
 				if ($full) {
@@ -225,6 +226,7 @@
 		
 		if (!QA_EXTERNAL_USERS) {
 			$selectspec['columns']['oflags']='ausers.flags';
+			$selectspec['columns']['olevel']='ausers.level';
 			$selectspec['columns']['oemail']='BINARY ausers.email';
 			$selectspec['columns']['ohandle']='BINARY ausers.handle';
 			$selectspec['columns']['oavatarblobid']='BINARY ausers.avatarblobid'; // cast to BINARY due to MySQL bug which renders it signed in a union
@@ -284,6 +286,7 @@
 		
 		if (!QA_EXTERNAL_USERS) {
 			$selectspec['columns']['oflags']='cusers.flags';
+			$selectspec['columns']['olevel']='cusers.level';
 			$selectspec['columns']['oemail']='BINARY cusers.email';
 			$selectspec['columns']['ohandle']='BINARY cusers.handle';
 			$selectspec['columns']['oavatarblobid']='BINARY cusers.avatarblobid'; // cast to BINARY due to MySQL bug which renders it signed in a union
@@ -345,6 +348,7 @@
 		
 		if (!QA_EXTERNAL_USERS) {
 			$selectspec['columns']['oflags']='editusers.flags';
+			$selectspec['columns']['olevel']='editusers.level';
 			$selectspec['columns']['oemail']='BINARY editusers.email';
 			$selectspec['columns']['ohandle']='BINARY editusers.handle';
 			$selectspec['columns']['oavatarblobid']='BINARY editusers.avatarblobid'; // // cast to BINARY due to MySQL bug which renders it signed in a union

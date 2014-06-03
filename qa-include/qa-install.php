@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-install.php
-	Version: 1.3
-	Date: 2010-11-23 06:34:00 GMT
+	Version: 1.3.1
+	Date: 2011-02-01 12:56:28 GMT
 	Description: User interface for installing, upgrading and fixing the database
 
 

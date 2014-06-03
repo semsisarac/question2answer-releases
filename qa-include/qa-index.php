@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-index.php
-	Version: 1.3
-	Date: 2010-11-23 06:34:00 GMT
+	Version: 1.3.1
+	Date: 2011-02-01 12:56:28 GMT
 	Description: The Grand Central of Q2A - most requests come through here
 
 
@@ -47,7 +47,7 @@
 //	Determine the request and root of the installation, and the requested start position used by many pages
 	
 	$relativedepth=0;
-	$rootpath=dirname($_SERVER['PHP_SELF']);
+	$rootpath=strtr(dirname($_SERVER['PHP_SELF']), '\\', '/');
 	
 	if (isset($_GET['qa-rewrite'])) { // URLs rewritten by .htaccess
 		$qa_used_url_format=QA_URL_FORMAT_NEAT;

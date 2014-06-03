@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-viewer-basic.php
-	Version: 1.3
-	Date: 2010-11-23 06:34:00 GMT
+	Version: 1.3.1
+	Date: 2011-02-01 12:56:28 GMT
 	Description: Basic viewer module for displaying HTML or plain text
 
 
@@ -39,7 +39,7 @@
 		function load_module($localdir, $htmldir)
 		{
 			$this->htmllineseparators='br|option';
-			$this->htmlparagraphseparators='address|applet|blockquote|center|cite|code|col|div|dd|dl|dt|embed|form|frame|frameset|h1|h2|h3|h4|h5|h6'.
+			$this->htmlparagraphseparators='address|applet|blockquote|center|cite|col|div|dd|dl|dt|embed|form|frame|frameset|h1|h2|h3|h4|h5|h6'.
 				'|hr|iframe|input|li|marquee|ol|p|pre|samp|select|spacer|table|tbody|td|textarea|tfoot|th|thead|tr|ul';
 		}
 		

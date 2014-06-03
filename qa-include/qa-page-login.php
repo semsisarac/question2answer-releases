@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-login.php
-	Version: 1.3
-	Date: 2010-11-23 06:34:00 GMT
+	Version: 1.3.1
+	Date: 2011-02-01 12:56:28 GMT
 	Description: Controller for login page
 
 
@@ -70,7 +70,6 @@
 					require_once QA_INCLUDE_DIR.'qa-app-users.php';
 	
 					qa_set_logged_in_user($inuserid, $userinfo['handle'], $inremember ? true : false);
-					qa_db_user_logged_in($inuserid, @$_SERVER['REMOTE_ADDR']);
 					
 					$topath=qa_get('to');
 					

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.3
-	Date: 2010-11-23 06:34:00 GMT
+	Version: 1.3.1
+	Date: 2011-02-01 12:56:28 GMT
 	Description: Sets up Q2A environment, plus many globally useful functions
 
 
@@ -31,7 +31,7 @@
 	
 //	Set the version to be used for internal reference and a suffix for .js and .css requests
 
-	define('QA_VERSION', '1.3');
+	define('QA_VERSION', '1.3.1');
 
 //	Basic PHP configuration checks and unregister globals
 
@@ -39,6 +39,8 @@
 		qa_fatal_error('This requires PHP 4.3 or later');
 
 	@ini_set('magic_quotes_runtime', 0);
+	
+	@setlocale(LC_CTYPE, 'C'); // prevent strtolower() et al affecting non-ASCII characters (appears important for IIS)
 	
 	if (ini_get('register_globals')) {
 		$checkarrays=array('_ENV', '_GET', '_POST', '_COOKIE', '_SERVER', '_FILES', '_REQUEST', '_SESSION');
@@ -94,7 +96,18 @@
 	{
 		require_once 'qa-htmLawed.php';
 		
-		return htmLawed($html, array('safe' => 1, 'keep_bad' => 0, 'anti_link_spam' => array('/.*/', '')));
+		$html=preg_replace('/(<[^>\w]*param[^>\w][^>]*[^>\w])AllowScriptAccess([^\w])/i', '\1Denied_AllowScriptAccess\2', $html);
+			// remove <PARAM NAME="AllowScriptAccess"...> tags in Flash embed code (avoid using hook_tag in htmLawed)
+		
+		$safe=htmLawed($html, array(
+			'safe' => 1,
+			'elements' => '*+embed+object',
+			'schemes' => 'href: aim, feed, file, ftp, gopher, http, https, irc, mailto, news, nntp, sftp, ssh, telnet; *:file, http, https; style: !; classid:clsid',
+			'keep_bad' => 0,
+			'anti_link_spam' => array('/.*/', '')
+		));
+		
+		return $safe;
 	}
 	
 	

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page.php
-	Version: 1.3
-	Date: 2010-11-23 06:34:00 GMT
+	Version: 1.3.1
+	Date: 2011-02-01 12:56:28 GMT
 	Description: Routing and utility functions for page requests
 
 
@@ -29,13 +29,6 @@
 //	Table routing requests to the appropriate PHP file
 
 	$qa_routing=array(
-		'' => QA_INCLUDE_DIR.'qa-page-home.php',
-		'qa' => QA_INCLUDE_DIR.'qa-page-home.php',
-		'questions' => QA_INCLUDE_DIR.'qa-page-home.php',
-		'unanswered' => QA_INCLUDE_DIR.'qa-page-home.php',
-		'answers' => QA_INCLUDE_DIR.'qa-page-home.php', // not currently in navigation
-		'comments' => QA_INCLUDE_DIR.'qa-page-home.php', // not currently in navigation
-		'activity' => QA_INCLUDE_DIR.'qa-page-home.php',
 		'ask' => QA_INCLUDE_DIR.'qa-page-ask.php',
 		'search' => QA_INCLUDE_DIR.'qa-page-search.php',
 		'categories' => QA_INCLUDE_DIR.'qa-page-categories.php',
@@ -290,6 +283,9 @@
 			'sidepanel' => qa_opt('show_custom_sidepanel') ? qa_opt('custom_sidepanel') : null,
 		);
 		
+		if (isset($categoryid))
+			$qa_content['categoryid']=$categoryid;
+		
 		foreach ($qa_nav_pages_cached as $page)
 			if ($page['nav']=='B')
 				qa_navigation_add_page($qa_content['navigation']['main'], $page);
@@ -526,7 +522,7 @@
 			$qa_content=require QA_INCLUDE_DIR.'qa-page-ip.php';
 	
 		} else {
-			$qa_template='home';
+			$qa_template=strlen($qa_request_lc_parts[0]) ? $qa_request_lc_parts[0] : 'qa';
 			$qa_content=require QA_INCLUDE_DIR.'qa-page-home.php'; // handles many other pages, including custom pages and page modules
 		}
 	}
@@ -545,6 +541,13 @@
 			return true;
 			
 		switch ($requestpart) {
+			case '':
+			case 'qa':
+			case 'questions':
+			case 'unanswered':
+			case 'answers':
+			case 'comments':
+			case 'activity':
 			case 'tag':
 			case 'user':
 			case 'ip':
@@ -693,6 +696,14 @@
 	
 		$themeclass->head_css();
 		$themeclass->head_custom();
+		
+		if (isset($qa_content['css_src']))
+			foreach ($qa_content['css_src'] as $css_src)
+				$themeclass->output('<LINK REL="stylesheet" TYPE="text/css" HREF="'.$css_src.'"/>');
+		
+		if (isset($qa_content['head_lines']))
+			foreach ($qa_content['head_lines'] as $line)
+				$themeclass->output_raw($line);
 	
 		if (qa_opt('show_custom_in_head'))
 			$themeclass->output_raw(qa_opt('custom_in_head'));

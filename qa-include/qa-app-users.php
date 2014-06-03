@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users.php
-	Version: 1.3
-	Date: 2010-11-23 06:34:00 GMT
+	Version: 1.3.1
+	Date: 2011-02-01 12:56:28 GMT
 	Description: User management (application level) for basic user operations
 
 
@@ -147,6 +147,7 @@
 				$sessioncode=qa_db_user_rand_sessioncode();
 				qa_db_user_set($userid, 'sessioncode', $sessioncode);
 				qa_db_user_set($userid, 'sessionsource', $source);
+				qa_db_user_logged_in($userid, @$_SERVER['REMOTE_ADDR']);
 				qa_set_session_cookie($handle, $sessioncode, $remember);
 				
 			} else {

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-theme-base.php
-	Version: 1.3
-	Date: 2010-11-23 06:34:00 GMT
+	Version: 1.3.1
+	Date: 2011-02-01 12:56:28 GMT
 	Description: Default theme class, broken into lots of little functions for easy overriding
 
 
@@ -106,7 +106,7 @@
 		}
 
 		
-		function output_split($parts, $class, $outertag='SPAN', $innertag='SPAN')
+		function output_split($parts, $class, $outertag='SPAN', $innertag='SPAN', $extraclass=null)
 	/*
 		Output the three elements ['prefix'], ['data'] and ['suffix'] of $parts (if they're defined),
 		with appropriate CSS classes based on $class, using $outertag and $innertag in the markup.
@@ -116,7 +116,7 @@
 				return;
 				
 			$this->output(
-				'<'.$outertag.' CLASS="'.$class.'">',
+				'<'.$outertag.' CLASS="'.$class.(isset($extraclass) ? (' '.$extraclass) : '').'">',
 				(strlen(@$parts['prefix']) ? ('<'.$innertag.' CLASS="'.$class.'-pad">'.$parts['prefix'].'</'.$innertag.'>') : '').
 				(strlen(@$parts['data']) ? ('<'.$innertag.' CLASS="'.$class.'-data">'.$parts['data'].'</'.$innertag.'>') : '').
 				(strlen(@$parts['suffix']) ? ('<'.$innertag.' CLASS="'.$class.'-pad">'.$parts['suffix'].'</'.$innertag.'>') : ''),
@@ -179,7 +179,14 @@
 		}
 		
 		function body_tags()
-		{} // abstract method
+		{
+			$class='qa-template-'.qa_html($this->template);
+			
+			if (isset($this->content['categoryid']))
+				$class.=' qa-category-'.qa_html($this->content['categoryid']);
+			
+			$this->output('CLASS="'.$class.'"');
+		}
 
 		function body_prefix()
 		{} // abstract method
@@ -1025,7 +1032,8 @@
 		{
 			// You can also use $post['answers_raw'] to get a raw integer count of answers
 			
-			$this->output_split(@$post['answers'], 'qa-a-count');
+			$this->output_split(@$post['answers'], 'qa-a-count', 'SPAN', 'SPAN',
+				@$post['answer_selected'] ? 'qa-a-count-selected' : null);
 		}
 		
 		function avatar($post, $class)
@@ -1153,6 +1161,8 @@
 				
 				if (isset($post['who']['title']))
 					$this->output('<SPAN CLASS="'.$class.'-who-title">'.$post['who']['title'].'</SPAN>');
+					
+				// You can also use $post['level'] to get the author's privilege level (as a string)
 	
 				if (isset($post['who']['points'])) {
 					$post['who']['points']['prefix']='('.$post['who']['points']['prefix'];
