@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-recalc.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,8 +27,12 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	require_once QA_INCLUDE_DIR.'qa-db-post-create.php';
 	
@@ -143,10 +147,16 @@
 
 	function qa_db_users_get_for_recalc_points($db, $startuserid, $count)
 	{
-		return qa_db_read_all_values(qa_db_query_sub($db,
-			'(SELECT DISTINCT userid FROM ^posts WHERE userid>=# ORDER BY userid LIMIT #) UNION (SELECT DISTINCT userid FROM ^uservotes WHERE userid>=# ORDER BY userid LIMIT #)',
-			$startuserid, $count, $startuserid, $count
-		));
+		if (QA_EXTERNAL_USERS)
+			return qa_db_read_all_values(qa_db_query_sub($db,
+				'(SELECT DISTINCT userid FROM ^posts WHERE userid>=# ORDER BY userid LIMIT #) UNION (SELECT DISTINCT userid FROM ^uservotes WHERE userid>=# ORDER BY userid LIMIT #)',
+				$startuserid, $count, $startuserid, $count
+			));
+		else
+			return qa_db_read_all_values(qa_db_query_sub($db,
+				'SELECT DISTINCT userid FROM ^users WHERE userid>=# ORDER BY userid LIMIT #',
+				$startuserid, $count
+			));
 	}
 	
 	function qa_db_users_recalc_points($db, $firstuserid, $lastuserid)
@@ -160,10 +170,16 @@
 			$firstuserid, $lastuserid
 		);
 		
-		qa_db_query_sub($db,
-			'INSERT INTO ^userpoints (userid) SELECT DISTINCT userid FROM ^posts WHERE userid>=# AND userid<=# UNION SELECT DISTINCT userid FROM ^uservotes WHERE userid>=# AND userid<=#',
-			$firstuserid, $lastuserid, $firstuserid, $lastuserid
-		);
+		if (QA_EXTERNAL_USERS)
+			qa_db_query_sub($db,
+				'INSERT INTO ^userpoints (userid) SELECT DISTINCT userid FROM ^posts WHERE userid>=# AND userid<=# UNION SELECT DISTINCT userid FROM ^uservotes WHERE userid>=# AND userid<=#',
+				$firstuserid, $lastuserid, $firstuserid, $lastuserid
+			);
+		else
+			qa_db_query_sub($db,
+				'INSERT INTO ^userpoints (userid) SELECT DISTINCT userid FROM ^users WHERE userid>=# AND userid<=#',
+				$firstuserid, $lastuserid
+			);
 		
 		$updatepoints=(int)qa_get_option($db, 'points_base');
 		

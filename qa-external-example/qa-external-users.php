@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-external-example/qa-external-users.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,11 +27,20 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-Your functions for integrating with your existing user management system.
-This file is used if QA_EXTERNAL_USERS is set to true in qa-config.php.
 */
+
+/*
+	=========================================================================
+	THIS FILE ALLOWS YOU TO INTEGRATE WITH AN EXISTING USER MANAGEMENT SYSTEM
+	=========================================================================
+
+	It is used if QA_EXTERNAL_USERS is set to true in qa-config.php.
+*/
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 /*
 	==========================================================================
@@ -352,19 +361,21 @@ This file is used if QA_EXTERNAL_USERS is set to true in qa-config.php.
 		* Your database is shared with the QA site
 		* Your database has a users table that contains usernames
 		
-		$escapedusernames=array();
-		foreach ($publicusernames as $publicusername)
-			$escapedusernames[]="'".mysql_real_escape_string($publicusername, $qa_db_connection)."'";
-		
-		$results=mysql_query(
-			'SELECT username, userid FROM users WHERE username IN ('.implode(',', $escapedusernames).')',
-			$qa_db_connection
-		);
-
 		$publictouserid=array();
-		
-		while ($result=mysql_fetch_assoc($results))
-			$publictouserid[$result['username']]=$result['userid'];
+			
+		if (count($publicusernames)) {
+			$escapedusernames=array();
+			foreach ($publicusernames as $publicusername)
+				$escapedusernames[]="'".mysql_real_escape_string($publicusername, $qa_db_connection)."'";
+			
+			$results=mysql_query(
+				'SELECT username, userid FROM users WHERE username IN ('.implode(',', $escapedusernames).')',
+				$qa_db_connection
+			);
+	
+			while ($result=mysql_fetch_assoc($results))
+				$publictouserid[$result['username']]=$result['userid'];
+		}
 		
 		return $publictouserid;
 	*/
@@ -419,19 +430,21 @@ This file is used if QA_EXTERNAL_USERS is set to true in qa-config.php.
 		* Your database is shared with the QA site
 		* Your database has a users table that contains usernames
 		
-		$escapeduserids=array();
-		foreach ($userids as $userid)
-			$escapeduserids[]="'".mysql_real_escape_string($userid, $qa_db_connection)."'";
-		
-		$results=mysql_query(
-			'SELECT username, userid FROM users WHERE userid IN ('.implode(',', $escapeduserids).')',
-			$qa_db_connection
-		);
-
 		$useridtopublic=array();
 		
-		while ($result=mysql_fetch_assoc($results))
-			$useridtopublic[$result['userid']]=$result['username'];
+		if (count($userids)) {
+			$escapeduserids=array();
+			foreach ($userids as $userid)
+				$escapeduserids[]="'".mysql_real_escape_string($userid, $qa_db_connection)."'";
+			
+			$results=mysql_query(
+				'SELECT username, userid FROM users WHERE userid IN ('.implode(',', $escapeduserids).')',
+				$qa_db_connection
+			);
+	
+			while ($result=mysql_fetch_assoc($results))
+				$useridtopublic[$result['userid']]=$result['username'];
+		}
 		
 		return $useridtopublic;
 	*/
@@ -611,7 +624,7 @@ This file is used if QA_EXTERNAL_USERS is set to true in qa-config.php.
 	
 	$action is one of:
 	q_post, q_edit, q_hide, q_reshow, q_claim, q_vote_up, q_vote_down, q_vote_nil
-	a_post, a_edit, a_hide, a_reshow, a_claim, a_vote_up, a_vote_down, a_vote_nil, a_select, a_unselect
+	a_post, a_edit, a_hide, a_reshow, a_claim, a_vote_up, a_vote_down, a_vote_nil, a_select, a_unselect, a_to_c
 	c_post, c_edit, c_hide, c_reshow, c_claim
 	
 	$questionid and/or $answerid and/or $commentid contain the ID of the relevant question or answer

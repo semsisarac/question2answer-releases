@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-post-update.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,8 +27,12 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	function qa_db_post_set_selchildid($db, $postid, $selchildid)
 	{
@@ -43,6 +47,14 @@
 		qa_db_query_sub($db,
 			'UPDATE ^posts SET type=$, updated=NOW(), lastuserid=$ WHERE postid=#',
 			$type, $lastuserid, $postid
+		);
+	}
+	
+	function qa_db_post_set_parent($db, $postid, $parentid, $lastuserid)
+	{
+		qa_db_query_sub($db,
+			'UPDATE ^posts SET parentid=#, updated=NOW(), lastuserid=$ WHERE postid=#',
+			$parentid, $lastuserid, $postid
 		);
 	}
 	

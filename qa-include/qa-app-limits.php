@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-limits.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,8 +27,12 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	require_once QA_INCLUDE_DIR.'qa-db-limits.php';
 	
@@ -37,7 +41,7 @@
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 
 		$period=(int)(time()/3600);
-		$dblimits=qa_db_limits_get($db, $userid, $_SERVER['REMOTE_ADDR'], $action);
+		$dblimits=qa_db_limits_get($db, $userid, @$_SERVER['REMOTE_ADDR'], $action);
 		
 		switch ($action) {
 			case 'Q':
@@ -78,7 +82,7 @@
 		if (isset($userid))
 			qa_db_limits_user_add($db, $userid, $action, $period, 1);
 		
-		qa_db_limits_ip_add($db, $_SERVER['REMOTE_ADDR'], $action, $period, 1);
+		qa_db_limits_ip_add($db, @$_SERVER['REMOTE_ADDR'], $action, $period, 1);
 	}
 	
 	function qa_report_write_action($db, $userid, $cookieid, $action, $questionid, $answerid, $commentid)

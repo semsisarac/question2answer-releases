@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-util-string.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,10 +27,14 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
 
-	function qa_string_to_words($string)
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
+
+	function qa_string_to_words($string, $tolowercase=true, $delimiters=false)
 	{
 		// Array to convert UTF-8 punctuation characters to spaces (or in some cases, hyphens)
 		
@@ -90,13 +94,13 @@
 			"\xE2\x81\x89" => ' ', // EXCLAMATION QUESTION MARK
 		);
 		
-		$string=strtr(qa_strtolower($string), $utf8punctuation);
+		$string=strtr($tolowercase ? qa_strtolower($string) : $string, $utf8punctuation);
 		
 		// ASCII symbols - notable exclusions: $ & - _ # % @
 		
-		$matchstring='/[\n\r\t\ \!\"\\\'\(\)\*\+\,\.\/\:\;\<\=\>\?\[\\\\\]\^\`\{\|\}\~]+/';
+		$matchstring='/([\n\r\t\ \!\"\\\'\(\)\*\+\,\.\/\:\;\<\=\>\?\[\\\\\]\^\`\{\|\}\~]+)/';
 
-		return preg_split($matchstring, $string, -1, PREG_SPLIT_NO_EMPTY);
+		return preg_split($matchstring, $string, -1, PREG_SPLIT_NO_EMPTY | ($delimiters ? PREG_SPLIT_DELIM_CAPTURE : 0));
 	}
 	
 	function qa_tags_to_tagstring($tags)
@@ -107,6 +111,44 @@
 	function qa_tagstring_to_tags($tagstring)
 	{
 		return empty($tagstring) ? array() : explode(',', $tagstring);
+	}
+	
+	function qa_shorten_string_line($string, $length)
+	{
+		$string=strtr($string, "\r\n\t", '   ');
+		
+		if (qa_strlen($string)>$length) {
+			$remaining=$length-3;
+			
+			$words=qa_string_to_words($string, false, true);
+			$countwords=count($words);
+			
+			$prefix='';
+			$suffix='';
+			
+			for ($addword=0; $addword<$countwords; $addword++) {
+				$tosuffix=(($addword%3)==1); // order: prefix, suffix, prefix, prefix, suffix, prefix, ...
+				
+				if ($tosuffix)
+					$word=array_pop($words);
+				else
+					$word=array_shift($words);
+				
+				if (qa_strlen($word)>$remaining)
+					break;
+				
+				if ($tosuffix)
+					$suffix=$word.$suffix;
+				else
+					$prefix.=$word;
+				
+				$remaining-=qa_strlen($word);
+			}
+			
+			$string=$prefix.' ... '.$suffix;
+		}
+		
+		return $string;
 	}
 	
 	function qa_random_alphanum($length)

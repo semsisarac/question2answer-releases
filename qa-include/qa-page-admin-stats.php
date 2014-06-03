@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-stats.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,24 +27,34 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	require_once QA_INCLUDE_DIR.'qa-db-recalc.php';
 	require_once QA_INCLUDE_DIR.'qa-app-admin.php';
 	require_once QA_INCLUDE_DIR.'qa-db-admin.php';
 	
-//	Check we have administrative privileges
+//	Standard pre-admin operations
 
+	qa_admin_pending();
+	
 	if (!qa_admin_check_privileges())
 		return;
 
 //	Get the information to display
 
+	qa_options_set_pending(array('cache_qcount', 'cache_acount', 'cache_ccount', 'cache_userpointscount'));
+
 	$qcount=qa_get_option($qa_db, 'cache_qcount');
 	$qcount_anon=qa_db_count_posts($qa_db, 'Q', false);
+
 	$acount=qa_get_option($qa_db, 'cache_acount');
 	$acount_anon=qa_db_count_posts($qa_db, 'A', false);
+
 	$ccount=qa_get_option($qa_db, 'cache_ccount');
 	$ccount_anon=qa_db_count_posts($qa_db, 'C', false);
 	
@@ -53,6 +63,8 @@
 	qa_content_prepare();
 
 	$qa_content['title']=qa_lang_html('admin/admin_title').' - '.qa_lang_html('admin/stats_title');
+	
+	$qa_content['error']=qa_admin_page_error($qa_db);
 
 	$qa_content['form']=array(
 		'style' => 'wide',
@@ -119,6 +131,11 @@
 				'label' => qa_lang_html('admin/users_registered'),
 				'value' => QA_EXTERNAL_USERS ? '' : qa_html(number_format(qa_db_count_users($qa_db))),
 			),
+	
+			'users_active' => array(
+				'label' => qa_lang_html('admin/users_active'),
+				'value' => qa_html(number_format(qa_get_option($qa_db, 'cache_userpointscount'))),
+			),
 			
 			'users_posted' => array(
 				'label' => qa_lang_html('admin/users_posted'),
@@ -129,16 +146,13 @@
 				'label' => qa_lang_html('admin/users_voted'),
 				'value' => qa_html(number_format(qa_db_count_active_users($qa_db, 'uservotes'))),
 			),
-	
-			'users_points' => array(
-				'label' => qa_lang_html('admin/users_points'),
-				'value' => qa_html(number_format(qa_get_option($qa_db, 'cache_userpointscount'))),
-			),
 		),
 	);
 	
 	if (QA_EXTERNAL_USERS)
 		unset($qa_content['form']['fields']['users']);
+	else
+		unset($qa_content['form']['fields']['users_active']);
 
 	foreach ($qa_content['form']['fields'] as $index => $field)
 		if (empty($field['type']))

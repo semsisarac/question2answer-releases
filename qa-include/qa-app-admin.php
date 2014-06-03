@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-admin.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,8 +27,12 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	function qa_admin_check_privileges()
 	{
@@ -191,19 +195,24 @@
 				'url' => qa_path_html('admin/points'),
 			),
 			
-			'admin/stats' => array(
-				'label' => qa_lang('admin/stats_title'),
-				'url' => qa_path_html('admin/stats'),
-			),
-			
-			'admin/limits' => array(
-				'label' => qa_lang('admin/limits_title'),
-				'url' => qa_path_html('admin/limits'),
+			'admin/spam' => array(
+				'label' => qa_lang('admin/spam_title'),
+				'url' => qa_path_html('admin/spam'),
 			),
 
 			'admin/users' => array(
 				'label' => qa_lang('admin/users_title'),
 				'url' => qa_path_html('admin/users'),
+			),
+			
+			'admin/hidden' => array(
+				'label' => qa_lang('admin/hidden_title'),
+				'url' => qa_path_html('admin/hidden'),
+			),
+			
+			'admin/stats' => array(
+				'label' => qa_lang('admin/stats_title'),
+				'url' => qa_path_html('admin/stats'),
 			),
 		);
 		
@@ -211,6 +220,28 @@
 			unset($navigation['admin/users']);
 		
 		return $navigation;
+	}
+	
+	function qa_admin_pending()
+	{
+		qa_options_set_pending(array('db_version'));
+	}
+	
+	function qa_admin_page_error($db)
+	{
+		@include_once QA_INCLUDE_DIR.'qa-db-install.php';
+		
+		if (defined('QA_DB_VERSION_CURRENT') && (qa_get_option($db, 'db_version')<QA_DB_VERSION_CURRENT))
+			return strtr(
+				qa_lang_html('admin/upgrade_db'),
+				
+				array(
+					'^1' => '<A HREF="'.qa_path_html('install').'">',
+					'^2' => '</A>',
+				)
+			);
+		else
+			return null;
 	}
 
 ?>

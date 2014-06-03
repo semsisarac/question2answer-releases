@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-options.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,12 +27,13 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
 
 	return array(
 		'answer_needs_login' => 'Login required to answer a question:',
 		'ask_needs_login' => 'Login required to ask a question:',
+		'captcha_on_register' => 'Use reCAPTCHA for user registration:',
+		'captcha_on_anon_post' => 'Use reCAPTCHA for anonymous posts:',
 		'columns_tags' => 'Tags page columns:',
 		'columns_users' => 'Users page columns:',
 		'comment_needs_login' => 'Login required to add comments:',
@@ -51,12 +52,13 @@
 		'do_example_tags' => 'Show example tags based on question:',
 		'do_related_qs' => 'Show related questions on question page:',
 		'email_privacy' => 'Privacy note for email on all forms (HTML allowed):', 
-		'feedback_email' => 'Email to receive feedback messages (not shown to users):',
+		'feedback_email' => 'Email to send you messages (not shown to users):',
+		'feedback_enabled' => 'Provide a form for users to send you feedback', 
 		'follow_on_as' => 'Allow new questions to be related to answers:',
 		'from_email' => 'Sender address for all administrative messages:',
 		'logo_height' => 'Height of logo in pixels:',
 		'logo_show' => 'Show a logo image in the page header',
-		'logo_url' => 'URL of logo (absolute or relative from QA directory):',
+		'logo_url' => 'URL of logo (absolute or relative to QA root):',
 		'logo_width' => 'Width of logo in pixels:',
 		'match_1' => 'Narrowest',
 		'match_2' => 'Narrower',
@@ -78,8 +80,9 @@
 		'min_len_c_content' => 'Minimum characters in comment:',
 		'min_len_q_content' => 'Minimum characters in question body:',
 		'min_len_q_title' => 'Minimum characters in question title:',
+		'nav_unanswered' => 'Show navigation link to unanswered questions',
 		'neat_urls' => 'Neat URLs without index.php',
-		'page_size_as' => 'Answered page length:',
+		'notify_admin_q_post' => 'Email you when a new question is posted',
 		'page_size_ask_check_qs' => 'Maximum similar questions to show:',
 		'page_size_ask_tags' => 'Maximum tag hints to show:',
 		'page_size_home' => 'Home page length:',
@@ -88,6 +91,7 @@
 		'page_size_search' => 'Questions on search page:',
 		'page_size_tag_qs' => 'Questions on tag page:',
 		'page_size_tags' => 'Tags page length:',
+		'page_size_una_qs' => 'Unanswered page length:',
 		'page_size_user_as' => 'Answers on user page:',
 		'page_size_user_qs' => 'Questions on user page:',
 		'page_size_users' => 'Users page length:',
@@ -106,9 +110,12 @@
 		'points_select_a' => 'Selecting the best answer for your question:',
 		'points_vote_on_a' => 'Voting on an answer:',
 		'points_vote_on_q' => 'Voting on a question:',
+		'recaptcha_private_key' => 'Your reCAPTCHA private key:',
+		'recaptcha_public_key' => 'Your reCAPTCHA public key:',
 		'show_url_links' => 'Detect and link URLs in entered text:',
+		'show_user_points' => 'Display points next to usernames:',
 		'site_language' => 'The language for your site interface:',
-		'site_theme' => 'The visual theme to use for your Q&A site:',
+		'site_theme' => 'The visual theme for your site:',
 		'site_title' => 'The name of your website for page titles:',
 		'site_url' => 'The URL to use when referring to your site:',
 		'votes_separated' => 'Show separate up and down votes:',

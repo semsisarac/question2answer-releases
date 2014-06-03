@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-options.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,8 +27,12 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	require_once QA_INCLUDE_DIR.'qa-db-options.php';
 
@@ -46,7 +50,7 @@
 	//	If any options not cached, retrieve them, and set as default if missing
 
 		if (qa_options_set_pending($names)) {
-			qa_options_load_options(qa_db_single_select($db, qa_options_pending_selectspec()));
+			qa_options_load_options($db, qa_db_single_select($db, qa_options_pending_selectspec()));
 			
 			foreach ($names as $name)
 				if (!isset($qa_options_cache[$name]))
@@ -93,13 +97,19 @@
 			return false;
 	}
 	
-	function qa_options_load_options($gotoptions)
+	function qa_options_load_options($db, $gotoptions)
 	{
 		global $qa_options_cache, $qa_options_pending;
 		
 		foreach ($gotoptions as $name => $value) {
 			$qa_options_cache[$name]=$value;
 			unset($qa_options_pending[$name]);
+		}
+		
+		// special case since we don't want to store the default sidebar, in case user changes site title or language
+		if (isset($qa_options_pending['custom_sidebar'])) {
+			$qa_options_cache['custom_sidebar']=qa_default_option('custom_sidebar');
+			unset($qa_options_pending['custom_sidebar']);
 		}
 	}
 
@@ -121,11 +131,13 @@
 	
 	function qa_default_option($name)
 	{
-		global $qa_root_url_inferred;
+		global $qa_root_url_inferred, $qa_options_cache;
 		
 		$fixed_defaults=array(
 			'answer_needs_login' => 0,
 			'ask_needs_login' => 0,
+			'captcha_on_register' => 1,
+			'captcha_on_anon_post' => 1,
 			'comment_needs_login' => 0,
 			'comment_on_qs' => 1,
 			'comment_on_as' => 1,
@@ -135,6 +147,7 @@
 			'do_example_tags' => 1,
 			'do_complete_tags' => 1,
 			'do_related_qs' => 1,
+			'feedback_enabled' => 1,
 			'follow_on_as' => 1,
 			'match_ask_check_qs' => 3,
 			'match_related_qs' => 3,
@@ -151,13 +164,14 @@
 			'min_len_q_content' => 0,
 			'min_len_q_title' => 12,
 			'min_len_c_content' => 12,
+			'nav_unanswered' => 1,
 			'neat_urls' => 0,
-			'page_size_as' => 20,
 			'page_size_ask_check_qs' => 5,
 			'page_size_home' => 20,
 			'page_size_qs' => 20,
 			'page_size_related_qs' => 5,
 			'page_size_search' => 10,
+			'page_size_una_qs' => 20,
 			'page_size_ask_tags' => 5,
 			'page_size_tag_qs' => 20,
 			'page_size_tags' => 30,
@@ -180,6 +194,7 @@
 			'points_vote_on_a' => 1,
 			'points_vote_on_q' => 1,
 			'show_url_links' => 1,
+			'show_user_points' => 1,
 			'site_theme' => 'Default',
 			'voting_on_qs' => 1,
 			'voting_on_as' => 1,
@@ -208,13 +223,22 @@
 					break;
 					
 				case 'email_privacy':
+					if (!isset($qa_options_cache['site_language'])) // to prevent infinite loop
+						$qa_options_cache['site_language']=qa_default_option('site_language');
+
 					$value=qa_lang_html('options/default_privacy');
 					break;
 				
 				case 'custom_sidebar':
-					$value=qa_lang_sub('options/default_sidebar', qa_html(qa_default_site_title()));
+					if (!isset($qa_options_cache['site_language'])) // to prevent infinite loop
+						$qa_options_cache['site_language']=qa_default_option('site_language');
+						
+					if (!isset($qa_options_cache['site_title'])) // to prevent infinite loop
+						$qa_options_cache['site_title']=qa_default_option('site_title');
+					
+					$value=qa_lang_sub('options/default_sidebar', qa_html($qa_options_cache['site_title']));
 					break;
-				
+					
 				default:
 					$value='';
 					break;

@@ -1,12 +1,12 @@
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-content/qa-votes.js
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -25,7 +25,6 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
 
 function qa_vote_click(elem, oldvote)
@@ -36,7 +35,7 @@ function qa_vote_click(elem, oldvote)
 	
 	qa_ajax_post('qa-include/qa-ajax-vote.php', {postid:postid, vote:vote}, 
 		function(response) {
-			var lines=response.split("\n");
+			var lines=response.replace(/^\s+/, '').split("\n");
 			
 			if (lines[0]=='1') {
 				document.getElementById('voting_'+postid).innerHTML=lines.slice(1).join("\n");

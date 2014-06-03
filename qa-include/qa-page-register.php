@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-register.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,8 +27,12 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	if (QA_EXTERNAL_USERS)
 		qa_fatal_error('User registration is handled by external code');
@@ -36,10 +40,12 @@
 	if (isset($qa_login_userid))
 		qa_redirect('');
 	
+	require_once QA_INCLUDE_DIR.'qa-app-captcha.php';
 	require_once QA_INCLUDE_DIR.'qa-db-users.php';
 
-	qa_options_set_pending(array('email_privacy'));
-
+	qa_options_set_pending(array('email_privacy', 'captcha_on_register'));
+	qa_captcha_pending();
+	
 	if (qa_clicked('doregister')) {
 		$inemail=qa_post_text('email');
 		$inpassword=qa_post_text('password');
@@ -49,6 +55,9 @@
 			qa_handle_email_validate($qa_db, $inhandle, $inemail),
 			qa_password_validate($inpassword)
 		);
+		
+		if (qa_get_option($qa_db, 'captcha_on_register'))
+			qa_captcha_validate($qa_db, $_POST, $errors);
 	
 		if (empty($errors)) {
 			require_once QA_INCLUDE_DIR.'qa-app-users.php';
@@ -111,6 +120,9 @@
 			'doregister' => '1',
 		),
 	);
+	
+	if (qa_get_option($qa_db, 'captcha_on_register'))
+		qa_set_up_captcha_field($qa_db, $qa_content, $qa_content['form']['fields'], @$errors);
 	
 	$qa_content['focusid']=isset($errors['handle']) ? 'handle'
 		: (isset($errors['password']) ? 'password'

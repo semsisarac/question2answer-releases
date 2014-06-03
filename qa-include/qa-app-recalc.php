@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-recalc.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,7 +27,6 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
 	
 /*
@@ -39,7 +38,7 @@
 	^contentwords (all): index of words in content of posts
 	^posttags (all): index of words in tags of posts
 	^words (all): list of words used for indexes
-	^options (title=cache_qcount|cache_acount|cache_ccount|cache_tagcount): total Qs, As, Cs, tags
+	^options (title=cache_qcount|cache_acount|cache_ccount|cache_tagcount|cache_unaqcount): total Qs, As, Cs, tags, unanswered Qs
 	
 	Recalculated in dorecalcposts:
 	==============================
@@ -51,6 +50,11 @@
 	^options (title=cache_userpointscount):
 	
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	require_once QA_INCLUDE_DIR.'qa-db-recalc.php';
 	require_once QA_INCLUDE_DIR.'qa-db-post-create.php';
@@ -124,6 +128,7 @@
 				qa_db_qcount_update($db);
 				qa_db_acount_update($db);
 				qa_db_ccount_update($db);
+				qa_db_unaqcount_update($db);
 
 				qa_recalc_transition($db, $state, 'dorecountposts_recount');
 				break;
@@ -155,7 +160,7 @@
 				break;
 				
 			case 'dorecalcpoints_recalc':
-				$userids=qa_db_users_get_for_recalc_points($db, $next, 100);
+				$userids=qa_db_users_get_for_recalc_points($db, $next, 10);
 				
 				if (count($userids)) {
 					$lastuserid=max($userids);

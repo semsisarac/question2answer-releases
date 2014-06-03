@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-profile.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,7 +27,6 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
 
 	return array(
@@ -38,6 +37,7 @@
 		'activity_by_x' => 'Activity by ^',
 		'answers_by_x' => 'Recently answered questions by ^',
 		'answers' => 'Answers:',
+		'comments' => 'Comments:',
 		'my_account_title' => 'My Account Details',
 		'no_answers_by_x' => 'No answers by user ^',
 		'no_questions_by_x' => 'No questions by user ^',

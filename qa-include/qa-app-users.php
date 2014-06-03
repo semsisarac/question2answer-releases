@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,8 +27,12 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	define('QA_USER_LEVEL_BASIC', 0);
 	define('QA_USER_LEVEL_EDITOR', 50); // edit all posts
@@ -124,31 +128,52 @@
 		function qa_create_new_user($db, $email, $password, $handle)
 		{
 			require_once QA_INCLUDE_DIR.'qa-db-users.php';
+			require_once QA_INCLUDE_DIR.'qa-db-points.php';
 			require_once QA_INCLUDE_DIR.'qa-app-options.php';
 			require_once QA_INCLUDE_DIR.'qa-app-emails.php';
 
-			$userid=qa_db_user_create($db, $email, $password, $handle, QA_USER_LEVEL_BASIC, $_SERVER['REMOTE_ADDR']);
+			$userid=qa_db_user_create($db, $email, $password, $handle, QA_USER_LEVEL_BASIC, @$_SERVER['REMOTE_ADDR']);
+			qa_db_points_update_ifuser($db, $userid, null);
 			
 			qa_notification_pending();
 			
 			$options=qa_get_options($db, array('custom_welcome', 'site_url'));
 			
+			$custom=trim($options['custom_welcome']);
+			
 			qa_send_notification($db, $userid, $email, $handle, qa_lang('emails/welcome_subject'), qa_lang('emails/welcome_body'), array(
 				'^password' => $password,
 				'^url' => $options['site_url'],
-				'^custom' => empty($custom) ? '' : (trim($options['custom_welcome'])."\n\n"),
+				'^custom' => empty($custom) ? '' : ($custom."\n\n"),
 			));
 			
 			return $userid;
 		}
 		
-		function qa_set_logged_in_user($db, $userid)
+		function qa_start_session()
 		{
+			@ini_set('session.gc_maxlifetime', 86400); // worth a try, but won't help in shared hosting environment
 			if (!isset($_SESSION))
 				session_start();
+		}
+		
+		function qa_set_session_cookie($handle, $sessioncode, $remember)
+		{
+			setcookie('qa_session', $handle.'/'.$sessioncode.'/'.($remember ? 1 : 0), $remember ? (time()+2592000) : 0, '/');
+		}
+		
+		function qa_clear_session_cookie()
+		{
+			setcookie('qa_session', false, 0, '/');
+		}
+		
+		function qa_set_logged_in_user($db, $userid, $remember=false)
+		{
+			qa_start_session();
 			
 			if (isset($userid)) {
-				require_once QA_INCLUDE_DIR.'qa-db-selects.php';		
+				require_once QA_INCLUDE_DIR.'qa-db-selects.php';
+				require_once QA_INCLUDE_DIR.'qa-db-users.php';
 		
 				$userinfo=qa_db_select_with_pending($db, qa_db_user_account_selectspec($userid, true));
 				
@@ -157,11 +182,21 @@
 				$_SESSION['qa_session_handle']=$userinfo['handle'];
 				$_SESSION['qa_session_email']=$userinfo['email'];
 				
+				// PHP sessions time out too quickly on the server side, so we also set a cookie as backup
+				$sessioncode=qa_db_user_rand_sessioncode();
+				qa_db_user_set($db, $userid, 'sessioncode', $sessioncode);
+				qa_set_session_cookie($userinfo['handle'], $sessioncode, $remember);
+				
 			} else {
+				require_once QA_INCLUDE_DIR.'qa-db-users.php';
+
+				qa_db_user_set($db, $_SESSION['qa_session_userid'], 'sessioncode', NULL);
+				qa_clear_session_cookie();
+
 				unset($_SESSION['qa_session_userid']);
 				unset($_SESSION['qa_session_level']);
 				unset($_SESSION['qa_session_handle']);
-				unset($_SESSION['qa_session_email']);
+				unset($_SESSION['qa_session_email']);				
 			}
 		}
 		
@@ -212,8 +247,32 @@
 		
 		function qa_get_logged_in_user($db)
 		{
-			if (!isset($_SESSION))
-				session_start();
+			qa_start_session();
+			
+			if (!empty($_COOKIE['qa_session'])) {
+				@list($handle, $sessioncode, $remember)=explode('/', $_COOKIE['qa_session']);
+				
+				if ($remember)
+					qa_set_session_cookie($handle, $sessioncode, $remember); // extend 'remember me' cookies each time
+
+				$sessioncode=trim($sessioncode); // to prevent passing in blank values to match uninitiated DB rows
+
+				// Try to recover session from the database if PHP session has timed out
+				if ( (!isset($_SESSION['qa_session_userid'])) && (!empty($handle)) && (!empty($sessioncode)) ) {
+					require_once QA_INCLUDE_DIR.'qa-db-selects.php';
+					
+					$userinfo=qa_db_select_with_pending($db, qa_db_user_account_selectspec($handle, false));
+					
+					if (strtolower($userinfo['sessioncode']) == strtolower($sessioncode)) {
+						$_SESSION['qa_session_userid']=$userinfo['userid'];
+						$_SESSION['qa_session_level']=$userinfo['level'];
+						$_SESSION['qa_session_handle']=$userinfo['handle'];
+						$_SESSION['qa_session_email']=$userinfo['email'];
+
+					} else
+						qa_clear_session_cookie(); // if not valid, remove it to save future checks
+				}
+			}
 			
 			if (isset($_SESSION['qa_session_userid']))
 				return array(
@@ -222,7 +281,7 @@
 					'handle' => $_SESSION['qa_session_handle'],
 					'email' => $_SESSION['qa_session_email'],
 				);
-			
+				
 			return null;
 		}
 		
@@ -253,7 +312,7 @@
 		{
 			require_once QA_INCLUDE_DIR.'qa-db-users.php';
 			
-			qa_db_user_written($db, $userid, $_SERVER['REMOTE_ADDR']);
+			qa_db_user_written($db, $userid, @$_SERVER['REMOTE_ADDR']);
 		}
 		
 		function qa_user_level_string($level)

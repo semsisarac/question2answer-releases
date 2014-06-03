@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-update.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,8 +27,12 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	require_once QA_INCLUDE_DIR.'qa-app-post-create.php';
 	require_once QA_INCLUDE_DIR.'qa-db-post-create.php';
@@ -91,6 +95,7 @@
 		qa_db_post_set_type($db, $oldquestion['postid'], $hidden ? 'Q_HIDDEN' : 'Q', $lastuserid);
 		qa_db_points_update_ifuser($db, $oldquestion['userid'], array('qposts', 'aselects'));
 		qa_db_qcount_update($db);
+		qa_db_unaqcount_update($db);
 		
 		if (!$hidden) {
 			qa_post_index($db, $oldquestion['postid'], 'Q', $oldquestion['postid'], $oldquestion['title'], $oldquestion['content'], $oldquestion['tags']);
@@ -151,6 +156,7 @@
 		qa_db_points_update_ifuser($db, $oldanswer['userid'], array('aposts', 'aselecteds'));
 		qa_db_post_acount_update($db, $question['postid']);
 		qa_db_acount_update($db);
+		qa_db_unaqcount_update($db);
 		
 		if (!($hidden || $question['hidden'])) {
 			qa_post_index($db, $oldanswer['postid'], 'A', $question['postid'], null, $oldanswer['content'], null);
@@ -180,11 +186,37 @@
 			qa_post_index($db, $oldcomment['postid'], 'C', $question['postid'], null, $content, null);
 	}
 	
+	function qa_answer_to_comment($db, $oldanswer, $parentid, $content, $notify, $lastuserid, $question, $answers, $commentsfollows)
+	{
+		$parent=isset($answers[$parentid]) ? $answers[$parentid] : $question;
+			
+		qa_post_unindex($db, $oldanswer['postid']);
+		
+		qa_db_post_set_type($db, $oldanswer['postid'], $oldanswer['hidden'] ? 'C_HIDDEN' : 'C', $lastuserid);
+		qa_db_post_set_parent($db, $oldanswer['postid'], $parentid, $lastuserid);
+		qa_db_post_set_text($db, $oldanswer['postid'], $oldanswer['title'], $content, $oldanswer['tags'], $notify, $lastuserid);
+		
+		foreach ($commentsfollows as $commentfollow)
+			if ($commentfollow['parentid']==$oldanswer['postid']) // do same thing for comments and follows
+				qa_db_post_set_parent($db, $commentfollow['postid'], $parentid, $commentfollow['lastuserid']);
+
+		qa_db_points_update_ifuser($db, $oldanswer['userid'], array('aposts', 'aselecteds', 'cposts'));
+
+		qa_db_post_acount_update($db, $question['postid']);
+		qa_db_acount_update($db);
+		qa_db_ccount_update($db);
+		qa_db_unaqcount_update($db);
+	
+		if (!($oldanswer['hidden'] || $question['hidden'] || $parent['hidden']))
+			qa_post_index($db, $oldanswer['postid'], 'C', $question['postid'], null, $oldanswer['content'], null);
+	}
+	
 	function qa_comment_set_hidden($db, $oldcomment, $hidden, $lastuserid, $question, $answer=null)
 	{
 		qa_post_unindex($db, $oldcomment['postid']);
 		
 		qa_db_post_set_type($db, $oldcomment['postid'], $hidden ? 'C_HIDDEN' : 'C', $lastuserid);
+		qa_db_points_update_ifuser($db, $oldcomment['userid'], array('cposts'));
 		qa_db_ccount_update($db);
 		
 		if (!($hidden || $question['hidden'] || @$answer['hidden']))
@@ -194,6 +226,9 @@
 	function qa_comment_set_userid($db, $oldcomment, $userid)
 	{
 		qa_db_post_set_userid($db, $oldcomment['postid'], $userid);
+		
+		qa_db_points_update_ifuser($db, $oldcomment['userid'], array('cposts'));
+		qa_db_points_update_ifuser($db, $userid, array('cposts'));
 	}
 	
 ?>

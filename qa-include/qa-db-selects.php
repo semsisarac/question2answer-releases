@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-selects.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,8 +27,12 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	require_once QA_INCLUDE_DIR.'qa-db-maxima.php';
 	
@@ -51,7 +55,7 @@
 		$outresults=qa_db_multi_select($db, $selectspecs);
 		
 		if (is_array($optionselectspec))
-			qa_options_load_options($outresults['_options']);
+			qa_options_load_options($db, $outresults['_options']);
 		
 		return $singleresult ? $outresults[0] : $outresults;
 	}
@@ -105,18 +109,29 @@
 		return $selectspec;
 	}
 	
-	function qa_db_recent_qs_selectspec($voteuserid, $start, $count=QA_DB_RETRIEVE_QS_AS)
+	function qa_db_recent_qs_selectspec($voteuserid, $start, $hidden=false, $count=QA_DB_RETRIEVE_QS_AS)
 	{
 		$selectspec=qa_db_posts_basic_selectspec(true);
 		
-		$selectspec['source'].=" JOIN (SELECT postid FROM ^posts WHERE type='Q' ORDER BY ^posts.created DESC LIMIT #,#) y ON ^posts.postid=y.postid";
-		$selectspec['arguments']=array($voteuserid, $start, $count);
+		$selectspec['source'].=" JOIN (SELECT postid FROM ^posts WHERE type=$ ORDER BY ^posts.created DESC LIMIT #,#) y ON ^posts.postid=y.postid";
+		$selectspec['arguments']=array($voteuserid, $hidden ? 'Q_HIDDEN' : 'Q', $start, $count);
 		$selectspec['sortdesc']='created';
 		
 		return $selectspec;
 	}
 	
-	function qa_db_recent_a_qs_selectspec($voteuserid, $start, $count=QA_DB_RETRIEVE_QS_AS)
+	function qa_db_unanswered_qs_selectspec($voteuserid, $start, $hidden=false, $count=QA_DB_RETRIEVE_QS_AS)
+	{
+		$selectspec=qa_db_posts_basic_selectspec(true);
+		
+		$selectspec['source'].=" JOIN (SELECT postid FROM ^posts WHERE type=$ AND acount=0 ORDER BY ^posts.created DESC LIMIT #,#) y ON ^posts.postid=y.postid";
+		$selectspec['arguments']=array($voteuserid, $hidden ? 'Q_HIDDEN' : 'Q', $start, $count);
+		$selectspec['sortdesc']='created';
+		
+		return $selectspec;
+	}
+
+	function qa_db_recent_a_qs_selectspec($voteuserid, $start, $hidden=false, $count=QA_DB_RETRIEVE_QS_AS)
 	{
 		$selectspec=qa_db_posts_basic_selectspec(true);
 		
@@ -134,10 +149,38 @@
 		$selectspec['source'].=" JOIN ^posts AS aposts ON ^posts.postid=aposts.parentid".
 			(QA_EXTERNAL_USERS ? "" : " LEFT JOIN ^users AS ausers ON aposts.userid=ausers.userid").
 			" LEFT JOIN ^userpoints AS auserpoints ON aposts.userid=auserpoints.userid".
-			" JOIN (SELECT postid FROM ^posts WHERE type='A' ORDER BY ^posts.created DESC LIMIT #,#) y ON aposts.postid=y.postid WHERE ^posts.type!='Q_HIDDEN'";
+			" JOIN (SELECT postid FROM ^posts WHERE type=$ ORDER BY ^posts.created DESC LIMIT #,#) y ON aposts.postid=y.postid WHERE ^posts.type!='Q_HIDDEN'";
 			
-		$selectspec['arguments']=array($voteuserid, $start, $count);
+		$selectspec['arguments']=array($voteuserid, $hidden ? 'A_HIDDEN' : 'A', $start, $count);
 		$selectspec['sortdesc']='acreated';
+		
+		return $selectspec;
+	}
+	
+	function qa_db_recent_c_qs_selectspec($voteuserid, $start, $hidden=false, $count=QA_DB_RETRIEVE_QS_AS)
+	{
+		$selectspec=qa_db_posts_basic_selectspec(true);
+		
+		$selectspec['arraykey']='cpostid';
+
+		$selectspec['columns']['cpostid']='cposts.postid';
+		$selectspec['columns']['cuserid']='cposts.userid';
+		$selectspec['columns']['ccookieid']='cposts.cookieid';
+		$selectspec['columns']['ccreated']='UNIX_TIMESTAMP(cposts.created)';
+		$selectspec['columns']['cpoints']='cuserpoints.points';
+		
+		if (!QA_EXTERNAL_USERS)
+			$selectspec['columns']['chandle']='BINARY cusers.handle';
+		
+		$selectspec['source'].=" JOIN ^posts AS parentposts ON".
+			" ^posts.postid=(CASE parentposts.type WHEN 'A' THEN parentposts.parentid ELSE parentposts.postid END)".
+			" JOIN ^posts AS cposts ON parentposts.postid=cposts.parentid".
+			(QA_EXTERNAL_USERS ? "" : " LEFT JOIN ^users AS cusers ON cposts.userid=cusers.userid").
+			" LEFT JOIN ^userpoints AS cuserpoints ON cposts.userid=cuserpoints.userid".
+			" JOIN (SELECT postid FROM ^posts WHERE type=$ ORDER BY ^posts.created DESC LIMIT #,#) y ON cposts.postid=y.postid WHERE (^posts.type!='Q_HIDDEN') AND (parentposts.type!='A_HIDDEN')";
+			
+		$selectspec['arguments']=array($voteuserid, $hidden ? 'C_HIDDEN' : 'C', $start, $count);
+		$selectspec['sortdesc']='ccreated';
 		
 		return $selectspec;
 	}
@@ -345,7 +388,7 @@
 		return array(
 			'columns' => array(
 				'userid', 'passsalt', 'passcheck' => 'HEX(passcheck)', 'email' => 'BINARY email', 'level', 'handle' => 'BINARY handle', 'resetcode',
-				'created' => 'UNIX_TIMESTAMP(created)'
+				'created' => 'UNIX_TIMESTAMP(created)', 'sessioncode',
 			),
 			
 			'source' => '^users WHERE '.($isuserid ? 'userid' : 'handle').'=$',
@@ -368,7 +411,7 @@
 	function qa_db_user_points_selectspec($identifier)
 	{
 		return array(
-			'columns' => array('points', 'qposts', 'aposts', 'aselects', 'aselecteds', 'qvotes', 'avotes', 'qvoteds', 'avoteds', 'upvoteds', 'downvoteds'),
+			'columns' => array('points', 'qposts', 'aposts', 'cposts', 'aselects', 'aselecteds', 'qvotes', 'avotes', 'qvoteds', 'avoteds', 'upvoteds', 'downvoteds'),
 			'source' => '^userpoints WHERE userid='.(QA_EXTERNAL_USERS ? '$' : '(SELECT userid FROM ^users WHERE handle=$)'),
 			'arguments' => array($identifier),
 			'single' => true,
@@ -390,7 +433,7 @@
 	{
 		if (QA_EXTERNAL_USERS)
 			return array(
-				'columns' => array('userid', 'points', 'qposts', 'aposts'),
+				'columns' => array('userid', 'points'),
 				'source' => '^userpoints ORDER BY points DESC LIMIT #,#',
 				'arguments' => array($start, $count),	
 				'arraykey' => 'userid',
@@ -399,7 +442,7 @@
 		
 		else
 			return array(
-				'columns' => array('^users.userid', 'handle' => 'BINARY handle', 'points', 'qposts', 'aposts'),
+				'columns' => array('^users.userid', 'handle' => 'BINARY handle', 'points'),
 				'source' => '^users JOIN (SELECT userid FROM ^userpoints ORDER BY points DESC LIMIT #,#) y ON ^users.userid=y.userid JOIN ^userpoints ON ^users.userid=^userpoints.userid',
 				'arguments' => array($start, $count),	
 				'arraykey' => 'userid',		

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-index.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,7 +27,6 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
 
 //	Be ultra-strict for visible pages and load base include file
@@ -68,7 +67,7 @@
 		$qa_request_part=$qa_request_parts[$part];
 		$qa_url_depth++;
 		
-		if (!$qa_rewritten && (strtolower($qa_request_part)=='index.php')) {
+		if ((!$qa_rewritten) && (strtolower($qa_request_part)=='index.php')) {
 			$qa_root_path=implode('/', array_slice($qa_request_parts, 0, $part));
 			$qa_request_parts=array_slice($qa_request_parts, $part+1);
 			break;
@@ -82,7 +81,7 @@
 	$qa_request_lc=strtolower($qa_request);
 	
 	$qa_root_url_relative=($qa_url_depth>1) ? str_repeat('../', $qa_url_depth-1) : './';	
-	$qa_root_url_inferred='http://'.$_SERVER['HTTP_HOST'].$qa_root_path.'/';
+	$qa_root_url_inferred='http://'.@$_SERVER['HTTP_HOST'].$qa_root_path.'/';
 
 //	Enable gzip compression for HTML output (apparently needs to come early)
 
@@ -220,7 +219,7 @@
 
 	$qa_start=min(max(0, (int)qa_get('start')), QA_MAX_LIMIT_START);
 
-	qa_options_set_pending(array('site_title', 'logo_show', 'logo_url', 'logo_width', 'logo_height', 'feedback_email',
+	qa_options_set_pending(array('site_title', 'logo_show', 'logo_url', 'logo_width', 'logo_height', 'feedback_enabled', 'nav_unanswered',
 		'site_language', 'site_theme', 'neat_urls', 'custom_sidebar', 'custom_header', 'custom_footer', 'custom_in_head', 'pages_prev_next'));
 
 //	Function called by qa-page-* files to start preparing theme content
@@ -240,6 +239,11 @@
 					'questions' => array(
 						'url' => qa_path_html('questions'),
 						'label' => qa_lang_html('main/nav_qs'),
+					),
+					
+					'unanswered' => array(
+						'url' => qa_path_html('unanswered'),
+						'label' => qa_lang_html('main/nav_unanswered'),
 					),
 					
 					'tag' => array(
@@ -283,8 +287,11 @@
 			'sidebar' => qa_get_option($qa_db, 'custom_sidebar'),
 		);
 		
-		if (!strlen(qa_get_option($qa_db, 'feedback_email')))
+		if (!qa_get_option($qa_db, 'feedback_enabled'))
 			unset($qa_content['navigation']['footer']['feedback']);
+		
+		if (!qa_get_option($qa_db, 'nav_unanswered'))
+			unset($qa_content['navigation']['main']['unanswered']);
 
 		$logoshow=qa_get_option($qa_db, 'logo_show');
 		$logourl=qa_get_option($qa_db, 'logo_url');
@@ -378,7 +385,7 @@
 	
 //	Process any incoming votes
 
-	if ($_SERVER['REQUEST_METHOD']=='POST')
+	if (qa_is_http_post())
 		foreach ($_POST as $field => $value)
 			if (strpos($field, 'vote_')===0) {
 				@list($dummy, $postid, $vote)=explode('_', $field);
@@ -395,22 +402,25 @@
 	$qa_routing=array(
 		'' => QA_INCLUDE_DIR.'qa-page-home.php',
 		'questions' => QA_INCLUDE_DIR.'qa-page-home.php',
+		'unanswered' => QA_INCLUDE_DIR.'qa-page-home.php',
 		'answers' => QA_INCLUDE_DIR.'qa-page-home.php', // not currently in navigation
 		'ask' => QA_INCLUDE_DIR.'qa-page-ask.php',
+		'comments' => QA_INCLUDE_DIR.'qa-page-home.php', // not currently in navigation
 		'search' => QA_INCLUDE_DIR.'qa-page-search.php',
 		'tags' => QA_INCLUDE_DIR.'qa-page-tags.php',
 		'users' => QA_INCLUDE_DIR.'qa-page-users.php',
 		'register' => QA_INCLUDE_DIR.'qa-page-register.php',
 		'account' => QA_INCLUDE_DIR.'qa-page-account.php',
 		'admin' => QA_INCLUDE_DIR.'qa-page-admin.php',
+		'admin/emails' => QA_INCLUDE_DIR.'qa-page-admin.php',
 		'admin/layout' => QA_INCLUDE_DIR.'qa-page-admin.php',
 		'admin/viewing' => QA_INCLUDE_DIR.'qa-page-admin.php',
 		'admin/posting' => QA_INCLUDE_DIR.'qa-page-admin.php',
-		'admin/stats' => QA_INCLUDE_DIR.'qa-page-admin-stats.php',
 		'admin/points' => QA_INCLUDE_DIR.'qa-page-admin-points.php',
-		'admin/emails' => QA_INCLUDE_DIR.'qa-page-admin.php',
-		'admin/limits' => QA_INCLUDE_DIR.'qa-page-admin.php',
+		'admin/spam' => QA_INCLUDE_DIR.'qa-page-admin.php',
 		'admin/users' => QA_INCLUDE_DIR.'qa-page-admin-users.php',
+		'admin/hidden' => QA_INCLUDE_DIR.'qa-page-admin-hidden.php',
+		'admin/stats' => QA_INCLUDE_DIR.'qa-page-admin-stats.php',
 		'admin/recalc' => QA_INCLUDE_DIR.'qa-page-admin-recalc.php',
 		'login' => QA_INCLUDE_DIR.'qa-page-login.php',
 		'forgot' => QA_INCLUDE_DIR.'qa-page-forgot.php',
@@ -435,12 +445,12 @@
 			$qa_template='question';
 			require QA_INCLUDE_DIR.'qa-page-question.php';
 
-		} elseif (strtolower($qa_operation_parts[0])=='tag') {
+		} elseif ( (strtolower($qa_operation_parts[0])=='tag') && !empty($qa_operation_parts[1]) ) {
 			$pass_tag=$qa_operation_parts[1];
 			$qa_template='tag';
 			require QA_INCLUDE_DIR.'qa-page-tag.php';
 
-		} elseif (strtolower($qa_operation_parts[0])=='user') {
+		} elseif ( (strtolower($qa_operation_parts[0])=='user') && !empty($qa_operation_parts[1]) ) {
 			$pass_handle=$qa_operation_parts[1];
 			$qa_template='user';
 			require QA_INCLUDE_DIR.'qa-page-user.php';
@@ -448,7 +458,6 @@
 		} else {
 			$qa_template='not-found';
 			qa_content_prepare();
-			$qa_content['title']='';
 			$qa_content['error']=qa_lang_html('main/page_not_found');
 		}
 	}
@@ -477,7 +486,7 @@
 		'<HTML>',
 		'<HEAD>',
 		'<META HTTP-EQUIV="Content-type" CONTENT="text/html; charset=utf-8"/>',
-		'<TITLE>'.(strlen($qa_request) ? (strip_tags($qa_content['title']).' - ') : '').qa_html(qa_get_option($qa_db, 'site_title')).'</TITLE>'
+		'<TITLE>'.(empty($qa_content['title']) ? '' : (strip_tags($qa_content['title']).' - ')).qa_html(qa_get_option($qa_db, 'site_title')).'</TITLE>'
 	);
 	
 	$themeclass->output('<SCRIPT TYPE="text/javascript"><!--');
@@ -507,7 +516,7 @@
 			'var qa_oldonload=window.onload;',
 			'window.onload=function() {',
 			"\tif (typeof qa_oldonload=='function')",
-			"\t\toldonload();"
+			"\t\tqa_oldonload();"
 		);
 		
 		foreach ($qa_content['script_onloads'] as $script) {

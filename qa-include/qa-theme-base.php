@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-theme-base.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,8 +27,12 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	class qa_html_theme_base {
 	
@@ -282,7 +286,7 @@
 
 			$this->output('<DIV CLASS="qa-main'.(@$this->content['hidden'] ? ' qa-main-hidden' : '').'">');
 			
-			$this->page_title($this->content['title']);
+			$this->page_title(@$this->content['title']);
 			
 			$this->page_error();
 				
@@ -345,6 +349,8 @@
 		
 		function attribution()
 		{
+			// Please see the license at the top of this file before changing this link. Thank you.
+				
 			$this->output(
 				'<DIV CLASS="qa-attribution">',
 				'Powered by <A HREF="http://www.question2answer.org/">Question2Answer</A>',
@@ -407,14 +413,13 @@
 		
 		function form_spacer($form, $columns)
 		{
-			if ($columns>1)
-				$this->output(
-					'<TR>',
-					'<TD COLSPAN="'.$columns.'" CLASS="qa-form-'.$form['style'].'-spacer">',
-					'&nbsp;',
-					'</TD>',
-					'</TR>'
-				);
+			$this->output(
+				'<TR>',
+				'<TD COLSPAN="'.$columns.'" CLASS="qa-form-'.$form['style'].'-spacer">',
+				'&nbsp;',
+				'</TD>',
+				'</TR>'
+			);
 		}
 		
 		function form_body($form)
@@ -460,8 +465,17 @@
 		function form_field_rows($form, $columns, $field)
 		{
 			$style=$form['style'];
-			$fieldfirst=((@$field['type']=='checkbox') && ($columns==1));
-			$skipdata=$fieldfirst && @$field['tight'];
+			
+			if (isset($field['style'])) { // field has different style to most of form
+				$style=$field['style'];
+				$colspan=$columns;
+				$columns=($style=='wide') ? 3 : 1;
+			} else
+				$colspan=null;
+			
+			$prefixed=((@$field['type']=='checkbox') && ($columns==1) && !empty($field['label']));
+			$suffixed=((@$field['type']=='select') && ($columns==1) && !empty($field['label']));
+			$skipdata=($prefixed || $suffixed) && @$field['tight'];
 			$tworows=($columns==1) && (!empty($field['label'])) && (!$skipdata);
 			
 			if (($columns==1) && isset($field['id']))
@@ -472,7 +486,7 @@
 				$this->output('<TR>');		
 			
 			if (!empty($field['label']))
-				$this->form_label($field, $style, $columns, $fieldfirst);
+				$this->form_label($field, $style, $columns, $prefixed, $suffixed, $colspan);
 			
 			if ($tworows)
 				$this->output(
@@ -481,7 +495,7 @@
 				);
 			
 			if (!$skipdata)
-				$this->form_data($field, $style, $columns, !$fieldfirst);
+				$this->form_data($field, $style, $columns, !($prefixed||$suffixed), $colspan);
 			
 			$this->output('</TR>');
 			
@@ -489,35 +503,43 @@
 				$this->output('</TBODY>');
 		}
 		
-		function form_label($field, $style, $columns, $showfield)
+		function form_label($field, $style, $columns, $prefixed, $suffixed, $colspan)
 		{
 			$this->output(
-				'<TD CLASS="qa-form-'.$style.'-label">'
+				'<TD CLASS="qa-form-'.$style.'-label"'.(isset($colspan) ? (' COLSPAN="'.$colspan.'"') : '').'>'
 			);
 			
-			if ($showfield)
+			if ($prefixed)
 				$this->form_field($field, $style);
 					
 			$this->output(
-				@$field['label'],
-				'</TD>'
+				@$field['label']
 			);
-		}
-		
-		function form_data($field, $style, $columns, $showfield)
-		{
-			$this->output('<TD CLASS="qa-form-'.$style.'-data">');
 			
-			if ($showfield)
+			if ($suffixed)
 				$this->form_field($field, $style);
-
-			if (!empty($field['error']))
-				$this->form_error($field, $style, $columns);
-			
-			elseif (!empty($field['note']))
-				$this->form_note($field, $style, $columns);
 			
 			$this->output('</TD>');
+		}
+		
+		function form_data($field, $style, $columns, $showfield, $colspan)
+		{
+			if ($showfield || (!empty($field['error'])) || (!empty($field['note']))) {
+				$this->output(
+					'<TD CLASS="qa-form-'.$style.'-data"'.(isset($colspan) ? (' COLSPAN="'.$colspan.'"') : '').'>'
+				);
+							
+				if ($showfield)
+					$this->form_field($field, $style);
+	
+				if (!empty($field['error']))
+					$this->form_error($field, $style, $columns);
+				
+				elseif (!empty($field['note']))
+					$this->form_note($field, $style, $columns);
+				
+				$this->output('</TD>');
+			}
 		}
 		
 		function form_field($field, $style)
@@ -543,6 +565,10 @@
 				
 				case 'select':
 					$this->form_select($field, $style);
+					break;
+					
+				case 'custom':
+					echo @$field['html'];
 					break;
 				
 				default:
@@ -782,12 +808,21 @@
 		{
 			$this->output('<DIV CLASS="qa-q-list-item '.@$question['classes'].' " '.@$question['tags'].' >');
 
-			$this->voting($question);
-			$this->a_count($question);
+			$this->q_item_stats($question);
 			$this->q_item_main($question);
 			$this->q_item_clear();
 
 			$this->output('</DIV> <!-- END qa-q-list-item -->', '');
+		}
+		
+		function q_item_stats($question)
+		{
+			$this->output('<DIV CLASS="qa-q-item-stats">');
+			
+			$this->voting($question);
+			$this->a_count($question);
+
+			$this->output('</DIV>');
 		}
 		
 		function q_item_main($question)
@@ -821,7 +856,7 @@
 		function voting($post)
 		{
 			if (isset($post['vote_view'])) {
-				$this->output('<DIV CLASS="qa-voting" '.@$post['vote_tags'].' >');
+				$this->output('<DIV CLASS="qa-voting '.(($post['vote_view']=='updown') ? 'qa-voting-updown' : 'qa-voting-net').'" '.@$post['vote_tags'].' >');
 				$this->voting_inner_html($post);
 				$this->output('</DIV>');
 			}
@@ -836,13 +871,13 @@
 		
 		function vote_buttons($post)
 		{
-			$this->output('<DIV CLASS="qa-vote-buttons">');
+			$this->output('<DIV CLASS="qa-vote-buttons '.(($post['vote_view']=='updown') ? 'qa-vote-buttons-updown' : 'qa-vote-buttons-net').'">');
 
 			switch (@$post['vote_state'])
 			{
 				case 'voted_up':
 					if ($post['vote_view']=='updown') {
-						$this->post_hover_button($post, 'vote_up_tags', '+', 'qa-voted-up');
+						$this->post_hover_button($post, 'vote_up_tags', '+', 'qa-vote-first-button qa-voted-up');
 						$this->post_disabled_button($post, 'vote_down_tags', '', 'qa-vote-second-button qa-vote-down');
 					} else
 						$this->post_hover_button($post, 'vote_up_tags', '+', 'qa-vote-one-button qa-voted-up');
@@ -850,19 +885,19 @@
 					
 				case 'voted_down':
 					if ($post['vote_view']=='updown') {
-						$this->post_disabled_button($post, 'vote_up_tags', '', 'qa-vote-up');
+						$this->post_disabled_button($post, 'vote_up_tags', '', 'qa-vote-first-button qa-vote-up');
 						$this->post_hover_button($post, 'vote_down_tags', '&ndash;', 'qa-vote-second-button qa-voted-down');
 					} else
 						$this->post_hover_button($post, 'vote_down_tags', '&ndash;', 'qa-vote-one-button qa-voted-down');
 					break;
 					
 				case 'enabled':
-					$this->post_hover_button($post, 'vote_up_tags', '+', 'qa-vote-up');
+					$this->post_hover_button($post, 'vote_up_tags', '+', 'qa-vote-first-button qa-vote-up');
 					$this->post_hover_button($post, 'vote_down_tags', '&ndash;', 'qa-vote-second-button qa-vote-down');
 					break;
 
 				default:
-					$this->post_disabled_button($post, 'vote_up_tags', '', 'qa-vote-up');
+					$this->post_disabled_button($post, 'vote_up_tags', '', 'qa-vote-first-button qa-vote-up');
 					$this->post_disabled_button($post, 'vote_down_tags', '', 'qa-vote-second-button qa-vote-down');
 					break;
 			}
@@ -875,14 +910,14 @@
 			// You can also use $post['upvotes_raw'], $post['downvotes_raw'], $post['netvotes_raw'] to get
 			// raw integer vote counts, for graphing or showing in other non-textual ways
 			
-			$this->output('<DIV CLASS="qa-vote-count">');
+			$this->output('<DIV CLASS="qa-vote-count '.(($post['vote_view']=='updown') ? 'qa-vote-count-updown' : 'qa-vote-count-net').'">');
 
 			if ($post['vote_view']=='updown') {
-				$this->output_split($post['upvotes_view'], 'qa-updownvote-count', 'DIV', 'DIV');
-				$this->output_split($post['downvotes_view'], 'qa-updownvote-count', 'DIV', 'DIV');
+				$this->output_split($post['upvotes_view'], 'qa-upvote-count');
+				$this->output_split($post['downvotes_view'], 'qa-downvote-count');
 			
 			} else
-				$this->output_split($post['netvotes_view'], 'qa-netvote-count', 'DIV', 'DIV');
+				$this->output_split($post['netvotes_view'], 'qa-netvote-count');
 
 			$this->output('</DIV>');
 		}
@@ -897,7 +932,7 @@
 		
 		function a_count($post)
 		{
-			$this->output_split(@$post['answers'], 'qa-a-count', 'DIV', 'DIV');				
+			$this->output_split(@$post['answers'], 'qa-a-count');				
 		}
 		
 		function a_selection($post)
@@ -1101,6 +1136,7 @@
 			$this->post_tags($q_view, 'qa-q-view');
 			$this->c_list(@$q_view['c_list'], 'qa-q-view');
 			$this->form(@$q_view['a_form']);
+			$this->c_list(@$q_view['a_form']['c_list'], 'qa-a-item');
 			$this->form(@$q_view['c_form']);
 			
 			$this->output('</DIV> <!-- END qa-q-view-main -->');
@@ -1162,7 +1198,7 @@
 		
 		function a_list_item($a_item)
 		{
-			$extraclass=@$a_item['classes'].($a_item['hidden'] ? ' qa-a-item-hidden' : '');
+			$extraclass=@$a_item['classes'].($a_item['hidden'] ? ' qa-a-list-item-hidden' : ($a_item['selected'] ? ' qa-a-list-item-selected' : ''));
 			
 			$this->output('<DIV CLASS="qa-a-list-item '.$extraclass.' " '.@$a_item['tags'].' >');
 			
@@ -1177,7 +1213,9 @@
 		{
 			$this->output('<DIV CLASS="qa-a-item-main">');
 			
-			if ($a_item['selected'])
+			if ($a_item['hidden'])
+				$this->output('<DIV CLASS="qa-a-item-hidden">');
+			elseif ($a_item['selected'])
 				$this->output('<DIV CLASS="qa-a-item-selected">');
 
 			$this->a_selection($a_item);
@@ -1185,7 +1223,7 @@
 			$this->post_meta($a_item, 'qa-a-item');
 			$this->a_item_clear();
 			
-			if ($a_item['selected'])
+			if ($a_item['hidden'] || $a_item['selected'])
 				$this->output('</DIV>');
 			
 			$this->a_item_buttons($a_item);

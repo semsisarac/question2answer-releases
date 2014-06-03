@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-feedback.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,20 +27,32 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 
 //	Get useful information
 
-	qa_options_set_pending(array('email_privacy', 'from_email', 'feedback_email', 'site_url'));
+	qa_options_set_pending(array('email_privacy', 'from_email', 'feedback_enabled', 'feedback_email', 'site_url'));
 	
 	if (isset($qa_login_userid) && !QA_EXTERNAL_USERS)
 		list($useraccount, $userprofile)=qa_db_select_with_pending($qa_db,
 			qa_db_user_account_selectspec($qa_login_userid, true),
 			qa_db_user_profile_selectspec($qa_login_userid, true)
 		);
+
+//	Check feedback is enabled
+
+	if (!qa_get_option($qa_db, 'feedback_enabled')) {
+		qa_content_prepare();
+		$qa_content['error']=qa_lang_html('main/page_not_found');
+		return;
+	}
 
 //	Send the feedback form
 	
@@ -65,8 +77,8 @@
 				'^email' => empty($inemail) ? '-' : $inemail,
 				'^previous' => empty($inreferer) ? '-' : $inreferer,
 				'^url' => isset($qa_login_userid) ? qa_path('user/'.(QA_EXTERNAL_USERS ? $qa_login_user['publicusername'] : @$useraccount['handle']), null, qa_get_option($qa_db, 'site_url')) : '',
-				'^ip' => $_SERVER['REMOTE_ADDR'],
-				'^browser' => $_SERVER['HTTP_USER_AGENT'],
+				'^ip' => @$_SERVER['REMOTE_ADDR'],
+				'^browser' => @$_SERVER['HTTP_USER_AGENT'],
 			);
 			
 			if (qa_send_email(array(
@@ -131,7 +143,7 @@
 		
 		'hidden' => array(
 			'dofeedback' => '1',
-			'referer' => qa_html(isset($inreferer) ? $inreferer : $_SERVER['HTTP_REFERER']),
+			'referer' => qa_html(isset($inreferer) ? $inreferer : @$_SERVER['HTTP_REFERER']),
 		),
 	);
 	

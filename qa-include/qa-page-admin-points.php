@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-points.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,16 +27,22 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	require_once QA_INCLUDE_DIR.'qa-db-recalc.php';
 	require_once QA_INCLUDE_DIR.'qa-db-points.php';
 	require_once QA_INCLUDE_DIR.'qa-app-options.php';
 	require_once QA_INCLUDE_DIR.'qa-app-admin.php';
 	
-//	Check we have administrative privileges
+//	Standard pre-admin operations
 
+	qa_admin_pending();
+	
 	if (!qa_admin_check_privileges())
 		return;
 
@@ -70,6 +76,8 @@
 	qa_content_prepare();
 
 	$qa_content['title']=qa_lang_html('admin/admin_title').' - '.qa_lang_html('admin/points_title');
+
+	$qa_content['error']=qa_admin_page_error($qa_db);
 
 	$qa_content['form']=array(
 		'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" NAME="points_form" onsubmit="document.forms.points_form.has_js.value=1; return true;" ',

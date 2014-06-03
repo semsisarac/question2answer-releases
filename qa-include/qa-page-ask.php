@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-ask.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,16 +27,27 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	require_once QA_INCLUDE_DIR.'qa-app-cookies.php';
 	require_once QA_INCLUDE_DIR.'qa-app-limits.php';
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
+	require_once QA_INCLUDE_DIR.'qa-app-captcha.php';
 	
-//	Check if we need to be logged in
+//	Check if we need to be logged in or use captcha
 
+	qa_captcha_pending();
+
+	qa_options_set_pending(array('min_len_q_title', 'min_len_q_content', 'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs',
+		'do_example_tags', 'match_example_tags', 'page_size_ask_tags', 'do_complete_tags', 'voting_on_qs', 'votes_separated', 'captcha_on_anon_post', 'show_user_points'));
+	
 	$loginerror=(!isset($qa_login_userid)) && qa_get_option($qa_db, 'ask_needs_login');
+	$usecaptcha=(!isset($qa_login_userid)) && qa_get_option($qa_db, 'captcha_on_anon_post');
 
 	if ($loginerror) {
 		require_once QA_INCLUDE_DIR.'qa-app-format.php';
@@ -54,9 +65,6 @@
 		$intags=qa_post_text('tags');
 		$innotify=true; // show notify on by default
 		
-		qa_options_set_pending(array('min_len_q_title', 'min_len_q_content', 'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs',
-			'do_example_tags', 'match_example_tags', 'page_size_ask_tags', 'do_complete_tags', 'voting_on_qs', 'votes_separated'));
-
 		if (isset($infollow)) {
 			$followanswer=qa_db_select_with_pending($qa_db,
 				qa_db_full_post_selectspec($qa_login_userid, $infollow)
@@ -80,6 +88,9 @@
 					$inemail=qa_post_text('email');
 	
 					$errors=qa_question_validate($qa_db, $intitle, $incontent, $tagstring, $innotify, $inemail);
+					
+					if ($usecaptcha)
+						qa_captcha_validate($qa_db, $_POST, $errors);
 					
 					if (empty($errors)) {
 						if (!isset($qa_login_userid))
@@ -242,7 +253,8 @@
 			$qa_content['q_list']['qs']=array();
 
 			foreach ($suggestquestions as $question)
-				$qa_content['q_list']['qs'][]=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml);
+				$qa_content['q_list']['qs'][]=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
+					false, qa_get_option($qa_db, 'show_user_points'));
 		
 			$qa_content['q_list']['form']=array(
 				'tags' => ' NAME="ask" METHOD="POST" ACTION="'.qa_self_html().'" ',
@@ -308,6 +320,9 @@
 				@$innotify, @$inemail, @$errors['email']);
 			
 			qa_set_up_tag_field($qa_content, $qa_content['form']['fields']['tags'], 'tags', $exampletags, $completetags, qa_get_option($qa_db, 'page_size_ask_tags'));
+			
+			if ($usecaptcha)
+				qa_set_up_captcha_field($qa_db, $qa_content, $qa_content['form']['fields'], @$errors);
 		}
 	}
 

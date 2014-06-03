@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,12 +27,11 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
 
 //	Set the version to be used for internal reference and a suffix for .js and .css requests
 
-	define('QA_VERSION', '1.0-beta-2');
+	define('QA_VERSION', '1.0-beta-3');
 
 //	Basic PHP configuation checks and unregister globals
 
@@ -112,6 +111,16 @@
 	function qa_clicked($name)
 	{
 		return isset($_POST[$name]) || isset($_POST[$name.'_x']);
+	}
+	
+	function qa_is_http_post()
+	{
+		return ($_SERVER['REQUEST_METHOD']=='POST') || !empty($_POST);
+	}
+	
+	function qa_is_https_probably()
+	{
+		return (@$_SERVER['HTTPS'] && ($_SERVER['HTTPS']!='off')) || (@$_SERVER['SERVER_PORT']==443);
 	}
 	
 //	Language support

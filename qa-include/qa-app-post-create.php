@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-create.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,8 +27,12 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	require_once QA_INCLUDE_DIR.'qa-db-maxima.php';
 	require_once QA_INCLUDE_DIR.'qa-db-post-create.php';
@@ -85,6 +89,7 @@
 		qa_post_index($db, $postid, 'Q', $postid, $title, $content, $tagstring);
 		qa_db_points_update_ifuser($db, $userid, 'qposts');
 		qa_db_qcount_update($db);
+		qa_db_unaqcount_update($db);
 		
 		if (isset($followanswer['notify']) && !qa_post_is_by_user($followanswer, $userid, $cookieid)) {
 			require_once QA_INCLUDE_DIR.'qa-app-emails.php';
@@ -97,6 +102,29 @@
 				'^q_title' => $title,
 				'^a_content' => $followanswer['content'],
 				'^url' => qa_path(qa_q_request($postid, $title), null, qa_get_option($db, 'site_url')),
+			));
+		}
+		
+		qa_options_set_pending(array('notify_admin_q_post', 'from_email', 'site_title', 'feedback_email'));
+		
+		if (qa_get_option($db, 'notify_admin_q_post')) {
+			require_once QA_INCLUDE_DIR.'qa-util-emailer.php';
+			
+			$subs=array(
+				'^site_title' => qa_get_option($db, 'site_title'),
+				'^q_title' => $title,
+				'^q_content' => $content,
+				'^url' => qa_path(qa_q_request($postid, $title), null, qa_get_option($db, 'site_url')),
+			);
+			
+			qa_send_email(array(
+				'fromemail' => qa_get_option($db, 'from_email'),
+				'fromname' => qa_get_option($db, 'site_title'),
+				'toemail' => qa_get_option($qa_db, 'feedback_email'),
+				'toname' => qa_get_option($qa_db, 'site_title'),
+				'subject' => strtr(qa_lang('emails/q_posted_subject'), $subs),
+				'body' => strtr(qa_lang('emails/q_posted_body'), $subs),
+				'html' => false,
 			));
 		}
 		
@@ -167,6 +195,7 @@
 		qa_db_post_acount_update($db, $question['postid']);
 		qa_db_points_update_ifuser($db, $userid, 'aposts');
 		qa_db_acount_update($db);
+		qa_db_unaqcount_update($db);
 		
 		if (isset($question['notify']) && !qa_post_is_by_user($question, $userid, $cookieid)) {
 			require_once QA_INCLUDE_DIR.'qa-app-emails.php';
@@ -207,6 +236,7 @@
 		if (!($question['hidden'] || @$answer['hidden']))
 			qa_post_index($db, $postid, 'C', $question['postid'], null, $content, null);
 		
+		qa_db_points_update_ifuser($db, $userid, 'cposts');
 		qa_db_ccount_update($db);
 		
 		// These ensure each user or email gets only one notification about an added comment.

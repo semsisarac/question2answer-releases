@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-install.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,10 +27,14 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
 
-	define('QA_DB_VERSION_CURRENT', 5);
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
+
+	define('QA_DB_VERSION_CURRENT', 8);
 
 	function qa_db_user_column_type_verify()
 	{
@@ -95,6 +99,7 @@
 				'written' => 'DATETIME',
 				'writeip' => 'INT UNSIGNED',
 				'resetcode' => 'BINARY(8) NOT NULL',
+				'sessioncode' => 'BINARY(8) NOT NULL',
 				'PRIMARY KEY (userid)',
 				'KEY (email)',
 				'KEY (handle)',
@@ -140,6 +145,7 @@
 				'KEY (parentid, type)',
 				'KEY (userid, type, created)',
 				'KEY (selchildid)',
+				'KEY (type, acount, created)',
 			),
 			
 			'words' => array(
@@ -200,6 +206,7 @@
 				'points' => 'INT NOT NULL',
 				'qposts' => 'MEDIUMINT NOT NULL',
 				'aposts' => 'MEDIUMINT NOT NULL',
+				'cposts' => 'MEDIUMINT NOT NULL',
 				'aselects' => 'MEDIUMINT NOT NULL',
 				'aselecteds' => 'MEDIUMINT NOT NULL',
 				'qvotes' => 'MEDIUMINT NOT NULL',
@@ -393,6 +400,8 @@
 			qa_db_upgrade_progress(QA_DB_VERSION_CURRENT-$version.' upgrade step/s remaining...');
 			
 			switch ($newversion) {
+				// Up to here: Version 1.0 beta 1
+				
 				case 2:
 					qa_db_upgrade_query($db, 'ALTER TABLE ^posts DROP COLUMN votes');
 					qa_db_upgrade_query($db, 'ALTER TABLE ^posts ADD COLUMN (upvotes '.$definitions['posts']['upvotes'].
@@ -416,7 +425,25 @@
 					qa_db_upgrade_query($db, 'ALTER TABLE ^contentwords ADD COLUMN (type '.$definitions['contentwords']['type'].', questionid '.$definitions['contentwords']['questionid'].')');
 					$recalc['doreindexposts']=true;
 					break;
+					
+				// Up to here: Version 1.0 beta 2
 				
+				case 6:
+					qa_db_upgrade_query($db, 'ALTER TABLE ^userpoints ADD COLUMN cposts '.$definitions['userpoints']['cposts']);
+					$recalc['dorecalcpoints']=true;
+					break;
+					
+				case 7:
+					if (!QA_EXTERNAL_USERS)
+						qa_db_upgrade_query($db, 'ALTER TABLE ^users ADD COLUMN sessioncode '.$definitions['users']['sessioncode']);
+					break;
+					
+				case 8:
+					qa_db_upgrade_query($db, 'ALTER TABLE ^posts ADD KEY (type, acount, created)');
+					$recalc['dorecountposts']=true; // for unanswered question count
+					break;
+
+				// Up to here: Version 1.0 beta 3
 			}
 			
 			qa_db_set_db_version($db, $newversion);

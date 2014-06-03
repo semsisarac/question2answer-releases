@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-question.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,13 +27,18 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 	require_once QA_INCLUDE_DIR.'qa-util-sort.php';
 	require_once QA_INCLUDE_DIR.'qa-util-string.php';
+	require_once QA_INCLUDE_DIR.'qa-app-captcha.php';
 	
 	$questionid=$pass_questionid; // picked up from index.php
 
@@ -123,14 +128,15 @@
 		$post['followable']=($post['type']=='A') ? qa_get_option($qa_db, 'follow_on_as') : false;
 	}
 	
-	function qa_page_q_comment_follow_list($parentid)
+	function qa_page_q_comment_follow_list($parent)
 	{
 		global $qa_db, $commentsfollows, $qa_login_userid, $qa_cookieid, $usershtml, $formtype, $formpostid, $formrequested;
 		
 		foreach ($commentsfollows as $commentfollowid => $commentfollow)
-			if (($commentfollow['parentid']==$parentid) && $commentfollow['viewable'] && ($commentfollowid!=$formpostid) ) {
+			if (($commentfollow['parentid']==$parent['postid']) && $commentfollow['viewable'] && ($commentfollowid!=$formpostid) ) {
 				if ($commentfollow['basetype']=='C') {
-					$c_view=qa_post_html_fields($commentfollow, $qa_login_userid, $qa_cookieid, $usershtml, false, qa_get_option($qa_db, 'show_url_links'), true);
+					$c_view=qa_post_html_fields($commentfollow, $qa_login_userid, $qa_cookieid, $usershtml,
+						false, qa_get_option($qa_db, 'show_user_points'), qa_get_option($qa_db, 'show_url_links'), true);
 						
 					if (!$formrequested) {
 						$c_view['form']=array(
@@ -164,6 +170,13 @@
 								'tags' => ' NAME="doclaimc_'.qa_html($commentfollowid).'" ',
 								'label' => qa_lang_html('question/claim_button'),
 							);
+							
+						if ($parent['commentable'])
+							$c_view['form']['buttons']['comment']=array(
+								'tags' => ' NAME="'.(($parent['basetype']=='Q') ? 'docommentq' : ('docommenta_'.qa_html($parent['postid']))).'" ',
+								'label' => qa_lang_html('question/comment_button'),
+							);
+
 					}
 
 				} elseif ($commentfollow['basetype']=='Q') {
@@ -181,7 +194,8 @@
 
 	qa_options_set_pending(array('answer_needs_login', 'do_related_qs', 'page_size_related_qs', 'match_related_qs',
 		'page_size_ask_tags', 'do_complete_tags', 'show_url_links', 'voting_on_qs', 'voting_on_as', 'votes_separated',
-		'comment_on_qs', 'comment_on_as', 'follow_on_as', 'comment_needs_login'));
+		'comment_on_qs', 'comment_on_as', 'follow_on_as', 'comment_needs_login', 'captcha_on_anon_post', 'show_user_points'));
+	qa_captcha_pending();
 	
 	qa_page_q_load_q();
 
@@ -189,7 +203,14 @@
 
 	if ((!isset($question)) || !$question['viewable']) {
 		qa_content_prepare();
-		$qa_content['title']=$qa_content['error']=qa_lang_html('question/q_not_found');
+
+		$qa_content['error']=qa_lang_html(isset($question)
+			? ($question['authorlast'] ? 'question/q_hidden_author' : 'question/q_hidden_editor')
+			: 'question/q_not_found'
+		);
+
+		$qa_content['suggest_next']=qa_html_suggest_qs_tags();
+
 		return;
 	}
 		
@@ -197,6 +218,7 @@
 
 	$checkanswerlogin=isset($qa_login_userid) || !qa_get_option($qa_db, 'answer_needs_login');			
 	$checkcommentlogin=isset($qa_login_userid) || !qa_get_option($qa_db, 'comment_needs_login');
+	$usecaptcha=(!isset($qa_login_userid)) && qa_get_option($qa_db, 'captcha_on_anon_post');
 	
 //	If we're responding to an HTTP POST, include file that handles all posting/editing/etc... logic
 //	This is in a separate file because it's a *lot* of logic, and will slow down ordinary page views
@@ -204,10 +226,12 @@
 	$pageerror=null;
 	$formtype=null;
 	$formpostid=null;
+	$jumptohash=null;
+	$focusonid=null;
 	
-	if ($_SERVER['REQUEST_METHOD']=='POST') {
+	if (qa_is_http_post()) {
 		require QA_INCLUDE_DIR.'qa-page-question-post.php';
-		qa_page_q_load_q(); // reload since we will probably need to
+		qa_page_q_load_q(); // reload since we may have changed something
 	}
 	
 	$formrequested=isset($formtype);
@@ -226,7 +250,7 @@
 	$qa_content['form_tags']=' METHOD="POST" ACTION="'.qa_self_html().'" ';
 	
 	if (isset($pageerror))
-		$qa_content['error']=$pageerror; // can also show voting error set in qa-index.php
+		$qa_content['error']=$pageerror; // might also show voting error set in qa-index.php
 	
 	if ($question['hidden'])
 		$qa_content['hidden']=true;
@@ -236,63 +260,12 @@
 	{//	The question...
 		
 		if ($formtype=='q_edit') { // ...in edit mode
+			$qa_content['title']=qa_lang_html('question/edit_q_title');			
+			$qa_content['q_edit_form']=qa_page_q_edit_q_form();
 
-			$qa_content['title']=qa_lang_html('question/edit_q_title');
-			
-			$qa_content['q_edit_form']=array(
-				'style' => 'tall',
-				
-				'fields' => array(
-					'title' => array(
-						'label' => qa_lang_html('question/q_title_label'),
-						'tags' => ' NAME="qtitle" ',
-						'value' => qa_html(isset($inqtitle) ? $inqtitle : $question['title']),
-						'error' => qa_html(@$qerrors['title']),
-					),
-					
-					'content' => array(
-						'label' => qa_lang_html('question/q_content_label'),
-						'tags' => ' NAME="qcontent" ',
-						'value' => qa_html(isset($inqcontent) ? $inqcontent : $question['content']),
-						'error' => qa_html(@$qerrors['content']),
-						'rows' => 12,
-					),
-					
-					'tags' => array(
-						'label' => qa_lang_html('question/q_tags_label'),
-						'value' => qa_html(isset($inqtags) ? $inqtags : str_replace(',', ' ', @$question['tags'])),
-						'error' => qa_html(@$qerrors['tags']),
-					),
-
-				),
-				
-				'buttons' => array(
-					'save' => array(
-						'label' => qa_lang_html('question/save_button'),
-					),
-					
-					'cancel' => array(
-						'tags' => ' NAME="docancel" ',
-						'label' => qa_lang_html('question/cancel_button'),
-					),
-				),
-				
-				'hidden' => array(
-					'dosaveq' => '1',
-				),
-			);
-			
-			if ($question['isbyuser'])
-				qa_set_up_notify_fields($qa_content, $qa_content['q_edit_form']['fields'], 'Q', $qa_login_email,
-					isset($innotify) ? $innotify : !empty($question['notify']),
-					isset($inemail) ? $inemail : @$question['notify'], @$qerrors['email']);
-			
-			qa_set_up_tag_field($qa_content, $qa_content['q_edit_form']['fields']['tags'], 'qtags', array(),
-				$completetags, qa_get_option($qa_db, 'page_size_ask_tags'));
-		
 		} else { // ...in view mode
-
-			$qa_content['q_view']=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, qa_get_vote_view($qa_db, 'Q'), qa_get_option($qa_db, 'show_url_links'), true);
+			$qa_content['q_view']=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
+				qa_get_vote_view($qa_db, 'Q'), qa_get_option($qa_db, 'show_user_points'), qa_get_option($qa_db, 'show_url_links'), true);
 			
 			$qa_content['title']=$qa_content['q_view']['title'];
 			
@@ -362,74 +335,34 @@
 	}
 	
 	
+	{// Answer being edited
+		if ($formtype=='a_edit')
+			$qa_content['q_view']['a_form']=qa_page_q_edit_a_form($formpostid);
+	}
+
+
 	{// Comments on question...
-		$qa_content['q_view']['c_list']=qa_page_q_comment_follow_list($questionid);
+		$qa_content['q_view']['c_list']=qa_page_q_comment_follow_list($question); // ...for viewing
 		
-		if (($formtype=='c_add') && ($formpostid==$questionid))
+		if (($formtype=='c_add') && ($formpostid==$questionid)) // ...to be added
 			$qa_content['q_view']['c_form']=qa_page_q_add_c_form(null);
 		
-		elseif (($formtype=='c_edit') && (@$commentsfollows[$formpostid]['parentid']==$questionid))
+		elseif (($formtype=='c_edit') && (@$commentsfollows[$formpostid]['parentid']==$questionid)) // ...being edited
 			$qa_content['q_view']['c_form']=qa_page_q_edit_c_form($formpostid, null);
 	}
 	
-
-	if ($formtype=='a_edit')
-
-	{// Answer being edited
-
-		$answer=$answers[$formpostid];
-		
-		$qa_content['q_view']['a_form']=array(
-			'title' => '<A NAME="edit">'.qa_lang_html('question/edit_a_title').'</A>',
-			
-			'style' => 'tall',
-			
-			'fields' => array(
-				'content' => array(
-					'tags' => ' NAME="acontent" ',
-					'value' => qa_html(isset($inacontent) ? $inacontent : $answer['content']),
-					'error' => qa_html(@$aerrors['content']),
-					'rows' => 12,
-				),
-			),
-			
-			'buttons' => array(
-				'save' => array(
-					'label' => qa_lang_html('question/save_button'),
-				),
-				
-				'cancel' => array(
-					'tags' => ' NAME="docancel" ',
-					'label' => qa_lang_html('question/cancel_button'),
-				),
-			),
-			
-			'hidden' => array(
-				'dosavea_'.qa_html($formpostid) => '1',
-			),
-		);
-		
-		if ($answer['isbyuser'])
-			qa_set_up_notify_fields($qa_content, $qa_content['q_view']['a_form']['fields'], 'A', $qa_login_email,
-				isset($innotify) ? $innotify : !empty($answer['notify']),
-				isset($inemail) ? $inemail : @$answer['notify'], @$aerrors['email']);
-
-		$qa_content['script_onloads'][]=array("window.location.hash='edit';");
-	}
-
 
 	{// Existing answers
 
 		$qa_content['a_list']['as']=array();
 		
 		qa_sort_by($answers, 'created');
-		$answers=array_reverse($answers, true);
 		$priority=0;
 	
 		foreach ($answers as $answerid => $answer)
 			if ($answer['viewable'] && !(($formtype=='a_edit') && ($formpostid==$answerid))) {
 				$a_view=qa_post_html_fields($answer, $qa_login_userid, $qa_cookieid, $usershtml, qa_get_vote_view($qa_db, 'A'),
-					qa_get_option($qa_db, 'show_url_links'), true, $answer['isselected']);
+					qa_get_option($qa_db, 'show_user_points'), qa_get_option($qa_db, 'show_url_links'), true, $answer['isselected']);
 				
 				if (!$formrequested) {
 					if ($question['editable'] && !$answer['hidden']) {
@@ -487,10 +420,15 @@
 
 				}
 				
-				if (($formtype=='c_add') && ($formpostid==$answerid))
-					$a_view['c_form']=qa_page_q_add_c_form($answerid);
-				else if (($formtype=='c_edit') && (@$commentsfollows[$formpostid]['parentid']==$answerid))
-					$a_view['c_form']=qa_page_q_edit_c_form($formpostid, $answerid);
+				{// Comments on answer...
+					$a_view['c_list']=qa_page_q_comment_follow_list($answer); // ...for viewing
+	
+					if (($formtype=='c_add') && ($formpostid==$answerid)) // ...to be added
+						$a_view['c_form']=qa_page_q_add_c_form($answerid);
+
+					else if (($formtype=='c_edit') && (@$commentsfollows[$formpostid]['parentid']==$answerid)) // ...being edited
+						$a_view['c_form']=qa_page_q_edit_c_form($formpostid, $answerid);
+				}
 
 				if ($answer['hidden'])
 					$a_view['priority']=10000+($priority++);
@@ -499,8 +437,6 @@
 				else
 					$a_view['priority']=5000+($priority++);
 					
-				$a_view['c_list']=qa_page_q_comment_follow_list($answerid);
-
 				$qa_content['a_list']['as'][]=$a_view;
 			}
 			
@@ -540,9 +476,7 @@
 			);
 			
 			if ($formrequested) {
-				$qa_content['script_onloads'][]=array(
-					"document.getElementById('content').focus();"
-				);
+				$focusonid='content';
 				
 				$qa_content['q_view']['a_form']['buttons']['cancel']=array(
 					'tags' => ' NAME="docancel" ',
@@ -552,6 +486,9 @@
 			
 			qa_set_up_notify_fields($qa_content, $qa_content['q_view']['a_form']['fields'], 'A', $qa_login_email,
 				isset($innotify) ? $innotify : true, @$inemail, @$errors['email']);
+				
+			if ($usecaptcha)
+				qa_set_up_captcha_field($qa_db, $qa_content, $qa_content['q_view']['a_form']['fields'], @$errors);
 
 		} else {
 			$qa_content['q_view']['a_form']=array(
@@ -576,7 +513,19 @@
 			
 		$qa_content['related_q_list']['qs']=array();
 		foreach ($relatedquestions as $related)
-			$qa_content['related_q_list']['qs'][]=qa_post_html_fields($related, $qa_login_userid, $qa_cookieid, $usershtml, qa_get_vote_view($qa_db, 'Q'));
+			$qa_content['related_q_list']['qs'][]=qa_post_html_fields($related, $qa_login_userid, $qa_cookieid, $usershtml,
+				qa_get_vote_view($qa_db, 'Q'), qa_get_option($qa_db, 'show_user_points'));
 	}
+	
+	
+	if (isset($jumptohash))
+		$qa_content['script_onloads'][]=array(
+			"window.location.hash=".qa_js($jumptohash).";",
+		);
+		
+	if (isset($focusonid))
+		$qa_content['script_onloads'][]=array(
+			"document.getElementById(".qa_js($focusonid).").focus();"
+		);
 
 ?>

@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-main.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,15 +27,14 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
 
 	return array(
 		'1_answer' => '1 answer',
 		'1_day' => '1 day',
-		'1_disliked' => '1 disliked',
+		'1_disliked' => '1 dislike',
 		'1_hour' => '1 hour',
-		'1_liked' => '1 liked',
+		'1_liked' => '1 like',
 		'1_minute' => '1 minute',
 		'1_month' => '1 month',
 		'1_point' => '1 point',
@@ -50,7 +49,10 @@
 		'ask_limit' => 'Too many questions received - please try again in an hour',
 		'asked_x_ago' => 'asked ^ ago',
 		'by_x' => 'by ^',
+		'captcha_error' => 'Please complete the anti-spam verification',
+		'captcha_label' => 'Anti-spam verification:',
 		'comment_limit' => 'Too many comments received - please try again in an hour',
+		'commented_x_ago' => 'commented ^ ago',
 		'feedback_email' => 'Your email: (optional)',
 		'feedback_empty' => 'Please use this field to send some comments or suggestions',
 		'feedback_message' => 'Your comments or suggestions for ^:',
@@ -72,20 +74,25 @@
 		'nav_qs' => 'Questions',
 		'nav_register' => 'Register',
 		'nav_tags' => 'Tags',
+		'nav_unanswered' => 'Unanswered',
 		'nav_users' => 'Users',
 		'no_active_users' => 'No active users found',
+		'no_answers_found' => 'No answers found',
+		'no_comments_found' => 'No comments found',
 		'no_questions_found' => 'No questions found',
 		'no_related_qs_title' => 'No Related Questions Found',
 		'no_results_for_x' => 'No results found for ^',
 		'no_tags_found' => 'No tags found',
+		'no_una_questions_found' => 'No unanswered questions found',
 		'page_label' => 'Page:',
 		'page_next' => 'next',
 		'page_not_found' => 'Page not found',
 		'page_prev' => 'prev',
 		'popular_tags' => 'Most popular tags',
 		'questions_tagged_x' => 'Recent questions tagged ^',
-		'recent_activity_title' => 'Recent activity',
+		'recent_qs_as_title' => 'Recent questions and answers',
 		'recent_as_title' => 'Recently answered questions',
+		'recent_cs_title' => 'Recently added comments',
 		'recent_qs_title' => 'Recent questions',
 		'related_qs_title' => 'Related questions',
 		'results_for_x' => 'Search results for ^',
@@ -94,6 +101,7 @@
 		'send_button' => 'Send',
 		'suggest_ask' => 'Help get things started by ^1asking a question^2.',
 		'suggest_qs_tags' => 'To see more, click for the ^1full list of questions^2 or ^3popular tags^4.',
+		'unanswered_qs_title' => 'Recent questions without answers',
 		'vote_disabled_hidden_a' => 'You cannot vote on hidden answers',
 		'vote_disabled_hidden_q' => 'You cannot vote on hidden questions',
 		'vote_disabled_my_a' => 'You cannot vote on your own answers',
@@ -108,9 +116,9 @@
 		'x_ago' => '^ ago',
 		'x_answers' => '^ answers',
 		'x_days' => '^ days',
-		'x_disliked' => '^ disliked',
+		'x_disliked' => '^ dislike',
 		'x_hours' => '^ hours',
-		'x_liked' => '^ liked',
+		'x_liked' => '^ like',
 		'x_minutes' => '^ minutes',
 		'x_months' => '^ months',
 		'x_points' => '^ points',

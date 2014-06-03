@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-login.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,8 +27,12 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	if (QA_EXTERNAL_USERS)
 		qa_fatal_error('User login is handled by external code');
@@ -42,6 +46,7 @@
 	
 		$inemailhandle=qa_post_text('emailhandle');
 		$inpassword=qa_post_text('password');
+		$inremember=qa_post_text('remember');
 		
 		$errors=array();
 		
@@ -57,8 +62,8 @@
 			if (strtolower(qa_db_calc_passcheck($inpassword, $userinfo['passsalt'])) == strtolower($userinfo['passcheck'])) {
 				require_once QA_INCLUDE_DIR.'qa-app-users.php';
 
-				qa_set_logged_in_user($qa_db, $inuserid);
-				qa_db_user_logged_in($qa_db, $inuserid, $_SERVER['REMOTE_ADDR']);
+				qa_set_logged_in_user($qa_db, $inuserid, $inremember ? true : false);
+				qa_db_user_logged_in($qa_db, $inuserid, @$_SERVER['REMOTE_ADDR']);
 				
 				$topath=qa_get('to');
 				
@@ -113,6 +118,13 @@
 				'value' => qa_html(@$inpassword),
 				'error' => empty($errors['password']) ? '' : (qa_html(@$errors['password']).' - '.$forgothtml),
 				'note' => $passwordsent ? qa_lang_html('users/password_sent') : $forgothtml,
+			),
+			
+			'remember' => array(
+				'type' => 'checkbox',
+				'label' => qa_lang_html('users/remember_label'),
+				'tags' => ' NAME="remember" ',
+				'value' => @$inremember ? true : false,
 			),
 		),
 		

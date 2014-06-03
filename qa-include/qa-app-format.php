@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,8 +27,12 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	function qa_time_to_string($seconds)
 	{
@@ -86,9 +90,12 @@
 
 				if (isset($useridhandle['lastuserid']))
 					$keyuserids[$useridhandle['lastuserid']]=true;
-			}		
+			}
 	
-			return qa_get_users_html($db, array_keys($keyuserids), true, qa_path(''), $microformats);
+			if (count($keyuserids))
+				return qa_get_users_html($db, array_keys($keyuserids), true, qa_path(''), $microformats);
+			else
+				return array();
 		
 		} else {
 			$usershtml=array();
@@ -110,7 +117,7 @@
 		return '<A HREF="'.qa_path_html('tag/'.urlencode($tag)).'"'.($microformats ? ' rel="tag"' : '').' CLASS="qa-tag-link">'.qa_html($tag).'</A>';
 	}
 	
-	function qa_post_html_fields($post, $userid, $cookieid, $usershtml, $voteview=false, $showurllinks=false, $microformats=false, $isselected=false)
+	function qa_post_html_fields($post, $userid, $cookieid, $usershtml, $voteview=false, $pointsview=false, $showurllinks=false, $microformats=false, $isselected=false)
 	{
 		$fields=array();
 		
@@ -262,14 +269,14 @@
 		if (isset($post['created'])) {
 			$whenhtml=qa_html(qa_time_to_string(time()-$post['created']));		
 			if ($microformats)
-				$whenhtml='<SPAN CLASS="published"><SPAN CLASS="value-title" TITLE="'.date('Y-m-d\TH:i:sO', $post['created']).'"></SPAN>'.$whenhtml.'</SPAN>';
+				$whenhtml='<SPAN CLASS="published"><SPAN CLASS="value-title" TITLE="'.gmdate('Y-m-d\TH:i:sO', $post['created']).'"></SPAN>'.$whenhtml.'</SPAN>';
 			
 			$fields['when']=qa_lang_sub_split_html($isquestion ? 'main/asked_x_ago' : ($isanswer ? 'main/answered_x_ago' : 'main/x_ago'), $whenhtml);
 		}
 		
 		$fields['who']=qa_who_to_html($isbyuser, @$post['userid'], $usershtml, $microformats);
 		
-		if (isset($post['points']))
+		if ($pointsview && isset($post['points']))
 			$fields['points']=($post['points']==1) ? qa_lang_sub_split_html('main/1_point', '1', '1')
 				: qa_lang_sub_split_html('main/x_points', qa_html(number_format($post['points'])));
 
@@ -277,12 +284,13 @@
 		
 		if (isset($post['updated']) && ( // show the time/user who updated if...
 			(!isset($post['created'])) || // ... we didn't show the created time (should never happen in practice)
+			($post['hidden']) || // ... the post was actually hidden
 			(abs($post['updated']-$post['created'])>300) || // ... or over 5 minutes passed between create and update times
 			($post['lastuserid']!=$post['userid']) // ... or it was updated by a different user
 		)) {
 			$whenhtml=qa_html(qa_time_to_string(time()-$post['updated']));
 			if ($microformats)
-				$whenhtml='<SPAN CLASS="updated"><SPAN CLASS="value-title" TITLE="'.date('Y-m-d\TH:i:sO', $post['updated']).'"></SPAN>'.$whenhtml.'</SPAN>';
+				$whenhtml='<SPAN CLASS="updated"><SPAN CLASS="value-title" TITLE="'.gmdate('Y-m-d\TH:i:sO', $post['updated']).'"></SPAN>'.$whenhtml.'</SPAN>';
 			
 			$fields['when_2']=qa_lang_sub_split_html($fields['hidden'] ? 'question/hidden_x_ago' : 'question/edited_x_ago', $whenhtml);			
 			$fields['who_2']=qa_who_to_html($post['lastuserid']==$userid, $post['lastuserid'], $usershtml, false);
@@ -309,34 +317,99 @@
 		return qa_lang_sub_split_html('main/by_x', $whohtml);
 	}
 	
-	function qa_a_to_q_html_fields($answerquestion, $userid, $cookieid, $usershtml, $voteview, $apostid, $acreated, $auserid, $acookieid, $apoints)
+	function qa_a_or_c_to_q_html_fields($question, $userid, $cookieid, $usershtml, $voteview=false, $pointsview=false, $basetype, $acpostid, $accreated, $acuserid, $accookieid, $acpoints)
 	{	
-		$fields=qa_post_html_fields($answerquestion, $userid, $cookieid, $usershtml, $voteview);
+		$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $voteview, $pointsview);
 		
-		$isbyuser=qa_post_is_by_user(array('userid' => $auserid, 'cookieid' => $acookieid), $userid, $cookieid);
+		$fields['url'].='#'.qa_html(urlencode($acpostid));
+
+		$fields['when']=qa_lang_sub_split_html(
+			($basetype=='C') ? 'main/commented_x_ago' : ($basetype=='A' ? 'main/answered_x_ago' : 'main/x_ago'),
+			qa_html(qa_time_to_string(time()-$accreated))
+		);
 		
-		$fields['url'].='#'.qa_html(urlencode($apostid));
-		$fields['when']=qa_lang_sub_split_html('main/answered_x_ago', qa_html(qa_time_to_string(time()-$acreated)));
+		$isbyuser=qa_post_is_by_user(array('userid' => $acuserid, 'cookieid' => $accookieid), $userid, $cookieid);
 		
-		unset($fields['who']);
-		unset($fields['points']);
-		
-		if ($isbyuser)
-			$whohtml=qa_lang_html('main/me');
-		elseif (!empty($usershtml[$auserid]))
-			$whohtml=$usershtml[$auserid];
+		$fields['who']=qa_who_to_html($isbyuser, $acuserid, $usershtml, false);
+
+		if ($pointsview && isset($acpoints))
+			$fields['points']=($acpoints==1) ? qa_lang_sub_split_html('main/1_point', '1', '1')
+				: qa_lang_sub_split_html('main/x_points', qa_html(number_format($acpoints)));
 		else
-			$whohtml=qa_lang_html('main/anonymous');
-
-		$fields['who']=qa_lang_sub_split_html('main/by_x', $whohtml);
-
-		if (isset($apoints))
-			$fields['points']=($apoints==1) ? qa_lang_sub_split_html('main/1_point', '1', '1')
-				: qa_lang_sub_split_html('main/x_points', qa_html(number_format($apoints)));
+			unset($fields['points']);
 		
 		return $fields;
 	}
 	
+	function qa_any_to_q_html_fields($question, $userid, $cookieid, $usershtml, $voteview=false, $pointsview=false)
+	{	
+		if (isset($question['cpostid']))
+			$fields=qa_a_or_c_to_q_html_fields($question, $userid, $cookieid, $usershtml, $voteview, $pointsview, 'C',
+				$question['cpostid'], @$question['ccreated'], @$question['cuserid'], @$question['ccookieid'], @$question['cpoints']);
+
+		elseif (isset($question['apostid']))
+			$fields=qa_a_or_c_to_q_html_fields($question, $userid, $cookieid, $usershtml, $voteview, $pointsview, 'A',
+				$question['apostid'], @$question['acreated'], @$question['auserid'], @$question['acookieid'], @$question['apoints']);
+
+		else
+			$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $voteview, $pointsview);
+
+		return $fields;
+	}
+	
+	function qa_any_sort_and_dedupe($questions)
+	{
+		require_once QA_INCLUDE_DIR.'qa-util-sort.php';
+		
+		foreach ($questions as $key => $question) { // sort by appropriate created date
+			if (isset($question['cpostid']))
+				$created=$question['ccreated'];
+			elseif (isset($question['apostid']))
+				$created=$question['acreated'];
+			else
+				$created=$question['created'];
+				
+			$questions[$key]['sort']=-$created;
+		}
+		
+		qa_sort_by($questions, 'sort');
+		
+		$keyseenq=array(); // now remove duplicate references to same question
+		foreach ($questions as $key => $question)
+			if (isset($keyseenq[$question['postid']]))
+				unset($questions[$key]);
+			else
+				$keyseenq[$question['postid']]=true;
+				
+		return $questions;
+	}
+	
+	function qa_any_get_userids_handles($questions)
+	{
+		$userids_handles=array();
+		
+		foreach ($questions as $question)
+			if (isset($question['cpostid']))
+				$userids_handles[]=array(
+					'userid' => $question['cuserid'],
+					'handle' => @$question['chandle'],
+				);
+			
+			elseif (isset($question['apostid']))
+				$userids_handles[]=array(
+					'userid' => $question['auserid'],
+					'handle' => @$question['ahandle'],
+				);
+			
+			else
+				$userids_handles[]=array(
+					'userid' => $question['userid'],
+					'handle' => @$question['handle'],
+				);
+			
+		return $userids_handles;
+	}
+
 	function qa_html_convert_urls($html)
 	{
 		// URL regular expressions can get crazy: http://internet.ls-la.net/folklore/url-regexpr.html
@@ -462,6 +535,40 @@
 		return 10-2*$match;
 	}
 	
+	function qa_checkbox_to_display(&$qa_content, $effects)
+	{
+		$function='qa_checkbox_display_'.count(@$qa_content['script_lines']);
+		
+		$keysourceids=array();
+		
+		foreach ($effects as $target => $sources) {
+			$elements=preg_split('/([^A-Za-z0-9_]+)/', $sources, -1, PREG_SPLIT_NO_EMPTY); // element names must be legal JS variable names
+			foreach ($elements as $element)
+				$keysourceids[$element]=true;
+		}
+		
+		$funcscript=array("function ".$function."() {"); // build the Javascripts
+		$loadscript=array();
+		
+		foreach ($keysourceids as $key => $dummy) {
+			$funcscript[]="\tvar e=document.getElementById(".qa_js($key).");";
+			$funcscript[]="\tvar ".$key."=e && e.checked;";
+			$loadscript[]="var e=document.getElementById(".qa_js($key).");";
+			$loadscript[]="if (e) e.onclick=".$function.";";
+		}
+			
+		foreach ($effects as $target => $sources) {
+			$funcscript[]="\tvar e=document.getElementById(".qa_js($target).");";
+			$funcscript[]="\tif (e) e.style.display=(".$sources.") ? '' : 'none';";
+		}
+		
+		$funcscript[]="}";
+		$loadscript[]=$function."();";
+		
+		$qa_content['script_lines'][]=$funcscript;
+		$qa_content['script_onloads'][]=$loadscript;
+	}
+	
 	function qa_set_up_tag_field(&$qa_content, &$field, $fieldname, $exampletags, $completetags, $maxtags)
 	{
 		$template='<A HREF="#" CLASS="qa-tag-link" onClick="return qa_tag_click(this);">^</A>';
@@ -519,7 +626,7 @@
 				'<SPAN ID="email_shown">'.$labelaskemail.'</SPAN>'.
 				'<SPAN ID="email_hidden" STYLE="display:none;">'.$labelonly.'</SPAN>';
 			
-			$fields['notify']['tags'].=' ID="notify" onClick="qa_email_display();" ';
+			$fields['notify']['tags'].=' ID="notify" ';
 			$fields['notify']['tight']=true;
 			
 			$fields['email']=array(
@@ -529,17 +636,12 @@
 				'note' => qa_lang_html('question/notify_email_note'),
 				'error' => qa_html($errors_email),
 			);
-
-			$qa_content['script_lines'][]=array(
-				"function qa_email_display() {",
-				"\tvar c=document.getElementById('notify').checked;",
-				"\tdocument.getElementById('email').style.display=c ? '' : 'none';",
-				"\tdocument.getElementById('email_shown').style.display=c ? '' : 'none';",
-				"\tdocument.getElementById('email_hidden').style.display=c ? 'none' : '';",
-				"}",
-			);
 			
-			$qa_content['script_onloads'][]=array('qa_email_display();');
+			qa_checkbox_to_display($qa_content, array(
+				'email' => 'notify',
+				'email_shown' => 'notify',
+				'email_hidden' => '!notify',
+			));
 		
 		} else {
 			$fields['notify']['label']=str_replace('^', qa_html($login_email), $labelgotemail);

@@ -6,53 +6,41 @@ Question2Answer_ (Q2A) is a popular open source Q&A platform for PHP/MySQL.
 --------------
 Release Notes
 --------------
-Version 1.0 beta 2
+Version 1.0 beta 3
 
-- Second public version, 8th March 2010. A mostly complete preview of the 1.0 release, some small things left to do.
+- Third public version, 31st March 2010. Feature complete preview of the 1.0 release.
 
 **New Features**
 
-- Added comments on questions and answers.
-- Added related questions.
-- Many new notifications, e.g. if an answer is selected or a question is commented on.
-- Allow the number of up votes and down votes for each post to be displayed separately.
-- Allow voting to be enabled or disabled for questions or answers.
-- Store and display user who last modified a post, and when they modified it.
-- Users who log in after posting can reclaim the post as their own.
-- Added website to user profile, which is linked with rel=nofollow.
-- Added an admin option to insert custom content into page <HEAD>.
+- Added second theme (Candy).
+- Added support for reCAPTCHA for user registration and anonymous posts.
+- Added optional tab for unanswered questions.
+- Added ability for author or editor to convert an answer into a comment.
+- Added 'Remember me' checkbox on login to store cookie in browser.
+- Added admin panel showing hidden questions, answers and comments.
+- Added admin option to be emailed when a new question is asked.
+- Added number of comments to admin statistics page.
+- Added switch for display of user points alongside usernames.
 
 **Other Changes**
 
-- Show gray arrows instead of nothing when a user cannot vote on their own post.
-- Show more information about votes given and received on user page.
-- Don't allow the author of a hidden post to reshow it, if it was hidden by an editor.
-- Improved style of buttons and positioning of forms on question page.
-- Improved speed of search within content of posts.
-- Added 'Best answer' under star if an answer was selected.
-- Show 'by anonymous' for a post if it was not by a registered user.
-- Disallow user editing their profile on the user page (they use My Account).
-- Allow voting in every case where vote counts are shown for a post.
-- Changed order of input fields on register page to be more intuitive.
-- Prompt users to enter hyphens to create multi-word tags.
-- Show suggested next step at bottom of some more low-content pages.
-- Don't show answer form on question pages by default unless it has no answers.
-- Added link to online documentation if .htaccess file not working.
-- Added individual CSS classes to buttons to allow different styling.
+- Users now prevented from directly opening include files from their web browser.
+- All files now use Windows (CRLF) line endings for easy editing.
+- After posting an answer or comment, the page is scrolled to the new content.
+- Logged in sessions no longer expire while the browser window is open.
+- Duplicate submissions of answers or comments now detected.
+- All users shown on the 'Users' page, even if they have no activity.
 
 **Bug Fixes**
 
-- Allow viewing of pages for tags containing ampersands (&).
-- Allow clicking auto-complete tags with ampersands and $ signs.
-- Disallow + and / characters in usernames due to URL problems.
-- Set appropriate count to zero in words table if a word is no longer used.
-- Make tabs and leading spaces visible in post content.
-- Don't allow a comment or answer to be viewed out of context by requesting its postid.
-- Include anonymous questions when counting how many times a user had their answer selected.
-- Initiate Gzip page compression code earlier, to prevent content encoding errors on some setups.
-- Fix database error when indexing content if a word was not added to the words table.
-- Add DirectoryIndex and commented RewriteBase directives to .htaccess file.
-- Ajax voting code now refreshes more HTML code, to get pluralization right.
+- Improve reliability of pop-up tooltips on buttons in Internet Explorer.
+- When using external users, allow viewing of pages for users with no activity.
+- Fixed requests to pages for tags or users with unusual characters.
+- Fixed layout where a question has a large number of tags.
+- Be forgiving if some $_SERVER elements are not set by the PHP environment.
+- Changed date() to gmdate() to prevent warnings in some PHP versions.
+- Fixed external user sample code to work with empty array parameters.
+- Custom text is properly included in user welcome emails.
 
 
 

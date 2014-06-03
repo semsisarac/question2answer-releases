@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin.php
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -27,16 +27,22 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
+		header('Location: ../');
+		exit;
+	}
 
 	require_once QA_INCLUDE_DIR.'qa-db-admin.php';
 	require_once QA_INCLUDE_DIR.'qa-db-maxima.php';
 	require_once QA_INCLUDE_DIR.'qa-app-options.php';
 	require_once QA_INCLUDE_DIR.'qa-app-admin.php';
 	
-//	Check we have administrative privileges
+//	Standard pre-admin operations
 
+	qa_admin_pending();
+	
 	if (!qa_admin_check_privileges())
 		return;
 
@@ -47,16 +53,16 @@
 	switch ($qa_template) {
 		case 'admin/layout':
 			$subtitle='admin/layout_title';
-			$showoptions=array('site_theme', 'logo_show', 'logo_url', 'logo_width', 'logo_height', 'custom_sidebar', 'custom_header', 'custom_footer', 'custom_in_head');
+			$showoptions=array('logo_show', 'logo_url', 'logo_width', 'logo_height', 'nav_unanswered', 'custom_sidebar', 'custom_header', 'custom_footer', 'custom_in_head');
 			break;
 			
 		case 'admin/viewing':
 			$subtitle='admin/viewing_title';
 			$showoptions=array(
-				'voting_on_qs', 'voting_on_as', 'votes_separated', '', 'page_size_home', 'page_size_qs', '',
+				'voting_on_qs', 'voting_on_as', 'votes_separated', '', 'page_size_home', 'page_size_qs', 'page_size_una_qs', '',
 				'page_size_tags', 'columns_tags', 'page_size_users', 'columns_users', '',
 				'page_size_tag_qs', 'page_size_user_qs', 'page_size_user_as', 'page_size_search', '',
-				'show_url_links', '', 'do_related_qs', 'match_related_qs', 'page_size_related_qs', '',
+				'show_user_points', 'show_url_links', '', 'do_related_qs', 'match_related_qs', 'page_size_related_qs', '',
 				'pages_prev_next'
 			);
 			$formstyle='wide';
@@ -64,14 +70,19 @@
 		
 		case 'admin/posting':
 			$subtitle='admin/posting_title';
-			$showoptions=array('comment_on_qs', 'comment_on_as', 'follow_on_as', '', 'ask_needs_login', 'answer_needs_login', 'comment_needs_login', '', 'min_len_q_title', 'min_len_q_content', 'min_len_a_content', 'min_len_c_content', '',
-			'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs', '', 'do_example_tags', 'match_example_tags', 'do_complete_tags', 'page_size_ask_tags');
+			$showoptions=array(
+				'comment_on_qs', 'comment_on_as', 'follow_on_as', '',
+				'ask_needs_login', 'answer_needs_login', 'comment_needs_login', '',
+				'min_len_q_title', 'min_len_q_content', 'min_len_a_content', 'min_len_c_content', '',
+				'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs', '',
+				'do_example_tags', 'match_example_tags', 'do_complete_tags', 'page_size_ask_tags'
+			);
 			$formstyle='wide';
 			break;
 			
 		case 'admin/emails':
 			$subtitle='admin/emails_title';
-			$showoptions=array('from_email', 'feedback_email', 'email_privacy');
+			$showoptions=array('from_email', 'notify_admin_q_post', 'feedback_enabled', 'feedback_email', 'email_privacy');
 			
 			if (!QA_EXTERNAL_USERS)
 				$showoptions[]='custom_welcome';
@@ -80,14 +91,37 @@
 		case 'admin/limits':
 			$subtitle='admin/limits_title';
 			$showoptions=array(
-				'max_rate_ip_qs', 'max_rate_ip_as', 'max_rate_ip_cs', 'max_rate_ip_votes', '', 'max_rate_user_qs', 'max_rate_user_as', 'max_rate_user_cs', 'max_rate_user_votes',
 			);
+			$formstyle='wide';
+			break;
+			
+		case 'admin/spam':
+			$subtitle='admin/spam_title';
+			
+			$showoptions=array();
+			
+			if (!QA_EXTERNAL_USERS)
+				$showoptions[]='captcha_on_register';
+				
+			$anonoptions=qa_get_options($qa_db, array('ask_needs_login', 'answer_needs_login', 'comment_needs_login'));
+			
+			if (!($anonoptions['ask_needs_login'] && $anonoptions['answer_needs_login'] && $anonoptions['comment_needs_login']))
+				$showoptions[]='captcha_on_anon_post';
+			
+			if (count($showoptions))
+				array_push($showoptions, 'recaptcha_public_key', 'recaptcha_private_key', '');
+			
+			array_push($showoptions,
+				'max_rate_ip_qs', 'max_rate_ip_as', 'max_rate_ip_cs', 'max_rate_ip_votes', '',
+				'max_rate_user_qs', 'max_rate_user_as', 'max_rate_user_cs', 'max_rate_user_votes'
+			);
+
 			$formstyle='wide';
 			break;
 		
 		default:
 			$subtitle='admin/general_title';
-			$showoptions=array('site_title', 'site_url', 'neat_urls', 'site_language');
+			$showoptions=array('site_title', 'site_url', 'neat_urls', 'site_language', 'site_theme');
 			break;
 	}
 	
@@ -111,10 +145,10 @@
 		'pages_prev_next' => 'number',
 		'page_size_home' => 'number',
 		'page_size_qs' => 'number',
-		'page_size_as' => 'number',
 		'page_size_search' => 'number',
 		'page_size_tags' => 'number',
 		'page_size_tag_qs' => 'number',
+		'page_size_una_qs' => 'number',
 		'page_size_users' => 'number',
 		'page_size_user_qs' => 'number',
 		'page_size_user_as' => 'number',
@@ -136,19 +170,25 @@
 		'do_complete_tags' => 'checkbox',
 		'do_related_qs' => 'checkbox',
 		'logo_show' => 'checkbox',
+		'show_user_points' => 'checkbox',
 		'show_url_links' => 'checkbox',
 		'voting_on_qs' => 'checkbox',
 		'voting_on_as' => 'checkbox',
 		'votes_separated' => 'checkbox',
+		'feedback_enabled' => 'checkbox',
+		'captcha_on_register' => 'checkbox',
+		'captcha_on_anon_post' => 'checkbox',
+		'notify_admin_q_post' => 'checkbox',
+		'nav_unanswered' => 'checkbox',
 	);
 	
 	$optionmaximum=array(
 		'page_size_home' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_qs' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_as' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_search' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_tags' => QA_DB_RETRIEVE_TAGS,
 		'page_size_tag_qs' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_una_qs' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_users' => QA_DB_RETRIEVE_USERS,
 		'page_size_user_qs' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_user_as' => QA_DB_RETRIEVE_QS_AS,
@@ -160,7 +200,6 @@
 	$optionminimum=array(
 		'page_size_home' => 3,
 		'page_size_qs' => 3,
-		'page_size_as' => 3,
 		'page_size_search' => 3,
 		'page_size_tags' => 3,
 		'page_size_tag_qs' => 3,
@@ -206,6 +245,8 @@
 	qa_content_prepare();
 
 	$qa_content['title']=qa_lang_html('admin/admin_title').' - '.qa_lang_html($subtitle);
+	
+	$qa_content['error']=qa_admin_page_error($qa_db);
 
 	$qa_content['form']=array(
 		'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
@@ -285,55 +326,50 @@
 					break;
 				
 				case 'logo_show':
-					$optionfield['tags'].=' ID="logo_show" onClick="qa_logo_display();" ';
+					$optionfield['tags'].=' ID="logo_show" ';
 					
-					$qa_content['script_lines'][]=array(
-						"function qa_logo_display() {",
-						"\tvar d=document.getElementById('logo_show').checked ? '' : 'none';",
-						"\tdocument.getElementById('logo_url').style.display=d;",
-						"\tdocument.getElementById('logo_width').style.display=d;",
-						"\tdocument.getElementById('logo_height').style.display=d;",
-						"}",
-					);
+					qa_checkbox_to_display($qa_content, array(
+						'logo_url' => 'logo_show',
+						'logo_width' => 'logo_show',
+						'logo_height' => 'logo_show',
+					));
+					break;
 					
-					$qa_content['script_onloads'][]=array('qa_logo_display();');
+				case 'feedback_enabled':
+					$optionfield['tags'].=' ID="feedback_enabled" ';
+					
+					qa_checkbox_to_display($qa_content, array(
+						'feedback_email' => 'feedback_enabled || notify_admin_q_post',
+					));
+					break;
+					
+				case 'notify_admin_q_post':
+					$optionfield['tags'].=' ID="notify_admin_q_post" ';
 					break;
 					
 				case 'voting_on_qs':
-					$optionfield['tags'].=' ID="voting_on_qs" onClick="qa_voting_on_display();" ';
-
-					$qa_content['script_lines'][]=array(
-						"function qa_voting_on_display() {",
-						"\tvar vq=document.getElementById('voting_on_qs').checked;",
-						"\tvar va=document.getElementById('voting_on_as').checked;",
-						"\tdocument.getElementById('votes_separated').style.display=(vq||va) ? '' : 'none';",
-						"}",
-					);
+					$optionfield['tags'].=' ID="voting_on_qs" ';
 					
-					$qa_content['script_onloads'][]=array('qa_voting_on_display();');
+					qa_checkbox_to_display($qa_content, array(
+						'votes_separated' => 'voting_on_qs || voting_on_as',
+					));
 					break;
 					
 				case 'voting_on_as':
-					$optionfield['tags'].=' ID="voting_on_as" onClick="qa_voting_on_display();" ';
+					$optionfield['tags'].=' ID="voting_on_as" ';
 					break;
 
 				case 'comment_on_qs':
-					$optionfield['tags'].=' ID="comment_on_qs" onClick="qa_comments_on_display();" ';
-
-					$qa_content['script_lines'][]=array(
-						"function qa_comments_on_display() {",
-						"\tvar cq=document.getElementById('comment_on_qs').checked;",
-						"\tvar ca=document.getElementById('comment_on_as').checked;",
-						"\tdocument.getElementById('comment_needs_login').style.display=(cq||ca) ? '' : 'none';",
-						"\tdocument.getElementById('min_len_c_content').style.display=(cq||ca) ? '' : 'none';",
-						"}",
-					);
+					$optionfield['tags'].=' ID="comment_on_qs" ';
 					
-					$qa_content['script_onloads'][]=array('qa_comments_on_display();');
+					qa_checkbox_to_display($qa_content, array(
+						'comment_needs_login' => 'comment_on_qs || comment_on_as',
+						'min_len_c_content' => 'comment_on_qs || comment_on_as',
+					));
 					break;
 					
 				case 'comment_on_as':
-					$optionfield['tags'].=' ID="comment_on_as" onClick="qa_comments_on_display();" ';
+					$optionfield['tags'].=' ID="comment_on_as" ';
 					break;
 					
 				case 'logo_url':
@@ -345,6 +381,7 @@
 				case 'comment_needs_login':
 				case 'min_len_c_content':
 				case 'votes_separated':
+				case 'feedback_email':
 					$optionfield['id']=$optionname;
 					break;
 					
@@ -371,50 +408,34 @@
 					break;
 					
 				case 'do_related_qs':
-					$optionfield['tags'].=' ID="do_related_qs" onClick="qa_related_qs_display();" ';
+					$optionfield['tags'].=' ID="do_related_qs" ';
 					
-					$qa_content['script_lines'][]=array(
-						"function qa_related_qs_display() {",
-						"\tvar d=document.getElementById('do_related_qs').checked ? '' : 'none';",
-						"\tdocument.getElementById('match_related_qs').style.display=d;",
-						"\tdocument.getElementById('page_size_related_qs').style.display=d;",
-						"}",
-					);
-					
-					$qa_content['script_onloads'][]=array('qa_related_qs_display();');
+					qa_checkbox_to_display($qa_content, array(
+						'match_related_qs' => 'do_related_qs',
+						'page_size_related_qs' => 'do_related_qs',
+					));
 					break;
 					
 				case 'do_ask_check_qs':
-					$optionfield['tags'].=' ID="do_ask_check_qs" onClick="qa_ask_check_qs_display();" ';
+					$optionfield['tags'].=' ID="do_ask_check_qs" ';
 					
-					$qa_content['script_lines'][]=array(
-						"function qa_ask_check_qs_display() {",
-						"\tvar d=document.getElementById('do_ask_check_qs').checked ? '' : 'none';",
-						"\tdocument.getElementById('match_ask_check_qs').style.display=d;",
-						"\tdocument.getElementById('page_size_ask_check_qs').style.display=d;",
-						"}",
-					);
-					
-					$qa_content['script_onloads'][]=array('qa_ask_check_qs_display();');
+					qa_checkbox_to_display($qa_content, array(
+						'match_ask_check_qs' => 'do_ask_check_qs',
+						'page_size_ask_check_qs' => 'do_ask_check_qs',
+					));
 					break;
 					
 				case 'do_example_tags':
-					$optionfield['tags'].=' ID="do_example_tags" onClick="qa_tags_display();" ';
+					$optionfield['tags'].=' ID="do_example_tags" ';
 					
-					$qa_content['script_lines'][]=array(
-						"function qa_tags_display() {",
-						"\tvar ce=document.getElementById('do_example_tags').checked;",
-						"\tvar cc=document.getElementById('do_complete_tags').checked;",
-						"\tdocument.getElementById('match_example_tags').style.display=ce ? '' : 'none';",
-						"\tdocument.getElementById('page_size_ask_tags').style.display=(cc||ce) ? '' : 'none';",
-						"}",
-					);
-					
-					$qa_content['script_onloads'][]=array('qa_tags_display();');
+					qa_checkbox_to_display($qa_content, array(
+						'match_example_tags' => 'do_example_tags',
+						'page_size_ask_tags' => 'do_example_tags || do_complete_tags',
+					));
 					break;
 					
 				case 'do_complete_tags':
-					$optionfield['tags'].=' ID="do_complete_tags" onClick="qa_tags_display();" ';
+					$optionfield['tags'].=' ID="do_complete_tags" ';
 					break;
 
 				case 'match_related_qs':
@@ -427,6 +448,29 @@
 					$optionfield['type']='select';
 					$optionfield['options']=$matchoptions;
 					$optionfield['value']=$matchoptions[isset($matchoptions[$matchvalue]) ? $matchvalue : 3];
+					break;
+					
+				case 'captcha_on_register':
+				case 'captcha_on_anon_post':
+					$optionfield['tags'].=' ID="'.$optionname.'" ';
+					break;
+					
+				case 'recaptcha_public_key':
+					$optionfield['style']='tall';
+					$optionfield['id']=$optionname;
+					
+					qa_checkbox_to_display($qa_content, array(
+						'recaptcha_public_key' => 'captcha_on_register || captcha_on_anon_post',
+						'recaptcha_private_key' => 'captcha_on_register || captcha_on_anon_post',
+					));
+					break;
+					
+				case 'recaptcha_private_key':
+					require_once QA_INCLUDE_DIR.'qa-app-captcha.php';
+
+					$optionfield['style']='tall';
+					$optionfield['id']=$optionname;
+					$optionfield['error']=qa_captcha_error($qa_db);
 					break;
 			}
 

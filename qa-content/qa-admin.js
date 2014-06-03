@@ -1,12 +1,12 @@
 /*
-	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-content/qa-admin.js
-	Version: 1.0-beta-2
-	Date: 2010-03-08 13:08:01 GMT
+	Version: 1.0-beta-3
+	Date: 2010-03-31 12:13:41 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -25,7 +25,6 @@
 	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
 
 var qa_recalc_running=0;
@@ -65,7 +64,7 @@ function qa_recalc_update(elem, state, noteid)
 	if (state)
 		qa_ajax_post('qa-include/qa-ajax-recalc.php', {state:state}, 
 			function(response) {
-				var lines=response.split("\n");
+				var lines=response.replace(/^\s+/, '').split("\n");
 				
 				if (lines[0]=='1') {
 					if (lines[2])
