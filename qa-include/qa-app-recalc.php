@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-recalc.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Managing database recalculations (clean-up operations) and status messages
 
 
 	This software is licensed for use in websites which are connected to the
@@ -48,7 +49,6 @@
 	===============================
 	^userpoints (all): points calculation for all users
 	^options (title=cache_userpointscount):
-	
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -59,10 +59,15 @@
 	require_once QA_INCLUDE_DIR.'qa-db-recalc.php';
 	require_once QA_INCLUDE_DIR.'qa-db-post-create.php';
 	require_once QA_INCLUDE_DIR.'qa-db-points.php';
-	require_once QA_INCLUDE_DIR.'qa-app-options.php';			
+	require_once QA_INCLUDE_DIR.'qa-app-options.php';
 	require_once QA_INCLUDE_DIR.'qa-app-post-create.php';
 
+
 	function qa_recalc_perform_step($db, &$state)
+/*
+	Advance the recalculation operation represented by $state by a single step.
+	$state can also be the name of a recalculation operation on its own.
+*/
 	{
 		$continue=false;
 		
@@ -173,7 +178,7 @@
 				
 				} else {
 					qa_db_truncate_userpoints($db, $next);
-					qa_db_userpointscount_update($db); // quick so just do it here					
+					qa_db_userpointscount_update($db); // quick so just do it here
 					qa_recalc_transition($db, $state, 'dorecalcpoints_complete');
 				}
 				break;
@@ -189,12 +194,20 @@
 		return $continue;
 	}
 	
+
 	function qa_recalc_transition($db, &$state, $operation)
+/*
+	Change the $state to represent the beginning of a new $operation
+*/
 	{
 		$state=$operation.','.qa_recalc_stage_length($db, $operation).',0,0';
 	}
+
 		
 	function qa_recalc_stage_length($db, $operation)
+/*
+	Return how many steps there will be in recalculation $operation
+*/
 	{
 		switch ($operation) {
 			case 'doreindexposts_reindex':
@@ -217,8 +230,12 @@
 		
 		return $length;
 	}
+
 	
 	function qa_recalc_get_message($state)
+/*
+	Return a string which gives a user-viewable version of $state
+*/
 	{
 		@list($operation, $length, $next, $done)=explode(',', $state);
 		

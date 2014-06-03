@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-util-string.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Some useful string-related stuff
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,7 +35,12 @@
 		exit;
 	}
 
+
 	function qa_string_to_words($string, $tolowercase=true, $delimiters=false)
+/*
+	Return the input string converted into an array of words, changed $tolowercase (or not),
+	and including or not the $delimiters after each word
+*/
 	{
 		// Array to convert UTF-8 punctuation characters to spaces (or in some cases, hyphens)
 		
@@ -102,23 +108,36 @@
 
 		return preg_split($matchstring, $string, -1, PREG_SPLIT_NO_EMPTY | ($delimiters ? PREG_SPLIT_DELIM_CAPTURE : 0));
 	}
+
 	
 	function qa_tags_to_tagstring($tags)
+/*
+	Convert an array of tags into a string for storage in the database
+*/
 	{
 		return implode(',', $tags);
 	}
+
 	
 	function qa_tagstring_to_tags($tagstring)
+/*
+	Convert a tag string as stored in the database into an array of tags
+*/
 	{
 		return empty($tagstring) ? array() : explode(',', $tagstring);
 	}
 	
+
 	function qa_shorten_string_line($string, $length)
+/*
+	Return no more than $length characters from $string after converting it to a single line, by
+	removing words from the middle (and especially towards the end)
+*/
 	{
 		$string=strtr($string, "\r\n\t", '   ');
 		
 		if (qa_strlen($string)>$length) {
-			$remaining=$length-3;
+			$remaining=$length-5;
 			
 			$words=qa_string_to_words($string, false, true);
 			$countwords=count($words);
@@ -150,8 +169,12 @@
 		
 		return $string;
 	}
+
 	
 	function qa_random_alphanum($length)
+/*
+	Return a random alphanumeric string (base 36) of $length
+*/
 	{
 		$string='';
 		
@@ -160,23 +183,39 @@
 			
 		return substr($string, 0, $length);
 	}
+
 	
 	function qa_email_validate($email)
+/*
+	Return true or false to indicate whether $email is a valid email (this is pretty flexible compared to most real emails out there)
+*/
 	{
-		return ereg("^[-!#$%&'*+/=?_`{|}~a-zA-Z0-9.^]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+$", $email) ? true : false;
+		return preg_match("/^[\-\!\#\$\%\&\'\*\+\/\=\?\_\`\{\|\}\~a-zA-Z0-9\.\^]+\@[a-zA-Z0-9\-]+\.[a-zA-Z0-9\.\-]+$/", $email) ? true : false;
 	}
 	
+
 	function qa_strlen($string)
+/*
+	Return the number of characters in $string, preferably using PHP's multibyte string functions
+*/
 	{
 		return function_exists('mb_strlen') ? mb_strlen($string, 'UTF-8') : strlen($string);
 	}
 
+
 	function qa_strtolower($string)
+/*
+	Return a lower case version of $string, preferably using PHP's multibyte string functions
+*/
 	{
 		return function_exists('mb_strtolower') ? mb_strtolower($string, 'UTF-8') : strtolower($string);
 	}
 	
+
 	function qa_has_multibyte()
+/*
+	Return whether this version of PHP has been compiled with multibyte string support
+*/
 	{
 		return function_exists('mb_strlen') && function_exists('mb_strtolower');
 	}

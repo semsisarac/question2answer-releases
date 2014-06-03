@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-external-example/qa-external-users.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Example of how to integrate with your own user database
 
 
 	This software is licensed for use in websites which are connected to the
@@ -42,22 +43,20 @@
 		exit;
 	}
 
+
+	function qa_get_mysql_user_column_type()
+	{
 /*
 	==========================================================================
 	      YOU MUST MODIFY THIS FUNCTION *BEFORE* QA CREATES ITS DATABASE
 	==========================================================================
 
-	qa_get_mysql_user_column_type()
-	
 	You should return the appropriate MySQL column type to use for the userid,
 	for smooth integration with your existing users. Allowed options are:
 	
 	SMALLINT, SMALLINT UNSIGNED, MEDIUMINT, MEDIUMINT UNSIGNED, INT, INT UNSIGNED,
 	BIGINT, BIGINT UNSIGNED or VARCHAR(x) where x is the maximum length.
 */
-
-	function qa_get_mysql_user_column_type()
-	{
 
 	//	Set this before anything else
 
@@ -81,14 +80,12 @@
 	}
 
 
-
+	function qa_get_login_links($relative_url_prefix, $redirect_back_to_url)
 /*
 	==========================================================================
 	YOU MUST MODIFY THIS FUNCTION, BUT CAN DO SO AFTER QA CREATES ITS DATABASE
 	==========================================================================
 
-	qa_get_login_links($relative_url_prefix, $redirect_back_to_url)
-	
 	You should return an array containing URLs for the login, register and logout pages on
 	your site. These URLs will be used as appropriate within the QA site.
 	
@@ -113,8 +110,6 @@
 	register and logout pages. Note that the URL you are given in $redirect_back_to_url is
 	relative to the root of the QA site, so you may need to add something.
 */
-	
-	function qa_get_login_links($relative_url_prefix, $redirect_back_to_url)
 	{
 
 	//	Until you edit this function, don't show login, register or logout links
@@ -125,7 +120,7 @@
 			'logout' => null
 		);
 
-	/*	
+	/*
 		Example 1 - using absolute URLs, suitable if:
 		
 		* Your QA site:        http://qa.mysite.com/
@@ -173,7 +168,7 @@
 	}
 	
 
-
+	function qa_get_logged_in_user($qa_db_connection)
 /*
 	==========================================================================
 	YOU MUST MODIFY THIS FUNCTION, BUT CAN DO SO AFTER QA CREATES ITS DATABASE
@@ -200,8 +195,6 @@
 	In order to access the admin interface of your QA site, ensure that the array element 'level'
 	contains QA_USER_LEVEL_ADMIN or QA_USER_LEVEL_SUPER when you are logged in.
 */
-
-	function qa_get_logged_in_user($qa_db_connection)
 	{
 	
 	//	Until you edit this function, nobody is ever logged in
@@ -273,8 +266,8 @@
 		
 	}
 
-
 	
+	function qa_get_user_email($qa_db_connection, $userid)
 /*
 	==========================================================================
 	YOU MUST MODIFY THIS FUNCTION, BUT CAN DO SO AFTER QA CREATES ITS DATABASE
@@ -287,8 +280,6 @@
 	$qa_db_connection is an open connection to the QA database. If your database is shared with
 	QA, you can use this with PHP's MySQL functions such as mysql_query() to run queries.
 */
-	
-	function qa_get_user_email($qa_db_connection, $userid)
 	{
 
 	//	Until you edit this function, always return null
@@ -317,7 +308,7 @@
 	}
 	
 
-
+	function qa_get_userids_from_public($qa_db_connection, $publicusernames)
 /*
 	==========================================================================
 	YOU MUST MODIFY THIS FUNCTION, BUT CAN DO SO AFTER QA CREATES ITS DATABASE
@@ -333,8 +324,6 @@
 	QA, you can use this with PHP's MySQL functions such as mysql_query() to run queries. If you
 	access this database or any other, try to use a single query instead of one per user.
 */
-
-	function qa_get_userids_from_public($qa_db_connection, $publicusernames)
 	{
 
 	//	Until you edit this function, always return null
@@ -383,8 +372,7 @@
 	}
 
 
-
-
+	function qa_get_public_from_userids($qa_db_connection, $userids)
 /*
 	==========================================================================
 	YOU MUST MODIFY THIS FUNCTION, BUT CAN DO SO AFTER QA CREATES ITS DATABASE
@@ -402,8 +390,6 @@
 	QA, you can use this with PHP's MySQL functions such as mysql_query() to run queries. If you
 	access this database or any other, try to use a single query instead of one per user.
 */
-
-	function qa_get_public_from_userids($qa_db_connection, $userids)
 	{
 
 	//	Until you edit this function, always return null
@@ -452,7 +438,7 @@
 	}
 
 
-
+	function qa_get_logged_in_user_html($qa_db_connection, $logged_in_user, $relative_url_prefix)
 /*
 	==========================================================================
 	     YOU MAY MODIFY THIS FUNCTION, BUT THE DEFAULT BELOW WILL WORK OK
@@ -474,8 +460,6 @@
 	If you don't know what to display for a user, you can leave the default below. This will
 	show the public username, linked to the QA profile page for the user.
 */
-
-	function qa_get_logged_in_user_html($qa_db_connection, $logged_in_user, $relative_url_prefix)
 	{
 	
 	//	By default, show the public username linked to the QA profile page for the user
@@ -514,7 +498,7 @@
 	}
 
 
-
+	function qa_get_users_html($qa_db_connection, $userids, $should_include_link, $relative_url_prefix)
 /*
 	==========================================================================
 	     YOU MAY MODIFY THIS FUNCTION, BUT THE DEFAULT BELOW WILL WORK OK
@@ -539,8 +523,6 @@
 	If you don't know what to display for a user, you can leave the default below. This will
 	show the public username, linked to the QA profile page for each user.
 */
-	
-	function qa_get_users_html($qa_db_connection, $userids, $should_include_link, $relative_url_prefix)
 	{
 
 	//	By default, show the public username linked to the QA profile page for each user
@@ -608,7 +590,7 @@
 	}
 
 
-	
+	function qa_user_report_action($qa_db_connection, $userid, $action, $questionid, $answerid, $commentid)
 /*
 	==========================================================================
 	     YOU MAY MODIFY THIS FUNCTION, BUT THE DEFAULT BELOW WILL WORK OK
@@ -620,7 +602,7 @@
 	voting, etc... If you wish, you may use this to log user activity or monitor for abuse.
 	
 	$qa_db_connection is an open connection to the QA database. If your database is shared with
-	QA, you can use this with PHP's MySQL functions such as mysql_query() to run queries.	
+	QA, you can use this with PHP's MySQL functions such as mysql_query() to run queries.
 	
 	$action is one of:
 	q_post, q_edit, q_hide, q_reshow, q_claim, q_vote_up, q_vote_down, q_vote_nil
@@ -632,8 +614,6 @@
 	
 	FYI, you can get the IP address of the user from $_SERVER['REMOTE_ADDR'].
 */
-
-	function qa_user_report_action($qa_db_connection, $userid, $action, $questionid, $answerid, $commentid)
 	{
 		// do nothing by default
 	}

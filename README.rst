@@ -6,41 +6,31 @@ Question2Answer_ (Q2A) is a popular open source Q&A platform for PHP/MySQL.
 --------------
 Release Notes
 --------------
-Version 1.0 beta 3
+Version 1.0
 
-- Third public version, 31st March 2010. Feature complete preview of the 1.0 release.
+- Final release of version 1.0, 9th April 2010.
 
 **New Features**
 
-- Added second theme (Candy).
-- Added support for reCAPTCHA for user registration and anonymous posts.
-- Added optional tab for unanswered questions.
-- Added ability for author or editor to convert an answer into a comment.
-- Added 'Remember me' checkbox on login to store cookie in browser.
-- Added admin panel showing hidden questions, answers and comments.
-- Added admin option to be emailed when a new question is asked.
-- Added number of comments to admin statistics page.
-- Added switch for display of user points alongside usernames.
+- Added reCAPTCHA support for feedback and forgot password pages.
+- Added documentation for functions in the source code.
 
 **Other Changes**
 
-- Users now prevented from directly opening include files from their web browser.
-- All files now use Windows (CRLF) line endings for easy editing.
-- After posting an answer or comment, the page is scrolled to the new content.
-- Logged in sessions no longer expire while the browser window is open.
-- Duplicate submissions of answers or comments now detected.
-- All users shown on the 'Users' page, even if they have no activity.
+- Show the site name on its own in the HTML title of the home page.
+- Pass the page request to the theme class to enable custom pages.
+- Added individual CSS classes to navigation items to allow per-item styling.
+- Apply rate limits when claiming a post or converting an answer to a comment.
+- Improved aesthetics and wording during the installation process.
+- Doubled the height of the text area when adding or editing comments.
+- Stopped using several PHP functions which cause warnings under PHP 5.3.
+- Email field now focuses when anonymous users click the checkbox above.
 
 **Bug Fixes**
 
-- Improve reliability of pop-up tooltips on buttons in Internet Explorer.
-- When using external users, allow viewing of pages for users with no activity.
-- Fixed requests to pages for tags or users with unusual characters.
-- Fixed layout where a question has a large number of tags.
-- Be forgiving if some $_SERVER elements are not set by the PHP environment.
-- Changed date() to gmdate() to prevent warnings in some PHP versions.
-- Fixed external user sample code to work with empty array parameters.
-- Custom text is properly included in user welcome emails.
+- Fixed incorrect reference to $qa_db when sending notification of new questions.
+- Fixed ugly mouseover effect for icon buttons in Candy theme.
+- Fixed error given by some MySQL configurations when logging out.
 
 
 

@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Sets up Q2A environment, plus many globally useful functions
 
 
 	This software is licensed for use in websites which are connected to the
@@ -31,14 +32,14 @@
 
 //	Set the version to be used for internal reference and a suffix for .js and .css requests
 
-	define('QA_VERSION', '1.0-beta-3');
+	define('QA_VERSION', '1.0');
 
-//	Basic PHP configuation checks and unregister globals
+//	Basic PHP configuration checks and unregister globals
 
 	if ( ((float)phpversion()) < 4.3 )
 		qa_fatal_error('This requires PHP 4.3 or later');
 
-	set_magic_quotes_runtime(false);
+	@ini_set('magic_quotes_runtime', 0);
 	
 	if (ini_get('register_globals')) {
 		$checkarrays=array('_ENV', '_GET', '_POST', '_COOKIE', '_SERVER', '_FILES', '_REQUEST', '_SESSION');
@@ -64,10 +65,14 @@
 		qa_fatal_error('The config file could not be found. Please read the installation instructions.');
 	
 	require_once QA_BASE_DIR.'qa-config.php';
+
 	
 //	General HTML/JS functions
 
 	function qa_html($string, $multiline=false)
+/*
+	Return HTML representation of $string, work well with blocks of text if $multiline is true
+*/
 	{
 		$html=htmlspecialchars($string);
 		
@@ -80,52 +85,89 @@
 		
 		return $html;
 	}
+
 	
-	function qa_js($string)
+	function qa_js($value)
+/*
+	Return JavaScript representation of $value, putting in quotes if appropriate
+*/
 	{
-		if (is_numeric($string))
-			return $string;
+		if (is_numeric($value))
+			return $value;
 		else
-			return "'".strtr($string, array(
+			return "'".strtr($value, array(
 				"'" => "\\'",
 				"\n" => "\\n",
 				"\r" => "\\n",
 			))."'";
 	}
+
 	
 	function qa_gpc_to_string($string)
+/*
+	Return string for incoming GET/POST/COOKIE value, stripping slashes if appropriate
+*/
 	{
 		return get_magic_quotes_gpc() ? stripslashes($string) : $string;
 	}
 
+
 	function qa_get($field)
+/*
+	Return string for incoming GET field, or null if it's not defined
+*/
 	{
 		return isset($_GET[$field]) ? qa_gpc_to_string($_GET[$field]) : null;
 	}
 
+
 	function qa_post_text($field)
+/*
+	Return string for incoming POST field, or null if it's not defined.
+	While we're at it, trim() surrounding white space and converted to Unix line endings.
+*/
 	{
 		return isset($_POST[$field]) ? preg_replace('/\r\n?/', "\n", trim(qa_gpc_to_string($_POST[$field]))) : null;
 	}
+
 	
 	function qa_clicked($name)
+/*
+	Return true if form button $name was clicked (as TYPE=SUBMIT/IMAGE) to create this page request.
+*/
 	{
 		return isset($_POST[$name]) || isset($_POST[$name.'_x']);
 	}
+
 	
 	function qa_is_http_post()
+/*
+	Return true if we are responding to an HTTP POST request
+*/
 	{
 		return ($_SERVER['REQUEST_METHOD']=='POST') || !empty($_POST);
 	}
+
 	
 	function qa_is_https_probably()
+/*
+	Return true if we appear to be responding to a secure HTTP request (but hard to be sure)
+*/
 	{
 		return (@$_SERVER['HTTPS'] && ($_SERVER['HTTPS']!='off')) || (@$_SERVER['SERVER_PORT']==443);
 	}
+
 	
 //	Language support
 
 	function qa_lang_base($identifier)
+/*
+	Return the translated string for $identifier, unless we're using external translation logic.
+	This will retrieve the 'site_language' option so make sure you've already loaded/set that if
+	loading an option now will cause a problem (see issue in qa_default_option()). The part of
+	$identifier before the slash (/) replaces the * in the qa-lang-*.php file references, and the
+	part after the / is the key of the array element to be taken from that file's returned result.
+*/
 	{
 		global $qa_db;
 		
@@ -138,13 +180,13 @@
 		if (strlen($languagecode)) {
 			global $qa_lang_custom;
 		
-			if (!isset($qa_lang_custom[$group])) {
+			if (!isset($qa_lang_custom[$group])) { // only load each language file once
 				$directory=QA_LANG_DIR.$languagecode.'/';
 				
 				if (!file_exists($directory))
 					qa_fatal_error('Language directory '.$languagecode.' not installed');
 				
-				$phrases=@include $directory.'qa-lang-'.$group.'.php';
+				$phrases=@include $directory.'qa-lang-'.$group.'.php'; // can tolerate missing file
 				
 				$qa_lang_custom[$group]=is_array($phrases) ? $phrases : array();
 			}
@@ -155,14 +197,15 @@
 		
 		global $qa_lang_default;
 		
-		if (!isset($qa_lang_default[$group]))
+		if (!isset($qa_lang_default[$group])) // only load each default language file once
 			$qa_lang_default[$group]=include_once QA_INCLUDE_DIR.'qa-lang-'.$group.'.php';
 		
 		if (isset($qa_lang_default[$group][$label]))
 			return $qa_lang_default[$group][$label];
 			
-		return '['.$identifier.']'; // last resort!
+		return '['.$identifier.']'; // as a last resort, return the identifier to help in development
 	}
+
 
 	if (QA_EXTERNAL_LANG) {
 
@@ -176,23 +219,40 @@
 		}
 
 	}
+
 	
 	function qa_lang_sub($identifier, $textparam, $symbol='^')
+/*
+	Return the translated string for $identifier, with $symbol substituted for $textparam
+*/
 	{
 		return str_replace($symbol, $textparam, qa_lang($identifier));
 	}
 	
+
 	function qa_lang_html($identifier)
+/*
+	Return the translated string for $identifier, converted to HTML
+*/
 	{
 		return qa_html(qa_lang($identifier));
 	}
+
 	
 	function qa_lang_sub_html($identifier, $htmlparam, $symbol='^')
+/*
+	Return the translated string for $identifier converted to HTML, with $symbol *then* substituted for $htmlparam
+*/
 	{
 		return str_replace($symbol, $htmlparam, qa_lang_html($identifier));
 	}
 	
+
 	function qa_lang_sub_split_html($identifier, $htmlparam, $symbol='^')
+/*
+	Return an array containing the translated string for $identifier converted to HTML, then split into three,
+	with $symbol substituted for $htmlparam in the 'data' element, and obvious 'prefix' and 'suffix' elements
+*/
 	{
 		$html=qa_lang_html($identifier);
 
@@ -206,10 +266,16 @@
 			'suffix' => substr($html, $symbolpos+1),
 		);
 	}
+
 	
 //	Path generation
 
 	function qa_path($request, $params=null, $rooturl=null, $neaturls=null, $anchor=null)
+/*
+	Return the relative URI path for $request, with optional parameters $params and $anchor.
+	If $neaturls is set, use that, otherwise retrieve the option. If $rooturl is set, take
+	that as the root of the QA site, otherwise use $qa_root_url_relative set elsewhere.
+*/
 	{
 		global $qa_db, $qa_root_url_relative;
 		
@@ -230,13 +296,16 @@
 			.$paramsextra
 			.( empty($anchor) ? '' : '#'.urlencode($anchor) );
 	}
+
 	
-	function qa_q_request($postid, $title)
+	function qa_q_request($questionid, $title)
+/*
+	Return the request for question $questionid, and make it search-engine friendly based on $title.
+	Keep the title bit to a length of just over 50 characters, not including hyphens.
+	To do this, we remove shorter words, which are generally less meaningful.
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
-	
-	//	SEO: keep to a length of just over 50 characters, not including hyphens
-	//	To do this, remove shorter words, which are generally less meaningful
 	
 		$words=qa_string_to_words($title);
 
@@ -247,44 +316,45 @@
 		$remaining=50;
 		
 		if (array_sum($wordlength)>$remaining) {
-			arsort($wordlength, SORT_NUMERIC);
+			arsort($wordlength, SORT_NUMERIC); // sort with longest words first
 			
 			foreach ($wordlength as $index => $length) {
 				if ($remaining>0)
 					$remaining-=$length;
 				else
-					$wordlength[$index]=false;
-			}
-			
-			foreach ($words as $index => $word)
-				if (!$wordlength[$index])
 					unset($words[$index]);
+			}
 		}
 		
-		return (int)$postid.'/'.urlencode(implode('-', $words));
-	}
-	
-	function qa_root_html()
-	{
-		global $qa_root_url_relative;
-		
-		return qa_html($qa_root_url_relative);
+		return (int)$questionid.'/'.urlencode(implode('-', $words));
 	}
 
+	
 	function qa_path_html($request, $params=null, $rooturl=null, $neaturls=null, $anchor=null)
+/*
+	Return HTML representation of relative URI path for $request - see qa_path() for other parameters
+*/
 	{
 		return qa_html(qa_path($request, $params, $rooturl, $neaturls, $anchor));
 	}
+
 	
 	function qa_redirect($request, $params=null, $rooturl=null, $neaturls=null)
+/*
+	Redirect the user's web browser to $request and then we're done - see qa_path() for other parameters
+*/
 	{
 		header('Location: '.qa_path($request, $params, $rooturl, $neaturls));
 		exit;
 	}
 
+
 //	Database connection
 
 	function qa_base_db_connect($failhandler)
+/*
+	Connect to the database with $failhandler and set global $qa_db accordingly
+*/
 	{
 		global $qa_db;
 		
@@ -292,17 +362,25 @@
 	
 		$qa_db=qa_db_connect($failhandler);
 	}
+
 	
 	function qa_base_db_disconnect()
+/*
+	Disconnect from the database
+*/
 	{
 		global $qa_db;
 		
 		qa_db_disconnect($qa_db);
 	}
 
+
 //	Error handling
 
 	function qa_fatal_error($message)
+/*
+	Display $message in the browser and then stop abruptly
+*/
 	{
 		echo '<FONT COLOR="red">'.qa_html($message).'</FONT>';
 		exit;

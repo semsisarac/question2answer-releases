@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-home.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for home, questions and unanswered pages, plus some unofficial ones
 
 
 	This software is licensed for use in websites which are connected to the
@@ -37,11 +38,12 @@
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 
-//	Get list of questions and page size for appropriate version of page
+
+//	Get list of questions, page size and other bits of HTML for appropriate version of page
 
 	qa_options_set_pending(array('voting_on_qs', 'votes_separated', 'show_user_points'));
 	
-	switch ($qa_template) {
+	switch ($qa_template) { // this file doesn't just serve the home page
 		case 'questions':
 			qa_options_set_pending(array('page_size_qs'));
 			
@@ -90,7 +92,7 @@
 			$suggest=qa_html_suggest_qs_tags();
 			break;
 		
-		default:
+		default: // home page itself shows combined recent questions asked and answered
 			require_once QA_INCLUDE_DIR.'qa-util-sort.php';
 
 			qa_options_set_pending(array('page_size_home'));
@@ -105,11 +107,12 @@
 			$pagesize=qa_get_option($qa_db, 'page_size_home');
 			$sometitle=qa_lang_html('main/recent_qs_as_title');
 			$nonetitle=qa_lang_html('main/no_questions_found');
-			$suggest=(count($questions)>=$pagesize) ? qa_html_suggest_qs_tags() : qa_html_suggest_ask();			
+			$suggest=(count($questions)>=$pagesize) ? qa_html_suggest_qs_tags() : qa_html_suggest_ask();
 			break;
 	}
 	
-//	Sort and remove any question referenced twice, chop down to size, get user information
+	
+//	Sort and remove any question referenced twice, chop down to size, get user information for display
 
 	$questions=qa_any_sort_and_dedupe($questions);
 	
@@ -117,6 +120,7 @@
 		$questions=array_slice($questions, 0, $pagesize);
 
 	$usershtml=qa_userids_handles_html($qa_db, qa_any_get_userids_handles($questions));
+
 
 //	Prepare content for theme
 	

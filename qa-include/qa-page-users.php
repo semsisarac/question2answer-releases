@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-users.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for top scoring users page
 
 
 	This software is licensed for use in websites which are connected to the
@@ -38,6 +39,7 @@
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 
+
 //	Get list of all users
 	
 	qa_options_set_pending(array('page_size_users', 'columns_users'));
@@ -51,6 +53,7 @@
 	$users=array_slice($users, 0, $pagesize);
 	$usershtml=qa_userids_handles_html($qa_db, $users);
 
+
 //	Prepare content for theme
 	
 	qa_content_prepare();
@@ -59,14 +62,14 @@
 
 	$qa_content['ranking']=array('items' => array(), 'rows' => ceil($pagesize/qa_get_option($qa_db, 'columns_users')));
 	
-	if (count($users))
+	if (count($users)) {
 		foreach ($users as $userid => $user)
 			$qa_content['ranking']['items'][]=array(
 				'label' => $usershtml[$user['userid']],
 				'score' => qa_html(number_format($user['points'])),
 			);
 	
-	else
+	} else
 		$qa_content['title']=qa_lang_html('main/no_active_users');
 	
 	$qa_content['page_links']=qa_html_page_links($qa_request, $qa_start, $pagesize, $usercount, qa_get_option($qa_db, 'pages_prev_next'));

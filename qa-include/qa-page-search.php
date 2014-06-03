@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-search.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for search page
 
 
 	This software is licensed for use in websites which are connected to the
@@ -36,6 +37,7 @@
 
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 
+
 //	Perform the search if appropriate
 
 	if (strlen(qa_get('q'))) {
@@ -44,7 +46,7 @@
 
 		$inquery=qa_get('q');
 		$words=qa_string_to_words($inquery);
-		$retrieve=2*QA_DB_RETRIEVE_QS_AS+1;
+		$retrieve=2*QA_DB_RETRIEVE_QS_AS+1; // get enough results to be able to give some idea of how many pages of search results there are
 		
 		qa_options_set_pending(array('page_size_search', 'voting_on_qs', 'votes_separated', 'show_user_points'));
 		
@@ -57,6 +59,7 @@
 		$questions=array_slice($questions, 0, $pagesize);
 		$usershtml=qa_userids_handles_html($qa_db, $questions);
 	}
+
 	
 //	Prepare content for theme
 
@@ -80,7 +83,9 @@
 			$fields=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
 				qa_get_vote_view($qa_db, 'Q'), qa_get_option($qa_db, 'show_user_points'));
 
-			$matchpostidscore=array(); // which anchor to link to in question?
+		//	Find out which anchor to link to in the question
+
+			$matchpostidscore=array();
 
 			$matchparts=explode(',', $question['matchparts']);
 			foreach ($matchparts as $matchpart)

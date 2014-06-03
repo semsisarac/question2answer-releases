@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-reset.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for password reset page (comes after forgot page)
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,11 +35,17 @@
 		exit;
 	}
 
+
+//	Check we're not using single-sign on integration and that we're not logged in
+	
 	if (QA_EXTERNAL_USERS)
 		qa_fatal_error('User login is handled by external code');
 		
 	if (isset($qa_login_userid))
 		qa_fatal_error(qa_lang('users/already_logged_in'));
+		
+
+//	Process incoming form
 
 	if (qa_clicked('doreset')) {
 		require_once QA_INCLUDE_DIR.'qa-db-users.php';
@@ -48,12 +55,12 @@
 		
 		$errors=array();
 		
-		if (strpos($inemailhandle, '@')===false)
+		if (strpos($inemailhandle, '@')===false) // handles can't contain @ symbol
 			$matchusers=qa_db_user_find_by_handle($qa_db, $inemailhandle);
 		else
 			$matchusers=qa_db_user_find_by_email($qa_db, $inemailhandle);
 
-		if (count($matchusers)==1) {
+		if (count($matchusers)==1) { // if match more than one (should be impossible), consider it a non-match
 			require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 
 			$inuserid=$matchusers[0];
@@ -62,7 +69,7 @@
 			// strlen() check is vital otherwise we can reset code for most users by entering the empty string
 			if (strlen($incode) && (strtolower($userinfo['resetcode']) == strtolower($incode))) {
 				qa_complete_reset_user($qa_db, $inuserid);
-				qa_redirect('login', array('e' => $inemailhandle, 'ps' => '1'));
+				qa_redirect('login', array('e' => $inemailhandle, 'ps' => '1')); // redirect to login page
 	
 			} else
 				$errors['code']=qa_lang('users/reset_code_wrong');
@@ -74,6 +81,7 @@
 		$inemailhandle=qa_get('e');
 		$incode=qa_get('c');
 	}
+	
 	
 //	Prepare content for theme
 	

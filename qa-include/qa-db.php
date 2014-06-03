@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Common functions for connecting to and access database
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,7 +35,12 @@
 		exit;
 	}
 
+
 	function qa_db_connect($failhandler)
+/*
+	Connect to the QA database, select the right database, and return the link identifier.
+	Install the $failhandler into a global (and call it if necessary)
+*/
 	{
 		global $qa_db_fail_handler;
 		
@@ -54,8 +60,12 @@
 		
 		return $connection;
 	}
+
 	
 	function qa_db_disconnect($db)
+/*
+	Disconnect from the QA database with link identifier $db
+*/
 	{
 		if (!QA_PERSISTENT_CONN_DB) {
 			if (is_resource($db)) {
@@ -67,12 +77,15 @@
 				qa_fatal_error('Database connection invalid');
 		}
 	}
+
 	
 	function qa_db_query_raw($db, $query)
+/*
+	Run the raw $query over the $db link, call the global failure handler if necessary, otherwise return the result resource.
+	If appropriate, also track the resources used by database queries, and the queries themselves, for performance debugging.
+*/
 	{
 		global $qa_db_fail_handler;
-		
-		//error_log($query);
 		
 		if (QA_DEBUG_PERFORMANCE) {
 			global $qa_database_usage, $qa_database_queries;
@@ -95,8 +108,13 @@
 			
 		return $result;
 	}
+
 	
 	function qa_db_argument_to_mysql($db, $argument, $alwaysquote, $arraybrackets=false)
+/*
+	Return $argument escaped for link $db. Add quotes around it if $alwaysquote is true or it's not numeric.
+	If $argument is an array, return a comma-separated list of escaped elements, with or without $arraybrackets.
+*/
 	{
 		if (is_array($argument)) {
 			$parts=array();
@@ -120,8 +138,16 @@
 		
 		return $result;
 	}
+
 	
 	function qa_db_apply_sub($db, $query, $arguments)
+/*
+	Substitute ^, $ and # symbols in $query. ^ symbols are replaced with the table prefix set in qa-config.php.
+	$ and # symbols are replaced in order by the corresponding element in $arguments (if the element is an array,
+	it is converted recursively into comma-separated list). Each element in $arguments is escaped for link $db.
+	$ is replaced by the argument in quotes (even if it's a number), # only adds quotes if the argument is non-numeric.
+	It's important to use $ when matching a textual column since MySQL won't use indexes to compare text against numbers.
+*/
 	{
 		$query=strtr($query, array('^' => QA_MYSQL_TABLE_PREFIX));
 		
@@ -151,32 +177,94 @@
 		
 		return $query;
 	}
+
 	
-	function qa_db_query_sub($db, $query)
+	function qa_db_query_sub($db, $query) // arguments for substitution retrieved using func_get_args()
+/*
+	Run $query over the $db link after substituting ^, # and $ symbols, and return the result resource (or call fail handler)
+*/
 	{
 		$funcargs=func_get_args();
 
 		return qa_db_query_raw($db, qa_db_apply_sub($db, $query, array_slice($funcargs, 2)));
 	}
+
 	
 	function qa_db_last_insert_id($db)
+/*
+	Return the value of the auto-increment column for the last inserted row for database link $db
+*/
 	{
 		return qa_db_read_one_value(qa_db_query_raw($db, 'SELECT LAST_INSERT_ID()'));
 	}
 	
+
 	function qa_db_insert_on_duplicate_inserted($db)
+/*
+	For the previous INSERT ... ON DUPLICATE KEY UPDATE query over link $db, return whether an insert operation took place
+*/
 	{
 		return mysql_affected_rows($db)==1;
 	}
+
 	
 	function qa_db_random_bigint()
+/*
+	Return a random integer (as a string) for use in a BIGINT column.
+	Actual limit is 18,446,744,073,709,551,615 - we aim for 18,446,743,999,999,999,999
+*/
 	{
-		// Actual limit is 18,446,744,073,709,551,615 - we aim for 18,446,743,999,999,999,999
-
 		return sprintf('%d%06d%06d', mt_rand(1,18446743), mt_rand(0,999999), mt_rand(0,999999));
 	}
 	
+/*
+	The selectspec array can contain the elements below. See qa-db-selects.php for lots of examples.
+
+	By default, qa_db_single_select() and qa_db_multi_select() return the data for each selectspec as a numbered
+	array of arrays, one per row. The array for each row has column names in the keys, and data in the values.
+	But this can be changed using the 'arraykey', 'arrayvalue' and 'single' in the selectspec.
+	
+	Note that even if you specify ORDER BY in 'source', the final results may not be ordered. This is because
+	the SELECT could be done within a UNION that (annoyingly) doesn't maintain order. Use 'sortdesc' to fix this.
+	You can however rely on the combination of ORDER BY and LIMIT retrieving the appropriate records.
+	
+
+	'columns' => Array of names of columns to be retrieved (required)
+	
+		If a value in the columns array has an integer key, it is retrieved AS itself (in a SQL sense).
+		If a value in the columns array has a non-integer key, it is retrieved AS that key.
+		Values in the columns array can include table specifiers before the period.
+		
+	'source' => Any SQL after FROM, including table names, JOINs, GROUP BY, ORDER BY, WHERE, etc... (required)
+	
+	'arguments' => Substitutions in order for $s and #s in the query, applied in qa_db_apply_sub() above (required)
+	
+	'arraykey' => Name of column to use for keys of the outer-level returned array, instead of numbers by default
+	
+	'arrayvalue' => Name of column to use for values of outer-level returned array, instead of arrays by default
+	
+	'single' => If true, return the array for a single row and don't embed it within an outer-level array
+	
+	'sortdesc' => Sort the output descending by this column
+
+
+	Why does qa_db_multi_select() combine usually unrelated SELECT statements into a single query?
+	
+	Because if the database and web servers are on different computers, there will be latency.
+	This way we ensure that every read pageview on the site requires only a single DB query, so
+	that we pay for this latency only one time.
+	
+	For writes we worry less, since the user is more likely to be expecting a delay.
+	
+	If QA_OPTIMIZE_LOCAL_DB is set in qa-config.php, we assume zero latency and go back to
+	simple queries, since this will allow both MySQL and PHP to provide quicker results.
+*/
+
+
 	function qa_db_single_select($db, $selectspec)
+/*
+	Return the data specified by a single $selectspec from database link $db - see long comment above.
+*/
 	{
 		$query='SELECT ';
 		
@@ -187,30 +275,23 @@
 			substr($query, 0, -2).' FROM '.$selectspec['source'], $selectspec['arguments'])
 		), @$selectspec['arraykey']); // arrayvalue is applied in qa_db_post_select()
 		
-		qa_db_post_select($results, $selectspec);
+		qa_db_post_select($results, $selectspec); // post-processing
 
 		return $results;
 	}
+
 	
 	function qa_db_multi_select($db, $selectspecs)
+/*
+	Return the data specified by each element of $selectspecs from database link $db, where the keys of the
+	returned array match the keys of the supplied $selectspecs array. See long comment above.
+*/
 	{
-	/*
-		Why all this craziness? Why combine possibly unrelated SELECT statements into a single query?
-		
-		Because if the database and web servers are on different computers, there will be latency.
-		This way we ensure that every read pageview on the site requires only a single DB query, so
-		that we pay for this latency only one time.
-		
-		For writes we worry less, since the user is more likely to be expecting a delay.
-		
-		If QA_OPTIMIZE_LOCAL_DB is set in qa-config.php, we assume zero latency and go back to
-		simple queries, since this will allow both MySQL and PHP to provide quicker results.
-	*/
-	
+
 	//	Perform simple queries if the database is local or there are only 0 or 1 selectspecs
 
 		if (QA_OPTIMIZE_LOCAL_DB || (count($selectspecs)<=1)) {
-			$outresults=array();			
+			$outresults=array();
 		
 			foreach ($selectspecs as $selectkey => $selectspec)
 				$outresults[$selectkey]=qa_db_single_select($db, $selectspec);
@@ -218,7 +299,7 @@
 			return $outresults;
 		}
 
-	//	Parse columns for each spec to deal with columns without an 'AS' specification
+	//	Otherwise, parse columns for each spec to deal with columns without an 'AS' specification
 	
 		foreach ($selectspecs as $selectkey => $selectspec) {
 			$selectspecs[$selectkey]['outcolumns']=array();
@@ -295,9 +376,9 @@
 				$outresults[$selectkey][]=$rawresult;
 		}
 		
-	//	Post-processing to apply sorting request
+	//	Post-processing to apply various stuff include sorting request, since we can't rely on ORDER BY due to UNION
 		
-		foreach ($selectspecs as $selectkey => $selectspec) // can't rely on ORDER BY due to UNION
+		foreach ($selectspecs as $selectkey => $selectspec)
 			qa_db_post_select($outresults[$selectkey], $selectspec);
 			
 	//	Return results
@@ -305,13 +386,15 @@
 		return $outresults;
 	}
 	
+
 	function qa_db_post_select(&$outresult, $selectspec)
+/*
+	Post-process $outresults according to $selectspec, applying 'sortdesc', 'arrayvale' and 'single'
+*/
 	{
 		if (isset($selectspec['sortdesc'])) {
-			// PHP's sorting algorithm is not 'stable', so we use _order_ to keep stability.
-			// By contrast, MySQL's ORDER BY seems to be stable. For example when retrieving
-			// most popular tags, we get the same results each time we run query, even if many
-			// of the tags have the same popularity.
+			// PHP's sorting algorithm is not 'stable', so we use '_order_' element to keep stability.
+			// By contrast, MySQL's ORDER BY does seem to give the results in a reliable order.
 			
 			$index=count($outresult);
 			foreach ($outresult as $key => $value)
@@ -330,8 +413,14 @@
 		if (@$selectspec['single'])
 			$outresult=count($outresult) ? reset($outresult) : null;
 	}
+
 	
 	function qa_db_read_all_assoc($result, $key=null, $value=null)
+/*
+	Return the full results from the $result resource as an array. The key of each element in the returned array
+	is from column $key if specified, otherwise it's integer. The value of each element in the returned array
+	is from column $value if specified, otherwise it's a named array of all columns, given an array of arrays.
+*/
 	{
 		if (!is_resource($result))
 			qa_fatal_error('Reading all assoc from invalid result');
@@ -348,7 +437,12 @@
 		return $assocs;
 	}
 	
+
 	function qa_db_read_one_assoc($result, $allowempty=false)
+/*
+	Return the first row from the $result resource as an array of [column name] => [column value].
+	If there's no first row, throw a fatal error unless $allowempty is true.
+*/
 	{
 		if (!is_resource($result))
 			qa_fatal_error('Reading one assoc from invalid result');
@@ -364,8 +458,12 @@
 		
 		return $assoc;
 	}
+
 	
 	function qa_db_read_all_values($result)
+/*
+	Return a numbered array containing the first (and presumably only) column from the $result resource
+*/
 	{
 		if (!is_resource($result))
 			qa_fatal_error('Reading column from invalid result');
@@ -377,8 +475,13 @@
 		
 		return $output;
 	}
+
 	
 	function qa_db_read_one_value($result, $allowempty=false)
+/*
+	Return the first column of the first row (and presumably only cell) from the $result resource.
+	If there's no first row, throw a fatal error unless $allowempty is true.
+*/
 	{
 		if (!is_resource($result))
 			qa_fatal_error('Reading one value from invalid result');

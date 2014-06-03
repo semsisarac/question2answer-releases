@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-theme-base.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Default theme class, broken into lots of little functions for easy overriding
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,6 +35,17 @@
 		exit;
 	}
 
+
+/*
+	How do I make a theme which goes beyond CSS to actually modify the HTML output?
+	
+	Create a file named qa-theme.php in your new theme directory which defines a class qa_html_theme
+	that extends this base class qa_html_theme_base. You can then override any of the methods below,
+	referring back to the default method using double colon (qa_html_theme_base::) notation.
+	
+	For more information and to see some example code, please consult the online QA documentation.
+*/
+
 	class qa_html_theme_base {
 	
 		var	$indent=0;
@@ -42,23 +54,26 @@
 		var $rooturl;
 		var $template;
 		var $content;
+		var $request;
 		
-		function qa_html_theme_base($template, $content, $rooturl)
+		function qa_html_theme_base($template, $content, $rooturl, $request)
+	/*
+		Initialize the object and assign local variables
+	*/
 		{
 			$this->template=$template;
 			$this->content=$content;
 			$this->rooturl=$rooturl;
-		}
-		
-		function output()
-		{
-			$this->output_array(func_get_args());
+			$this->request=$request;
 		}
 		
 		function output_array($elements)
+	/*
+		Output each element in $elements on a separate line, with automatic HTML indenting.
+		This should be passed markup which uses the <tag/> form for unpaired tags, to help keep
+		track of indenting, although its actual output converts these to <tag> for W3C validation
+	*/
 		{
-			// This should be passed markup which uses the <tag/> form for unpaired tags
-			// However its actual output converts these to <tag> for W3C validation
 			
 			foreach ($elements as $element) {
 				$delta=substr_count($element, '<')-substr_count($element, '<!')-2*substr_count($element, '</')-substr_count($element, '/>');
@@ -74,13 +89,32 @@
 				$this->lines++;
 			}
 		}
+
+		
+		function output() // other parameters picked up via func_get_args()
+	/*
+		Output each passed parameter on a separate line - see output_array() comments
+	*/
+		{
+			$this->output_array(func_get_args());
+		}
+
 		
 		function output_raw($html)
+	/*
+		Output $html at the current indent level, but don't change indent level based on the markup within.
+		Useful for user-entered HTML which is unlikely to follow the rules we need to track indenting
+	*/
 		{
 			echo str_repeat("\t", max(0, $this->indent)).$html."\n";
 		}
+
 		
 		function output_split($parts, $class, $outertag='SPAN', $innertag='SPAN')
+	/*
+		Output the three elements ['prefix'], ['data'] and ['suffix'] of $parts (if they're defined),
+		with appropriate CSS classes based on $class, using $outertag and $innertag in the markup.
+	*/
 		{
 			if (empty($parts) && ($outertag!='TD'))
 				return;
@@ -93,8 +127,12 @@
 				'</'.$outertag.'>'
 			);
 		}
+
 		
 		function finish()
+	/*
+		Post-output cleanup. For now, check that the indenting ended right, and if not, output a warning in an HTML comment
+	*/
 		{
 			if ($this->indent)
 				echo "<!--\nIt's no big deal, but your HTML could not be indented properly. To fix, please:\n".
@@ -103,7 +141,13 @@
 					"3. Use a slash at the end of unpaired tags like <img/> or <input/>.\n".
 					"Thanks!\n-->\n";
 		}
+
 		
+	//	From here on, we have a large number of class methods which output particular pieces of HTML markup
+	//	The calling chain is initiated from qa-index.php, or qa-ajax-vote.php for refreshing the voting box
+	//	For most HTML elements, the name of the function is similar to the element's CSS class, for example:
+	//	search() outputs <DIV CLASS="qa-search">, q_list() outputs <DIV CLASS="qa-q-list">, etc...
+
 		function doctype()
 		{
 			$this->output('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">');
@@ -114,13 +158,13 @@
 			$this->output('<LINK REL="stylesheet" TYPE="text/css" HREF="'.$this->rooturl.$this->css_name().'"/>');
 		}
 		
-		function head_custom()
-		{} // abstract method
-		
 		function css_name()
 		{
 			return 'qa-styles.css?'.QA_VERSION;
 		}
+
+		function head_custom()
+		{} // abstract method
 		
 		function body_content()
 		{
@@ -140,13 +184,13 @@
 		
 		function body_tags()
 		{} // abstract method
-		
+
 		function body_prefix()
 		{} // abstract method
-		
+
 		function body_suffix()
 		{} // abstract method
-		
+
 		function header()
 		{
 			$this->output('<DIV CLASS="qa-header">');
@@ -195,7 +239,7 @@
 			$this->output(
 				'</FORM>',
 				'</DIV>'
-			);	
+			);
 		}
 		
 		function search_field($search)
@@ -229,8 +273,8 @@
 		{
 			$this->output('<UL CLASS="qa-nav-'.$navtype.'-list">');
 
-			foreach ($navigation as $navlink)
-				$this->nav_item($navlink, $navtype);
+			foreach ($navigation as $key => $navlink)
+				$this->nav_item($key, $navlink, $navtype);
 			
 			$this->output('</UL>');
 		}
@@ -243,9 +287,9 @@
 			);
 		}
 		
-		function nav_item($navlink, $navtype)
+		function nav_item($key, $navlink, $navtype)
 		{
-			$this->output('<LI CLASS="qa-nav-'.$navtype.'-item">');
+			$this->output('<LI CLASS="qa-nav-'.$navtype.'-item qa-nav-'.$navtype.'-'.$key.'">');
 			$this->nav_link($navlink, $navtype);
 			$this->output('</LI>');
 		}
@@ -282,7 +326,7 @@
 		
 		function main()
 		{
-			$content=$this->content;			
+			$content=$this->content;
 
 			$this->output('<DIV CLASS="qa-main'.(@$this->content['hidden'] ? ' qa-main-hidden' : '').'">');
 			
@@ -296,12 +340,12 @@
 					break;
 					
 				case 'tags':
-					$this->tags_ranking();
+					$this->top_tags();
 					break;
 					
 				case 'users':
 				case 'admin/users';
-					$this->users_ranking();
+					$this->top_users();
 					break;
 
 				default:
@@ -429,7 +473,7 @@
 			if ($columns)
 				$this->output('<TABLE CLASS="qa-form-'.$form['style'].'-table">');
 			
-			$this->form_ok($form, $columns);								
+			$this->form_ok($form, $columns);
 			$this->form_fields($form, $columns);
 			$this->form_buttons($form, $columns);
 
@@ -457,7 +501,7 @@
 				foreach ($form['fields'] as $field)
 					if (@$field['type']=='blank')
 						$this->form_spacer($form, $columns);
-					else 
+					else
 						$this->form_field_rows($form, $columns, $field);
 			}
 		}
@@ -483,7 +527,7 @@
 			elseif (isset($field['id']))
 				$this->output('<TR ID="'.$field['id'].'">');
 			else
-				$this->output('<TR>');		
+				$this->output('<TR>');
 			
 			if (!empty($field['label']))
 				$this->form_label($field, $style, $columns, $prefixed, $suffixed, $colspan);
@@ -690,12 +734,12 @@
 			$this->output('<'.$tag.' CLASS="qa-form-'.$style.'-note">'.$field['note'].'</'.$tag.'>');
 		}
 		
-		function tags_ranking()
+		function top_tags()
 		{
 			$this->ranking($this->content['ranking'], 'qa-top-tags');
 		}
 		
-		function users_ranking()
+		function top_users()
 		{
 			$this->ranking($this->content['ranking'], 'qa-top-users');
 		}
@@ -932,7 +976,7 @@
 		
 		function a_count($post)
 		{
-			$this->output_split(@$post['answers'], 'qa-a-count');				
+			$this->output_split(@$post['answers'], 'qa-a-count');
 		}
 		
 		function a_selection($post)
@@ -1007,7 +1051,7 @@
 		{
 			$this->output('<UL CLASS="'.$class.'-tag-list">');
 			
-			foreach ($post['q_tags'] as $tag) 
+			foreach ($post['q_tags'] as $tag)
 				$this->post_tag_item($tag, $class);
 				
 			$this->output('</UL>');
@@ -1025,7 +1069,7 @@
 			if (!empty($page_links)) {
 				$this->output('<DIV CLASS="qa-page-links">');
 				
-				$this->page_links_label(@$page_links['label']);			
+				$this->page_links_label(@$page_links['label']);
 				$this->page_links_list(@$page_links['items']);
 				$this->page_links_clear();
 				
@@ -1129,7 +1173,7 @@
 		{
 			$this->output('<DIV CLASS="qa-q-view-main">');
 
-			$this->q_view_content($q_view);			
+			$this->q_view_content($q_view);
 			$this->post_meta($q_view, 'qa-q-view');
 			$this->q_view_follows($q_view);
 			$this->q_view_buttons($q_view);
@@ -1149,7 +1193,7 @@
 					'<DIV CLASS="qa-q-view-content">',
 					$q_view['content'],
 					'</DIV>'
-				);			
+				);
 		}
 		
 		function q_view_follows($q_view)
@@ -1163,7 +1207,7 @@
 				);
 		}
 		
-		function q_view_buttons($q_view) 
+		function q_view_buttons($q_view)
 		{
 			if (!empty($q_view['form'])) {
 				$this->output('<DIV CLASS="qa-q-view-buttons">');

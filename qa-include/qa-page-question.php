@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-question.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for question page (only viewing functionality here)
 
 
 	This software is licensed for use in websites which are connected to the
@@ -42,9 +43,13 @@
 	
 	$questionid=$pass_questionid; // picked up from index.php
 
+
 //	Get information about this question
 
 	function qa_page_q_load_q()
+/*
+	Load all the necessary content relating to the question from the database into the appropriate global variables
+*/
 	{
 		global $qa_db, $qa_login_userid, $questionid, $question, $parentquestion, $answers, $commentsfollows,
 			$relatedcount, $relatedquestions, $question, $useranswered, $checkanswerlogin, $checkcommentlogin;
@@ -109,8 +114,12 @@
 				qa_page_q_post_rules($commentsfollows[$key]);
 		}
 	}
+
 	
 	function qa_page_q_post_rules(&$post)
+/*
+	Add elements to the array $post which describe which operations this user may perform on that post
+*/
 	{
 		global $qa_db, $qa_login_userid, $qa_cookieid, $qa_login_level;
 
@@ -127,8 +136,12 @@
 			(($post['type']=='A') ? qa_get_option($qa_db, 'comment_on_as') : false);
 		$post['followable']=($post['type']=='A') ? qa_get_option($qa_db, 'follow_on_as') : false;
 	}
+
 	
 	function qa_page_q_comment_follow_list($parent)
+/*
+	Return a theme-ready structure with all the comments and follow-on questions to show for post $parent (question or answer)
+*/
 	{
 		global $qa_db, $commentsfollows, $qa_login_userid, $qa_cookieid, $usershtml, $formtype, $formpostid, $formrequested;
 		
@@ -138,7 +151,10 @@
 					$c_view=qa_post_html_fields($commentfollow, $qa_login_userid, $qa_cookieid, $usershtml,
 						false, qa_get_option($qa_db, 'show_user_points'), qa_get_option($qa_db, 'show_url_links'), true);
 						
-					if (!$formrequested) {
+
+				//	Buttons for operating on this comment
+						
+					if (!$formrequested) { // don't show if another form is currently being shown on page
 						$c_view['form']=array(
 							'style' => 'light',
 							'buttons' => array(),
@@ -199,6 +215,7 @@
 	
 	qa_page_q_load_q();
 
+
 //	Deal with question not found or not viewable
 
 	if ((!isset($question)) || !$question['viewable']) {
@@ -213,12 +230,14 @@
 
 		return;
 	}
+
 		
 //	Check permission for answering and commening
 
-	$checkanswerlogin=isset($qa_login_userid) || !qa_get_option($qa_db, 'answer_needs_login');			
+	$checkanswerlogin=isset($qa_login_userid) || !qa_get_option($qa_db, 'answer_needs_login');
 	$checkcommentlogin=isset($qa_login_userid) || !qa_get_option($qa_db, 'comment_needs_login');
 	$usecaptcha=(!isset($qa_login_userid)) && qa_get_option($qa_db, 'captcha_on_anon_post');
+
 	
 //	If we're responding to an HTTP POST, include file that handles all posting/editing/etc... logic
 //	This is in a separate file because it's a *lot* of logic, and will slow down ordinary page views
@@ -239,9 +258,11 @@
 	if ((!$formrequested) && $question['answerable'] && (!$question['acount']) && (!$question['isbyuser']) )
 		$formtype='a_add'; // show answer form by default under certain conditions
 	
+	
 //	Get information on the users referenced
 
 	$usershtml=qa_userids_handles_html($qa_db, array_merge(array($question), $answers, $commentsfollows, $relatedquestions), true);
+
 	
 //	Prepare content for theme
 	
@@ -257,199 +278,216 @@
 	
 	qa_sort_by($commentsfollows, 'created');
 
-	{//	The question...
-		
-		if ($formtype=='q_edit') { // ...in edit mode
-			$qa_content['title']=qa_lang_html('question/edit_q_title');			
-			$qa_content['q_edit_form']=qa_page_q_edit_q_form();
 
-		} else { // ...in view mode
-			$qa_content['q_view']=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
-				qa_get_vote_view($qa_db, 'Q'), qa_get_option($qa_db, 'show_user_points'), qa_get_option($qa_db, 'show_url_links'), true);
+//	Prepare content for the question...
+	
+	if ($formtype=='q_edit') { // ...in edit mode
+		$qa_content['title']=qa_lang_html('question/edit_q_title');
+		$qa_content['q_edit_form']=qa_page_q_edit_q_form();
+
+	} else { // ...in view mode
+		$qa_content['q_view']=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
+			qa_get_vote_view($qa_db, 'Q'), qa_get_option($qa_db, 'show_user_points'), qa_get_option($qa_db, 'show_url_links'), true);
+		
+		$qa_content['title']=$qa_content['q_view']['title'];
+		
+		unset($qa_content['q_view']['answers']); // answer count is displayed separately so don't show it here
+		
+
+	//	Buttons for operating on the question
+		
+		if (!$formrequested) { // don't show if another form is currently being shown on page
+			$qa_content['q_view']['form']=array(
+				'style' => 'light',
+				'buttons' => array(),
+			);
 			
-			$qa_content['title']=$qa_content['q_view']['title'];
+			if ($question['editable'])
+				$qa_content['q_view']['form']['buttons']['edit']=array(
+					'tags' => ' NAME="doeditq" ',
+					'label' => qa_lang_html('question/edit_button'),
+					'popup' => qa_lang_html('question/edit_q_popup'),
+				);
+				
+			if ($question['hideable'])
+				$qa_content['q_view']['form']['buttons']['hide']=array(
+					'tags' => ' NAME="dohideq" ',
+					'label' => qa_lang_html('question/hide_button'),
+					'popup' => qa_lang_html('question/hide_q_popup'),
+				);
+				
+			if ($question['showable'])
+				$qa_content['q_view']['form']['buttons']['reshow']=array(
+					'tags' => ' NAME="doshowq" ',
+					'label' => qa_lang_html('question/reshow_button'),
+					'popup' => qa_lang_html($question['authorlast'] ? 'question/q_hidden_author' : 'question/q_hidden_editor'),
+				);
+				
+			if ($question['claimable'])
+				$qa_content['q_view']['form']['buttons']['claim']=array(
+					'tags' => ' NAME="doclaimq" ',
+					'label' => qa_lang_html('question/claim_button'),
+				);
 			
-			unset($qa_content['q_view']['answers']); // displayed separately
+			if ($question['answerable'] && ($formtype!='a_add')) // don't show if shown by default
+				$qa_content['q_view']['form']['buttons']['answer']=array(
+					'tags' => ' NAME="doanswerq" ',
+					'label' => qa_lang_html('question/answer_button'),
+					'popup' => qa_lang_html('question/answer_q_popup'),
+				);
 			
-			if (!$formrequested) {
-				$qa_content['q_view']['form']=array(
+			if ($question['commentable'])
+				$qa_content['q_view']['form']['buttons']['comment']=array(
+					'tags' => ' NAME="docommentq" ',
+					'label' => qa_lang_html('question/comment_button'),
+					'popup' => qa_lang_html('question/comment_q_popup'),
+				);
+		}
+		
+
+	//	Information about the question of the answer that this question follows on from (or a question directly)
+			
+		if (isset($parentquestion)) {
+			$request=qa_q_request($parentquestion['postid'], $parentquestion['title']);
+			if ($question['parentid']!=$parentquestion['postid'])
+				$request.='#'.$question['parentid'];
+				
+			$qa_content['q_view']['follows']=array(
+				'label' => qa_lang_html(($question['parentid']==$parentquestion['postid']) ? 'question/follows_q' : 'question/follows_a'),
+				'title' => qa_html($parentquestion['title']),
+				'url' => qa_path_html($request),
+			);
+		}
+			
+	}
+	
+
+//	Prepare content for an answer being edited (if any)	
+
+	if ($formtype=='a_edit')
+		$qa_content['q_view']['a_form']=qa_page_q_edit_a_form($formpostid);
+
+
+//	Prepare content for comments on the question, plus add or edit comment forms
+
+	$qa_content['q_view']['c_list']=qa_page_q_comment_follow_list($question); // ...for viewing
+	
+	if (($formtype=='c_add') && ($formpostid==$questionid)) // ...to be added
+		$qa_content['q_view']['c_form']=qa_page_q_add_c_form(null);
+	
+	elseif (($formtype=='c_edit') && (@$commentsfollows[$formpostid]['parentid']==$questionid)) // ...being edited
+		$qa_content['q_view']['c_form']=qa_page_q_edit_c_form($formpostid, null);
+	
+
+//	Prepare content for existing answers
+
+	$qa_content['a_list']['as']=array();
+	
+	qa_sort_by($answers, 'created');
+	$priority=0;
+
+	foreach ($answers as $answerid => $answer)
+		if ($answer['viewable'] && !(($formtype=='a_edit') && ($formpostid==$answerid))) {
+			$a_view=qa_post_html_fields($answer, $qa_login_userid, $qa_cookieid, $usershtml, qa_get_vote_view($qa_db, 'A'),
+				qa_get_option($qa_db, 'show_user_points'), qa_get_option($qa_db, 'show_url_links'), true, $answer['isselected']);
+			
+
+		//	Selection/unselect buttons and others for operating on the answer
+
+			if (!$formrequested) { // don't show if another form is currently being shown on page
+				if ($question['editable'] && !$answer['hidden']) {
+					if ($answer['isselected'])
+						$a_view['unselect_tags']=' TITLE="'.qa_lang_html('question/unselect_popup').'" NAME="select_" ';
+					elseif (!isset($question['selchildid']))
+						$a_view['select_tags']=' TITLE="'.qa_lang_html('question/select_popup').'" NAME="select_'.qa_html($answerid).'" ';
+				}
+				
+				$a_view['form']=array(
 					'style' => 'light',
 					'buttons' => array(),
 				);
 				
-				if ($question['editable'])
-					$qa_content['q_view']['form']['buttons']['edit']=array(
-						'tags' => ' NAME="doeditq" ',
+				if ($answer['editable'])
+					$a_view['form']['buttons']['edit']=array(
+						'tags' => ' NAME="doedita_'.qa_html($answerid).'" ',
 						'label' => qa_lang_html('question/edit_button'),
-						'popup' => qa_lang_html('question/edit_q_popup'),
+						'popup' => qa_lang_html('question/edit_a_popup'),
 					);
 					
-				if ($question['hideable'])
-					$qa_content['q_view']['form']['buttons']['hide']=array(
-						'tags' => ' NAME="dohideq" ',
+				if ($answer['hideable'])
+					$a_view['form']['buttons']['hide']=array(
+						'tags' => ' NAME="dohidea_'.qa_html($answerid).'" ',
 						'label' => qa_lang_html('question/hide_button'),
-						'popup' => qa_lang_html('question/hide_q_popup'),
+						'popup' => qa_lang_html('question/hide_a_popup'),
 					);
 					
-				if ($question['showable'])
-					$qa_content['q_view']['form']['buttons']['reshow']=array(
-						'tags' => ' NAME="doshowq" ',
+				if ($answer['showable'])
+					$a_view['form']['buttons']['reshow']=array(
+						'tags' => ' NAME="doshowa_'.qa_html($answerid).'" ',
 						'label' => qa_lang_html('question/reshow_button'),
-						'popup' => qa_lang_html($question['authorlast'] ? 'question/q_hidden_author' : 'question/q_hidden_editor'),
+						'popup' => qa_lang_html($answer['authorlast'] ? 'question/a_hidden_author' : 'question/a_hidden_editor'),
 					);
 					
-				if ($question['claimable'])
-					$qa_content['q_view']['form']['buttons']['claim']=array(
-						'tags' => ' NAME="doclaimq" ',
+				if ($answer['claimable'])
+					$a_view['form']['buttons']['claim']=array(
+						'tags' => ' NAME="doclaima_'.qa_html($answerid).'" ',
 						'label' => qa_lang_html('question/claim_button'),
 					);
-				
-				if ($question['answerable'] && ($formtype!='a_add')) // don't show if shown by default
-					$qa_content['q_view']['form']['buttons']['answer']=array(
-						'tags' => ' NAME="doanswerq" ',
-						'label' => qa_lang_html('question/answer_button'),
-						'popup' => qa_lang_html('question/answer_q_popup'),
+
+				if ($answer['followable'])
+					$a_view['form']['buttons']['follow']=array(
+						'tags' => ' NAME="dofollowa_'.qa_html($answerid).'" ',
+						'label' => qa_lang_html('question/follow_button'),
+						'popup' => qa_lang_html('question/follow_a_popup'),
 					);
-				
-				if ($question['commentable'])
-					$qa_content['q_view']['form']['buttons']['comment']=array(
-						'tags' => ' NAME="docommentq" ',
+
+				if ($answer['commentable'])
+					$a_view['form']['buttons']['comment']=array(
+						'tags' => ' NAME="docommenta_'.qa_html($answerid).'" ',
 						'label' => qa_lang_html('question/comment_button'),
-						'popup' => qa_lang_html('question/comment_q_popup'),
+						'popup' => qa_lang_html('question/comment_a_popup'),
 					);
-			}
-				
-			if (isset($parentquestion)) {
-				$request=qa_q_request($parentquestion['postid'], $parentquestion['title']);
-				if ($question['parentid']!=$parentquestion['postid'])
-					$request.='#'.$question['parentid'];
-					
-				$qa_content['q_view']['follows']=array(
-					'label' => qa_lang_html(($question['parentid']==$parentquestion['postid']) ? 'question/follows_q' : 'question/follows_a'),
-					'title' => qa_html($parentquestion['title']),
-					'url' => qa_path_html($request),
-				);
-			}
-				
-		}
-	}
-	
-	
-	{// Answer being edited
-		if ($formtype=='a_edit')
-			$qa_content['q_view']['a_form']=qa_page_q_edit_a_form($formpostid);
-	}
 
-
-	{// Comments on question...
-		$qa_content['q_view']['c_list']=qa_page_q_comment_follow_list($question); // ...for viewing
-		
-		if (($formtype=='c_add') && ($formpostid==$questionid)) // ...to be added
-			$qa_content['q_view']['c_form']=qa_page_q_add_c_form(null);
-		
-		elseif (($formtype=='c_edit') && (@$commentsfollows[$formpostid]['parentid']==$questionid)) // ...being edited
-			$qa_content['q_view']['c_form']=qa_page_q_edit_c_form($formpostid, null);
-	}
-	
-
-	{// Existing answers
-
-		$qa_content['a_list']['as']=array();
-		
-		qa_sort_by($answers, 'created');
-		$priority=0;
-	
-		foreach ($answers as $answerid => $answer)
-			if ($answer['viewable'] && !(($formtype=='a_edit') && ($formpostid==$answerid))) {
-				$a_view=qa_post_html_fields($answer, $qa_login_userid, $qa_cookieid, $usershtml, qa_get_vote_view($qa_db, 'A'),
-					qa_get_option($qa_db, 'show_user_points'), qa_get_option($qa_db, 'show_url_links'), true, $answer['isselected']);
-				
-				if (!$formrequested) {
-					if ($question['editable'] && !$answer['hidden']) {
-						if ($answer['isselected'])
-							$a_view['unselect_tags']=' TITLE="'.qa_lang_html('question/unselect_popup').'" NAME="select_" ';					
-						elseif (!isset($question['selchildid'])) 
-							$a_view['select_tags']=' TITLE="'.qa_lang_html('question/select_popup').'" NAME="select_'.qa_html($answerid).'" ';
-					}
-					
-					$a_view['form']=array(
-						'style' => 'light',
-						'buttons' => array(),
-					);
-					
-					if ($answer['editable'])
-						$a_view['form']['buttons']['edit']=array(
-							'tags' => ' NAME="doedita_'.qa_html($answerid).'" ',
-							'label' => qa_lang_html('question/edit_button'),
-							'popup' => qa_lang_html('question/edit_a_popup'),
-						);
-						
-					if ($answer['hideable'])
-						$a_view['form']['buttons']['hide']=array(
-							'tags' => ' NAME="dohidea_'.qa_html($answerid).'" ',
-							'label' => qa_lang_html('question/hide_button'),
-							'popup' => qa_lang_html('question/hide_a_popup'),
-						);
-						
-					if ($answer['showable'])
-						$a_view['form']['buttons']['reshow']=array(
-							'tags' => ' NAME="doshowa_'.qa_html($answerid).'" ',
-							'label' => qa_lang_html('question/reshow_button'),
-							'popup' => qa_lang_html($answer['authorlast'] ? 'question/a_hidden_author' : 'question/a_hidden_editor'),
-						);
-						
-					if ($answer['claimable'])
-						$a_view['form']['buttons']['claim']=array(
-							'tags' => ' NAME="doclaima_'.qa_html($answerid).'" ',
-							'label' => qa_lang_html('question/claim_button'),
-						);
-
-					if ($answer['followable'])
-						$a_view['form']['buttons']['follow']=array(
-							'tags' => ' NAME="dofollowa_'.qa_html($answerid).'" ',
-							'label' => qa_lang_html('question/follow_button'),
-							'popup' => qa_lang_html('question/follow_a_popup'),
-						);
-
-					if ($answer['commentable'])
-						$a_view['form']['buttons']['comment']=array(
-							'tags' => ' NAME="docommenta_'.qa_html($answerid).'" ',
-							'label' => qa_lang_html('question/comment_button'),
-							'popup' => qa_lang_html('question/comment_a_popup'),
-						);
-
-				}
-				
-				{// Comments on answer...
-					$a_view['c_list']=qa_page_q_comment_follow_list($answer); // ...for viewing
-	
-					if (($formtype=='c_add') && ($formpostid==$answerid)) // ...to be added
-						$a_view['c_form']=qa_page_q_add_c_form($answerid);
-
-					else if (($formtype=='c_edit') && (@$commentsfollows[$formpostid]['parentid']==$answerid)) // ...being edited
-						$a_view['c_form']=qa_page_q_edit_c_form($formpostid, $answerid);
-				}
-
-				if ($answer['hidden'])
-					$a_view['priority']=10000+($priority++);
-				elseif ($answer['isselected'])
-					$a_view['priority']=0;
-				else
-					$a_view['priority']=5000+($priority++);
-					
-				$qa_content['a_list']['as'][]=$a_view;
 			}
 			
-		qa_sort_by($qa_content['a_list']['as'], 'priority');
-		
-		$countanswers=$question['acount'];
-		
-		if ($countanswers==1)
-			$qa_content['a_list']['title']=qa_lang_html('question/1_answer_title');
-		else
-			$qa_content['a_list']['title']=qa_lang_sub_html('question/x_answers_title', $countanswers);
-	}
 
+		//	Prepare content for comments on this answer, plus add or edit comment forms
+			
+			$a_view['c_list']=qa_page_q_comment_follow_list($answer); // ...for viewing
+
+			if (($formtype=='c_add') && ($formpostid==$answerid)) // ...to be added
+				$a_view['c_form']=qa_page_q_add_c_form($answerid);
+
+			else if (($formtype=='c_edit') && (@$commentsfollows[$formpostid]['parentid']==$answerid)) // ...being edited
+				$a_view['c_form']=qa_page_q_edit_c_form($formpostid, $answerid);
+
+
+		//	Determine this answer's place in the order on the page
+
+			if ($answer['hidden'])
+				$a_view['priority']=10000+($priority++);
+			elseif ($answer['isselected'])
+				$a_view['priority']=0;
+			else
+				$a_view['priority']=5000+($priority++);
+				
+
+		//	Add the answer to the list
+				
+			$qa_content['a_list']['as'][]=$a_view;
+		}
+		
+	qa_sort_by($qa_content['a_list']['as'], 'priority');
+	
+	$countanswers=$question['acount'];
+	
+	if ($countanswers==1)
+		$qa_content['a_list']['title']=qa_lang_html('question/1_answer_title');
+	else
+		$qa_content['a_list']['title']=qa_lang_sub_html('question/x_answers_title', $countanswers);
+
+
+//	Prepare content for form to add an answer
 
 	if ($formtype=='a_add') { // Form for adding answers
 		if ($checkanswerlogin) {
@@ -475,7 +513,7 @@
 				),
 			);
 			
-			if ($formrequested) {
+			if ($formrequested) { // only show cancel button if user explicitly requested the form
 				$focusonid='content';
 				
 				$qa_content['q_view']['a_form']['buttons']['cancel']=array(
@@ -498,12 +536,14 @@
 		}
 	}
 
+
+//	List of related questions
 	
-	if (($relatedcount>1) && !$question['hidden']) {// Related questions
+	if (($relatedcount>1) && !$question['hidden']) {
 		$minscore=qa_match_to_min_score(qa_get_option($qa_db, 'match_related_qs'));
 		
 		foreach ($relatedquestions as $key => $related)
-			if ( ($related['postid']==$questionid) || ($related['score']<$minscore) )
+			if ( ($related['postid']==$questionid) || ($related['score']<$minscore) ) // related questions will include itself so remove that
 				unset($relatedquestions[$key]);
 		
 		if (count($relatedquestions))
@@ -517,6 +557,8 @@
 				qa_get_vote_view($qa_db, 'Q'), qa_get_option($qa_db, 'show_user_points'));
 	}
 	
+
+//	Some final generally useful stuff
 	
 	if (isset($jumptohash))
 		$qa_content['script_onloads'][]=array(

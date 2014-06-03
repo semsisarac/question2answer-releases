@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-admin.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Language phrases for admin center
 
 
 	This software is licensed for use in websites which are connected to the
@@ -39,10 +40,9 @@
 		'general_title' => 'General',
 		'hidden_title' => 'Hidden',
 		'layout_title' => 'Layout',
-		'limits_title' => 'Limits',
 		'maximum_x' => ' (max ^)',
-		'no_multibyte' => 'The installed version of PHP was compiled without multibyte string support. Searching will be less effective for non-Roman characters.',
 		'no_hidden_found' => 'No hidden questions, answers or comments found',
+		'no_multibyte' => 'The installed version of PHP was compiled without multibyte string support. Searching will be less effective for non-Roman characters.',
 		'no_privileges' => 'Only administrators may access this page.',
 		'not_logged_in' => 'Please ^1log in^2 as the adminstrator to access this page.',
 		'options_reset' => 'Options reset',
@@ -78,7 +78,7 @@
 		'show_defaults_button' => 'Show Defaults',
 		'spam_title' => 'Anti-Spam',
 		'stats_title' => 'Statistics',
-		'stop_recalc_warning' => 'A database clean-up operation is running. If you close this page now, the operation will be interrupted.', 
+		'stop_recalc_warning' => 'A database clean-up operation is running. If you close this page now, the operation will be interrupted.',
 		'suggest_editors' => 'Create new editors or administrators via the ^1user pages^2.',
 		'total_as' => 'Total answers:',
 		'total_cs' => 'Total comments:',

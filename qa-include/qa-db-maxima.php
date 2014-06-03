@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-maxima.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Definitions that determine database column size and rows retrieved
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,7 +35,9 @@
 		exit;
 	}
 
-//	Any of these can be defined in qa-config.php to override the defaults below
+
+//	Maximum column sizes - any of these can be defined in qa-config.php to override the defaults below,
+//	but you need to do so before creating the database, otherwise it's too late.
 
 	@define('QA_DB_MAX_EMAIL_LENGTH', 80);
 	@define('QA_DB_MAX_HANDLE_LENGTH', 20);
@@ -45,6 +48,9 @@
 	@define('QA_DB_MAX_OPTION_TITLE_LENGTH', 40);
 	@define('QA_DB_MAX_PROFILE_TITLE_LENGTH', 40);
 	@define('QA_DB_MAX_PROFILE_CONTENT_LENGTH', 8000);
+
+//	How many records to retrieve for different circumstances. In many cases we retrieve more records than we
+//	end up needing to display once we know the value of an option. Wasteful, but allows one query per page.
 
 	@define('QA_DB_RETRIEVE_QS_AS', 50);
 	@define('QA_DB_RETRIEVE_TAGS', 200);

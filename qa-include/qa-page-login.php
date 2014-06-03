@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-login.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for login page
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,11 +35,17 @@
 		exit;
 	}
 
+
+//	Check we're not using single-sign on integration and that we're not logged in
+	
 	if (QA_EXTERNAL_USERS)
 		qa_fatal_error('User login is handled by external code');
 		
 	if (isset($qa_login_userid))
 		qa_redirect('');
+		
+
+//	Process submitted form
 	
 	if (qa_clicked('dologin')) {
 		require_once QA_INCLUDE_DIR.'qa-db-users.php';
@@ -50,16 +57,16 @@
 		
 		$errors=array();
 		
-		if (strpos($inemailhandle, '@')===false)
+		if (strpos($inemailhandle, '@')===false) // handles can't contain @ symbols
 			$matchusers=qa_db_user_find_by_handle($qa_db, $inemailhandle);
 		else
 			$matchusers=qa_db_user_find_by_email($qa_db, $inemailhandle);
 
-		if (count($matchusers)==1) {
+		if (count($matchusers)==1) { // if matches more than one (should be impossible), don't log in
 			$inuserid=$matchusers[0];
 			$userinfo=qa_db_select_with_pending($qa_db, qa_db_user_account_selectspec($inuserid, true));
 			
-			if (strtolower(qa_db_calc_passcheck($inpassword, $userinfo['passsalt'])) == strtolower($userinfo['passcheck'])) {
+			if (strtolower(qa_db_calc_passcheck($inpassword, $userinfo['passsalt'])) == strtolower($userinfo['passcheck'])) { // login and redirect
 				require_once QA_INCLUDE_DIR.'qa-app-users.php';
 
 				qa_set_logged_in_user($qa_db, $inuserid, $inremember ? true : false);
@@ -68,7 +75,7 @@
 				$topath=qa_get('to');
 				
 				if (isset($topath))
-					qa_redirect($topath, null, null, true); // index.php already included if appropriate
+					qa_redirect($topath, null, null, true); // set $neaturls to true since index.php is already included in $topath if neat urls off
 				else
 					qa_redirect('');
 
@@ -82,6 +89,7 @@
 		$inemailhandle=qa_get('e');
 		
 	$passwordsent=qa_get('ps');
+
 	
 //	Prepare content for theme
 	

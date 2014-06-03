@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-main.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Language phrases commonly used throughout Q2A, plus a few other misc ones
 
 
 	This software is licensed for use in websites which are connected to the
@@ -90,9 +91,9 @@
 		'page_prev' => 'prev',
 		'popular_tags' => 'Most popular tags',
 		'questions_tagged_x' => 'Recent questions tagged ^',
-		'recent_qs_as_title' => 'Recent questions and answers',
 		'recent_as_title' => 'Recently answered questions',
 		'recent_cs_title' => 'Recently added comments',
+		'recent_qs_as_title' => 'Recent questions and answers',
 		'recent_qs_title' => 'Recent questions',
 		'related_qs_title' => 'Related questions',
 		'results_for_x' => 'Search results for ^',

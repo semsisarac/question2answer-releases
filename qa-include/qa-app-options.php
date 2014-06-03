@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-options.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Getting and setting admin options (application level)
 
 
 	This software is licensed for use in websites which are connected to the
@@ -36,14 +37,23 @@
 
 	require_once QA_INCLUDE_DIR.'qa-db-options.php';
 
+
 	function qa_get_option($db, $name)
+/*
+	Return the setting for the single option $name, see qa_get_options() for more details
+*/
 	{
 		$options=qa_get_options($db, array($name));
 
 		return $options[$name];
 	}
 
+
 	function qa_get_options($db, $names)
+/*
+	Return an array [name] => [value] of settings for each option in $names.
+	If any options are missing from the database, set them to their defaults
+*/
 	{
 		global $qa_options_cache, $qa_options_pending;
 		
@@ -65,8 +75,12 @@
 		
 		return $options;
 	}
+
 	
 	function qa_options_set_pending($names)
+/*
+	Queue the options in $names to be retrieved during next database query
+*/
 	{
 		global $qa_options_cache, $qa_options_pending;
 		
@@ -80,8 +94,12 @@
 			
 		return $added;
 	}
+
 	
 	function qa_options_pending_selectspec()
+/*
+	Return selectspec array (see qa-db.php) to get queued options from database
+*/
 	{
 		global $qa_options_pending;
 		
@@ -96,8 +114,12 @@
 		else
 			return false;
 	}
+
 	
 	function qa_options_load_options($db, $gotoptions)
+/*
+	Called after the options are retrieved from the database using selectspec from qa_options_pending_selectspec()
+*/
 	{
 		global $qa_options_cache, $qa_options_pending;
 		
@@ -113,7 +135,11 @@
 		}
 	}
 
+
 	function qa_set_option($db, $name, $value)
+/*
+	Set an option $name to $value (application level) in both cache and database
+*/
 	{
 		global $qa_options_cache, $qa_options_pending;
 		
@@ -122,14 +148,22 @@
 		$qa_options_cache[$name]=$value;
 		unset($qa_options_pending[$name]);
 	}
+
 	
 	function qa_reset_options($db, $names)
+/*
+	Reset the options in $names
+*/
 	{
 		foreach ($names as $name)
 			qa_set_option($db, $name, qa_default_option($name));
 	}
+
 	
 	function qa_default_option($name)
+/*
+	Return the default value for option $name
+*/
 	{
 		global $qa_root_url_inferred, $qa_options_cache;
 		
@@ -138,6 +172,8 @@
 			'ask_needs_login' => 0,
 			'captcha_on_register' => 1,
 			'captcha_on_anon_post' => 1,
+			'captcha_on_feedback' => 1,
+			'captcha_on_reset_password' => 1,
 			'comment_needs_login' => 0,
 			'comment_on_qs' => 1,
 			'comment_on_as' => 1,
@@ -209,7 +245,7 @@
 					$value=$qa_root_url_inferred; // from qa-index.php
 					break;
 					
-				case 'site_title': 
+				case 'site_title':
 					$value=qa_default_site_title();
 					break;
 					
@@ -246,8 +282,12 @@
 		
 		return $value;
 	}
+
 	
-	function qa_default_site_title() // heuristic to take longest part of host name
+	function qa_default_site_title()
+/*
+	Return a heuristic guess at the name of the site from the HTTP HOST
+*/
 	{
 		$parts=explode('.', @$_SERVER['HTTP_HOST']);
 
@@ -258,8 +298,13 @@
 			
 		return ((strlen($longestpart)>3) ? (ucfirst($longestpart).' ') : '').qa_lang('options/default_suffix');
 	}
+
 	
 	function qa_get_vote_view($db, $basetype)
+/*
+	Return $voteview parameter to pass to qa_post_html_fields() in qa-app-format.php
+	for posts of type $basetype, where Q=question, A=answer, C=comment.
+*/
 	{
 		if ($basetype=='Q')
 			$enabled=qa_get_option($db, 'voting_on_qs');

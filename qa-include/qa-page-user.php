@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-user.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for user profile page
 
 
 	This software is licensed for use in websites which are connected to the
@@ -38,13 +39,18 @@
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 	require_once QA_INCLUDE_DIR.'qa-app-users.php';
 	
+
 	function qa_page_user_not_found()
+/*
+	Set up $qa_content to show a message that the user was not found
+*/
 	{
 		global $qa_content;
 
 		qa_content_prepare();
 		$qa_content['error']=qa_lang_html('users/user_not_found');
 	}
+
 
 	if (QA_EXTERNAL_USERS) {
 		$publictouserid=qa_get_userids_from_public($qa_db, array($pass_handle));
@@ -60,6 +66,7 @@
 		$handle=$pass_handle; // picked up from index.php
 		$userhtml=qa_html($handle);
 	}
+
 	
 //	Find the user profile and questions and answers for this handle
 	
@@ -77,16 +84,16 @@
 		qa_db_user_recent_as_selectspec($identifier)
 	);
 	
-	if (!QA_EXTERNAL_USERS) {
+	if (!QA_EXTERNAL_USERS) { // if we're using integrated user management, we can know and show more
 		if ((!is_array($userpoints)) && !is_array($useraccount))
 			return qa_page_user_not_found();
 	
 		$userid=$useraccount['userid'];
-		$useradminable=(($qa_login_level>=QA_USER_LEVEL_SUPER) && ($qa_login_userid!=$userid)) || // can't change self
+		$usereditable=(($qa_login_level>=QA_USER_LEVEL_SUPER) && ($qa_login_userid!=$userid)) || // can't change self on this page
 			(($qa_login_level>=QA_USER_LEVEL_ADMIN) && ($qa_login_level>$useraccount['level']));
-		$usereditable=$useradminable;
 		$userediting=false;
 	}
+
 
 //	Process edit or save button for user
 
@@ -105,11 +112,13 @@
 			$inlocation=qa_post_text('location');
 			$inwebsite=qa_post_text('website');
 			$inabout=qa_post_text('about');
+			$inlevel=min(($qa_login_level>=QA_USER_LEVEL_SUPER) ? QA_USER_LEVEL_SUPER : QA_USER_LEVEL_EDITOR, (int)qa_post_text('level'));
+				// constrain based on logged in user permissions to prevent simple browser-based attack
 			
 			$errors=array_merge(
 				qa_handle_email_validate($qa_db, $handle, $inemail, $userid),
 				qa_profile_fields_validate($qa_db, $inname, $inlocation, $inwebsite, $inabout)
-			);	
+			);
 
 			if (!isset($errors['email']))
 				qa_db_user_set($qa_db, $userid, 'email', $inemail);
@@ -126,22 +135,18 @@
 			if (!isset($errors['about']))
 				qa_db_user_profile_set($qa_db, $userid, 'about', $inabout);
 
-			if ($useradminable) {
-				$inlevel=min(($qa_login_level>=QA_USER_LEVEL_SUPER) ? QA_USER_LEVEL_SUPER : QA_USER_LEVEL_EDITOR, (int)qa_post_text('level'));
-					// constrain based on logged in user permissions to prevent simple browser-based attack
-					
-				qa_db_user_set($qa_db, $userid, 'level', $inlevel);
-			}
+			qa_db_user_set($qa_db, $userid, 'level', $inlevel);
 			
 			list($useraccount, $userprofile)=qa_db_select_with_pending($qa_db,
 				qa_db_user_account_selectspec($userid, true),
 				qa_db_user_profile_selectspec($userid, true)
-			); // reload user
+			); // reload user account and profile information
 
 			if (count($errors))
 				$userediting=true;
 		}
 	}
+
 
 //	Get information on user references in and answers
 	
@@ -152,12 +157,16 @@
 	$answerquestions=array_slice($answerquestions, 0, $pagesize_as);
 	$usershtml=qa_userids_handles_html($qa_db, $answerquestions);
 	$usershtml[$userid]=$userhtml;
+
 	
 //	Prepare content for theme
 	
 	qa_content_prepare(true);
 	
 	$qa_content['title']=qa_lang_sub_html('profile/user_x', $userhtml);
+
+
+//	General information about the user, only available if we're using internal user management
 	
 	if (!QA_EXTERNAL_USERS) {
 		$qa_content['form']=array(
@@ -178,7 +187,7 @@
 					'value' => qa_html(qa_user_level_string($useraccount['level'])),
 				),
 				
-				'email' => null,
+				'email' => null, // placed here already to get order right
 				
 				'name' => array(
 					'type' => $userediting ? 'text' : 'static',
@@ -217,7 +226,10 @@
 			),
 		);
 		
-		if ($usereditable)
+	
+	//	Show email address only if we're allowed to edit this user (i.e. we're an admin)
+		
+		if ($qa_login_level>=QA_USER_LEVEL_ADMIN)
 			$qa_content['form']['fields']['email']=array(
 				'type' => $userediting ? 'text' : 'static',
 				'label' => qa_lang_html('users/email_label'),
@@ -228,9 +240,12 @@
 			);
 		else
 			unset($qa_content['form']['fields']['email']);
+			
+	
+	//	Edit form or button, if appropriate
 		
-		if ($userediting) {
-			if ($useradminable) {
+		if ($usereditable) {
+			if ($userediting) {
 				$qa_content['form']['fields']['level']['type']='select';
 	
 				$qa_content['form']['fields']['level']['tags']=' NAME="level" ';
@@ -244,33 +259,36 @@
 					$qa_content['form']['fields']['level']['options'][QA_USER_LEVEL_ADMIN]=qa_html(qa_user_level_string(QA_USER_LEVEL_ADMIN));
 					$qa_content['form']['fields']['level']['options'][QA_USER_LEVEL_SUPER]=qa_html(qa_user_level_string(QA_USER_LEVEL_SUPER));
 				}
-			}
 		
-			$qa_content['form']['buttons']=array(
-				'save' => array(
-					'label' => qa_lang_html('users/save_profile'),
-				),
+				$qa_content['form']['buttons']=array(
+					'save' => array(
+						'label' => qa_lang_html('users/save_profile'),
+					),
+					
+					'cancel' => array(
+						'tags' => ' NAME="docancel" ',
+						'label' => qa_lang_html('users/cancel_button'),
+					),
+				);
 				
-				'cancel' => array(
-					'tags' => ' NAME="docancel" ',
-					'label' => qa_lang_html('users/cancel_button'),
-				),
-			);
-			
-			$qa_content['form']['hidden']=array(
-				'dosave' => '1',
-			);
-	
-		} elseif ($usereditable) {
-			$qa_content['form']['buttons']=array(
-				'edit' => array(
-					'tags' => ' NAME="doedit" ',
-					'label' => qa_lang_html('users/edit_button'),
-				),
-			);
+				$qa_content['form']['hidden']=array(
+					'dosave' => '1',
+				);
+
+			} else {
+				$qa_content['form']['buttons']=array(
+					'edit' => array(
+						'tags' => ' NAME="doedit" ',
+						'label' => qa_lang_html('users/edit_button'),
+					),
+				);
+			}
 		}
 	}
 	
+
+//	Information about user activity, available also with single sign-on integration
+
 	$netvotesin=number_format(round(@$userpoints['qvoteds']/qa_get_option($qa_db, 'points_per_q_voted')+@$userpoints['avoteds']/qa_get_option($qa_db, 'points_per_a_voted')));
 	if ($netvotesin>0)
 		$netvotesin='+'.$netvotesin;
@@ -303,7 +321,7 @@
 		),
 	);
 	
-	if (qa_get_option($qa_db, 'comment_on_qs') || qa_get_option($qa_db, 'comment_on_as')) {
+	if (qa_get_option($qa_db, 'comment_on_qs') || qa_get_option($qa_db, 'comment_on_as')) { // only show comment count if comments are enabled
 		$qa_content['form_2']['fields']['comments']=array(
 			'type' => 'static',
 			'label' => qa_lang_html('profile/comments'),
@@ -311,7 +329,7 @@
 		);
 	}
 	
-	if (qa_get_option($qa_db, 'voting_on_qs') || qa_get_option($qa_db, 'voting_on_as')) {
+	if (qa_get_option($qa_db, 'voting_on_qs') || qa_get_option($qa_db, 'voting_on_as')) { // only show vote record if voting is enabled
 		$votedonvalue='';
 		
 		if (qa_get_option($qa_db, 'voting_on_qs')) {
@@ -366,6 +384,9 @@
 			? qa_lang_sub_html('profile/1_chosen_as_best', '<SPAN CLASS="qa-uf-user-a-selecteds">1</SPAN>', '1')
 			: qa_lang_sub_html('profile/x_chosen_as_best', '<SPAN CLASS="qa-uf-user-a-selecteds">'.number_format($userpoints['aselecteds']).'</SPAN>');
 
+
+//	Recent questions by this user
+
 	if ($pagesize_qs>0) {
 		if (count($questions))
 			$qa_content['q_list']['title']=qa_lang_sub_html('profile/questions_by_x', $userhtml);
@@ -383,6 +404,9 @@
 				qa_get_vote_view($qa_db, 'Q'), false);
 		}
 	}
+
+
+//	Recent answers by this user
 
 	if ($pagesize_as>0) {
 		if (count($answerquestions))

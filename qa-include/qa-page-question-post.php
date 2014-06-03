@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-question-post.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: More control for question page if it's submitted by HTTP POST
 
 
 	This software is licensed for use in websites which are connected to the
@@ -39,6 +40,7 @@
 	require_once QA_INCLUDE_DIR.'qa-app-post-create.php';
 	require_once QA_INCLUDE_DIR.'qa-app-post-update.php';
 
+
 //	Process incoming answer (or button)
 
 	if ((qa_clicked('doansweradd') || qa_clicked('doanswerq')) && $question['answerable']) {
@@ -55,8 +57,8 @@
 					if ($usecaptcha)
 						qa_captcha_validate($qa_db, $_POST, $errors);
 					
-					if (empty($errors)) {				
-						$isduplicate=false;						
+					if (empty($errors)) {
+						$isduplicate=false;
 						foreach ($answers as $answer)
 							if (!$answer['hidden'])
 								if (implode(' ', qa_string_to_words($answer['content'])) == implode(' ', qa_string_to_words($incontent)))
@@ -66,7 +68,7 @@
 							if (!isset($qa_login_userid))
 								$qa_cookieid=qa_cookie_get_create($qa_db); // create a new cookie if necessary
 				
-							$answerid=qa_answer_create($qa_db, $qa_login_userid, $qa_cookieid, $incontent, $innotify, $inemail, $question);		
+							$answerid=qa_answer_create($qa_db, $qa_login_userid, $qa_cookieid, $incontent, $innotify, $inemail, $question);
 							qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'a_post', $questionid, $answerid, null);
 							$jumptohash=$answerid;
 							
@@ -96,7 +98,7 @@
 	
 	if ($question['editable']) {
 		if (qa_clicked('select_'))
-			$inselect='';
+			$inselect=''; // i.e. unselect current selection
 		
 		foreach ($answers as $answerid => $answer)
 			if (qa_clicked('select_'.$answerid)) {
@@ -105,7 +107,7 @@
 			}
 	
 		if (isset($inselect)) {
-			qa_question_set_selchildid($qa_db, $qa_login_userid, $qa_cookieid, $question, strlen($inselect) ? $inselect : null, $answers);			
+			qa_question_set_selchildid($qa_db, $qa_login_userid, $qa_cookieid, $question, strlen($inselect) ? $inselect : null, $answers);
 			qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, strlen($inselect) ? 'a_select' : 'a_unselect',
 				$questionid, strlen($inselect) ? $answerid : $question['selchildid'], null);
 		}
@@ -125,8 +127,12 @@
 	}
 	
 	if (qa_clicked('doclaimq') && $question['claimable']) {
-		qa_question_set_userid($qa_db, $question, $qa_login_userid);
-		qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'q_claim', $questionid, null, null);
+		if (qa_limits_remaining($qa_db, $qa_login_userid, 'Q')) {
+			qa_question_set_userid($qa_db, $question, $qa_login_userid);
+			qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'q_claim', $questionid, null, null);
+
+		} else
+			$pageerror=qa_lang_html('main/ask_limit');
 	}
 	
 
@@ -159,7 +165,7 @@
 				if (qa_q_request($questionid, $question['title']) != qa_q_request($questionid, $inqtitle))
 					qa_redirect(qa_q_request($questionid, $inqtitle)); // redirect if URL changed
 			
-			} else 
+			} else
 				$formtype='q_edit'; // keep editing if an error
 		}
 		
@@ -194,9 +200,13 @@
 		}
 		
 		if (qa_clicked('doclaima_'.$answerid) && $answer['claimable']) {
-			qa_answer_set_userid($qa_db, $answer, $qa_login_userid);
-			qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'a_claim', $questionid, $answerid, null);
-			$jumptohash=$answerid;
+			if (qa_limits_remaining($qa_db, $qa_login_userid, 'A')) {
+				qa_answer_set_userid($qa_db, $answer, $qa_login_userid);
+				qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'a_claim', $questionid, $answerid, null);
+				$jumptohash=$answerid;
+			
+			} else
+				$pageerror=qa_lang_html('main/answer_limit');
 		}
 		
 		if ($answer['editable']) {
@@ -219,16 +229,21 @@
 				if (empty($aerrors)) {
 					$setnotify=$answer['isbyuser'] ? qa_combine_notify_email($answer['userid'], $innotify, $inemail) : $answer['notify'];
 					
-					if ($intocomment && ($incommenton!=$answerid) && (($incommenton==$questionid) || isset($answers[$incommenton]))) {
-						qa_answer_to_comment($qa_db, $answer, $incommenton, $inacontent, $setnotify, $qa_login_userid, $question, $answers, $commentsfollows);
-						qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'a_to_c', $questionid, $answerid, null);
+					if ($intocomment && ($incommenton!=$answerid) && (($incommenton==$questionid) || isset($answers[$incommenton]))) { // convert to a comment
+						if (qa_limits_remaining($qa_db, $qa_login_userid, 'C')) { // potential back door to bypassing limits
+							qa_answer_to_comment($qa_db, $answer, $incommenton, $inacontent, $setnotify, $qa_login_userid, $question, $answers, $commentsfollows);
+							qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'a_to_c', $questionid, $answerid, null);
+							$jumptohash=$answerid;
+
+						} else {
+							$pageerror=qa_lang_html('main/comment_limit');
+						}
 					
 					} else {
 						qa_answer_set_text($qa_db, $answer, $inacontent, $setnotify, $qa_login_userid, $question);
 						qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'a_edit', $questionid, $answerid, null);
+						$jumptohash=$answerid;
 					}
-					
-					$jumptohash=$answerid;
 
 				} else {
 					$formtype='a_edit';
@@ -265,9 +280,13 @@
 			}
 			
 			if (qa_clicked('doclaimc_'.$commentid) && $comment['claimable']) {
-				qa_comment_set_userid($qa_db, $comment, $qa_login_userid);
-				qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'c_claim', $questionid, $commentanswerid, $commentid);
-				$jumptohash=$comment['parentid'];
+				if (qa_limits_remaining($qa_db, $qa_login_userid, 'C')) {
+					qa_comment_set_userid($qa_db, $comment, $qa_login_userid);
+					qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'c_claim', $questionid, $commentanswerid, $commentid);
+					$jumptohash=$comment['parentid'];
+					
+				} else
+					$pageerror=qa_lang_html('main/comment_limit');
 			}
 			
 			if ($comment['editable']) {
@@ -305,6 +324,9 @@
 //	Question and answer editing forms
 
 	function qa_page_q_edit_q_form()
+/*
+	Return form for editing the question and set up $qa_content accordingly
+*/
 	{
 		global $qa_content, $qa_db, $question, $inqtitle, $inqcontent, $inqtags, $qerrors, $qa_login_email, $innotify, $inemail, $completetags;
 		
@@ -362,7 +384,11 @@
 		return $form;
 	}
 	
+
 	function qa_page_q_edit_a_form($answerid)
+/*
+	Return form for editing an answer and set up $qa_content accordingly
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 
@@ -370,7 +396,7 @@
 		
 		$answer=$answers[$answerid];
 		
-		$hascomments=false;		
+		$hascomments=false;
 		foreach ($commentsfollows as $commentfollow)
 			if ($commentfollow['parentid']==$answerid)
 				$hascomments=true;
@@ -424,7 +450,8 @@
 			$questionid => qa_lang_html('question/comment_on_q').qa_html(qa_shorten_string_line($question['title'], 80)),
 		);
 		
-		// to find the last post (question or answer) that was created before this answer - this is used as default
+		// find the last post (question or answer) that was created before this answer
+		// this is the used as default for the new comment's parent if converting answer to comment
 		$lastbeforeid=$questionid;
 		$lastbeforetime=$question['created'];
 		
@@ -459,9 +486,13 @@
 		return $form;
 	}
 
+
 //	Comment-related functions
 
-	function qa_page_q_do_comment($answer=null)
+	function qa_page_q_do_comment($answer)
+/*
+	Process an incoming new comment form for $answer, or question if it is null
+*/
 	{
 		global $qa_db, $qa_login_userid, $qa_cookieid, $question, $questionid, $checkcommentlogin, $formtype, $formpostid,
 			$errors, $reloadquestion, $pageerror, $qa_request, $incomment, $innotify, $inemail, $commentsfollows, $jumptohash, $usecaptcha;
@@ -486,7 +517,7 @@
 							qa_captcha_validate($qa_db, $_POST, $errors);
 
 						if (empty($errors)) {
-							$isduplicate=false;						
+							$isduplicate=false;
 							foreach ($commentsfollows as $comment)
 								if (($comment['basetype']=='C') && ($comment['parentid']==$parent['postid']) && (!$comment['hidden']))
 									if (implode(' ', qa_string_to_words($comment['content'])) == implode(' ', qa_string_to_words($incomment)))
@@ -520,8 +551,12 @@
 			}
 		}
 	}
+
 	
 	function qa_page_q_add_c_form($answerid)
+/*
+	Return form for adding a comment on $answerid (or the question if $answerid is null), and set up $qa_content accordingly
+*/
 	{
 		global $qa_content, $qa_db, $incomment, $errors, $questionid, $qa_login_email, $innotify, $inemail, $jumptohash, $focusonid, $usecaptcha;
 		
@@ -538,7 +573,7 @@
 					'tags' => ' NAME="comment" ID="comment" ',
 					'value' => qa_html(@$incomment),
 					'error' => qa_html(@$errors['content']),
-					'rows' => 2,
+					'rows' => 4,
 				),
 			),
 			
@@ -553,7 +588,7 @@
 					'label' => qa_lang_html('question/cancel_button'),
 				),
 			),
-		);		
+		);
 
 		qa_set_up_notify_fields($qa_content, $form['fields'], 'C', $qa_login_email,
 			isset($innotify) ? $innotify : true, @$inemail, @$errors['email']);
@@ -563,8 +598,12 @@
 				
 		return $form;
 	}
+
 	
 	function qa_page_q_edit_c_form($commentid, $answerid)
+/*
+	Return form for editing $commentid on $answerid (or the question if $answerid is null), and set up $qa_content accordingly
+*/
 	{
 		global $commentsfollows, $qa_content, $errors, $incomment, $questionid, $qa_login_email, $jumptohash, $focusonid, $innotify, $inemail;
 		
@@ -583,7 +622,7 @@
 					'tags' => ' NAME="comment" ID="comment" ',
 					'value' => qa_html(isset($incomment) ? $incomment : $comment['content']),
 					'error' => qa_html($errors['content']),
-					'rows' => 2,
+					'rows' => 4,
 				),
 			),
 			

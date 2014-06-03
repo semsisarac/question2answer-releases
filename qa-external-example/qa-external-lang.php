@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-external-example/qa-external-lang.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Example of how to use your own language translation layer
 
 
 	This software is licensed for use in websites which are connected to the
@@ -42,16 +43,14 @@
 		exit;
 	}
 
+
+	function qa_lang($identifier)
 /*
-	qa_lang($identifier)
-	
 	Provide the appropriate translation for the phrase labelled $identifier.
 
 	If you cannot provide a translation, you can return qa_lang_base($identifier)
 	which will use the default translation code for the engine.
 */
-
-	function qa_lang($identifier)
 	{
 		$gottranslation=false;
 		

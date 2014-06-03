@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-question.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Language phrases for question page
 
 
 	This software is licensed for use in websites which are connected to the
@@ -31,10 +32,10 @@
 
 	return array(
 		'1_answer_title' => '1 Answer',
-		'a_convert_to_c' => 'Convert this answer into a comment',
 		'a_convert_to_c_on' => 'Convert this answer into a comment on:',
-		'a_convert_warn' => 'Warning: This conversion cannot be reversed.',
+		'a_convert_to_c' => 'Convert this answer into a comment',
 		'a_convert_warn_cs' => 'Warning: This conversion cannot be reversed and will also move this answer\'s comments.',
+		'a_convert_warn' => 'Warning: This conversion cannot be reversed.',
 		'a_hidden_author' => 'This answer has been hidden by its author',
 		'a_hidden_editor' => 'This answer has been hidden by an editor',
 		'a_notify_email' => 'Email me at this address if my answer is selected or commented on:',
@@ -45,7 +46,6 @@
 		'answer_button' => 'answer',
 		'answer_must_login' => 'Please ^1log in^2 or ^3register^4 to answer this question.',
 		'answer_q_popup' => 'Answer this question',
-		'comment_on_a' => 'On answer: ',
 		'ask_button' => 'Ask the Question',
 		'ask_follow_from_a' => 'Your question will be related to this answer:',
 		'ask_follow_title' => 'Ask a related question',
@@ -62,6 +62,8 @@
 		'comment_a_popup' => 'Add a comment on this answer',
 		'comment_button' => 'comment',
 		'comment_must_login' => 'Please ^1log in^2 or ^3register^4 to add a comment.',
+		'comment_on_a' => 'On answer: ',
+		'comment_on_q' => 'On question: ',
 		'comment_q_popup' => 'Add a comment on this question',
 		'continue_button' => 'Continue',
 		'different_button' => 'My Question is Different',
@@ -96,7 +98,6 @@
 		'q_tags_label' => 'Tags - use hyphens to combine words:',
 		'q_title_label' => 'Your question in one sentence:',
 		'q_title_note' => 'You can provide more information in the question body.',
-		'comment_on_q' => 'On question: ',
 		'reshow_button' => 'reshow',
 		'save_button' => 'Save Changes',
 		'select_popup' => 'Click to select as best answer',

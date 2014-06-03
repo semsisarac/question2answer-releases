@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-options.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Database-level access to table containing admin options
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,15 +35,11 @@
 		exit;
 	}
 
-	function qa_db_get_options($db, $names)
-	{
-		return qa_db_read_all_assoc(qa_db_query_sub($db,
-			'SELECT title, BINARY content AS content FROM ^options WHERE title IN ($)',
-			$names
-		), 'title', 'content');
-	}
-	
+
 	function qa_db_set_option($db, $name, $value)
+/*
+	Set option $name to $value in the database
+*/
 	{
 		qa_db_query_sub($db,
 			'REPLACE ^options (title, content) VALUES ($, $)',

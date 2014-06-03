@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-options.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Language phrases for all options, as shown in admin center
 
 
 	This software is licensed for use in websites which are connected to the
@@ -32,8 +33,10 @@
 	return array(
 		'answer_needs_login' => 'Login required to answer a question:',
 		'ask_needs_login' => 'Login required to ask a question:',
-		'captcha_on_register' => 'Use reCAPTCHA for user registration:',
 		'captcha_on_anon_post' => 'Use reCAPTCHA for anonymous posts:',
+		'captcha_on_feedback' => 'Use reCAPTCHA on feedback form:',
+		'captcha_on_register' => 'Use reCAPTCHA for user registration:',
+		'captcha_on_reset_password' => 'Use reCAPTCHA on reset password form:',
 		'columns_tags' => 'Tags page columns:',
 		'columns_users' => 'Users page columns:',
 		'comment_needs_login' => 'Login required to add comments:',
@@ -51,9 +54,9 @@
 		'do_complete_tags' => 'Show matching tags while typing:',
 		'do_example_tags' => 'Show example tags based on question:',
 		'do_related_qs' => 'Show related questions on question page:',
-		'email_privacy' => 'Privacy note for email on all forms (HTML allowed):', 
-		'feedback_email' => 'Email to send you messages (not shown to users):',
-		'feedback_enabled' => 'Provide a form for users to send you feedback', 
+		'email_privacy' => 'Privacy note for email on all forms (HTML allowed):',
+		'feedback_email' => 'Email address for admin messages (not shown to users):',
+		'feedback_enabled' => 'Provide a form for users to send me feedback',
 		'follow_on_as' => 'Allow new questions to be related to answers:',
 		'from_email' => 'Sender address for all administrative messages:',
 		'logo_height' => 'Height of logo in pixels:',
@@ -82,7 +85,7 @@
 		'min_len_q_title' => 'Minimum characters in question title:',
 		'nav_unanswered' => 'Show navigation link to unanswered questions',
 		'neat_urls' => 'Neat URLs without index.php',
-		'notify_admin_q_post' => 'Email you when a new question is posted',
+		'notify_admin_q_post' => 'Email me when a new question is posted',
 		'page_size_ask_check_qs' => 'Maximum similar questions to show:',
 		'page_size_ask_tags' => 'Maximum tag hints to show:',
 		'page_size_home' => 'Home page length:',
@@ -100,7 +103,7 @@
 		'points_a_voted_max_gain' => 'Limit from up votes on each answer:',
 		'points_a_voted_max_loss' => 'Limit from down votes on each answer:',
 		'points_base' => 'Add for all users:',
-		'points_multiple' => 'Multiply all points:',	
+		'points_multiple' => 'Multiply all points:',
 		'points_per_a_voted' => 'Per up/down vote on your answer:',
 		'points_per_q_voted' => 'Per up/down vote on your question:',
 		'points_post_a' => 'Posting an answer:',

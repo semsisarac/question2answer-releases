@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-tag.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for page for specific tags
 
 
 	This software is licensed for use in websites which are connected to the
@@ -39,6 +40,7 @@
 	
 	$tag=$pass_tag; // picked up from index.php
 
+
 //	Find the questions with this tag
 
 	qa_options_set_pending(array('page_size_tag_qs', 'voting_on_qs', 'votes_separated', 'show_user_points'));
@@ -49,8 +51,9 @@
 	);
 	
 	$pagesize=qa_get_option($qa_db, 'page_size_tag_qs');
-	$questions=array_slice($questions, 0, $pagesize);	
+	$questions=array_slice($questions, 0, $pagesize);
 	$usershtml=qa_userids_handles_html($qa_db, $questions);
+
 
 //	Prepare content for theme
 	

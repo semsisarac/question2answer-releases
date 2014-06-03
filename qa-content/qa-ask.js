@@ -1,12 +1,13 @@
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-content/qa-ask.js
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: JS for ask page, for tag auto-completion
 
 
 	This software is licensed for use in websites which are connected to the
@@ -70,7 +71,7 @@ function qa_tag_hints(skipcomplete)
 	
 	// set title visiblity and hint list
 	document.getElementById('tag_examples_title').style.display=(html && !completed) ? '' : 'none';
-	document.getElementById('tag_complete_title').style.display=(html && completed) ? '' : 'none';	
+	document.getElementById('tag_complete_title').style.display=(html && completed) ? '' : 'none';
 	document.getElementById('tag_hints').innerHTML=html;
 }
 

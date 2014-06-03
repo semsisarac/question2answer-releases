@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-feedback.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for feedback page
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,17 +35,21 @@
 		exit;
 	}
 
+	require_once QA_INCLUDE_DIR.'qa-app-captcha.php';
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 
-//	Get useful information
 
-	qa_options_set_pending(array('email_privacy', 'from_email', 'feedback_enabled', 'feedback_email', 'site_url'));
+//	Queue required options and get useful information on the logged in user
+
+	qa_options_set_pending(array('email_privacy', 'from_email', 'feedback_enabled', 'feedback_email', 'site_url', 'captcha_on_feedback'));
+	qa_captcha_pending();
 	
 	if (isset($qa_login_userid) && !QA_EXTERNAL_USERS)
 		list($useraccount, $userprofile)=qa_db_select_with_pending($qa_db,
 			qa_db_user_account_selectspec($qa_login_userid, true),
 			qa_db_user_profile_selectspec($qa_login_userid, true)
 		);
+
 
 //	Check feedback is enabled
 
@@ -53,6 +58,7 @@
 		$qa_content['error']=qa_lang_html('main/page_not_found');
 		return;
 	}
+
 
 //	Send the feedback form
 	
@@ -70,13 +76,16 @@
 		if (empty($inmessage))
 			$errors['message']=qa_lang('main/feedback_empty');
 		
+		if (qa_get_option($qa_db, 'captcha_on_feedback'))
+			qa_captcha_validate($qa_db, $_POST, $errors);
+
 		if (empty($errors)) {
 			$subs=array(
 				'^message' => $inmessage,
 				'^name' => empty($inname) ? '-' : $inname,
 				'^email' => empty($inemail) ? '-' : $inemail,
 				'^previous' => empty($inreferer) ? '-' : $inreferer,
-				'^url' => isset($qa_login_userid) ? qa_path('user/'.(QA_EXTERNAL_USERS ? $qa_login_user['publicusername'] : @$useraccount['handle']), null, qa_get_option($qa_db, 'site_url')) : '',
+				'^url' => isset($qa_login_userid) ? qa_path('user/'.(QA_EXTERNAL_USERS ? $qa_login_user['publicusername'] : @$useraccount['handle']), null, qa_get_option($qa_db, 'site_url')) : '-',
 				'^ip' => @$_SERVER['REMOTE_ADDR'],
 				'^browser' => @$_SERVER['HTTP_USER_AGENT'],
 			);
@@ -95,6 +104,7 @@
 				$page_error=qa_lang_html('main/general_error');
 		}
 	}
+	
 	
 //	Prepare content for theme
 
@@ -131,8 +141,8 @@
 				'label' => qa_lang_html('main/feedback_email'),
 				'tags' => ' NAME="email" ',
 				'value' => qa_html(isset($inemail) ? $inemail : $qa_login_email),
-				'note' => qa_get_option($qa_db, 'email_privacy'),
-			),			
+				'note' => $feedbacksent ? null : qa_get_option($qa_db, 'email_privacy'),
+			),
 		),
 		
 		'buttons' => array(
@@ -147,6 +157,9 @@
 		),
 	);
 	
+	if (qa_get_option($qa_db, 'captcha_on_feedback') && !$feedbacksent)
+		qa_set_up_captcha_field($qa_db, $qa_content, $qa_content['form']['fields'], @$errors);
+
 	$qa_content['focusid']='message';
 	
 	if ($feedbacksent) {

@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-config-example.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: After renaming, use this to set up database details and other stuff
 
 
 	This software is licensed for use in websites which are connected to the
@@ -69,7 +70,7 @@
 	
 	QA_EXTERNAL_LANG to use your language translation logic in qa-external/qa-external-lang.php
 	QA_EXTERNAL_USERS to use your user identification code in qa-external/qa-external-users.php
-	QA_EXTERNAL_EMAILER to use your email sending function in qa-external/qa-external-emailer.php	
+	QA_EXTERNAL_EMAILER to use your email sending function in qa-external/qa-external-emailer.php
 */
 	
 	define('QA_EXTERNAL_USERS', false);
@@ -96,7 +97,7 @@
 	For more information: http://www.php.net/manual/en/features.persistent-connections.php
 	
 	Set QA_DEBUG_PERFORMANCE to true to show detailed performance profiling information.
-*/	
+*/
 
 	define('QA_MAX_LIMIT_START', 19999);
 	define('QA_IGNORED_WORDS_FREQ', 10000);

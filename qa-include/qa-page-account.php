@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-account.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for user account page
 
 
 	This software is licensed for use in websites which are connected to the
@@ -38,11 +39,15 @@
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 	
+	
+//	Check we're not using single-sign on integration and that we're logged in
+	
 	if (QA_EXTERNAL_USERS)
 		qa_fatal_error('User accounts are handled by external code');
 		
 	if (!isset($qa_login_userid))
 		qa_redirect('login');
+
 	
 //	Get current information on user
 
@@ -50,6 +55,7 @@
 		qa_db_user_account_selectspec($qa_login_userid, true),
 		qa_db_user_profile_selectspec($qa_login_userid, true)
 	);
+
 	
 //	Process profile if saved
 
@@ -85,10 +91,12 @@
 			qa_db_user_profile_set($qa_db, $qa_login_userid, 'about', $inabout);
 	}
 
-//	Reset information in session and user's status
+
+//	Reset information in session and user's status (important e.g. if handle changed)
 	
 	qa_set_logged_in_user($qa_db, $qa_login_userid);
 	qa_check_login($qa_db);
+
 
 //	Process change password if clicked
 
@@ -112,6 +120,7 @@
 			unset($inoldpassword);
 		}
 	}
+
 
 //	Prepare content for theme
 
@@ -194,6 +203,7 @@
 	
 	if (qa_clicked('dosaveprofile') && empty($errors))
 		$qa_content['form']['ok']=qa_lang_html('users/profile_saved');
+
 	
 	$qa_content['form_2']=array(
 		'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',

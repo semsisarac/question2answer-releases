@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-ajax-recalc.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Server-side response to Ajax recalculation requests
 
 
 	This software is licensed for use in websites which are connected to the
@@ -46,6 +47,7 @@
 		exit;
 	}
 
+
 //	Main code
 
 	require_once QA_INCLUDE_DIR.'qa-app-users.php';
@@ -70,7 +72,7 @@
 	
 	qa_base_db_disconnect();
 	
-	header('Content-Type: text/plain'); 
+	header('Content-Type: text/plain');
 	
 	echo "1\n".$state."\n".qa_html($message);
 ?>

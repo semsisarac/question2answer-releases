@@ -1,12 +1,13 @@
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-theme/Candy/qa-styles.css
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: CSS file for included Candy theme
 
 
 	This software is licensed for use in websites which are connected to the
@@ -26,6 +27,7 @@
 	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+
 
 /* General page layout */
 
@@ -92,7 +94,7 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 .qa-nav-main-link {background:#efeb9c url(nav-main-bg.png) repeat-x left top; color:#597700; display:block; padding:14px 10px;}
 .qa-nav-main-link:hover,.qa-nav-main-selected {url(nav-main-sel-bg.png) repeat-x left top; border-left:1px solid #e9e697; border-right:1px solid #e9e697; color:#8d006a; padding:14px 9px; text-decoration:none;}
 
-.qa-nav-sub {clear:both; background:url(nav-sub-bg.png) repeat-x left top;} 
+.qa-nav-sub {clear:both; background:url(nav-sub-bg.png) repeat-x left top;}
 * html .qa-nav-sub {background:none;} /* IE6 since z-order goes wrong */
 .qa-nav-sub-list {font-size:12px; list-style:none; padding:0; margin:0;}
 .qa-nav-sub-item {float:left; padding:5px 0 11px 10px;}
@@ -120,7 +122,7 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 .qa-form-tall-ok {color:#090; font-size:18px; padding:6px; text-align:center;}
 .qa-form-tall-label {background:url(form-cell-bg.png) repeat-y scroll left top transparent; border-top:6px solid #fff; color:#253845; padding:8px; font-size:14px;}
 .qa-form-tall-data {background:url(form-cell-bg.png) repeat-y scroll left top transparent; padding:0px 8px 8px 8px; width:480px;}
-.qa-form-tall-text,.qa-form-tall-number,.qa-form-tall-select {padding:3px;}
+.qa-form-tall-text,.qa-form-tall-number {padding:3px;}
 .qa-form-tall-text {width:480px; border:1px solid #999; font-size:16px;}
 .qa-form-tall-number {width:48px; border:1px solid #999;}
 .qa-form-tall-checkbox {float:left; margin-right:4px;}
@@ -137,11 +139,11 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 .qa-form-wide-table {background:url(form-cell-bg.png) repeat-y scroll left top transparent; border-collapse:collapse;}
 .qa-form-wide-spacer {line-height:1px; padding:0; font-size:1px; border-bottom:4px solid #fff; background:#fff;}
 .qa-form-wide-ok {color:#090; font-size:18px; padding:6px; text-align:center;}
-.qa-form-wide-label {border-bottom:2px solid #FFF; color:#000; padding:10px; font-size:14px; font-weight:normal;}
+.qa-form-wide-label {border-bottom:2px solid #FFF; color:#253845; padding:10px; font-size:14px; font-weight:normal;}
 .qa-form-wide-data {border-bottom:2px solid #FFF; padding:6px 10px;}
-.qa-form-wide-text,.qa-form-wide-number,.qa-form-wide-select {padding:3px;}
+.qa-form-wide-text,.qa-form-wide-number {padding:3px;}
 .qa-form-wide-text {width:320px; border:1px solid #999;}
-.qa-form-wide-number {width:48px; border:1px solid #999;}
+.qa-form-wide-number {width:48px; border:1px solid #999; vertical-align:middle;}
 .qa-form-wide-error {color:#c00; font-size:11px; margin-left:6px;}
 .qa-form-wide-note {font-size:10px; margin-left:4px; color:#999;}
 .qa-form-wide-buttons {background:#FFF; padding:12px 0 8px 0;}
@@ -165,7 +167,7 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 
 /* Standard form (basic version - buttons only) */
 
-.qa-form-basic-button,.qa-form-basic-hover {margin:4px 4px 8px 0}
+.qa-form-basic-button,.qa-form-basic-hover {margin:4px 4px 8px 0; vertical-align:middle;}
 .qa-form-basic-button {background:#f6f5f5 url(button-bg.png) repeat-x left top; border:1px solid #bfbfbf; color:#206b00; padding:4px 8px; text-transform:uppercase;}
 .qa-form-basic-hover,.qa-form-basic-button:hover {background:#e8c6df url(button-hover-bg.png) repeat-x left top; border:1px solid #c1a0b9; color:#6a1b56; padding:4px 8px; text-transform:uppercase;}
 
@@ -328,13 +330,13 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 	.qa-tag-link:hover {text-decoration:underline !important;}
 	
 /* IE6 friendly versions of icons with binary alpha channel */
-* html .qa-form-light-button-edit,.qa-form-light-hover-edit {background:url(edit-icon-ie6.png) no-repeat left center;}
-* html .qa-form-light-button-hide,.qa-form-light-hover-hide {background:url(hide-icon-ie6.png) no-repeat left center;}
-* html .qa-form-light-button-follow,.qa-form-light-hover-follow {background:url(follow-icon-ie6.png) no-repeat left center;}
-* html .qa-form-light-button-comment,.qa-form-light-hover-comment {background:url(comment-icon-ie6.png) no-repeat left center;}
-* html .qa-form-light-button-answer,.qa-form-light-hover-answer {background:url(answer-icon-ie6.png) no-repeat left center;}
-* html .qa-form-light-button-reshow,.qa-form-light-hover-reshow {background:url(reshow-icon-ie6.png) no-repeat left center;}
-* html .qa-form-light-button-claim,.qa-form-light-hover-claim {background:url(claim-icon-ie6.png) no-repeat left center;}
+* html .qa-form-light-button-edit,* html .qa-form-light-hover-edit {background:url(edit-icon-ie6.png) no-repeat left center;}
+* html .qa-form-light-button-hide,* html .qa-form-light-hover-hide {background:url(hide-icon-ie6.png) no-repeat left center;}
+* html .qa-form-light-button-follow,* html .qa-form-light-hover-follow {background:url(follow-icon-ie6.png) no-repeat left center;}
+* html .qa-form-light-button-comment,* html .qa-form-light-hover-comment {background:url(comment-icon-ie6.png) no-repeat left center;}
+* html .qa-form-light-button-answer,* html .qa-form-light-hover-answer {background:url(answer-icon-ie6.png) no-repeat left center;}
+* html .qa-form-light-button-reshow,* html .qa-form-light-hover-reshow {background:url(reshow-icon-ie6.png) no-repeat left center;}
+* html .qa-form-light-button-claim,* html .qa-form-light-hover-claim {background:url(claim-icon-ie6.png) no-repeat left center;}
 * html .qa-vote-up-button {background:url(vote-buttons-ie6.png) no-repeat 0 0;}
 * html .qa-vote-up-hover {background:url(vote-buttons-ie6.png) no-repeat 0 -29px;}
 * html .qa-vote-up-disabled {background:url(vote-buttons-ie6.png) no-repeat 0 -116px;}

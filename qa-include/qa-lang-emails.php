@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-emails.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Language phrases for email notifications
 
 
 	This software is licensed for use in websites which are connected to the
@@ -46,8 +47,8 @@
 		'q_answered_subject' => 'Your ^site_title question was answered',
 		'q_commented_body' => "Your question on ^site_title has a new comment:\n\n^c_content\n\nYour question was:\n\n^c_context\n\nYou may respond by adding your own comment:\n\n^url\n\nThank you,\n\n^site_title",
 		'q_commented_subject' => 'Your ^site_title question has a new comment',
-		'q_posted_subject' => '^site_title has a new question',
 		'q_posted_body' => "A new question has been asked on ^site_title:\n\n^q_title\n\n^q_content\n\nClick below to see the question:\n\n^url\n\nThank you,\n\n^site_title",
+		'q_posted_subject' => '^site_title has a new question',
 		'reset_body' => "Please click below to reset your password for ^site_title.\n\n^url\n\nAlternatively, enter the code below into the field provided.\n\nCode: ^code\n\nIf you did not ask to reset your password, please ignore this message.\n\nThank you,\n^site_title",
 		'reset_subject' => '^site_title - Reset Forgotten Password',
 		'welcome_body' => "Thank you for registering for ^site_title.\n\n^customYour login details are as follows:\n\nEmail: ^email\nPassword: ^password\n\nPlease keep this information safe for future reference.\n\nThank you,\n\n^site_title\n^url",

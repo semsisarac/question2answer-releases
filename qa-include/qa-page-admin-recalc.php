@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-recalc.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Handles admin-triggered recalculations if JavaScript disabled
 
 
 	This software is licensed for use in websites which are connected to the
@@ -29,10 +30,6 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/*
-	If admin has Javascript disabled, this page is requested a recalc button is clicked in admin panel
-*/
-
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
 		header('Location: ../');
 		exit;
@@ -40,11 +37,13 @@
 
 	require_once QA_INCLUDE_DIR.'qa-app-admin.php';
 	require_once QA_INCLUDE_DIR.'qa-app-recalc.php';
+
 	
 //	Check we have administrative privileges
 
 	if (!qa_admin_check_privileges())
 		return;
+
 	
 //	Find out the operation
 
@@ -73,7 +72,7 @@
 		while ($state) {
 			set_time_limit(60);
 			
-			$stoptime=time()+2;
+			$stoptime=time()+2; // run in lumps of two seconds...
 			
 			while ( qa_recalc_perform_step($qa_db, &$state) && (time()<$stoptime) )
 				;
@@ -81,7 +80,7 @@
 			echo qa_html(qa_recalc_get_message($state)).str_repeat('    ', 1024)."<BR>\n";
 
 			flush();
-			sleep(1);
+			sleep(1); // ... then rest for one
 		}
 
 ?>

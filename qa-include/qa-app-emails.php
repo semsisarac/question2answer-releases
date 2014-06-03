@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-emails.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Wrapper functions for sending email notifications to users
 
 
 	This software is licensed for use in websites which are connected to the
@@ -36,12 +37,22 @@
 
 	require_once QA_INCLUDE_DIR.'qa-app-options.php';
 
+
 	function qa_notification_pending()
+/*
+	Queue option requests required for qa_send_notification()
+*/
 	{
 		qa_options_set_pending(array('from_email', 'site_title'));
 	}
 	
+
 	function qa_send_notification($db, $userid, $email, $handle, $subject, $body, $subs)
+/*
+	Send email to person with $userid and/or $email and/or $handle (null/invalid values
+	are ignored or retrieved from user database as appropriate). Email uses $subject
+	and $body, after substituting each key in $subs with its corresponding value.
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 		require_once QA_INCLUDE_DIR.'qa-util-emailer.php';
@@ -59,7 +70,7 @@
 						$handle=@$handles[$userid];
 					}
 					
-					if ($needemail) 
+					if ($needemail)
 						$email=qa_get_user_email($db, $userid);
 				
 				} else {
@@ -72,7 +83,7 @@
 	
 					if ($needemail)
 						$email=@$useraccount['email'];
-				}		 
+				}
 			}
 		}
 			

@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-install.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: User interface for installing, upgrading and fixing the database
 
 
 	This software is licensed for use in websites which are connected to the
@@ -37,7 +38,7 @@
 	require_once QA_INCLUDE_DIR.'qa-db.php';
 	require_once QA_INCLUDE_DIR.'qa-db-install.php';
 	
-	global $qa_db; // could be included from inside qa_db_fail_handler() function
+	global $qa_db; // this file could be included from inside qa_db_fail_handler() function, so ensure we can access this
 	
 	header('Content-type: text/html; charset=utf-8');
 
@@ -47,7 +48,7 @@
 	$fields=array();
 	$fielderrors=array();
 
-	if (isset($pass_failure_type)) { // this page requested due to query failure
+	if (isset($pass_failure_type)) { // this page was requested due to query failure, via the fail handler
 		switch ($pass_failure_type) {
 			case 'connect':
 				$error.='Could not establish database connection. Please check the username, password and hostname in the config file, and if necessary set up the appropriate MySQL user and privileges.';
@@ -62,7 +63,7 @@
 				break;
 		}
 
-	} else { // this page requested by user GET/POST
+	} else { // this page was requested by user GET/POST, so handle any incoming clicks on buttons
 		if (qa_clicked('create')) {
 			qa_db_install_tables($qa_db);
 			
@@ -74,14 +75,13 @@
 		
 		if (qa_clicked('upgrade')) {
 			qa_db_upgrade_tables($qa_db);
-			
 			$success.='Your Question2Answer database has been updated.';
 		}
 
 		if (qa_clicked('repair')) {
 			qa_db_install_tables($qa_db);
 			$success.='The Question2Answer database tables have been repaired.';
-		}		
+		}
 
 		if (qa_clicked('super')) {
 			require_once QA_INCLUDE_DIR.'qa-db-users.php';
@@ -104,26 +104,26 @@
 				
 				qa_set_option($qa_db, 'feedback_email', $inemail);
 				
-				$success.='Congratulations. Your Question2Answer site is ready to go, and you are logged in as the super administrator.';
+				$success.="Congratulations - Your Question2Answer site is ready to go!\n\nYou are logged in as the super administrator and can start changing settings.\n\nThank you for installing Question2Answer.";
 			}
 		}
 	}
 	
 	if (isset($qa_db)) {
-		$check=qa_db_check_tables($qa_db);
+		$check=qa_db_check_tables($qa_db); // see where the database is at
 		
 		switch ($check) {
 			case 'none':
 				if (@$pass_failure_errno==1146) // don't show error if we're in installation process
 					$error='';
 					
-				$error.='Welcome to Question2Answer. Your database needs to be created.';
+				$error.='Welcome to Question2Answer. It\'s time to set up your database!';
 
 				if (QA_EXTERNAL_USERS) {
 					$error.="\n\nWhen you click below, your Question2Answer site will be set up to integrate with your existing user database and management. Users will be referenced with database column type ".qa_get_mysql_user_column_type().". Please consult the documentation for more information.";
 					$buttons=array('create' => 'Create Database');
 				} else {
-					$error.="\n\nWhen you click below, your Question2Answer site will be set up to manage user identities and logins internally.\n\nIf you want to offer a single sign-on for an existing user base or website, please consult the documentation before proceeding.";
+					$error.="\n\nWhen you click below, your Question2Answer database will be set up to manage user identities and logins internally.\n\nIf you want to offer a single sign-on for an existing user base or website, please consult the documentation before proceeding.";
 					$buttons=array('create' => 'Create Database including User Management');
 				}
 				break;
@@ -147,8 +147,8 @@
 				require_once QA_INCLUDE_DIR.'qa-db-admin.php';
 
 				if ( (!QA_EXTERNAL_USERS) && (qa_db_count_users($qa_db)==0) ) {
-					$error.='No users currently in the Question2Answer database. Please enter your details below to create the super administrator:';
-					$fields=array('email' => 'Email address:', 'password' => 'Password:', 'handle' => 'Username:');
+					$error.="There are currently no users in the Question2Answer database.\n\nPlease enter your details below to create the super administrator:";
+					$fields=array('handle' => 'Username:', 'password' => 'Password:', 'email' => 'Email address:');
 					$buttons=array('super' => 'Create Super Administrator');
 				}
 				break;
@@ -159,39 +159,47 @@
 <HTML>
 	<HEAD>
 		<META HTTP-EQUIV="Content-type" CONTENT="text/html; charset=utf-8">
+		<STYLE type="text/css">
+			body,input {font-size:16px; font-family:Verdana, Arial, Helvetica, sans-serif;}
+			body {text-align:center; width:640px; margin:64px auto;}
+			table {margin: 16px auto;}
+		</STYLE>
 	</HEAD>
 	<BODY>
+		<FORM METHOD="POST" ACTION="<?php echo qa_path_html('install', null, null, false)?>">
 <?php
 	if (strlen($success))
-		echo '<FONT COLOR="#009900" SIZE="+1">'.nl2br(qa_html(@$success)).'</FONT><P>';
+		echo '<P><FONT COLOR="#006600">'.nl2br(qa_html(@$success)).'</FONT></P>'; // green
 		
-	if (strlen($error))
-		echo '<FONT COLOR="#CC0000" SIZE="+1">'.nl2br(qa_html(@$error)).'</FONT><P>';
+	if (strlen($error)) {
+		echo '<P><FONT COLOR="#990000">'.nl2br(qa_html(@$error)).'</FONT></P>'; // red
 
-	else {
+	} else { // send people away from the install pageif no problems remain
 		require_once QA_INCLUDE_DIR.'qa-app-users.php';
 		
 		$qa_login_user=qa_get_logged_in_user($qa_db);
 		
 		if ($qa_login_user['level']>=QA_USER_LEVEL_ADMIN)
-			echo '<A HREF="'.qa_path_html('admin', null, null, false).'">Go to admin page</A><P>';
+			echo '<P><A HREF="'.qa_path_html('admin', null, null, false).'">Go to admin center</A></P>';
 		else
-			echo '<A HREF="'.qa_path_html('', null, null, false).'">Go to home page</A><P>';
+			echo '<P><A HREF="'.qa_path_html('', null, null, false).'">Go to home page</A></P>';
 	}
 
-?>
-		<FORM METHOD="POST" ACTION="<?php echo qa_path_html('install', null, null, false)?>">
+//	Very simple general form display logic (we don't use theme since it depends on tons of DB options)
 
-<?php
-	foreach ($fields as $name => $prompt) {
-		echo qa_html($prompt).' <INPUT TYPE="text" NAME="'.qa_html($name).'" VALUE="'.qa_html(@${'in'.$name}).'">';
-		if (isset($fielderrors[$name]))
-			echo ' <FONT COLOR="#990000">'.qa_html($fielderrors[$name]).'</FONT>';
-		echo '<BR>';
+	if (count($fields)) {
+		echo '<TABLE>';
+		
+		foreach ($fields as $name => $prompt) {
+			echo '<TR><TD>'.qa_html($prompt).'</TD><TD><INPUT TYPE="text" SIZE="24" NAME="'.qa_html($name).'" VALUE="'.qa_html(@${'in'.$name}).'"></TD>';
+			if (isset($fielderrors[$name]))
+				echo '<TD><FONT COLOR="#990000"><SMALL>'.qa_html($fielderrors[$name]).'</SMALL></FONT></TD>';
+			echo '</TR>';
+		}
+		
+		echo '</TABLE>';
 	}
 	
-	echo '<P>';
-
 	foreach ($buttons as $name => $value)
 		echo '<INPUT TYPE="submit" NAME="'.qa_html($name).'" VALUE="'.qa_html($value).'">';
 ?>

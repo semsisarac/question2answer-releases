@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-cookies.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Database access functions for user cookies
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,8 +35,12 @@
 		exit;
 	}
 
-	function qa_db_cookie_create($db, $ip)
-	{	
+
+	function qa_db_cookie_create($db, $ipaddress)
+/*
+	Create a new random cookie for $ipaddress and insert into database, returning it
+*/
+	{
 		for ($attempt=0; $attempt<10; $attempt++) {
 			$cookieid=qa_db_random_bigint();
 			
@@ -45,7 +50,7 @@
 			qa_db_query_sub($db,
 				'INSERT INTO ^cookies (cookieid, created, createip) '.
 					'VALUES (#, NOW(), COALESCE(INET_ATON($), 0))',
-				$cookieid, $ip
+				$cookieid, $ipaddress
 			);
 		
 			return $cookieid;
@@ -53,16 +58,24 @@
 		
 		return null;
 	}
+
 	
-	function qa_db_cookie_written($db, $cookieid, $ip)
+	function qa_db_cookie_written($db, $cookieid, $ipaddress)
+/*
+	Note in database that a write operation has been done by user identified by $cookieid and from $ipaddress
+*/
 	{
 		qa_db_query_sub($db,
 			'UPDATE ^cookies SET written=NOW(), writeip=COALESCE(INET_ATON($), 0) WHERE cookieid=#',
-			$ip, $cookieid
+			$ipaddress, $cookieid
 		);
 	}
+
 	
 	function qa_db_cookie_exists($db, $cookieid)
+/*
+	Return whether $cookieid exists in database
+*/
 	{
 		return qa_db_read_one_value(qa_db_query_sub($db,
 			'SELECT COUNT(*) FROM ^cookies WHERE cookieid=#',

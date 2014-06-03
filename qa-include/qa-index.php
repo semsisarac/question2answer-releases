@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-index.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: The Grand Central of Q2A - all non-Ajax requests come through here
 
 
 	This software is licensed for use in websites which are connected to the
@@ -29,7 +30,7 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-//	Be ultra-strict for visible pages and load base include file
+//	Be ultra-strict about error checking for visible pages and load base include file
 
 	define('QA_BASE_DIR', dirname(empty($_SERVER['SCRIPT_FILENAME']) ? __FILE__ : $_SERVER['SCRIPT_FILENAME']).'/');
 	
@@ -37,7 +38,7 @@
 	
 	require 'qa-base.php';
 
-//	Determine the request and root of the installation
+//	Determine the request and root of the installation, and the requested start position used by many pages
 	
 	if (isset($_GET['qa-rewrite'])) { // URLs rewritten by .htaccess
 		$qa_rewritten=true;
@@ -53,7 +54,7 @@
 				$origpath=substr($origpath, 0, $questionpos);
 			
 			$qa_request_parts=array_slice(explode('/', urldecode($origpath)), -count($qa_request_parts));
-		}		
+		}
 		
 	} else { // URLs not rewritten
 		$qa_rewritten=false;
@@ -80,19 +81,41 @@
 	$qa_request=implode('/', $qa_request_parts);
 	$qa_request_lc=strtolower($qa_request);
 	
-	$qa_root_url_relative=($qa_url_depth>1) ? str_repeat('../', $qa_url_depth-1) : './';	
+	$qa_root_url_relative=($qa_url_depth>1) ? str_repeat('../', $qa_url_depth-1) : './';
 	$qa_root_url_inferred='http://'.@$_SERVER['HTTP_HOST'].$qa_root_path.'/';
+
+	$qa_start=min(max(0, (int)qa_get('start')), QA_MAX_LIMIT_START);
+
+
+	function qa_self_html()
+/*
+	Return an HTML-ready relative URL for the current page, preserving GET parameters - this i useful for ACTION in FORMs
+*/
+	{
+		global $qa_rewritten, $qa_request;
+		
+		$params=$_GET;
+		unset($params['qa-rewrite']);
+		
+		return qa_path_html($qa_request, $params, null, $qa_rewritten);
+	}
+
 
 //	Enable gzip compression for HTML output (apparently needs to come early)
 
 	if (($qa_request_lc!='install') && ($qa_request_lc!='admin/recalc')) // not for lengthy processes
 		if (extension_loaded('zlib') && !headers_sent())
 			ob_start('ob_gzhandler');
+
 		
 //	Memory/CPU usage tracking
 	
 	if (QA_DEBUG_PERFORMANCE) {
+
 		function qa_usage_get()
+	/*
+		Return an array representing the resource usage as of now
+	*/
 		{
 			global $qa_database_usage;
 			
@@ -115,12 +138,12 @@
 				
 			return $usage;
 		}
-		
-		$qa_database_usage=array('queries' => 0, 'clock' => 0);
-		$qa_database_queries='';
-		$qa_usage_last=$qa_usage_start=qa_usage_get();
+
 		
 		function qa_usage_delta($oldusage, $newusage)
+	/*
+		Return the difference between two resource usage arrays, as an array
+	*/
 		{
 			$delta=array();
 			
@@ -129,8 +152,12 @@
 				
 			return $delta;
 		}
+
 		
 		function qa_usage_mark($stage)
+	/*
+		Mark the beginning of a new stage of script execution and store usages accordingly
+	*/
 		{
 			global $qa_usage_last, $qa_usage_stages;
 			
@@ -138,8 +165,12 @@
 			$qa_usage_stages[$stage]=qa_usage_delta($qa_usage_last, $usage);
 			$qa_usage_last=$usage;
 		}
+
 	
 		function qa_usage_line($stage, $usage, $totalusage)
+	/*
+		Return HTML to represent the resource $usage, showing appropriate proportions of $totalusage
+	*/
 		{
 			return sprintf(
 				"%s &ndash; <B>%.1fms</B> (%d%%) &ndash; PHP %.1fms (%d%%), MySQL %.1fms (%d%%), Other %.1fms (%d%%) &ndash; %d PHP %s, %d DB %s, %dk RAM (%d%%)",
@@ -152,8 +183,12 @@
 				$usage['ram']/1024, $usage['ram']*100/$totalusage['ram']
 			);
 		}
+
 		
 		function qa_usage_output()
+	/*
+		Output an (ugly) block of HTML detailing all resource usage and database queries
+	*/
 		{
 			global $qa_usage_start, $qa_usage_stages, $qa_database_queries;
 			
@@ -180,18 +215,29 @@
 			
 			echo '</TR></TABLE>';
 		}
+		
+	//	Initialize a bunch of usage-related global variables
+
+		$qa_database_usage=array('queries' => 0, 'clock' => 0);
+		$qa_database_queries='';
+		$qa_usage_last=$qa_usage_start=qa_usage_get();
 	}
+
 	
-//	Other required includes
+//	Other includes required for all page views
 
 	require_once QA_INCLUDE_DIR.'qa-app-cookies.php';
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 	require_once QA_INCLUDE_DIR.'qa-app-users.php';
 	require_once QA_INCLUDE_DIR.'qa-app-options.php';
+
 	
 //	Connect to database
 
 	function qa_db_fail_handler($type, $errno=null, $error=null, $query=null)
+/*
+	Standard database failure handler function which bring up the install/repair/upgrade page
+*/
 	{
 		$pass_failure_type=$type;
 		$pass_failure_errno=$errno;
@@ -202,29 +248,18 @@
 	}
 
 	qa_base_db_connect('qa_db_fail_handler');
-	
-//	Self-reference
 
-	function qa_self_html()
-	{
-		global $qa_rewritten, $qa_request;
-		
-		$params=$_GET;
-		unset($params['qa-rewrite']);
-		
-		return qa_path_html($qa_request, $params, null, $qa_rewritten);
-	}
 
-//	Get the start position and set some options as pending
-
-	$qa_start=min(max(0, (int)qa_get('start')), QA_MAX_LIMIT_START);
+//	Queue many common options for retrieval and define the function which prepares page content
 
 	qa_options_set_pending(array('site_title', 'logo_show', 'logo_url', 'logo_width', 'logo_height', 'feedback_enabled', 'nav_unanswered',
 		'site_language', 'site_theme', 'neat_urls', 'custom_sidebar', 'custom_header', 'custom_footer', 'custom_in_head', 'pages_prev_next'));
-
-//	Function called by qa-page-* files to start preparing theme content
+		
 	
 	function qa_content_prepare($voting=false)
+/*
+	Start preparing theme content in global $qa_content variable, with or without $voting support
+*/
 	{
 		global $qa_db, $qa_content, $qa_root_url_relative, $qa_request, $qa_login_userid, $qa_login_level, $qa_login_user, $qa_template, $qa_vote_error;
 		
@@ -272,14 +307,13 @@
 						'url' => qa_path_html('feedback'),
 						'label' => qa_lang_html('main/nav_feedback'),
 					),
-				
 				),
 	
 			),
 			
 			'search' => array(
 				'form_tags' => ' METHOD="GET" ACTION="'.qa_path_html('search').'" ',
-				'title' => qa_lang_html('main/search_title'),		
+				'title' => qa_lang_html('main/search_title'),
 				'field_tags' => ' NAME="q" ',
 				'button_label' => qa_lang_html('main/search_button')
 			),
@@ -304,7 +338,7 @@
 				($logowidth ? (' WIDTH="'.$logowidth.'"') : '').($logoheight ? (' HEIGHT="'.$logoheight.'"') : '').
 				' BORDER="0"/></A>';
 		else
-			$qa_content['logo']='<A HREF="'.qa_path_html('').'" CLASS="qa-logo-link">'.qa_html(qa_get_option($qa_db, 'site_title')).'</A>';		
+			$qa_content['logo']='<A HREF="'.qa_path_html('').'" CLASS="qa-logo-link">'.qa_html(qa_get_option($qa_db, 'site_title')).'</A>';
 
 		$userlinks=qa_get_login_links($qa_root_url_relative, qa_path($qa_request, null, ''));
 		
@@ -343,7 +377,7 @@
 			unset($qa_content['navigation']['main']['admin']);
 			
 		if ($voting) {
-			$qa_content['error']=@$qa_vote_error;			
+			$qa_content['error']=@$qa_vote_error;
 			$qa_content['script_src']=array('jxs_compressed.js', 'qa-votes.js?'.QA_VERSION);
 		} else
 			$qa_content['script_src']=array();
@@ -354,9 +388,13 @@
 		);
 	}
 
-//	See if we're logged in or if we have a cookie
+
+//	User identification phase, including retrieving the current identifying cookie
 
 	function qa_check_login($db)
+/*
+	Check if we're logged in (via database if necessary) and set global variables accordingly
+*/
 	{
 		global $qa_login_user, $qa_login_userid, $qa_login_level, $qa_login_email;
 		
@@ -378,10 +416,12 @@
 	
 	$qa_cookieid=qa_cookie_get();
 
+
 //	End of setup phase
 
 	if (QA_DEBUG_PERFORMANCE)
 		qa_usage_mark('setup');
+
 	
 //	Process any incoming votes
 
@@ -397,7 +437,8 @@
 				}
 			}
 
-//	Do the right thing
+
+//	Now include the appropriate PHP file for the page in the request
 	
 	$qa_routing=array(
 		'' => QA_INCLUDE_DIR.'qa-page-home.php',
@@ -441,17 +482,17 @@
 		$qa_operation_parts=explode('/', $qa_request);
 		
 		if (is_numeric($qa_operation_parts[0])) {
-			$pass_questionid=$qa_operation_parts[0];
+			$pass_questionid=$qa_operation_parts[0]; // effectively a parameter that is passed to file
 			$qa_template='question';
 			require QA_INCLUDE_DIR.'qa-page-question.php';
 
 		} elseif ( (strtolower($qa_operation_parts[0])=='tag') && !empty($qa_operation_parts[1]) ) {
-			$pass_tag=$qa_operation_parts[1];
+			$pass_tag=$qa_operation_parts[1]; // effectively a parameter that is passed to file
 			$qa_template='tag';
 			require QA_INCLUDE_DIR.'qa-page-tag.php';
 
 		} elseif ( (strtolower($qa_operation_parts[0])=='user') && !empty($qa_operation_parts[1]) ) {
-			$pass_handle=$qa_operation_parts[1];
+			$pass_handle=$qa_operation_parts[1]; // effectively a parameter that is passed to file
 			$qa_template='user';
 			require QA_INCLUDE_DIR.'qa-page-user.php';
 
@@ -462,31 +503,43 @@
 		}
 	}
 	
+	
 //	End of view phase
 
 	if (QA_DEBUG_PERFORMANCE)
 		qa_usage_mark('view');
 	
-//	Set appropriate selected flags for navigation
+	
+//	Set appropriate selected flags for navigation (not done in qa_content_prepare() since it also applies to sub-navigation)
 	
 	foreach ($qa_content['navigation'] as $navtype => $navigation)
 		foreach ($navigation as $navprefix => $navlink)
 			if (substr($qa_request_lc.'$', 0, strlen($navprefix)) == $navprefix)
 				$qa_content['navigation'][$navtype][$navprefix]['selected']=true;
 
-//	Output the page using the theme
 
-	$themeclass=qa_load_theme_class(qa_get_option($qa_db, 'site_theme'), $qa_template, $qa_content);
+//	Load the appropriate theme class
+
+	$themeclass=qa_load_theme_class(qa_get_option($qa_db, 'site_theme'), $qa_template, $qa_content, $qa_request);
+
+
+//	Set HTTP header and output start of HTML document
 		
 	header('Content-type: text/html; charset=utf-8');
 	
 	$themeclass->doctype();
-	
 	$themeclass->output(
 		'<HTML>',
+		'<!-- Powered by Question2Answer - http://www.question2answer.org/ -->'
+	);
+
+
+//	Output <HEAD> section, mainly a bunch of dynamic JavaScripts
+		
+	$themeclass->output(
 		'<HEAD>',
 		'<META HTTP-EQUIV="Content-type" CONTENT="text/html; charset=utf-8"/>',
-		'<TITLE>'.(empty($qa_content['title']) ? '' : (strip_tags($qa_content['title']).' - ')).qa_html(qa_get_option($qa_db, 'site_title')).'</TITLE>'
+		'<TITLE>'.((empty($qa_content['title']) || empty($qa_request)) ? '' : (strip_tags($qa_content['title']).' - ')).qa_html(qa_get_option($qa_db, 'site_title')).'</TITLE>'
 	);
 	
 	$themeclass->output('<SCRIPT TYPE="text/javascript"><!--');
@@ -526,9 +579,7 @@
 				$themeclass->output("\t".$scriptline);
 		}
 
-		$themeclass->output(
-			"}"
-		);
+		$themeclass->output('}');
 	}
 
 	$themeclass->output('--></SCRIPT>');
@@ -539,16 +590,34 @@
 
 	$themeclass->head_css();
 	$themeclass->head_custom();
+
 	$themeclass->output_raw(qa_get_option($qa_db, 'custom_in_head'));
+
+	$themeclass->output('</HEAD>');
+
 	
-	$themeclass->output('</HEAD>', '<BODY');
+//	Output <BODY> section
+
+	$themeclass->output('<BODY');
 	$themeclass->body_tags();
 	$themeclass->output('>');
+
 	$themeclass->output_raw(qa_get_option($qa_db, 'custom_header'));
 	$themeclass->body_content();
 	$themeclass->output_raw(qa_get_option($qa_db, 'custom_footer'));
-	$themeclass->output('</BODY>', '</HTML>');
+
+	$themeclass->output('</BODY>');
+
+
+//	Output end of HTML document and let theme do any clearing up
+	
+	$themeclass->output(
+		'<!-- Powered by Question2Answer - http://www.question2answer.org/ -->',
+		'</HTML>'
+	);
+
 	$themeclass->finish();
+
 			
 //	End of output phase
 
@@ -556,6 +625,7 @@
 		qa_usage_mark('theme');
 		qa_usage_output();
 	}
+
 	
 //	Disconnect from the database
 

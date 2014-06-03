@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-update.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Changing questions, answer and comments (application level)
 
 
 	This software is licensed for use in websites which are connected to the
@@ -38,8 +39,13 @@
 	require_once QA_INCLUDE_DIR.'qa-db-post-create.php';
 	require_once QA_INCLUDE_DIR.'qa-db-post-update.php';
 	require_once QA_INCLUDE_DIR.'qa-db-points.php';
+
 	
 	function qa_question_set_text($db, $oldquestion, $title, $content, $tagstring, $notify, $lastuserid)
+/*
+	Change the text of a question (application level) to $title, $content, $tagstring and $notify, and reindex.
+	Pass the question's database record before changes in $oldquestion and the user doing this in $lastuserid.
+*/
 	{
 		qa_post_unindex($db, $oldquestion['postid']);
 		
@@ -48,8 +54,14 @@
 		if (!$oldquestion['hidden'])
 			qa_post_index($db, $oldquestion['postid'], 'Q', $oldquestion['postid'], $title, $content, $tagstring);
 	}
+
 	
 	function qa_question_set_selchildid($db, $userid, $cookieid, $oldquestion, $selchildid, $answers)
+/*
+	Set the selected answer (application level) of $oldquestion to $selchildid. Pass the user currently viewing
+	the page in $userid and $cookieid, and the database records for all answers to the question in $answers.
+	Handles user points values and notifications.
+*/
 	{
 		$oldselchildid=$oldquestion['selchildid'];
 		
@@ -80,8 +92,15 @@
 			}
 		}
 	}
+
 	
 	function qa_question_set_hidden($db, $oldquestion, $hidden, $lastuserid, $answers, $commentsfollows)
+/*
+	Set the hidden status (application level) of $oldquestion to $hidden. Pass the user doing this in $lastuserid,
+	the database records for all answers to the question in $answers, and the database records for all comments on
+	the question or the question's answers in $commentsfollows ($commentsfollows can also contain records for
+	follow-on questions which are ignored). Handles indexing, user points and cached counts.
+*/
 	{
 		qa_post_unindex($db, $oldquestion['postid']);
 		
@@ -101,25 +120,33 @@
 			qa_post_index($db, $oldquestion['postid'], 'Q', $oldquestion['postid'], $oldquestion['title'], $oldquestion['content'], $oldquestion['tags']);
 
 			foreach ($answers as $answer)
-				if (!$answer['hidden'])
+				if (!$answer['hidden']) // even if question visible, don't index hidden answers
 					qa_post_index($db, $answer['postid'], $answer['type'], $oldquestion['postid'], null, $answer['content'], null);
 					
 			foreach ($commentsfollows as $comment)
 				if ($comment['basetype']=='C')
-					if (!($comment['hidden'] || @$answers[$comment['parentid']]['hidden']))
+					if (!($comment['hidden'] || @$answers[$comment['parentid']]['hidden'])) // don't index comment if it or its parent is hidden
 						qa_post_index($db, $comment['postid'], $comment['type'], $oldquestion['postid'], null, $comment['content'], null);
 		}
 	}
+
 	
 	function qa_question_set_userid($db, $oldquestion, $userid)
+/*
+	Set the author (application level) of $oldquestion to $userid. Updates points as appropriate.
+*/
 	{
 		qa_db_post_set_userid($db, $oldquestion['postid'], $userid);
 
 		qa_db_points_update_ifuser($db, $oldquestion['userid'], array('qposts', 'aselects', 'qvoteds', 'upvoteds', 'downvoteds'));
 		qa_db_points_update_ifuser($db, $userid, array('qposts', 'aselects', 'qvoteds', 'upvoteds', 'downvoteds'));
 	}
+
 	
 	function qa_post_unindex($db, $postid)
+/*
+	Remove post $postid from our index and update appropriate word counts
+*/
 	{
 		$titlewordids=qa_db_titlewords_get_post_wordids($db, $postid);
 		qa_db_titlewords_delete_post($db, $postid);
@@ -133,18 +160,30 @@
 		qa_db_posttags_delete_post($db, $postid);
 		qa_db_word_tagcount_update($db, $tagwordids);
 	}
+
 	
 	function qa_answer_set_text($db, $oldanswer, $content, $notify, $lastuserid, $question)
+/*
+	Change the text of an answer (application level) to $content and $notify, and reindex. Pass the answer's database
+	record before changes in $oldanswer, the question's record in $question, and the user doing this in $lastuserid.
+*/
 	{
 		qa_post_unindex($db, $oldanswer['postid']);
 		
 		qa_db_post_set_text($db, $oldanswer['postid'], $oldanswer['title'], $content, $oldanswer['tags'], $notify, $lastuserid);
 		
-		if (!($oldanswer['hidden'] || $question['hidden']))
+		if (!($oldanswer['hidden'] || $question['hidden'])) // don't index if answer or its question is hidden
 			qa_post_index($db, $oldanswer['postid'], 'A', $question['postid'], null, $content, null);
 	}
+
 	
 	function qa_answer_set_hidden($db, $oldanswer, $hidden, $lastuserid, $question, $commentsfollows)
+/*
+	Set the hidden status (application level) of $oldanswer to $hidden. Pass the user doing this in $lastuserid,
+	the database record for the question in $question, and the database records for all comments on
+	the answer in $commentsfollows ($commentsfollows can also contain other records which are ignored).
+	Handles indexing, user points and cached counts.
+*/
 	{
 		qa_post_unindex($db, $oldanswer['postid']);
 		
@@ -158,25 +197,35 @@
 		qa_db_acount_update($db);
 		qa_db_unaqcount_update($db);
 		
-		if (!($hidden || $question['hidden'])) {
+		if (!($hidden || $question['hidden'])) { // even if answer visible, don't index if question is hidden
 			qa_post_index($db, $oldanswer['postid'], 'A', $question['postid'], null, $oldanswer['content'], null);
 			
 			foreach ($commentsfollows as $comment)
 				if ( ($comment['basetype']=='C') && ($comment['parentid']==$oldanswer['postid']) )
-					if (!$comment['hidden'])
+					if (!$comment['hidden']) // and don't index hidden comments
 						qa_post_index($db, $comment['postid'], $comment['type'], $question['postid'], null, $comment['content'], null);
 		}
 	}
+
 	
 	function qa_answer_set_userid($db, $oldanswer, $userid)
+/*
+	Set the author (application level) of $oldanswer to $userid. Updates points as appropriate.
+*/
 	{
 		qa_db_post_set_userid($db, $oldanswer['postid'], $userid);
 
 		qa_db_points_update_ifuser($db, $oldanswer['userid'], array('aposts', 'aselecteds', 'avoteds', 'upvoteds', 'downvoteds'));
 		qa_db_points_update_ifuser($db, $userid, array('aposts', 'aselecteds', 'avoteds', 'upvoteds', 'downvoteds'));
 	}
+
 	
-	function qa_comment_set_text($db, $oldcomment, $content, $notify, $lastuserid, $question, $answer=null)
+	function qa_comment_set_text($db, $oldcomment, $content, $notify, $lastuserid, $question, $answer)
+/*
+	Change the text of a comment (application level) to $content and $notify, and reindex. Pass the comment's database
+	record before changes in $oldcomment, the antecedent question's record in $question, the user doing this in $lastuserid,
+	and the answer's database record in $answer if this is a comment on an answer, otherwise null.
+*/
 	{
 		qa_post_unindex($db, $oldcomment['postid']);
 		
@@ -185,8 +234,17 @@
 		if (!($oldcomment['hidden'] || $question['hidden'] || @$answer['hidden']))
 			qa_post_index($db, $oldcomment['postid'], 'C', $question['postid'], null, $content, null);
 	}
+
 	
 	function qa_answer_to_comment($db, $oldanswer, $parentid, $content, $notify, $lastuserid, $question, $answers, $commentsfollows)
+/*
+	Convert an answer to a comment (application level) and set its text to $content and $notify.
+	Pass the answer's database record before changes in $oldanswer, the new comment's $parentid to be, the
+	user doing this in $lastuserid, the antecedent question's record in $question, the records for all answers
+	to that question in $answers, and the records for all comments on the (old) answer and questions following
+	from the (old) answer in $commentsfollows ($commentsfollows can also contain other records which are ignored).
+	Handles indexing, user points and cached counts.
+*/
 	{
 		$parent=isset($answers[$parentid]) ? $answers[$parentid] : $question;
 			
@@ -207,11 +265,17 @@
 		qa_db_ccount_update($db);
 		qa_db_unaqcount_update($db);
 	
-		if (!($oldanswer['hidden'] || $question['hidden'] || $parent['hidden']))
+		if (!($oldanswer['hidden'] || $question['hidden'] || $parent['hidden'])) // only index if none of the things it depends on are hidden
 			qa_post_index($db, $oldanswer['postid'], 'C', $question['postid'], null, $oldanswer['content'], null);
 	}
+
 	
-	function qa_comment_set_hidden($db, $oldcomment, $hidden, $lastuserid, $question, $answer=null)
+	function qa_comment_set_hidden($db, $oldcomment, $hidden, $lastuserid, $question, $answer)
+/*
+	Set the hidden status (application level) of $oldcomment to $hidden. Pass the antecedent question's record
+	in $question, the user doing this in $lastuserid, and the answer's database record in $answer if this is a
+	comment on an answer, otherwise null. Handles indexing, user points and cached counts.
+*/
 	{
 		qa_post_unindex($db, $oldcomment['postid']);
 		
@@ -219,11 +283,15 @@
 		qa_db_points_update_ifuser($db, $oldcomment['userid'], array('cposts'));
 		qa_db_ccount_update($db);
 		
-		if (!($hidden || $question['hidden'] || @$answer['hidden']))
+		if (!($hidden || $question['hidden'] || @$answer['hidden'])) // only index if none of the things it depends on are hidden
 			qa_post_index($db, $oldcomment['postid'], 'C', $question['postid'], null, $oldcomment['content'], null);
 	}
+
 	
 	function qa_comment_set_userid($db, $oldcomment, $userid)
+/*
+	Set the author (application level) of $oldcomment to $userid. Updates points as appropriate.
+*/
 	{
 		qa_db_post_set_userid($db, $oldcomment['postid'], $userid);
 		

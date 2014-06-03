@@ -1,12 +1,13 @@
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-content/qa-votes.js
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: JS to handle Ajax voting
 
 
 	This software is licensed for use in websites which are connected to the
@@ -33,7 +34,7 @@ function qa_vote_click(elem, oldvote)
 	var postid=ens[1];
 	var vote=parseInt(ens[2]);
 	
-	qa_ajax_post('qa-include/qa-ajax-vote.php', {postid:postid, vote:vote}, 
+	qa_ajax_post('qa-include/qa-ajax-vote.php', {postid:postid, vote:vote},
 		function(response) {
 			var lines=response.replace(/^\s+/, '').split("\n");
 			

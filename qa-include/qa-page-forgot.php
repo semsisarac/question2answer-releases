@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-forgot.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for 'forgot my password' page
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,34 +35,50 @@
 		exit;
 	}
 
+	require_once QA_INCLUDE_DIR.'qa-db-users.php';
+	require_once QA_INCLUDE_DIR.'qa-app-captcha.php';
+
+
+//	Check we're not using single-sign on integration and that we're not logged in
+	
 	if (QA_EXTERNAL_USERS)
 		qa_fatal_error('User login is handled by external code');
 		
 	if (isset($qa_login_userid))
 		qa_redirect('');
 
-	require_once QA_INCLUDE_DIR.'qa-db-users.php';
+
+//	Queue appropriate options requests
 	
+	qa_captcha_pending();
+	qa_options_set_pending(array('captcha_on_reset_password'));
+
 	if (qa_clicked('doforgot')) {
 		$inemailhandle=qa_post_text('emailhandle');
 		
 		$errors=array();
 		
-		if (strpos($inemailhandle, '@')===false)
+		if (strpos($inemailhandle, '@')===false) // handles can't contain @ symbols
 			$matchusers=qa_db_user_find_by_handle($qa_db, $inemailhandle);
 		else
 			$matchusers=qa_db_user_find_by_email($qa_db, $inemailhandle);
+			
+		if (count($matchusers)!=1) // if we get more than one match (should be impossible) also give an error
+			$errors['emailhandle']=qa_lang('users/user_not_found');
 
-		if (count($matchusers)==1) {
+		if (qa_get_option($qa_db, 'captcha_on_reset_password'))
+			qa_captcha_validate($qa_db, $_POST, $errors);
+
+		if (empty($errors)) {
 			$inuserid=$matchusers[0];
 			qa_start_reset_user($qa_db, $inuserid);
-			qa_redirect('reset', array('e' => $inemailhandle));
+			qa_redirect('reset', array('e' => $inemailhandle)); // redirect to page where code is entered
+		}
 			
-		} else
-			$errors['emailhandle']=qa_lang('users/user_not_found');
 
 	} else
 		$inemailhandle=qa_get('e');
+
 	
 //	Prepare content for theme
 	
@@ -94,6 +111,9 @@
 			'doforgot' => '1',
 		),
 	);
+	
+	if (qa_get_option($qa_db, 'captcha_on_reset_password'))
+		qa_set_up_captcha_field($qa_db, $qa_content, $qa_content['form']['fields'], @$errors);
 	
 	$qa_content['focusid']='emailhandle';
 

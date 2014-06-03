@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-hidden.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for admin page showing hidden questions, answers and comments
 
 
 	This software is licensed for use in websites which are connected to the
@@ -37,6 +38,7 @@
 	require_once QA_INCLUDE_DIR.'qa-app-admin.php';
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
+
 	
 //	Standard pre-admin operations
 
@@ -44,6 +46,7 @@
 	
 	if (!qa_admin_check_privileges())
 		return;
+		
 		
 //	Find recently hidden questions, answers, comments
 
@@ -55,11 +58,13 @@
 		qa_db_recent_c_qs_selectspec($qa_login_userid, 0, true)
 	);
 	
+	
 //	Combine sets of questions and get information for users
 
 	$questions=qa_any_sort_and_dedupe(array_merge($hiddenquestions, $hiddenanswers, $hiddencomments));
 	
 	$usershtml=qa_userids_handles_html($qa_db, qa_any_get_userids_handles($questions));
+
 
 //	Prepare content for theme
 	

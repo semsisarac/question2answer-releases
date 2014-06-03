@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-users.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Database-level access to user management tables (if not using single sign-on)
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,13 +35,21 @@
 		exit;
 	}
 
+
 	function qa_db_calc_passcheck($password, $salt)
+/*
+	Return the expected value for the passcheck column given the $password and password $salt
+*/
 	{
 		return sha1(substr($salt, 0, 8).$password.substr($salt, 8));
 	}
 	
+
 	function qa_db_user_create($db, $email, $password, $handle, $level, $ip)
-	{	
+/*
+	Create a new user in the database with $email, $password, $handle, privilege $level, and $ip address
+*/
+	{
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 		
 		$salt=qa_random_alphanum(16);
@@ -53,8 +62,12 @@
 		
 		return qa_db_last_insert_id($db);
 	}
+
 		
 	function qa_db_user_find_by_email($db, $email)
+/*
+	Return the ids of all users in the database which match $email (should be one or none)
+*/
 	{
 		return qa_db_read_all_values(qa_db_query_sub($db,
 			'SELECT userid FROM ^users WHERE email=$',
@@ -62,7 +75,11 @@
 		));
 	}
 
+
 	function qa_db_user_find_by_handle($db, $handle)
+/*
+	Return the ids of all users in the database which match $handle (=username), should be one or none
+*/
 	{
 		return qa_db_read_all_values(qa_db_query_sub($db,
 			'SELECT userid FROM ^users WHERE handle=$',
@@ -70,22 +87,11 @@
 		));
 	}
 	
-	function qa_db_user_count($db)
-	{
-		return qa_db_read_one_value(qa_db_query_sub($db,
-			'SELECT COUNT(*) FROM ^users'
-		));
-	}
 
-	function qa_db_user_set_info($db, $userid, $name, $location, $about)
-	{
-		qa_db_query_sub($db,
-			'UPDATE ^users SET name=$, location=$, about=$ WHERE userid=$',
-			$name, $location, $about, $userid
-		);
-	}
-	
 	function qa_db_user_set($db, $userid, $field, $value)
+/*
+	Set $field of $userid to $value in the database users table
+*/
 	{
 		qa_db_query_sub($db,
 			'UPDATE ^users SET '.mysql_real_escape_string($field, $db).'=$ WHERE userid=$',
@@ -93,7 +99,11 @@
 		);
 	}
 
+
 	function qa_db_user_set_password($db, $userid, $password)
+/*
+	Set the password of $userid to $password, and reset their salt at the same time
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 		
@@ -105,29 +115,45 @@
 		);
 	}
 	
+
 	function qa_db_user_rand_resetcode()
+/*
+	Return a random string to be used for a user's resetcode column (for resetting forgotten passwords)
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 		
 		return qa_random_alphanum(8);
 	}
 	
+
 	function qa_db_user_rand_sessioncode()
+/*
+	Return a random string to be used for a user's sessioncode column (for browser session cookies)
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 		
 		return qa_random_alphanum(8);
 	}
+
 	
 	function qa_db_user_profile_set($db, $userid, $field, $value)
+/*
+	Set a row in the database user profile table to store $value for $field for $userid
+*/
 	{
 		qa_db_query_sub($db,
 			'REPLACE ^userprofile (title, content, userid) VALUES ($, $, $)',
 			$field, $value, $userid
 		);
 	}
+
 	
 	function qa_db_user_logged_in($db, $userid, $ip)
+/*
+	Note in the database that $userid just logged in from $ip address
+*/
 	{
 		qa_db_query_sub($db,
 			'UPDATE ^users SET loggedin=NOW(), loginip=COALESCE(INET_ATON($), 0) WHERE userid=$',
@@ -135,7 +161,11 @@
 		);
 	}
 	
+
 	function qa_db_user_written($db, $userid, $ip)
+/*
+	Note in the database that $userid just performed a write operation from $ip address
+*/
 	{
 		qa_db_query_sub($db,
 			'UPDATE ^users SET written=NOW(), writeip=COALESCE(INET_ATON($), 0) WHERE userid=$',

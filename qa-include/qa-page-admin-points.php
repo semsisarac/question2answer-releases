@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-points.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for admin page for user points
 
 
 	This software is licensed for use in websites which are connected to the
@@ -39,12 +40,14 @@
 	require_once QA_INCLUDE_DIR.'qa-app-options.php';
 	require_once QA_INCLUDE_DIR.'qa-app-admin.php';
 	
+	
 //	Standard pre-admin operations
 
 	qa_admin_pending();
 	
 	if (!qa_admin_check_privileges())
 		return;
+
 
 //	Perform any actions requested
 
@@ -71,6 +74,7 @@
 		$options=qa_get_options($qa_db, $optionnames);
 	}
 	
+	
 //	Prepare content for theme
 
 	qa_content_prepare();
@@ -96,6 +100,7 @@
 			'has_js' => '0',
 		),
 	);
+
 	
 	if (qa_clicked('doshowdefaults')) {
 		$qa_content['form']['ok']=qa_lang_html('admin/points_defaults_shown');
@@ -125,6 +130,7 @@
 			'label' => qa_lang_html('admin/show_defaults_button'),
 		);
 	}
+
 	
 	foreach ($optionnames as $optionname) {
 		$optionfield=array(

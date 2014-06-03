@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-util-sort.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: A useful general-purpose 'sort by' function
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,7 +35,11 @@
 		exit;
 	}
 
+
 	function qa_sort_by(&$array, $by1, $by2=null)
+/*
+	Sort the $array of inner arrays by sub-element $by1 of each inner array, and optionally then by sub-element $by2
+*/
 	{
 		global $qa_sort_by1, $qa_sort_by2;
 		
@@ -44,7 +49,11 @@
 		uasort($array, 'qa_sort_by_fn');
 	}
 
+
 	function qa_sort_by_fn($a, $b)
+/*
+	Function used in uasort to implement qa_sort_by()
+*/
 	{
 		global $qa_sort_by1, $qa_sort_by2;
 		
@@ -56,7 +65,11 @@
 		return $compare;
 	}
 
+
 	function qa_sort_cmp($a, $b)
+/*
+	General comparison function for two values, textual or numeric
+*/
 	{
 		if (is_numeric($a) && is_numeric($b)) // straight subtraction won't work for floating bits
 			return ($a==$b) ? 0 : (($a<$b) ? -1 : 1);

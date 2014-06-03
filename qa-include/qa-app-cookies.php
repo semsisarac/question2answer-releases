@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-cookies.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: User cookie management (application level) for tracking anonymous posts
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,12 +35,21 @@
 		exit;
 	}
 
+
 	function qa_cookie_get()
+/*
+	Return the user identification cookie sent by the browser for this page request, or null if none
+*/
 	{
 		return isset($_COOKIE['qa_id']) ? qa_gpc_to_string($_COOKIE['qa_id']) : null;
 	}
+
 	
 	function qa_cookie_get_create($db)
+/*
+	Return user identification cookie sent by browser if valid, or create a new one if not.
+	Either way, extend for another year (this is used when an anonymous post is created)
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-db-cookies.php';
 
@@ -54,8 +64,13 @@
 		
 		return $cookieid;
 	}
+
 	
 	function qa_cookie_report_action($db, $cookieid, $action, $questionid, $answerid, $commentid)
+/*
+	Called after a database write $action performed by a user identified by $cookieid,
+	relating to $questionid, $answerid and/or $commentid
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-db-cookies.php';
 		

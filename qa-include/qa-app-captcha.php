@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-captcha.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Wrapper functions and utilities for reCAPTCHA
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,19 +35,31 @@
 		exit;
 	}
 
+
 	function qa_captcha_pending()
+/*
+	Queue any option requests needed by other captcha functions
+*/
 	{
 		qa_options_set_pending(array('recaptcha_public_key', 'recaptcha_private_key', 'site_language'));
 	}
 	
+
 	function qa_captcha_possible($db)
+/*
+	Return true if it will be possible to present a captcha to the user, false otherwise
+*/
 	{
 		$options=qa_get_options($db, array('recaptcha_public_key', 'recaptcha_private_key'));
 		
 		return function_exists('fsockopen') && strlen(trim($options['recaptcha_public_key'])) && strlen(trim($options['recaptcha_private_key']));
 	}
 	
+
 	function qa_captcha_error($db)
+/*
+	Return string of error to display in admin interface if captchas not possible, null otherwise
+*/
 	{
 		if (qa_captcha_possible($db))
 			return null;
@@ -69,15 +82,23 @@
 			);
 		}
 	}
+
 	
 	function qa_captcha_html($db, $error)
+/*
+	Return the html to display for a captcha, pass $error as returned by earlier qa_captcha_validate()
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-recaptchalib.php';
 
 		return recaptcha_get_html(qa_get_option($db, 'recaptcha_public_key'), $error, qa_is_https_probably());
 	}
+
 	
 	function qa_captcha_validate($db, $form, &$errors)
+/*
+	Check if captcha correct based on fields submitted in $form and set $errors['captcha'] accordingly
+*/
 	{
 		if (qa_captcha_possible($db)) {
 			require_once QA_INCLUDE_DIR.'qa-recaptchalib.php';
@@ -97,8 +118,12 @@
 				$errors['captcha']=true; // empty error but still set it
 		}
 	}
+
 	
 	function qa_set_up_captcha_field($db, &$qa_content, &$fields, $errors)
+/*
+	Prepare $qa_content for showing a captcha, adding the element to $fields, and given previous $errors
+*/
 	{
 		if (qa_captcha_possible($db)) {
 			$fields['captcha']=array(

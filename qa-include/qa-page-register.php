@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-register.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for register page
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,18 +35,27 @@
 		exit;
 	}
 
+	require_once QA_INCLUDE_DIR.'qa-app-captcha.php';
+	require_once QA_INCLUDE_DIR.'qa-db-users.php';
+
+
+//	Check we're not using single-sign on integration and that we're not logged in
+
 	if (QA_EXTERNAL_USERS)
 		qa_fatal_error('User registration is handled by external code');
 		
 	if (isset($qa_login_userid))
 		qa_redirect('');
 	
-	require_once QA_INCLUDE_DIR.'qa-app-captcha.php';
-	require_once QA_INCLUDE_DIR.'qa-db-users.php';
+	
+//	Queue options that we'll be needing
 
 	qa_options_set_pending(array('email_privacy', 'captcha_on_register'));
 	qa_captcha_pending();
+
 	
+//	Process submitted form
+
 	if (qa_clicked('doregister')) {
 		$inemail=qa_post_text('email');
 		$inpassword=qa_post_text('password');
@@ -59,7 +69,7 @@
 		if (qa_get_option($qa_db, 'captcha_on_register'))
 			qa_captcha_validate($qa_db, $_POST, $errors);
 	
-		if (empty($errors)) {
+		if (empty($errors)) { // register and redirect
 			require_once QA_INCLUDE_DIR.'qa-app-users.php';
 			
 			$userid=qa_create_new_user($qa_db, $inemail, $inpassword, $inhandle);
@@ -68,11 +78,12 @@
 			$topath=qa_get('to');
 			
 			if (isset($topath))
-				qa_redirect($topath, null, null, true); // index.php already included if appropriate
+				qa_redirect($topath, null, null, true); // set $neaturls to true since index.php is already included in $topath if neat urls off
 			else
 				qa_redirect('');
 		}
 	}
+
 
 //	Prepare content for theme
 

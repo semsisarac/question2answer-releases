@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Common functions for creating theme-ready structures from data
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,7 +35,11 @@
 		exit;
 	}
 
+
 	function qa_time_to_string($seconds)
+/*
+	Return textual representation of $seconds
+*/
 	{
 		$seconds=max($seconds, 1);
 		
@@ -61,9 +66,14 @@
 			}
 			
 		return $string;
-	}	
+	}
+
 
 	function qa_post_is_by_user($post, $userid, $cookieid)
+/*
+	Check if $post is by user $userid, or if post is anonymous and $userid not specified,
+	check if $post is by anonymous user identified by $cookieid
+*/
 	{
 		// In theory we should only test against NULL here, i.e. use isset($post['userid'])
 		// but the risk of doing so is so high (if a bug creeps in that allows userid=0)
@@ -76,8 +86,14 @@
 		
 		return false;
 	}
+
 	
 	function qa_userids_handles_html($db, $useridhandles, $microformats=false)
+/*
+	Return array which maps the ['userid'] and/or ['lastuserid'] in each element of
+	$useridhandles to its HTML representation. For internal user management, corresponding
+	['handle'] and/or ['lasthandle'] are required in each element.
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-users.php';
 			
@@ -112,12 +128,24 @@
 		}
 	}
 	
+
 	function qa_tag_html($tag, $microformats=false)
+/*
+	Convert textual $tag to HTML representation
+*/
 	{
 		return '<A HREF="'.qa_path_html('tag/'.urlencode($tag)).'"'.($microformats ? ' rel="tag"' : '').' CLASS="qa-tag-link">'.qa_html($tag).'</A>';
 	}
+
 	
 	function qa_post_html_fields($post, $userid, $cookieid, $usershtml, $voteview=false, $pointsview=false, $showurllinks=false, $microformats=false, $isselected=false)
+/*
+	Given $post retrieved from database, return array of mostly HTML to be passed to theme layer.
+	$userid and $cookieid refer to the user *viewing* the page.
+	$usershtml is an array of [user id] => [HTML representation of user] built ahead of time.
+	Remaining parameters determine what is shown - most are true/false, $voteview is 'updown'/'net'/false.
+	If something is missing from $post (e.g. ['content']), correponding HTML also omitted.
+*/
 	{
 		$fields=array();
 		
@@ -170,7 +198,7 @@
 			
 			if ($isselected)
 				$fields['select_text']=qa_lang_html('question/select_text');
-		}				
+		}
 
 	//	Post content
 		
@@ -227,38 +255,38 @@
 				: qa_lang_sub_split_html('main/x_liked', $upvoteshtml);
 	
 			$fields['downvotes_view']=($downvotes==1) ? qa_lang_sub_split_html('main/1_disliked', $downvoteshtml, '1')
-				: qa_lang_sub_split_html('main/x_disliked', $downvoteshtml);			
+				: qa_lang_sub_split_html('main/x_disliked', $downvoteshtml);
 			
 			$fields['netvotes_view']=(abs($netvotes)==1) ? qa_lang_sub_split_html('main/1_vote', $netvoteshtml, '1')
 				: qa_lang_sub_split_html('main/x_votes', $netvoteshtml);
 		
 		//	Voting buttons
 		
-			$fields['vote_tags']=' ID="voting_'.qa_html($postid).'" ';		
+			$fields['vote_tags']=' ID="voting_'.qa_html($postid).'" ';
 			$onclick='onClick="return qa_vote_click(this);" ';
 			
 			if ($fields['hidden']) {
 				$fields['vote_state']='disabled';
-				$fields['vote_up_tags']=' TITLE="'.qa_lang_html($isanswer ? 'main/vote_disabled_hidden_a' : 'main/vote_disabled_hidden_q').'" DISABLED="disabled" ';
+				$fields['vote_up_tags']=' TITLE="'.qa_lang_html($isanswer ? 'main/vote_disabled_hidden_a' : 'main/vote_disabled_hidden_q').'" ';
 				$fields['vote_down_tags']=$fields['vote_up_tags'];
 			
 			} elseif ($isbyuser) {
 				$fields['vote_state']='disabled';
-				$fields['vote_up_tags']=' TITLE="'.qa_lang_html($isanswer ? 'main/vote_disabled_my_a' : 'main/vote_disabled_my_q').'" DISABLED="disabled" ';
+				$fields['vote_up_tags']=' TITLE="'.qa_lang_html($isanswer ? 'main/vote_disabled_my_a' : 'main/vote_disabled_my_q').'" ';
 				$fields['vote_down_tags']=$fields['vote_up_tags'];
 				
 			} elseif (@$post['uservote']>0) {
 				$fields['vote_state']='voted_up';
 				$fields['vote_up_tags']=' TITLE="'.qa_lang_html('main/voted_up_popup').'" NAME="vote_'.qa_html($postid).'_0" '.$onclick;
-				$fields['vote_down_tags']=' DISABLED="disabled" ';
+				$fields['vote_down_tags']=' ';
 
 			} elseif (@$post['uservote']<0) {
 				$fields['vote_state']='voted_down';
-				$fields['vote_up_tags']=' DISABLED="disabled" ';
+				$fields['vote_up_tags']=' ';
 				$fields['vote_down_tags']=' TITLE="'.qa_lang_html('main/voted_down_popup').'" NAME="vote_'.qa_html($postid).'_0" '.$onclick;
 				
 			} else {
-				$fields['vote_state']='enabled';			
+				$fields['vote_state']='enabled';
 				$fields['vote_up_tags']=' TITLE="'.qa_lang_html('main/vote_up_popup').'" NAME="vote_'.qa_html($postid).'_1" '.$onclick;
 				$fields['vote_down_tags']=' TITLE="'.qa_lang_html('main/vote_down_popup').'" NAME="vote_'.qa_html($postid).'_-1" '.$onclick;
 			}
@@ -267,7 +295,7 @@
 	//	Created when and by whom
 		
 		if (isset($post['created'])) {
-			$whenhtml=qa_html(qa_time_to_string(time()-$post['created']));		
+			$whenhtml=qa_html(qa_time_to_string(time()-$post['created']));
 			if ($microformats)
 				$whenhtml='<SPAN CLASS="published"><SPAN CLASS="value-title" TITLE="'.gmdate('Y-m-d\TH:i:sO', $post['created']).'"></SPAN>'.$whenhtml.'</SPAN>';
 			
@@ -292,7 +320,7 @@
 			if ($microformats)
 				$whenhtml='<SPAN CLASS="updated"><SPAN CLASS="value-title" TITLE="'.gmdate('Y-m-d\TH:i:sO', $post['updated']).'"></SPAN>'.$whenhtml.'</SPAN>';
 			
-			$fields['when_2']=qa_lang_sub_split_html($fields['hidden'] ? 'question/hidden_x_ago' : 'question/edited_x_ago', $whenhtml);			
+			$fields['when_2']=qa_lang_sub_split_html($fields['hidden'] ? 'question/hidden_x_ago' : 'question/edited_x_ago', $whenhtml);
 			$fields['who_2']=qa_who_to_html($post['lastuserid']==$userid, $post['lastuserid'], $usershtml, false);
 		}
 		
@@ -301,7 +329,11 @@
 		return $fields;
 	}
 	
+
 	function qa_who_to_html($isbyuser, $postuserid, $usershtml, $microformats)
+/*
+	Return array of split HTML (prefix, data, suffix) to represent author of post
+*/
 	{
 		if ($isbyuser)
 			$whohtml=qa_lang_html('main/me');
@@ -317,8 +349,15 @@
 		return qa_lang_sub_split_html('main/by_x', $whohtml);
 	}
 	
+
 	function qa_a_or_c_to_q_html_fields($question, $userid, $cookieid, $usershtml, $voteview=false, $pointsview=false, $basetype, $acpostid, $accreated, $acuserid, $accookieid, $acpoints)
-	{	
+/*
+	Return array of mostly HTML to be passed to theme layer, to *link* to an answer or comment
+	on $question retrieved from database. $basetype is 'A' for answer or 'C' for comment.
+	$userid, $cookieid, $usershtml, $voteview, $pointsview are passed through to qa_post_html_fields().
+	$acpostid, $accreated, $acuserid, $accookieid, $acpoints relate to the answer or comment and its author.
+*/
+	{
 		$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $voteview, $pointsview);
 		
 		$fields['url'].='#'.qa_html(urlencode($acpostid));
@@ -340,9 +379,14 @@
 		
 		return $fields;
 	}
+
 	
 	function qa_any_to_q_html_fields($question, $userid, $cookieid, $usershtml, $voteview=false, $pointsview=false)
-	{	
+/*
+	Based on the elements in $question, return HTML to be passed to theme layer to link
+	to the question, or to an answer or comment thereon.
+*/
+	{
 		if (isset($question['cpostid']))
 			$fields=qa_a_or_c_to_q_html_fields($question, $userid, $cookieid, $usershtml, $voteview, $pointsview, 'C',
 				$question['cpostid'], @$question['ccreated'], @$question['cuserid'], @$question['ccookieid'], @$question['cpoints']);
@@ -357,7 +401,12 @@
 		return $fields;
 	}
 	
+
 	function qa_any_sort_and_dedupe($questions)
+/*
+	Each element in $questions represents a question or an answer or comment thereon, as retrieved from database.
+	Return it sorted by the date appropriate for each element, and keep only the first item related to each question.
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-sort.php';
 		
@@ -383,8 +432,13 @@
 				
 		return $questions;
 	}
+
 	
 	function qa_any_get_userids_handles($questions)
+/*
+	Each element in $questions represents a question or an answer or comment thereon, as retrieved from database.
+	Return an array of elements (userid,handle), with the appropriate author for each element.
+*/
 	{
 		$userids_handles=array();
 		
@@ -410,15 +464,22 @@
 		return $userids_handles;
 	}
 
+
 	function qa_html_convert_urls($html)
+/*
+	Return $html with any URLs converted into links (with nofollow)
+	URL regular expressions can get crazy: http://internet.ls-la.net/folklore/url-regexpr.html
+	So this is something quick and dirty that should do the trick in most cases
+*/
 	{
-		// URL regular expressions can get crazy: http://internet.ls-la.net/folklore/url-regexpr.html
-		// This is something quick and dirty that should do the trick in most cases
-		
 		return trim(preg_replace('/([^A-Za-z0-9])((http|https|ftp):\/\/\S+\.[^\s<>]+)/i', '\1<A HREF="\2" rel="nofollow">\2</A>', ' '.$html.' '));
 	}
+
 	
 	function qa_url_to_html_link($url)
+/*
+	Return HTML representation of $url, linked with nofollow if we could see an URL in there
+*/
 	{
 		if (is_numeric(strpos($url, '.'))) {
 			$linkurl=$url;
@@ -428,10 +489,14 @@
 			return '<A HREF="'.qa_html($linkurl).'" rel="nofollow">'.qa_html($url).'</A>';
 		
 		} else
-			return $url;
+			return qa_html($url);
 	}
+
 	
 	function qa_insert_login_links($htmlmessage, $topage)
+/*
+	Return $htmlmessage with ^1...^4 substituted for links to log in or register and come back to $topage
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-users.php';
 		
@@ -448,8 +513,16 @@
 			)
 		);
 	}
+
 	
-	function qa_html_page_links($path, $start, $pagesize, $count, $prevnext, $params=array(), $hasmore=false)
+	function qa_html_page_links($request, $start, $pagesize, $count, $prevnext, $params=array(), $hasmore=false)
+/*
+	Return structure to pass through to theme layer to show linked page numbers for $request.
+	QA uses offset-based paging, i.e. pages are referenced in the URL by a 'start' parameter.
+	$start is current offset, there are $pagesize items per page and $count items in total
+	(unless $hasmore is true in which case there are at least $count items).
+	Show links to $prevnext pages before and after this one and include $params in the URLs.
+*/
 	{
 		$thispage=1+floor($start/$pagesize);
 		$lastpage=ceil(min($count, 1+QA_MAX_LIMIT_START)/$pagesize);
@@ -491,7 +564,7 @@
 			foreach ($links['items'] as $key => $link)
 				if ($link['page']!=$thispage) {
 					$params['start']=$pagesize*($link['page']-1);
-					$links['items'][$key]['url']=qa_path_html($path, $params);
+					$links['items'][$key]['url']=qa_path_html($request, $params);
 				}
 				
 		} else
@@ -499,8 +572,12 @@
 		
 		return $links;
 	}
+
 	
 	function qa_html_suggest_qs_tags()
+/*
+	Return HTML that suggests browsing all questions or popular tags.
+*/
 	{
 		$htmlmessage=qa_lang_html('main/suggest_qs_tags');
 		
@@ -515,8 +592,12 @@
 			)
 		);
 	}
+
 	
 	function qa_html_suggest_ask()
+/*
+	Return HTML that suggest getting things started by asking a question.
+*/
 	{
 		$htmlmessage=qa_lang_html('main/suggest_ask');
 		
@@ -530,12 +611,23 @@
 		);
 	}
 
+
 	function qa_match_to_min_score($match)
+/*
+	Convert an admin option for matching into a threshold for the score given by database search
+*/
 	{
 		return 10-2*$match;
 	}
+
 	
 	function qa_checkbox_to_display(&$qa_content, $effects)
+/*
+	For each [target] => [source] in $effects, set up $qa_content so that the visibility of
+	the DOM element ID target is equal to the checked state of the DOM element ID source.
+	Each source can also combine multiple DOM IDs using JavaScript(=PHP) Boolean operators.
+	This is pretty twisted, but also rather convenient.
+*/
 	{
 		$function='qa_checkbox_display_'.count(@$qa_content['script_lines']);
 		
@@ -554,7 +646,14 @@
 			$funcscript[]="\tvar e=document.getElementById(".qa_js($key).");";
 			$funcscript[]="\tvar ".$key."=e && e.checked;";
 			$loadscript[]="var e=document.getElementById(".qa_js($key).");";
-			$loadscript[]="if (e) e.onclick=".$function.";";
+			$loadscript[]="if (e) {";
+			$loadscript[]="\t".$key."_oldonclick=e.onclick;";
+			$loadscript[]="\te.onclick=function() {";
+			$loadscript[]="\t\t".$function."();";
+			$loadscript[]="\t\tif (typeof ".$key."_oldonclick=='function')";
+			$loadscript[]="\t\t\t".$key."_oldonclick();";
+			$loadscript[]="\t}";
+			$loadscript[]="}";
 		}
 			
 		foreach ($effects as $target => $sources) {
@@ -568,8 +667,13 @@
 		$qa_content['script_lines'][]=$funcscript;
 		$qa_content['script_onloads'][]=$loadscript;
 	}
+
 	
 	function qa_set_up_tag_field(&$qa_content, &$field, $fieldname, $exampletags, $completetags, $maxtags)
+/*
+	Set up $qa_content and $field (with HTML name $fieldname) for tag auto-completion, where
+	$exampletags are suggestions and $completetags are simply the most popular ones. Show up to $maxtags.
+*/
 	{
 		$template='<A HREF="#" CLASS="qa-tag-link" onClick="return qa_tag_click(this);">^</A>';
 
@@ -592,8 +696,14 @@
 
 		$field['note'].='</SPAN>';
 	}
+
 	
 	function qa_set_up_notify_fields(&$qa_content, &$fields, $basetype, $login_email, $innotify, $inemail, $errors_email)
+/*
+	Set up $qa_content and add to $fields to allow user to set if they want to be notified regarding their post.
+	$basetype is 'Q', 'A' or 'C' for question, answer or comment. $login_email is the email of logged in user,
+	or null if this is an anonymous post. $innotify, $inemail and $errors_email are from previous submission/validation.
+*/
 	{
 		$fields['notify']=array(
 			'tags' => ' NAME="notify" ',
@@ -626,19 +736,19 @@
 				'<SPAN ID="email_shown">'.$labelaskemail.'</SPAN>'.
 				'<SPAN ID="email_hidden" STYLE="display:none;">'.$labelonly.'</SPAN>';
 			
-			$fields['notify']['tags'].=' ID="notify" ';
+			$fields['notify']['tags'].=' ID="notify" onclick="if (document.getElementById(\'notify\').checked) document.getElementById(\'email\').focus();" ';
 			$fields['notify']['tight']=true;
 			
 			$fields['email']=array(
-				'id' => 'email',
-				'tags' => ' NAME="email" ',
+				'id' => 'email_display',
+				'tags' => ' NAME="email" ID="email" ',
 				'value' => qa_html($inemail),
 				'note' => qa_lang_html('question/notify_email_note'),
 				'error' => qa_html($errors_email),
 			);
 			
 			qa_checkbox_to_display($qa_content, array(
-				'email' => 'notify',
+				'email_display' => 'notify',
 				'email_shown' => 'notify',
 				'email_hidden' => '!notify',
 			));
@@ -647,8 +757,12 @@
 			$fields['notify']['label']=str_replace('^', qa_html($login_email), $labelgotemail);
 		}
 	}
+
 	
-	function qa_load_theme_class($theme, $template, $content)
+	function qa_load_theme_class($theme, $template, $content, $request)
+/*
+	Return the initialized class for $theme (or the default if it's gone), passing $template, $content and $request
+*/
 	{
 		global $qa_root_url_relative;
 		
@@ -661,18 +775,17 @@
 			require_once QA_THEME_DIR.$theme.'/qa-theme.php';
 	
 			if (class_exists('qa_html_theme'))
-				$themeclass=new qa_html_theme($template, $content, $themeroothtml);
+				$themeclass=new qa_html_theme($template, $content, $themeroothtml, $request);
 		}
 		
 		if (!isset($themeclass)) {
 			if (!file_exists(QA_THEME_DIR.$theme.'/qa-styles.css'))
 				$themeroothtml=qa_html($qa_root_url_relative.'qa-theme/Default/');
 				
-			$themeclass=new qa_html_theme_base($template, $content, $themeroothtml);
+			$themeclass=new qa_html_theme_base($template, $content, $themeroothtml, $request);
 		}
 		
 		return $themeclass;
 	}
-	
 	
 ?>

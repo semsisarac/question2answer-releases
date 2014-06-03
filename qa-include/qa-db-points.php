@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-points.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Database-level access to user points and statistics
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,18 +35,30 @@
 		exit;
 	}
 
+
 	function qa_db_points_option_names()
+/*
+	Returns an array of option names required to perform calculations in userpoints table
+*/
 	{
 		return array(
-			'points_post_q', 'points_select_a', 'points_per_q_voted', 'points_q_voted_max_gain', 'points_q_voted_max_loss', 
+			'points_post_q', 'points_select_a', 'points_per_q_voted', 'points_q_voted_max_gain', 'points_q_voted_max_loss',
 			'points_post_a', 'points_a_selected', 'points_per_a_voted', 'points_a_voted_max_gain', 'points_a_voted_max_loss',
 			'points_vote_on_q', 'points_vote_on_a',
 			
 			'points_multiple', 'points_base',
 		);
 	}
+
 	
 	function qa_db_points_calculations($db)
+/*
+	Returns an array containing all the calculation formulae for the userpoints table. Each element of this
+	array is for one column - the key contains the column name, and the value is a further array of two elements.
+	The element 'formula' contains the SQL fragment that calculates the columns value for one or more users,
+	where the ~ symbol within the fragment is substituted for a constraint on which users we are interested in.
+	The element 'multiple' specifies what to multiply each column by to create the final sum in the points column.
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 		
@@ -116,22 +129,28 @@
 			),
 		);
 	}
+
 	
-	function qa_db_points_update_ifuser($db, $userid, $fields)
+	function qa_db_points_update_ifuser($db, $userid, $columns)
+/*
+	Update the userpoints table in the database for $userid and $columns, plus the summary points column.
+	Set $columns to true for all, empty for none, an array for several, or a single value for one.
+	This dynamically builds some fairly crazy looking SQL, but it works, and saves repeat calculations.
+*/
 	{
 		if (isset($userid)) {
 			require_once QA_INCLUDE_DIR.'qa-app-options.php';
 
 			$calculations=qa_db_points_calculations($db);
 			
-			if ($fields===true)
-				$keyfields=$calculations;
-			elseif (empty($fields))
-				$keyfields=array();
-			elseif (is_array($fields))
-				$keyfields=array_flip($fields);
+			if ($columns===true)
+				$keycolumns=$calculations;
+			elseif (empty($columns))
+				$keycolumns=array();
+			elseif (is_array($columns))
+				$keycolumns=array_flip($columns);
 			else
-				$keyfields=array($fields => true);
+				$keycolumns=array($columns => true);
 			
 			$insertfields='userid, ';
 			$insertvalues='$, ';
@@ -143,14 +162,14 @@
 			foreach ($calculations as $field => $calculation) {
 				$multiple=(int)$calculation['multiple'];
 				
-				if (isset($keyfields[$field])) {
+				if (isset($keycolumns[$field])) {
 					$insertfields.=$field.', ';
 					$insertvalues.='@_'.$field.':=(SELECT '.$calculation['formula'].'), ';
 					$updates.=$field.'=@_'.$field.', ';
 					$insertpoints.='+('.$multiple.'*@_'.$field.')';
 				}
 				
-				$updatepoints.='+('.$multiple.'*'.(isset($keyfields[$field]) ? '@_' : '').$field.')';
+				$updatepoints.='+('.$multiple.'*'.(isset($keycolumns[$field]) ? '@_' : '').$field.')';
 			}
 			
 			$query='INSERT INTO ^userpoints ('.$insertfields.'points) VALUES ('.$insertvalues.$insertpoints.') '.
@@ -163,7 +182,11 @@
 		}
 	}
 
+
 	function qa_db_userpointscount_update($db)
+/*
+	Update the cached count in the database of the number of rows in the userpoints table
+*/
 	{
 		qa_db_query_sub($db, "REPLACE ^options (title, content) SELECT 'cache_userpointscount', COUNT(*) FROM ^userpoints");
 	}

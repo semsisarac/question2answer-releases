@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-external-example/qa-external-emailer.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Example of how to use your own email sending function
 
 
 	This software is licensed for use in websites which are connected to the
@@ -42,9 +43,9 @@
 		exit;
 	}
 
+
+	function qa_send_email($params)
 /*
-	qa_send_email($params)
-	
 	This is your custom email sending function - $params is an array with the elements below.
 	Return true if delivery (or at least queueing) was successful, false if not.
 	
@@ -58,8 +59,6 @@
 	
 	For an example that uses the PHPMailer library, see qa-include/qa-util-emailer.php.
 */
-
-	function qa_send_email($params)
 	{
 		return false;
 	}

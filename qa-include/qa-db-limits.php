@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-limits.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Database-level access to tables which monitor rate limits
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,7 +35,12 @@
 		exit;
 	}
 
+
 	function qa_db_limits_get($db, $userid, $ip, $action)
+/*
+	Get rate limit information for $action from the database for user $userid and/or IP address $ip, if they're set.
+	Return as an array with the limit type in the key, and a labelled array of the period and count.
+*/
 	{
 		$selects=array();
 		$arguments=array();
@@ -58,8 +64,12 @@
 		} else
 			return array();
 	}
+
 	
 	function qa_db_limits_user_add($db, $userid, $action, $period, $count)
+/*
+	Increment the database rate limit count for user $userid and $action by $count within $period
+*/
 	{
 		qa_db_query_sub($db,
 			'INSERT INTO ^userlimits (userid, action, period, count) VALUES ($, $, #, #) '.
@@ -67,8 +77,12 @@
 			$userid, $action, $period, $count, $period, $count, $count, $period
 		);
 	}
+
 	
 	function qa_db_limits_ip_add($db, $ip, $action, $period, $count)
+/*
+	Increment the database rate limit count for IP address $ip and $action by $count within $period
+*/
 	{
 		qa_db_query_sub($db,
 			'INSERT INTO ^iplimits (ip, action, period, count) VALUES (COALESCE(INET_ATON($), 0), $, #, #) '.

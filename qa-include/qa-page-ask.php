@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-ask.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for ask-a-question page
 
 
 	This software is licensed for use in websites which are connected to the
@@ -38,6 +39,7 @@
 	require_once QA_INCLUDE_DIR.'qa-app-limits.php';
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 	require_once QA_INCLUDE_DIR.'qa-app-captcha.php';
+
 	
 //	Check if we need to be logged in or use captcha
 
@@ -49,6 +51,12 @@
 	$loginerror=(!isset($qa_login_userid)) && qa_get_option($qa_db, 'ask_needs_login');
 	$usecaptcha=(!isset($qa_login_userid)) && qa_get_option($qa_db, 'captcha_on_anon_post');
 
+
+//	Unless we have a need to log in, process the appropriate stage of the ask page:
+//	Stage 1: Enter question title only
+//	Stage 2: Check that the question is not a duplicate (stage may be skipped based on option or if there are any to show)
+//	Stage 3: Enter full question details
+
 	if ($loginerror) {
 		require_once QA_INCLUDE_DIR.'qa-app-format.php';
 		
@@ -56,6 +64,8 @@
 
 	} else {
 		require_once QA_INCLUDE_DIR.'qa-db-selects.php';
+		
+	//	Get user inputs and set some values to their defaults
 
 		$stage=1;
 		
@@ -64,7 +74,9 @@
 		$incontent=qa_post_text('content');
 		$intags=qa_post_text('tags');
 		$innotify=true; // show notify on by default
-		
+	
+	//	Retrieve information about the answer we are following on from
+	
 		if (isset($infollow)) {
 			$followanswer=qa_db_select_with_pending($qa_db,
 				qa_db_full_post_selectspec($qa_login_userid, $infollow)
@@ -75,12 +87,14 @@
 				
 		} else
 			$followanswer=null;
-				
-		if (qa_clicked('doask1') || qa_clicked('doask2') || qa_clicked('doask3')) {			
+	
+	//	Process incoming form
+	
+		if (qa_clicked('doask1') || qa_clicked('doask2') || qa_clicked('doask3')) {
 			if (qa_limits_remaining($qa_db, $qa_login_userid, 'Q')) {
 				require_once QA_INCLUDE_DIR.'qa-app-post-create.php';
-	
-				if (qa_clicked('doask3')) {
+				
+				if (qa_clicked('doask3')) { // process incoming formfor final stage (ready to create question)
 					require_once QA_INCLUDE_DIR.'qa-util-string.php';
 					
 					$tagstring=qa_tags_to_tagstring(array_unique(qa_string_to_words(@$intags)));
@@ -96,22 +110,23 @@
 						if (!isset($qa_login_userid))
 							$qa_cookieid=qa_cookie_get_create($qa_db); // create a new cookie if necessary
 			
-						$questionid=qa_question_create($qa_db, $followanswer, 
+						$questionid=qa_question_create($qa_db, $followanswer,
 							$qa_login_userid, $qa_cookieid, $intitle, $incontent, $tagstring, $innotify, $inemail);
 						
 						qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'q_post', $questionid, null, null);
-						qa_redirect(qa_q_request($questionid, $intitle));
+						qa_redirect(qa_q_request($questionid, $intitle)); // our work is done here
 					}
 					
-					$stage=3;
+					$stage=3; // redisplay the final stage form
 
 				} else
-					$errors=qa_question_validate($qa_db, $intitle, null, null, null, null);
+					$errors=qa_question_validate($qa_db, $intitle, null, null, null, null); // process an earlier form
 				
-				if (empty($errors) || ($stage>1)) {
+
+				if (empty($errors) || ($stage>1)) { // we are ready to move to stage 2 or 3
 					require_once QA_INCLUDE_DIR.'qa-app-format.php';
 					
-				//	Find out what operations are required
+				//	Find out what operations are required (some of these will be ignored, depending on if we show stage 2 or 3)
 					
 					$doaskcheck=qa_clicked('doask1') && qa_get_option($qa_db, 'do_ask_check_qs');
 					$doexampletags=qa_get_option($qa_db, 'do_example_tags');
@@ -119,16 +134,15 @@
 					$askchecksize=$doaskcheck ? qa_get_option($qa_db, 'page_size_ask_check_qs') : 0;
 					$countqs=$doexampletags ? QA_DB_RETRIEVE_ASK_TAG_QS : $askchecksize;
 					
-				//	Find related questions based on the title - for ask check and/or example tags
+				//	Find related questions based on the title - for stage 2 (ask check) and/or 3 (example tags)
 				
 					if ($countqs)
 						$relatedquestions=qa_db_select_with_pending($qa_db,
 							qa_db_search_posts_selectspec($qa_db, null, qa_string_to_words($intitle), null, null, null, 0, $countqs)
 						);
 						
-				//	Find questions to suggest
-	
-					if ($doaskcheck) {
+
+					if ($doaskcheck) { // for ask check, find questions to suggest based on their score
 						$suggestquestions=array_slice($relatedquestions, 0, $askchecksize);
 						
 						$minscore=qa_match_to_min_score(qa_get_option($qa_db, 'match_ask_check_qs'));
@@ -138,11 +152,11 @@
 								unset($suggestquestions[$key]);
 					}
 					
-					if ($doaskcheck && count($suggestquestions)) {
+					if ($doaskcheck && count($suggestquestions)) { // we have something to display for checking duplicate questions
 						$stage=2;
 						$usershtml=qa_userids_handles_html($qa_db, $suggestquestions);
 					
-					} else {
+					} else { // move to the full question form
 						$stage=3;
 						
 					//	Find the most popular tags, not related to question
@@ -150,7 +164,7 @@
 						if ($docompletetags)
 							$populartags=qa_db_select_with_pending($qa_db, qa_db_popular_tags_selectspec(0, QA_DB_RETRIEVE_COMPLETE_TAGS));
 						
-					//	Find the example tags based on question
+					//	Find the example tags to suggest based on the question title, if appropriate
 						
 						if ($doexampletags) {
 					
@@ -163,20 +177,20 @@
 									@$tagweight[$tag]+=exp($question['score']);
 							}
 							
-						//	If appropriate, add extra weight to tags in auto-complete list based on what we learned
+						//	If appropriate, add extra weight to tags in the auto-complete list based on what we learned from related questions
 							
 							if ($docompletetags) {
 								foreach ($tagweight as $tag => $weight)
 									@$populartags[$tag]+=$weight;
 									
-								arsort($populartags, SORT_NUMERIC); // resort required due to changed values
+								arsort($populartags, SORT_NUMERIC); // re-sort required due to changed values
 							}
 						
 						//	Create the list of example tags based on threshold and length
 						
 							arsort($tagweight, SORT_NUMERIC);
 						
-							$minweight=exp(qa_match_to_min_score(qa_get_option($qa_db, 'match_example_tags')));						
+							$minweight=exp(qa_match_to_min_score(qa_get_option($qa_db, 'match_example_tags')));
 							foreach ($tagweight as $tag => $weight)
 								if ($weight<$minweight)
 									unset($tagweight[$tag]);
@@ -195,21 +209,23 @@
 					}
 				}
 				
-			} else
+			} else {
 				$pageerror=qa_lang_html('main/ask_limit');
-		
+			}
 		}
 	}
+
 
 //	Prepare content for theme
 
 	qa_content_prepare();
 	
 	$qa_content['title']=qa_lang_html(isset($followanswer) ? 'question/ask_follow_title' : 'question/ask_title');
+
 	$qa_content['error']=@$pageerror;
 	
 	if (!$loginerror) {
-		if ($stage==1) {
+		if ($stage==1) { // see stages in comment above
 			$qa_content['form']=array(
 				'tags' => ' NAME="ask" METHOD="POST" ACTION="'.qa_self_html().'" ',
 				

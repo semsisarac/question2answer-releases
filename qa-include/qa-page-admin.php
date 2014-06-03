@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for most admin pages which just contain options
 
 
 	This software is licensed for use in websites which are connected to the
@@ -39,6 +40,7 @@
 	require_once QA_INCLUDE_DIR.'qa-app-options.php';
 	require_once QA_INCLUDE_DIR.'qa-app-admin.php';
 	
+
 //	Standard pre-admin operations
 
 	qa_admin_pending();
@@ -46,7 +48,8 @@
 	if (!qa_admin_check_privileges())
 		return;
 
-//	Define the options to show based on request
+
+//	Define the options to show (and some other visual stuff) based on request
 	
 	$formstyle='tall';
 	
@@ -88,25 +91,23 @@
 				$showoptions[]='custom_welcome';
 			break;
 			
-		case 'admin/limits':
-			$subtitle='admin/limits_title';
-			$showoptions=array(
-			);
-			$formstyle='wide';
-			break;
-			
 		case 'admin/spam':
 			$subtitle='admin/spam_title';
 			
 			$showoptions=array();
 			
-			if (!QA_EXTERNAL_USERS)
-				$showoptions[]='captcha_on_register';
-				
-			$anonoptions=qa_get_options($qa_db, array('ask_needs_login', 'answer_needs_login', 'comment_needs_login'));
+			$getoptions=qa_get_options($qa_db, array('ask_needs_login', 'answer_needs_login', 'comment_needs_login', 'feedback_enabled'));
 			
-			if (!($anonoptions['ask_needs_login'] && $anonoptions['answer_needs_login'] && $anonoptions['comment_needs_login']))
+			if (!($getoptions['ask_needs_login'] && $getoptions['answer_needs_login'] && $getoptions['comment_needs_login']))
 				$showoptions[]='captcha_on_anon_post';
+				
+			if (!QA_EXTERNAL_USERS) {
+				$showoptions[]='captcha_on_register';
+				$showoptions[]='captcha_on_reset_password';
+			}
+			
+			if ($getoptions['feedback_enabled'])
+				$showoptions[]='captcha_on_feedback';
 			
 			if (count($showoptions))
 				array_push($showoptions, 'recaptcha_public_key', 'recaptcha_private_key', '');
@@ -125,94 +126,98 @@
 			break;
 	}
 	
+
 //	Option types and maxima
 	
 	$optiontype=array(
-		'logo_width' => 'number-blank',
-		'logo_height' => 'number-blank',
-		'min_len_q_title' => 'number',
-		'min_len_q_content' => 'number',
-		'min_len_a_content' => 'number',
-		'min_len_c_content' => 'number',
-		'max_rate_ip_qs' => 'number',
-		'max_rate_ip_as' => 'number',
-		'max_rate_ip_cs' => 'number',
-		'max_rate_ip_votes' => 'number',
-		'max_rate_user_qs' => 'number',
-		'max_rate_user_as' => 'number',
-		'max_rate_user_cs' => 'number',
-		'max_rate_user_votes' => 'number',
-		'pages_prev_next' => 'number',
-		'page_size_home' => 'number',
-		'page_size_qs' => 'number',
-		'page_size_search' => 'number',
-		'page_size_tags' => 'number',
-		'page_size_tag_qs' => 'number',
-		'page_size_una_qs' => 'number',
-		'page_size_users' => 'number',
-		'page_size_user_qs' => 'number',
-		'page_size_user_as' => 'number',
-		'page_size_related_qs' => 'number',
-		'page_size_ask_check_qs' => 'number',
-		'page_size_ask_tags' => 'number',
 		'columns_tags' => 'number',
 		'columns_users' => 'number',
+		'logo_height' => 'number-blank',
+		'logo_width' => 'number-blank',
+		'max_rate_ip_as' => 'number',
+		'max_rate_ip_cs' => 'number',
+		'max_rate_ip_qs' => 'number',
+		'max_rate_ip_votes' => 'number',
+		'max_rate_user_as' => 'number',
+		'max_rate_user_cs' => 'number',
+		'max_rate_user_qs' => 'number',
+		'max_rate_user_votes' => 'number',
+		'min_len_a_content' => 'number',
+		'min_len_c_content' => 'number',
+		'min_len_q_content' => 'number',
+		'min_len_q_title' => 'number',
+		'page_size_ask_check_qs' => 'number',
+		'page_size_ask_tags' => 'number',
+		'page_size_home' => 'number',
+		'page_size_qs' => 'number',
+		'page_size_related_qs' => 'number',
+		'page_size_search' => 'number',
+		'page_size_tag_qs' => 'number',
+		'page_size_tags' => 'number',
+		'page_size_una_qs' => 'number',
+		'page_size_user_as' => 'number',
+		'page_size_user_qs' => 'number',
+		'page_size_users' => 'number',
+		'pages_prev_next' => 'number',
 		
-		'neat_urls' => 'checkbox',
-		'comment_on_qs' => 'checkbox',
-		'comment_on_as' => 'checkbox',
-		'follow_on_as' => 'checkbox',
-		'ask_needs_login' => 'checkbox',
 		'answer_needs_login' => 'checkbox',
-		'comment_needs_login' => 'checkbox',
-		'do_ask_check_qs' => 'checkbox',
-		'do_example_tags' => 'checkbox',
-		'do_complete_tags' => 'checkbox',
-		'do_related_qs' => 'checkbox',
-		'logo_show' => 'checkbox',
-		'show_user_points' => 'checkbox',
-		'show_url_links' => 'checkbox',
-		'voting_on_qs' => 'checkbox',
-		'voting_on_as' => 'checkbox',
-		'votes_separated' => 'checkbox',
-		'feedback_enabled' => 'checkbox',
-		'captcha_on_register' => 'checkbox',
+		'ask_needs_login' => 'checkbox',
 		'captcha_on_anon_post' => 'checkbox',
-		'notify_admin_q_post' => 'checkbox',
+		'captcha_on_feedback' => 'checkbox',
+		'captcha_on_register' => 'checkbox',
+		'captcha_on_reset_password' => 'checkbox',
+		'comment_needs_login' => 'checkbox',
+		'comment_on_as' => 'checkbox',
+		'comment_on_qs' => 'checkbox',
+		'do_ask_check_qs' => 'checkbox',
+		'do_complete_tags' => 'checkbox',
+		'do_example_tags' => 'checkbox',
+		'do_related_qs' => 'checkbox',
+		'feedback_enabled' => 'checkbox',
+		'follow_on_as' => 'checkbox',
+		'logo_show' => 'checkbox',
 		'nav_unanswered' => 'checkbox',
+		'neat_urls' => 'checkbox',
+		'notify_admin_q_post' => 'checkbox',
+		'show_url_links' => 'checkbox',
+		'show_user_points' => 'checkbox',
+		'votes_separated' => 'checkbox',
+		'voting_on_as' => 'checkbox',
+		'voting_on_qs' => 'checkbox',
 	);
 	
 	$optionmaximum=array(
-		'page_size_home' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_qs' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_search' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_tags' => QA_DB_RETRIEVE_TAGS,
-		'page_size_tag_qs' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_una_qs' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_users' => QA_DB_RETRIEVE_USERS,
-		'page_size_user_qs' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_user_as' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_related_qs' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_ask_check_qs' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_ask_tags' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_home' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_qs' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_related_qs' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_search' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_tag_qs' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_tags' => QA_DB_RETRIEVE_TAGS,
+		'page_size_una_qs' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_user_as' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_user_qs' => QA_DB_RETRIEVE_QS_AS,
+		'page_size_users' => QA_DB_RETRIEVE_USERS,
 	);
 	
 	$optionminimum=array(
+		'page_size_ask_check_qs' => 3,
+		'page_size_ask_tags' => 3,
 		'page_size_home' => 3,
 		'page_size_qs' => 3,
 		'page_size_search' => 3,
-		'page_size_tags' => 3,
 		'page_size_tag_qs' => 3,
+		'page_size_tags' => 3,
 		'page_size_users' => 3,
-		'page_size_ask_check_qs' => 3,
-		'page_size_ask_tags' => 3,
 	);
 	
+
 //	Filter out blanks and get/set appropriate options
 	
 	$getoptions=array();
 	foreach ($showoptions as $optionname)
-		if (!empty($optionname))
+		if (!empty($optionname)) // empties represent spacers in forms
 			$getoptions[]=$optionname;
 	
 	if (qa_clicked('doresetoptions'))
@@ -222,7 +227,7 @@
 		foreach ($getoptions as $optionname) {
 			$optionvalue=qa_post_text('option_'.$optionname);
 			
-			if (	
+			if (
 				(@$optiontype[$optionname]=='number') ||
 				(@$optiontype[$optionname]=='checkbox') ||
 				((@$optiontype[$optionname]=='number-blank') && strlen($optionvalue))
@@ -239,6 +244,7 @@
 		}
 
 	$options=qa_get_options($qa_db, $getoptions);
+
 	
 //	Prepare content for theme
 
@@ -382,7 +388,7 @@
 				case 'min_len_c_content':
 				case 'votes_separated':
 				case 'feedback_email':
-					$optionfield['id']=$optionname;
+					$optionfield['id']=$optionname; // this wraps ID around table rows instead of assigning it to input element
 					break;
 					
 				case 'custom_sidebar':

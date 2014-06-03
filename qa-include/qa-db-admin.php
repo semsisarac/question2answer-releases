@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-admin.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Database access functions which are specific to the admin center
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,8 +35,13 @@
 		exit;
 	}
 
+
 	function qa_db_count_posts($db, $type, $fromuser=null)
-	{	
+/*
+	Return count of number of posts of $type in database.
+	Set $fromuser to true to only count non-anonymous posts, false to only count anonymous posts
+*/
+	{
 		$otherparams='';
 		
 		if (isset($fromuser))
@@ -46,15 +52,23 @@
 			$type
 		));
 	}
-	
+
+
 	function qa_db_count_users($db)
+/*
+	Return number of registered users in database.
+*/
 	{
 		return qa_db_read_one_value(qa_db_query_sub($db,
 			'SELECT COUNT(*) FROM ^users'
 		));
 	}
 	
+
 	function qa_db_count_active_users($db, $table)
+/*
+	Return number of active users in database $table
+*/
 	{
 		switch ($table) {
 			case 'posts':

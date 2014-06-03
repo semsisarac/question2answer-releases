@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-post-create.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Database functions for creating a question, answer or comment
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,8 +35,12 @@
 		exit;
 	}
 
+
 	function qa_db_post_create($db, $type, $parentid, $userid, $cookieid, $title, $content, $tagstring, $notify)
-	{	
+/*
+	Create a new post in the database and return its ID (based on auto-incrementing)
+*/
+	{
 		qa_db_query_sub($db,
 			'INSERT INTO ^posts (type, parentid, userid, cookieid, title, content, tags, notify, created) VALUES ($, #, $, #, $, $, $, $, NOW())',
 			$type, $parentid, $userid, $cookieid, $title, $content, $tagstring, $notify
@@ -43,25 +48,38 @@
 		
 		return qa_db_last_insert_id($db);
 	}
+
 	
-	function qa_db_post_acount_update($db, $postid)
+	function qa_db_post_acount_update($db, $questionid)
+/*
+	Update the cached number of answers for question $questionid in the database
+*/
 	{
 		qa_db_query_sub($db,
 			'UPDATE ^posts AS x, (SELECT COUNT(*) AS acount FROM ^posts WHERE parentid=# AND type=\'A\') AS a SET x.acount=a.acount WHERE x.postid=#',
-			$postid, $postid);
+			$questionid, $questionid);
 	}
+
 	
 	function qa_db_posttags_add_post_wordids($db, $postid, $wordids)
-	{	
+/*
+	Add rows into the database tags index, where $postid contains the words $wordids
+*/
+	{
 		if (count($wordids))
 			qa_db_query_sub($db,
 				'INSERT INTO ^posttags (postid, wordid, postcreated) SELECT postid, wordid, created FROM ^words, ^posts WHERE postid=# AND wordid IN ($)',
 				$postid, $wordids
 			);
 	}
+
 	
 	function qa_db_titlewords_add_post_wordids($db, $postid, $wordids)
-	{	
+/*
+	Add rows into the database title index, where $postid contains the words $wordids - this does the same sort
+	of thing as qa_db_posttags_add_post_wordids() in a different way, for no particularly good reason.
+*/
+	{
 		if (count($wordids)) {
 			$rowstoadd=array();
 			foreach ($wordids as $wordid)
@@ -73,8 +91,13 @@
 			);
 		}
 	}
+
 	
 	function qa_db_contentwords_add_post_wordidcounts($db, $postid, $type, $questionid, $wordidcounts)
+/*
+	Add rows into the database content index, where $postid (of $type, with the antecedent $questionid)
+	has words as per the keys of $wordidcounts, and the corresponding number of those words in the values.
+*/
 	{
 		if (count($wordidcounts)) {
 			$rowstoadd=array();
@@ -87,9 +110,13 @@
 			);
 		}
 	}
+
 	
 	function qa_db_word_mapto_ids($db, $words)
-	{	
+/*
+	Return an array mapping each word in $words to its corresponding wordid in the database
+*/
+	{
 		if (count($words))
 			return qa_db_read_all_assoc(qa_db_query_sub($db,
 				'SELECT wordid, BINARY word AS word FROM ^words WHERE word IN ($)', $words
@@ -97,8 +124,12 @@
 		else
 			return array();
 	}
+
 	
 	function qa_db_word_mapto_ids_add($db, $words)
+/*
+	Return an array mapping each word in $words to its corresponding wordid in the database, adding any that are missing
+*/
 	{
 		$wordtoid=qa_db_word_mapto_ids($db, $words);
 		
@@ -108,11 +139,9 @@
 				$wordstoadd[]=$word;
 		
 		if (count($wordstoadd)) {
-			qa_db_query_sub($db, 'LOCK TABLES ^words WRITE');
+			qa_db_query_sub($db, 'LOCK TABLES ^words WRITE'); // to prevent two requests adding the same word
 			
-			// do it all again in case table content changed before it was locked
-			
-			$wordtoid=qa_db_word_mapto_ids($db, $words); 
+			$wordtoid=qa_db_word_mapto_ids($db, $words); // map it again in case table content changed before it was locked
 			
 			$rowstoadd=array();
 			foreach ($words as $word)
@@ -123,13 +152,17 @@
 			
 			qa_db_query_sub($db, 'UNLOCK TABLES');
 			
-			$wordtoid=qa_db_word_mapto_ids($db, $words); 
+			$wordtoid=qa_db_word_mapto_ids($db, $words); // do it one last time
 		}
 		
 		return $wordtoid;
 	}
 	
+
 	function qa_db_word_titlecount_update($db, $wordids)
+/*
+	Update the titlecount column in the database for the words in $wordids, based on how many posts they appear in the title of
+*/
 	{
 		if (count($wordids))
 			qa_db_query_sub($db,
@@ -137,17 +170,25 @@
 				$wordids
 			);
 	}
+
 	
 	function qa_db_word_tagcount_update($db, $wordids)
+/*
+	Update the tagcount column in the database for the words in $wordids, based on how many posts they appear in the tags of
+*/
 	{
 		if (count($wordids))
-			qa_db_query_sub($db, 
+			qa_db_query_sub($db,
 				'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^posttags.wordid) AS tagcount FROM ^words LEFT JOIN ^posttags ON ^posttags.wordid=^words.wordid WHERE ^words.wordid IN (#) GROUP BY wordid) AS a SET x.tagcount=a.tagcount WHERE x.wordid=a.wordid',
 				$wordids
 			);
 	}
+
 	
 	function qa_db_word_contentcount_update($db, $wordids)
+/*
+	Update the contentcount column in the database for the words in $wordids, based on how many posts they appear in the content of
+*/
 	{
 		if (count($wordids))
 			qa_db_query_sub($db,
@@ -155,28 +196,48 @@
 				$wordids
 			);
 	}
+
 	
 	function qa_db_qcount_update($db)
+/*
+	Updated the cached count in the database of the number of questions (excluding hidden)
+*/
 	{
 		qa_db_query_sub($db, "REPLACE ^options (title, content) SELECT 'cache_qcount', COUNT(*) FROM ^posts WHERE type='Q'");
 	}
 
+
 	function qa_db_acount_update($db)
+/*
+	Updated the cached count in the database of the number of answers (excluding hidden)
+*/
 	{
 		qa_db_query_sub($db, "REPLACE ^options (title, content) SELECT 'cache_acount', COUNT(*) FROM ^posts WHERE type='A'");
 	}
 
+
 	function qa_db_ccount_update($db)
+/*
+	Updated the cached count in the database of the number of comments (excluding hidden)
+*/
 	{
 		qa_db_query_sub($db, "REPLACE ^options (title, content) SELECT 'cache_ccount', COUNT(*) FROM ^posts WHERE type='C'");
 	}
 
+
 	function qa_db_tagcount_update($db)
+/*
+	Updated the cached count in the database of the number of different tags used
+*/
 	{
 		qa_db_query_sub($db, "REPLACE ^options (title, content) SELECT 'cache_tagcount', COUNT(*) FROM ^words WHERE tagcount>0");
 	}
+
 	
 	function qa_db_unaqcount_update($db)
+/*
+	Updated the cached count in the database of the number of unanswered questions (excluding hidden)
+*/
 	{
 		qa_db_query_sub($db, "REPLACE ^options (title, content) SELECT 'cache_unaqcount', COUNT(*) FROM ^posts WHERE type='Q' AND acount=0");
 	}

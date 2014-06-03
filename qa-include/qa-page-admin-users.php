@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-users.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Controller for admin page showing users with non-standard privileges
 
 
 	This software is licensed for use in websites which are connected to the
@@ -38,6 +39,7 @@
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 	require_once QA_INCLUDE_DIR.'qa-app-users.php';
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
+
 	
 //	Standard pre-admin operations and check not using external users
 
@@ -49,6 +51,7 @@
 	if (QA_EXTERNAL_USERS)
 		qa_fatal_error('User accounts are handled by external code');
 		
+		
 //	Get list of special users
 
 	qa_options_set_pending(array('page_size_users', 'columns_users'));
@@ -56,6 +59,7 @@
 	$users=qa_db_select_with_pending($qa_db, qa_db_users_from_level_selectspec(QA_USER_LEVEL_EDITOR));
 
 	$usershtml=qa_userids_handles_html($qa_db, $users);
+
 
 //	Prepare content for theme
 

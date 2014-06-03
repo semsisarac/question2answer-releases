@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-votes.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Database-level access to votes tables
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,7 +35,11 @@
 		exit;
 	}
 
+
 	function qa_db_uservote_set($db, $postid, $userid, $vote)
+/*
+	Set the vote for $userid on $postid to $vote in the database
+*/
 	{
 		$vote=max(min(($vote), 1), -1);
 		
@@ -43,8 +48,12 @@
 			$postid, $userid, $vote, $vote
 		);
 	}
+
 	
 	function qa_db_post_recount_votes($db, $postid)
+/*
+	Recalculate the cached count of upvotes and downvotes for $postid
+*/
 	{
 		qa_db_query_sub($db,
 			'UPDATE ^posts AS x, (SELECT COALESCE(SUM(GREATEST(0,vote)),0) AS upvotes, -COALESCE(SUM(LEAST(0,vote)),0) AS downvotes FROM ^uservotes WHERE postid=#) AS a SET x.upvotes=a.upvotes, x.downvotes=a.downvotes WHERE x.postid=#',

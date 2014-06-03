@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-votes.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Handling incoming votes (application level)
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,7 +35,12 @@
 		exit;
 	}
 
+
 	function qa_user_vote_error($db, $userid, $postid, $vote, $topage)
+/*
+	Process an incoming $vote (-1/0/1) by $userid on $postid, on the page $topage.
+	Return an error to display if there was a problem, or false if all went smoothly.
+*/
 	{
 		if (isset($userid)) {
 			require_once QA_INCLUDE_DIR.'qa-db.php';
@@ -88,8 +94,13 @@
 			return qa_insert_login_links(qa_lang_html('main/vote_must_login'), $topage);
 		}
 	}
+
 	
 	function qa_set_user_vote($db, $post, $userid, $vote)
+/*
+	Actually set (application level) the $vote (-1/0/1) by $userid on $postid.
+	Handles user points and recounting as appropriate.
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-db-points.php';
 		require_once QA_INCLUDE_DIR.'qa-db-votes.php';

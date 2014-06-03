@@ -1,14 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-admin.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Functions used in the admin center pages
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,7 +35,12 @@
 		exit;
 	}
 
+	
 	function qa_admin_check_privileges()
+/*
+	Return true if user is logged in with admin privileges. If not, return false
+	and set up global $qa_content with the appropriate title and error message
+*/
 	{
 		global $qa_content, $qa_login_userid, $qa_login_level, $qa_request;
 		
@@ -59,8 +65,12 @@
 		
 		return true;
 	}
-
+	
+	
 	function qa_admin_language_options()
+/*
+	Return a sorted array of available languages, [short code] => [long name]
+*/
 	{
 		$codetolanguage=array(
 			'ar' => 'Arabic - العربية',
@@ -79,8 +89,8 @@
 			'he' => 'Hebrew - עברית',
 			'hr' => 'Croatian - Hrvatski',
 			'hu' => 'Hungarian - Magyar',
+			'id' => 'Indonesian - Bahasa Indonesia',
 			'is' => 'Icelandic - Íslenska',
-			'is' => 'Indonesian - Bahasa Indonesia',
 			'it' => 'Italian - Italiano',
 			'ja' => 'Japanese - 日本語',
 			'ko' => 'Korean - 한국어',
@@ -118,7 +128,11 @@
 		return $options;
 	}
 	
+	
 	function qa_admin_theme_options()
+/*
+	Return a sorted array of available themes, [theme name] => [theme name]
+*/
 	{
 		$options=array();
 
@@ -135,8 +149,12 @@
 		
 		return $options;
 	}
+
 	
 	function qa_admin_page_size_options($maximum)
+/*
+	Return an array of page size options up to $maximum, [page size] => [page size]
+*/
 	{
 		$rawoptions=array(5, 10, 15, 20, 25, 30, 40, 50, 60, 80, 100, 120, 150, 200, 250, 300, 400, 500, 600, 800, 1000);
 		
@@ -151,18 +169,26 @@
 		return $options;
 	}
 	
+	
 	function qa_admin_match_options()
+/*
+	Return an array of options representing matching precision, [value] => [label]
+*/
 	{
 		return array(
 			5 => qa_lang_html('options/match_5'),
 			4 => qa_lang_html('options/match_4'),
 			3 => qa_lang_html('options/match_3'),
 			2 => qa_lang_html('options/match_2'),
-			1 => qa_lang_html('options/match_1'), 
+			1 => qa_lang_html('options/match_1'),
 		);
 	}
+
 	
 	function qa_admin_sub_navigation()
+/*
+	Return the sub navigation structure common to admin pages
+*/
 	{
 		$navigation=array(
 			'admin$' => array(
@@ -221,13 +247,21 @@
 		
 		return $navigation;
 	}
+
 	
 	function qa_admin_pending()
+/*
+	Queue any option requests needed by qa_admin_page_error()
+*/
 	{
 		qa_options_set_pending(array('db_version'));
 	}
+
 	
 	function qa_admin_page_error($db)
+/*
+	Return an error to be displayed on all admin pages, or null if none
+*/
 	{
 		@include_once QA_INCLUDE_DIR.'qa-db-install.php';
 		

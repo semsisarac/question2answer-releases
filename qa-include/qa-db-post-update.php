@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-post-update.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description:  Database functions for changing a question, answer or comment
 
 
 	This software is licensed for use in websites which are connected to the
@@ -34,55 +35,83 @@
 		exit;
 	}
 
-	function qa_db_post_set_selchildid($db, $postid, $selchildid)
+
+	function qa_db_post_set_selchildid($db, $questionid, $selchildid)
+/*
+	Update the selected answer in the database for $questionid to $selchildid
+*/
 	{
 		qa_db_query_sub($db,
 			'UPDATE ^posts SET selchildid=# WHERE postid=#',
-			$selchildid, $postid
+			$selchildid, $questionid
 		);
 	}
+
 	
 	function qa_db_post_set_type($db, $postid, $type, $lastuserid)
+/*
+	Set the type in the database of $postid to $type, and record that $lastuserid did it
+*/
 	{
 		qa_db_query_sub($db,
 			'UPDATE ^posts SET type=$, updated=NOW(), lastuserid=$ WHERE postid=#',
 			$type, $lastuserid, $postid
 		);
 	}
+
 	
 	function qa_db_post_set_parent($db, $postid, $parentid, $lastuserid)
+/*
+	Set the parent in the database of $postid to $parentid, and record that $lastuserid did it
+*/
 	{
 		qa_db_query_sub($db,
 			'UPDATE ^posts SET parentid=#, updated=NOW(), lastuserid=$ WHERE postid=#',
 			$parentid, $lastuserid, $postid
 		);
 	}
+
 	
 	function qa_db_post_set_text($db, $postid, $title, $content, $tagstring, $notify, $lastuserid)
+/*
+	Set the text fields in the database of $postid to $title, $content, $tagstring and $notify, and record that $lastuserid did it
+*/
 	{
 		qa_db_query_sub($db,
 			'UPDATE ^posts SET title=$, content=$, tags=$, updated=NOW(), notify=$, lastuserid=$ WHERE postid=#',
 			$title, $content, $tagstring, $notify, $lastuserid, $postid
 		);
 	}
+
 	
 	function qa_db_post_set_userid($db, $postid, $userid)
+/*
+	Set the author in the database of $postid to $userid
+*/
 	{
 		qa_db_query_sub($db,
 			'UPDATE ^posts SET userid=$ WHERE postid=#',
 			$userid, $postid
 		);
 	}
+
 	
 	function qa_db_posttags_get_post_wordids($db, $postid)
+/*
+	Return an array of wordids that were indexed in the database for the tags of $postid
+*/
 	{
 		return qa_db_read_all_values(qa_db_query_sub($db,
 			'SELECT wordid FROM ^posttags WHERE postid=#',
 			$postid
 		));
 	}
+
 	
 	function qa_db_posttags_delete_post($db, $postid)
+/*
+	Remove all entries in the database index of post tags for $postid
+*/
 	{
 		qa_db_query_sub($db,
 			'DELETE FROM ^posttags WHERE postid=#',
@@ -90,15 +119,23 @@
 		);
 	}
 
+
 	function qa_db_titlewords_get_post_wordids($db, $postid)
+/*
+	Return an array of wordids that were indexed in the database for the title of $postid
+*/
 	{
 		return qa_db_read_all_values(qa_db_query_sub($db,
 			'SELECT wordid FROM ^titlewords WHERE postid=#',
 			$postid
 		));
 	}
+
 	
 	function qa_db_titlewords_delete_post($db, $postid)
+/*
+	Remove all entries in the database index of title words for $postid
+*/
 	{
 		qa_db_query_sub($db,
 			'DELETE FROM ^titlewords WHERE postid=#',
@@ -106,15 +143,23 @@
 		);
 	}
 
+
 	function qa_db_contentwords_get_post_wordids($db, $postid)
+/*
+	Return an array of wordids that were indexed in the database for the content of $postid
+*/
 	{
 		return qa_db_read_all_values(qa_db_query_sub($db,
 			'SELECT wordid FROM ^contentwords WHERE postid=#',
 			$postid
 		));
 	}
+
 	
 	function qa_db_contentwords_delete_post($db, $postid)
+/*
+	Remove all entries in the database index of content words for $postid
+*/
 	{
 		qa_db_query_sub($db,
 			'DELETE FROM ^contentwords WHERE postid=#',

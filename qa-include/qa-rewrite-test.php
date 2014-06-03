@@ -1,14 +1,15 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-3 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-rewrite-test.php
-	Version: 1.0-beta-3
-	Date: 2010-03-31 12:13:41 GMT
+	Version: 1.0
+	Date: 2010-04-09 16:07:28 GMT
+	Description: Sits in an iframe and shows whether .htaccess file is installed and working
 
 
 	This software is licensed for use in websites which are connected to the
@@ -33,7 +34,7 @@
 	echo '<TABLE WIDTH="100%" HEIGHT="100%" CELLSPACING="0" CELLPADDING="0">';
 	echo '<TR VALIGN="middle"><TD STYLE="font-size:11px; font-weight:bold; font-family:arial,sans-serif;">&nbsp; ';
 	
-	if ($qa_request=='rewrite-pass')
+	if ($qa_request=='rewrite-pass') // .htaccess converts requests to rewrite-test into rewrite-pass, so if conversion happened
 		echo '.htaccess OK - safe to use!';
 	else
 		echo '<FONT COLOR="#FF0000">.htaccess not OK <A HREF="http://www.question2answer.org/htaccess.php" TARGET="_blank">[?]</A> - do not use!</FONT>';
