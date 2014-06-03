@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-theme-base.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Default theme class, broken into lots of little functions for easy overriding
 
 
@@ -973,19 +973,19 @@
 			switch (@$post['vote_state'])
 			{
 				case 'voted_up':
-					if ($post['vote_view']=='updown') {
-						$this->post_hover_button($post, 'vote_up_tags', '+', 'qa-vote-first-button qa-voted-up');
-						$this->post_disabled_button($post, 'vote_down_tags', '', 'qa-vote-second-button qa-vote-down');
-					} else
-						$this->post_hover_button($post, 'vote_up_tags', '+', 'qa-vote-one-button qa-voted-up');
+					$this->post_hover_button($post, 'vote_up_tags', '+', 'qa-vote-one-button qa-voted-up');
+					break;
+					
+				case 'voted_up_disabled':
+					$this->post_disabled_button($post, 'vote_up_tags', '+', 'qa-vote-one-button qa-vote-up');
 					break;
 					
 				case 'voted_down':
-					if ($post['vote_view']=='updown') {
-						$this->post_disabled_button($post, 'vote_up_tags', '', 'qa-vote-first-button qa-vote-up');
-						$this->post_hover_button($post, 'vote_down_tags', '&ndash;', 'qa-vote-second-button qa-voted-down');
-					} else
-						$this->post_hover_button($post, 'vote_down_tags', '&ndash;', 'qa-vote-one-button qa-voted-down');
+					$this->post_hover_button($post, 'vote_down_tags', '&ndash;', 'qa-vote-one-button qa-voted-down');
+					break;
+					
+				case 'voted_down_disabled':
+					$this->post_disabled_button($post, 'vote_down_tags', '&ndash;', 'qa-vote-one-button qa-vote-down');
 					break;
 					
 				case 'enabled':
@@ -1029,6 +1029,8 @@
 		
 		function a_count($post)
 		{
+			// You can also use $post['answers_raw'] to get a raw integer count of answers
+			
 			$this->output_split(@$post['answers'], 'qa-a-count');
 		}
 		
@@ -1089,7 +1091,7 @@
 						$this->output_split(@$post['who'], $class.'-who');
 						$this->post_meta_points($post, $class);
 						break;
-				}			
+				}
 			
 			if (!empty($post['when_2'])) {
 				$this->output('&ndash;');

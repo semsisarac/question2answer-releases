@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-recalc.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Database functions for recalculations (clean-up operations)
 
 
@@ -298,7 +298,7 @@
 
 	function qa_db_posts_get_for_deleting($db, $type, $startpostid=0, $limit=null)
 /*
-	Return the ids of up to $limit posts of $type that can be deleting from the database (i.e. have no dependents)
+	Return the ids of up to $limit posts of $type that can be deleted from the database (i.e. have no dependents)
 */
 	{
 		$limitsql=isset($limit) ? (' LIMIT '.(int)$limit) : '';

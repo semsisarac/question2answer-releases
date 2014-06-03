@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-user.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Controller for user profile page
 
 
@@ -72,7 +72,7 @@
 //	Find the user profile and questions and answers for this handle
 	
 	qa_options_set_pending(array('page_size_user_qs', 'page_size_user_as', 'show_when_created', 'points_per_q_voted', 'points_per_a_voted',
-		'voting_on_qs', 'voting_on_as', 'votes_separated', 'comment_on_qs', 'comment_on_as', 'confirm_user_emails', 'block_bad_words'));
+		'voting_on_qs', 'voting_on_q_page_only', 'voting_on_as', 'votes_separated', 'comment_on_qs', 'comment_on_as', 'confirm_user_emails', 'block_bad_words'));
 	
 	$identifier=QA_EXTERNAL_USERS ? $userid : $handle;
 
@@ -256,7 +256,7 @@
 				
 				'lastlogin' => null,
 				
-				'lastwrite' => null, 
+				'lastwrite' => null,
 				
 				'name' => array(
 					'type' => 'static',

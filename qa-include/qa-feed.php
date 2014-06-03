@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-feed.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Handles all requests to RSS feeds, first checking if they should be available
 
 
@@ -58,7 +58,7 @@
 
 	
 	function qa_feed_not_found()
-/*	
+/*
 	Common function called when a non-existent feed is requested - outputs HTTP and text errors
 */
 	{
@@ -156,7 +156,7 @@
 
 //	Queue the chosen option and some others that will be needed
 	
-	qa_options_set_pending(array($feedoption, 'feed_per_category', 'feed_number_items', 'feed_full_text',
+	qa_options_set_pending(array($feedoption, 'feed_per_category', 'feed_number_items', 'feed_full_text', 'show_url_links',
 		'tags_or_categories', 'site_url', 'site_title', 'site_language', 'neat_urls', 'block_bad_words'));
 	
 
@@ -177,6 +177,7 @@
 	$siteurl=qa_get_option($qa_db, 'site_url');
 	$full=qa_get_option($qa_db, 'feed_full_text');
 	$count=qa_get_option($qa_db, 'feed_number_items');
+	$showurllinks=qa_get_option($qa_db, 'show_url_links');
 	
 	$linkrequest=$feedtype.(isset($categoryslug) ? ('/'.$categoryslug) : '');
 	$linkparams=null;
@@ -263,7 +264,7 @@
 	
 	$questions=array_slice($questions, 0, $count);
 	$blockwordspreg=qa_get_block_words_preg($qa_db);
-	
+
 
 //	Prepare the XML output
 
@@ -284,20 +285,26 @@
 		if (isset($question['cpostid'])) {
 			$anchor=qa_anchor('C', $question['cpostid']);
 			$titleprefix=qa_lang('misc/feed_c_prefix');
-			$content=$question['ccontent'];
 			$created=$question['ccreated'];
+
+			if ($full)
+				$content=$question['ccontent'];
 			
 		} elseif (isset($question['apostid'])) {
 			$anchor=qa_anchor('A', $question['apostid']);
 			$titleprefix=qa_lang('misc/feed_a_prefix');
-			$content=$question['acontent'];
 			$created=$question['acreated'];
+
+			if ($full)
+				$content=$question['acontent'];
 
 		} else {
 			$anchor=null;
 			$titleprefix='';
-			$content=$question['content'];
 			$created=$question['created'];
+
+			if ($full)
+				$content=$question['content'];
 		}
 		
 		if (isset($blockwordspreg)) {
@@ -310,16 +317,22 @@
 	//	Build the inner XML structure for each item
 		
 		$lines[]='<item>';
-		$lines[]='<title>'.qa_html($titleprefix.$question['title']).'</title>';		
+		$lines[]='<title>'.qa_html($titleprefix.$question['title']).'</title>';
 		$lines[]='<link>'.$urlhtml.'</link>';
 
-		if (isset($content))
-			$lines[]='<description>'.qa_html(qa_html($content, true)).'</description>';
+		if ($full && isset($content)) {
+			$htmlcontent=qa_html($content, true);
+			
+			if ($showurllinks)
+				$htmlcontent=qa_html_convert_urls($htmlcontent);
+				
+			$lines[]='<description>'.qa_html($htmlcontent).'</description>'; // qa_html() a second time to put HTML code inside XML wrapper
+		}
 			
 		if (isset($question['categoryid']) && isset($categories[$question['categoryid']]))
 			$lines[]='<category>'.qa_html($categories[$question['categoryid']]['title']).'</category>';
 			
-		$lines[]='<guid isPermaLink="true">'.$urlhtml.'</guid>';		
+		$lines[]='<guid isPermaLink="true">'.$urlhtml.'</guid>';
 		$lines[]='<pubDate>'.qa_html(gmdate('r', $created)).'</pubDate>';
 		$lines[]='</item>';
 	}

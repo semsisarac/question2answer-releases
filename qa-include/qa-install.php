@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-install.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: User interface for installing, upgrading and fixing the database
 
 
@@ -134,8 +134,7 @@
 			if (empty($fielderrors)) {
 				require_once QA_INCLUDE_DIR.'qa-app-users.php';
 				
-				$userid=qa_create_new_user($qa_db, $inemail, $inpassword, $inhandle);
-				qa_db_user_set($qa_db, $userid, 'level', QA_USER_LEVEL_SUPER);
+				$userid=qa_create_new_user($qa_db, $inemail, $inpassword, $inhandle, QA_USER_LEVEL_SUPER);
 				qa_set_logged_in_user($qa_db, $userid, $inhandle);
 				
 				qa_set_option($qa_db, 'feedback_email', $inemail);

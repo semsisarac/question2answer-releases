@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-admin.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Database access functions which are specific to the admin center
 
 
@@ -90,7 +90,7 @@
 	
 	function qa_db_category_create($db, $title, $tags)
 /*
-	Create a new category with $title and $tags
+	Create a new category with $title (=name) and $tags (=slug)
 */
 	{
 		$position=qa_db_read_one_value(qa_db_query_sub($db, 'SELECT 1+COALESCE(MAX(position), 0) FROM ^categories'));
@@ -106,7 +106,7 @@
 	
 	function qa_db_category_rename($db, $categoryid, $title, $tags)
 /*
-	Set the name of $categoryid to $name
+	Set the name of $categoryid to $title and its slug to $tags
 */
 	{
 		qa_db_query_sub($db,
@@ -118,7 +118,7 @@
 	
 	function qa_db_category_move($db, $categoryid, $newposition)
 /*
-	Move the category $categoryid into position $position
+	Move the category $categoryid into position $newposition
 */
 	{
 		qa_db_ordered_move($db, 'categories', 'categoryid', $categoryid, $newposition);
@@ -137,13 +137,13 @@
 	
 	function qa_db_page_create($db, $title, $flags, $tags, $heading, $content)
 /*
-	Create a new page with $title, $tags, $heading and $content
+	Create a new page with $title, $flags, $tags, $heading and $content
 */
 	{
 		$position=qa_db_read_one_value(qa_db_query_sub($db, 'SELECT 1+COALESCE(MAX(position), 0) FROM ^pages'));
 		
 		qa_db_query_sub($db,
-			'INSERT INTO ^pages (title, flags, tags, heading, content, position) VALUES ($, #, $, $, $, #)',
+			'INSERT INTO ^pages (title, nav, flags, tags, heading, content, position) VALUES ($, \'\', #, $, $, $, #)',
 			$title, $flags, $tags, $heading, $content, $position
 		);
 		
@@ -153,7 +153,7 @@
 	
 	function qa_db_page_set_fields($db, $pageid, $title, $flags, $tags, $heading, $content)
 /*
-	Set the text fields of $pageid to $title, $tags, $heading, $content
+	Set the fields of $pageid to $title, $flags, $tags, $heading, $content
 */
 	{
 		qa_db_query_sub($db,
@@ -207,7 +207,7 @@
 
 		qa_db_query_sub($db, 'UPDATE ^'.$table.' SET position=# WHERE '.$idcolumn.'=#', $newposition, $id);
 		
-		qa_db_query_sub($db, 'UNLOCK TABLES');	
+		qa_db_query_sub($db, 'UNLOCK TABLES');
 	}
 	
 	

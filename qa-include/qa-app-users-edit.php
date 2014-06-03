@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users-edit.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: User management (application level) for creating/modify users
 
 
@@ -131,9 +131,9 @@
 	}
 
 	
-	function qa_create_new_user($db, $email, $password, $handle)
+	function qa_create_new_user($db, $email, $password, $handle, $level=QA_USER_LEVEL_BASIC)
 /*
-	Create a new user (application level) with $email, $password and $handle.
+	Create a new user (application level) with $email, $password, $handle and $level.
 	Handles user points, notification and optional email confirmation.
 */
 	{
@@ -142,7 +142,7 @@
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 		require_once QA_INCLUDE_DIR.'qa-app-emails.php';
 
-		$userid=qa_db_user_create($db, $email, $password, $handle, QA_USER_LEVEL_BASIC, @$_SERVER['REMOTE_ADDR']);
+		$userid=qa_db_user_create($db, $email, $password, $handle, $level, @$_SERVER['REMOTE_ADDR']);
 		qa_db_points_update_ifuser($db, $userid, null);
 		
 		qa_notification_pending();
@@ -151,7 +151,7 @@
 		
 		$custom=trim($options['custom_welcome']);
 		
-		if ($options['confirm_user_emails'])
+		if ($options['confirm_user_emails'] && ($level<QA_USER_LEVEL_EXPERT))
 			$confirm=strtr(qa_lang('emails/welcome_confirm'), array(
 				'^url' => qa_get_new_confirm_url($db, $userid, $handle)
 			));

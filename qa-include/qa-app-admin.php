@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-admin.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Functions used in the admin center pages
 
 
@@ -189,7 +189,7 @@
 	function qa_admin_permit_options($widest, $narrowest, $doconfirms)
 /*
 	Return an array of options representing permission restrictions, [value] => [label]
-	ranging from $lowest to $highest. Set $doconfirms to whether email confirmations are on
+	ranging from $widest to $narrowest. Set $doconfirms to whether email confirmations are on
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
@@ -299,7 +299,7 @@
 	
 	function qa_admin_pending()
 /*
-	Queue any option requests needed by qa_admin_page_error()
+	Queue any option requests needed for common admin functions
 */
 	{
 		qa_options_set_pending(array('db_version', 'tags_or_categories'));

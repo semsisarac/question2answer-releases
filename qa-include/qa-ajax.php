@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-ajax.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Front line of response to Ajax requests, routing as appropriate
 
 
@@ -49,7 +49,7 @@
 	$qa_request=qa_post_text('qa_request');
 	$qa_operation=qa_post_text('qa_operation');
 
-//	Perform the appropriate Ajax operation	
+//	Perform the appropriate Ajax operation
 
 	switch ($qa_operation) {
 		case 'vote':

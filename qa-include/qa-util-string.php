@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-util-string.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Some useful string-related stuff
 
 
@@ -227,7 +227,7 @@
 			
 			preg_match_all('/(?<= )('.$wordspreg.') /', ' '.$string.' ', $pregmatches, PREG_OFFSET_CAPTURE);
 			
-			$outmatches=array();			
+			$outmatches=array();
 			foreach ($pregmatches[1] as $pregmatch)
 				$outmatches[$pregmatch[1]-1]=strlen($pregmatch[0]);
 				

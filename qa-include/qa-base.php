@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Sets up Q2A environment, plus many globally useful functions
 
 
@@ -37,7 +37,7 @@
 	
 //	Set the version to be used for internal reference and a suffix for .js and .css requests
 
-	define('QA_VERSION', '1.2-beta-1');
+	define('QA_VERSION', '1.2');
 
 //	Basic PHP configuration checks and unregister globals
 
@@ -198,10 +198,7 @@
 			if (!isset($qa_lang_custom[$group])) { // only load each language file once
 				$directory=QA_LANG_DIR.$languagecode.'/';
 				
-				if (!file_exists($directory))
-					qa_fatal_error('Language directory '.$languagecode.' not installed');
-				
-				$phrases=@include $directory.'qa-lang-'.$group.'.php'; // can tolerate missing file
+				$phrases=@include $directory.'qa-lang-'.$group.'.php'; // can tolerate missing file or directory
 				
 				$qa_lang_custom[$group]=is_array($phrases) ? $phrases : array();
 			}
@@ -426,7 +423,7 @@
 					$formhtml.='<INPUT TYPE="hidden" NAME="'.qa_html(urldecode($matches[1])).'" VALUE="'.qa_html(urldecode(@$matches[3])).'"/>';
 		}
 		
-		return $formhtml;		
+		return $formhtml;
 	}
 	
 	

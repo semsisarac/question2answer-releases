@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Common functions for creating theme-ready structures from data
 
 
@@ -147,7 +147,7 @@
 	
 	function qa_category_html($category)
 /*
-	Return HTML to use for $category (full row retrieved from database)
+	Return HTML to use for $category as retrieved from the database
 */
 	{
 		return '<A HREF="'.qa_path_html($category['tags']).'" CLASS="qa-category-link">'.qa_html($category['title']).'</A>';
@@ -172,6 +172,8 @@
 	Given $post retrieved from database, return array of mostly HTML to be passed to theme layer.
 	$userid and $cookieid refer to the user *viewing* the page.
 	$usershtml is an array of [user id] => [HTML representation of user] built ahead of time.
+	$categories is an array of [category id] => category information from database
+	$blockwordspreg is a pre-prepared regular expression for censored words
 	Remaining parameters determine what is shown - most are true/false, $voteview is 'updown'/'net'/false.
 	If something is missing from $post (e.g. ['content']), correponding HTML also omitted.
 */
@@ -226,9 +228,12 @@
 				}
 			}
 		
-			if (isset($post['acount']))
+			if (isset($post['acount'])) {
+				$fields['answers_raw']=$post['acount'];
+				
 				$fields['answers']=($post['acount']==1) ? qa_lang_html_sub_split('main/1_answer', '1', '1')
 					: qa_lang_html_sub_split('main/x_answers', number_format($post['acount']));
+			}
 
 			if (isset($post['categoryid'])) {
 				$category=@$categories[$post['categoryid']];
@@ -302,7 +307,7 @@
 			
 		//	Pass information on vote viewing
 				
-			$fields['vote_view']=$voteview;
+			$fields['vote_view']=(($voteview=='updown') || ($voteview=='updown-disabled')) ? 'updown' : 'net';
 			
 			$fields['upvotes_view']=($upvotes==1) ? qa_lang_html_sub_split('main/1_liked', $upvoteshtml, '1')
 				: qa_lang_html_sub_split('main/x_liked', $upvoteshtml);
@@ -314,7 +319,7 @@
 				: qa_lang_html_sub_split('main/x_votes', $netvoteshtml);
 		
 		//	Voting buttons
-		
+			
 			$fields['vote_tags']=' ID="voting_'.qa_html($postid).'" ';
 			$onclick='onClick="return qa_vote_click(this);" ';
 			
@@ -328,6 +333,11 @@
 				$fields['vote_up_tags']=' TITLE="'.qa_lang_html($isanswer ? 'main/vote_disabled_my_a' : 'main/vote_disabled_my_q').'" ';
 				$fields['vote_down_tags']=$fields['vote_up_tags'];
 				
+			} elseif (($voteview=='updown-disabled') || ($voteview=='net-disabled')) {
+				$fields['vote_state']=(@$post['uservote']>0) ? 'voted_up_disabled' : ((@$post['uservote']<0) ? 'voted_down_disabled' : 'disabled');
+				$fields['vote_up_tags']=' TITLE="'.qa_lang_html('main/vote_disabled_q_page_only').'" ';
+				$fields['vote_down_tags']=$fields['vote_up_tags'];
+
 			} elseif (@$post['uservote']>0) {
 				$fields['vote_state']='voted_up';
 				$fields['vote_up_tags']=' TITLE="'.qa_lang_html('main/voted_up_popup').'" NAME="'.qa_html('vote_'.$postid.'_0_'.$anchor).'" '.$onclick;
@@ -393,7 +403,7 @@
 	}
 	
 
-	function qa_who_to_html($isbyuser, $postuserid, $usershtml, $ip, $microformats)
+	function qa_who_to_html($isbyuser, $postuserid, $usershtml, $ip=null, $microformats=false)
 /*
 	Return array of split HTML (prefix, data, suffix) to represent author of post
 */
@@ -422,7 +432,7 @@
 	Return array of mostly HTML to be passed to theme layer, to *link* to an answer or comment
 	on $question retrieved from database. $basetype is 'A' for answer or 'C' for comment.
 	$userid, $cookieid, $usershtml, $voteview, $pointsview are passed through to qa_post_html_fields().
-	$acpostid, $accreated, $acuserid, $accookieid, $acpoints relate to the answer or comment and its author.
+	The $ac* parameters relate to the answer or comment and its author.
 */
 	{
 		$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $tagsview, $categories, $voteview, $whenview, $ipview, $pointsview, $blockwordspreg);
@@ -563,7 +573,7 @@
 	
 	function qa_insert_login_links($htmlmessage, $topage=null, $params=null)
 /*
-	Return $htmlmessage with ^1...^4 substituted for links to log in or register and come back to $topage
+	Return $htmlmessage with ^1...^6 substituted for links to log in or register or confirm email and come back to $topage with $params
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-users.php';
@@ -648,7 +658,8 @@
 	
 	function qa_html_suggest_qs_tags($usingtags=false, $categoryslug=null)
 /*
-	Return HTML that suggests browsing all questions or popular tags, as appropriate
+	Return HTML that suggests browsing all questions (in the category with $categoryslug, if
+	it's not null) and also popular tags if $usingtags is true
 */
 	{
 		$htmlmessage=strlen($categoryslug) ? qa_lang_html('main/suggest_category_qs') :
@@ -669,7 +680,7 @@
 	
 	function qa_html_suggest_ask($categoryid=null)
 /*
-	Return HTML that suggest getting things started by asking a question.
+	Return HTML that suggest getting things started by asking a question, in $categoryid if not null
 */
 	{
 		$htmlmessage=qa_lang_html('main/suggest_ask');

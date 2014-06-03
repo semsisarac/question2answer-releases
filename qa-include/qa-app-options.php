@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-options.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Getting and setting admin options (application level)
 
 
@@ -198,6 +198,7 @@
 		global $qa_root_url_inferred;
 		
 		$fixed_defaults=array(
+			'allow_multi_answers' => 1,
 			'captcha_on_anon_post' => 1,
 			'captcha_on_feedback' => 1,
 			'captcha_on_register' => 1,
@@ -239,6 +240,7 @@
 			'min_len_c_content' => 12,
 			'min_len_q_content' => 0,
 			'min_len_q_title' => 12,
+			'min_num_q_tags' => 0,
 			'nav_ask' => 1,
 			'nav_qa_not_home' => 1,
 			'nav_questions' => 1,
@@ -280,11 +282,14 @@
 			'points_q_voted_max_gain' => 10,
 			'points_q_voted_max_loss' => 3,
 			'points_select_a' => 3,
+			'show_c_reply_buttons' => 1,
+			'show_a_form_immediate' => 'if_no_as',
 			'show_selected_first' => 1,
 			'show_url_links' => 1,
 			'show_user_points' => 1,
 			'show_when_created' => 1,
 			'site_theme' => 'Default',
+			'sort_answers_by' => 'created',
 			'tags_or_categories' => 'tc',
 			'voting_on_as' => 1,
 			'voting_on_qs' => 1,
@@ -385,20 +390,24 @@
 	}
 
 	
-	function qa_get_vote_view($db, $basetype)
+	function qa_get_vote_view($db, $basetype, $full=false, $enabledif=true)
 /*
-	Return $voteview parameter to pass to qa_post_html_fields() in qa-app-format.php
-	for posts of type $basetype, where Q=question, A=answer, C=comment.
+	Return $voteview parameter to pass to qa_post_html_fields() in qa-app-format.php for posts of $basetype (Q/A/C),
+	with buttons enabled if appropriate (based on whether $full post shown) unless $enabledif is false.
 */
 	{
-		if ($basetype=='Q')
-			$enabled=qa_get_option($db, 'voting_on_qs');
-		elseif ($basetype=='A')
-			$enabled=qa_get_option($db, 'voting_on_as');
-		else
-			$enabled=false;
+		if ($basetype=='Q') {
+			$view=qa_get_option($db, 'voting_on_qs');
+			$enabled=$enabledif && $view && ($full || !qa_get_option($db, 'voting_on_q_page_only'));
+
+		} elseif ($basetype=='A') {
+			$view=qa_get_option($db, 'voting_on_as');
+			$enabled=$enabledif;
+			
+		} else
+			$view=false;
 		
-		return $enabled ? (qa_get_option($db, 'votes_separated') ? 'updown' : 'net') : false;
+		return $view ? (qa_get_option($db, 'votes_separated') ? ($enabled ? 'updown' : 'updown-disabled') : ($enabled ? 'net' : 'net-disabled')) : false;
 	}
 	
 	

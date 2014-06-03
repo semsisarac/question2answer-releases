@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: User management (application level) for basic user operations
 
 
@@ -131,8 +131,7 @@
 		
 		function qa_set_logged_in_user($db, $userid, $handle='', $remember=false)
 	/*
-		Call for successful log in by $userid or successful log out with $userid=null.
-		Provide $handle and the user's $sessioncode, if it is known (otherwise a new one will be set).
+		Call for successful log in by $userid and $handle or successful log out with $userid=null.
 		$remember states if 'Remember me' was checked in the login form.
 	*/
 		{
@@ -176,7 +175,7 @@
 					if ($remember)
 						qa_set_session_cookie($handle, $sessioncode, $remember); // extend 'remember me' cookies each time
 	
-					$sessioncode=trim($sessioncode); // to prevent passing in blank values to match uninitiated DB rows
+					$sessioncode=trim($sessioncode); // trim to prevent passing in blank values to match uninitiated DB rows
 	
 					// Try to recover session from the database if PHP session has timed out
 					if ( (!isset($_SESSION['qa_session_userid'])) && (!empty($handle)) && (!empty($sessioncode)) ) {
@@ -184,7 +183,7 @@
 						
 						$userinfo=qa_db_single_select($db, qa_db_user_account_selectspec($handle, false)); // don't get any pending
 						
-						if (strtolower($userinfo['sessioncode']) == strtolower($sessioncode))
+						if (strtolower(trim($userinfo['sessioncode'])) == strtolower($sessioncode))
 							$_SESSION['qa_session_userid']=$userinfo['userid'];
 						else
 							qa_clear_session_cookie(); // if cookie not valid, remove it to save future checks
@@ -238,7 +237,7 @@
 			$userid=qa_get_logged_in_userid($db);
 			
 			if (isset($userid) && !isset($qa_cached_logged_in_user)) {
-				require_once QA_INCLUDE_DIR.'qa-db-selects.php';	
+				require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 				$qa_logged_in_pending=true;
 				qa_db_select_with_pending($db); // if not yet loaded, retrieve via standard mechanism
 			}
@@ -313,7 +312,7 @@
 		
 		function qa_get_login_links($rooturl, $tourl)
 	/*
-		Return an array of links to login, register and logout pages (if not using single sign-on integration)
+		Return an array of links to login, register, email confirm and logout pages (if not using single sign-on integration)
 	*/
 		{
 			return array(

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-question.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Controller for question page (only viewing functionality here)
 
 
@@ -53,7 +53,7 @@
 */
 	{
 		global $qa_db, $qa_login_userid, $questionid, $question, $parentquestion, $answers, $commentsfollows,
-			$relatedcount, $relatedquestions, $question, $useranswered, $categories;
+			$relatedcount, $relatedquestions, $question, $categories;
 
 		list($question, $childposts, $achildposts, $parentquestion, $relatedquestions, $categories)=qa_db_select_with_pending($qa_db,
 			qa_db_full_post_selectspec($qa_login_userid, $questionid),
@@ -102,14 +102,12 @@
 			if ($question['selchildid'] && (@$answers[$question['selchildid']]['type']!='A'))
 				$question['selchildid']=null; // if selected answer is hidden or somehow not there, consider it not selected
 
-			$useranswered=false;
-			
 			foreach ($answers as $key => $answer) {
 				$question['deleteable']=false;
 				
 				qa_page_q_post_rules($answers[$key]);
-				if ($answers[$key]['isbyuser'])
-					$useranswered=true;
+				if ($answers[$key]['isbyuser'] && !qa_get_option($qa_db, 'allow_multi_answers'))
+					$question['answerbutton']=false;
 				
 				$answers[$key]['isselected']=($answer['postid']==$question['selchildid']);
 			}
@@ -170,7 +168,7 @@
 			// can only reshow a question if you're the one who hid it, or of course if you have general showing permissions
 		$post['deleteable']=$post['hidden'] && !qa_user_permit_error($qa_db, 'permit_delete_hidden');
 			// this does not check the post has no children - that check is performed in qa_page_q_load_q()
-		$post['claimable']=(!isset($post['userid'])) && isset($qa_login_userid) &&(@$post['cookieid']==$qa_cookieid) && 
+		$post['claimable']=(!isset($post['userid'])) && isset($qa_login_userid) &&(@$post['cookieid']==$qa_cookieid) &&
 			!(($post['basetype']=='Q') ? $permiterror_post_q : (($post['basetype']=='A') ? $permiterror_post_a : $permiterror_post_c));
 		$post['followable']=($post['type']=='A') ? qa_get_option($qa_db, 'follow_on_as') : false;
 	}
@@ -232,10 +230,11 @@
 								'label' => qa_lang_html('question/claim_button'),
 							);
 							
-						if ($parent['commentbutton'] && !$commentfollow['hidden'])
+						if ($parent['commentbutton'] && qa_get_option($qa_db, 'show_c_reply_buttons') && !$commentfollow['hidden'])
 							$c_view['form']['buttons']['comment']=array(
 								'tags' => ' NAME="'.(($parent['basetype']=='Q') ? 'docommentq' : ('docommenta_'.qa_html($parent['postid']))).'" ',
-								'label' => qa_lang_html('question/comment_button'),
+								'label' => qa_lang_html('question/reply_button'),
+								'popup' => qa_lang_html('question/reply_c_popup'),
 							);
 
 					}
@@ -255,10 +254,12 @@
 
 //	Get information about this question
 
-	qa_options_set_pending(array('do_related_qs', 'page_size_related_qs', 'match_related_qs', 'allow_no_category', 'page_size_ask_tags', 'do_complete_tags',
-		'show_url_links', 'voting_on_qs', 'voting_on_as', 'votes_separated', 'comment_on_qs', 'comment_on_as', 'follow_on_as', 'captcha_on_anon_post',
-		'captcha_on_unconfirmed', 'show_selected_first', 'show_when_created', 'show_user_points', 'permit_post_q', 'permit_post_a', 'permit_post_c',
-		'permit_edit_q', 'permit_edit_a', 'permit_edit_c', 'permit_select_a', 'permit_hide_show', 'permit_delete_hidden', 'block_ips_write', 'permit_anon_view_ips', 'block_bad_words'));
+	qa_options_set_pending(array('do_related_qs', 'page_size_related_qs', 'match_related_qs', 'allow_no_category', 'allow_multi_answers',
+		'page_size_ask_tags', 'do_complete_tags', 'show_c_reply_buttons', 'show_url_links', 'voting_on_qs', 'voting_on_q_page_only',
+		'voting_on_as', 'votes_separated', 'comment_on_qs', 'comment_on_as', 'follow_on_as', 'captcha_on_anon_post', 'captcha_on_unconfirmed',
+		'sort_answers_by', 'show_selected_first', 'show_a_form_immediate', 'show_when_created', 'show_user_points', 'permit_post_q', 'permit_post_a',
+		'permit_post_c', 'permit_edit_q', 'permit_edit_a', 'permit_edit_c', 'permit_select_a', 'permit_hide_show', 'permit_delete_hidden',
+		'block_ips_write', 'permit_anon_view_ips', 'block_bad_words'));
 
 	qa_captcha_pending();
 	
@@ -298,9 +299,13 @@
 	}
 	
 	$formrequested=isset($formtype);
-	
-	if ((!$formrequested) && $question['answerbutton'] && (!$question['acount']) && (!$question['isbyuser']) )
-		$formtype='a_add'; // show answer form by default under certain conditions
+
+	if ((!$formrequested) && $question['answerbutton']) {
+		$immedoption=qa_get_option($qa_db, 'show_a_form_immediate');
+
+		if ( ($immedoption=='always') || (($immedoption=='if_no_as') && (!$question['isbyuser']) && (!$question['acount'])) )
+			$formtype='a_add'; // show answer form by default
+	}
 	
 	
 //	Get information on the users referenced
@@ -332,7 +337,7 @@
 	} else { // ...in view mode
 		$qa_content['q_view']=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
 			qa_using_tags($qa_db), qa_using_categories($qa_db) ? $categories : null,
-			qa_get_vote_view($qa_db, 'Q'), qa_get_option($qa_db, 'show_when_created'), !qa_user_permit_error($qa_db, 'permit_anon_view_ips'),
+			qa_get_vote_view($qa_db, 'Q', true), qa_get_option($qa_db, 'show_when_created'), !qa_user_permit_error($qa_db, 'permit_anon_view_ips'),
 			qa_get_option($qa_db, 'show_user_points'), qa_get_block_words_preg($qa_db), qa_get_option($qa_db, 'show_url_links'), true);
 		
 		$qa_content['title']=$qa_content['q_view']['title'];
@@ -422,7 +427,7 @@
 	}
 	
 
-//	Prepare content for an answer being edited (if any)	
+//	Prepare content for an answer being edited (if any)
 
 	if ($formtype=='a_edit')
 		$qa_content['q_view']['a_form']=qa_page_q_edit_a_form($formpostid);
@@ -443,13 +448,21 @@
 
 	$qa_content['a_list']['as']=array();
 	
-	qa_sort_by($answers, 'created');
+	if (qa_get_option($qa_db, 'sort_answers_by')=='votes') {
+		foreach ($answers as $answerid => $answer)
+			$answers[$answerid]['sortvotes']=$answer['downvotes']-$answer['upvotes'];
+
+		qa_sort_by($answers, 'sortvotes', 'created');
+
+	} else
+		qa_sort_by($answers, 'created');
+
 	$priority=0;
 
 	foreach ($answers as $answerid => $answer)
 		if ($answer['viewable'] && !(($formtype=='a_edit') && ($formpostid==$answerid))) {
 			$a_view=qa_post_html_fields($answer, $qa_login_userid, $qa_cookieid, $usershtml, false, null,
-				qa_get_vote_view($qa_db, 'A'), qa_get_option($qa_db, 'show_when_created'), !qa_user_permit_error($qa_db, 'permit_anon_view_ips'),
+				qa_get_vote_view($qa_db, 'A', true), qa_get_option($qa_db, 'show_when_created'), !qa_user_permit_error($qa_db, 'permit_anon_view_ips'),
 				qa_get_option($qa_db, 'show_user_points'), qa_get_block_words_preg($qa_db), qa_get_option($qa_db, 'show_url_links'), true, $answer['isselected']);
 			
 
@@ -557,23 +570,25 @@
 //	Prepare content for form to add an answer
 
 	if ($formtype=='a_add') { // Form for adding answers
+		$answerform=null;
+		
 		switch (qa_user_permit_error($qa_db, 'permit_post_a')) {
 			case 'login':
-				$qa_content['q_view']['a_form']=array(
+				$answerform=array(
 					'style' => 'tall',
 					'title' => qa_insert_login_links(qa_lang_html('question/answer_must_login'), $qa_request)
 				);
 				break;
 				
 			case 'confirm':
-				$qa_content['q_view']['a_form']=array(
+				$answerform=array(
 					'style' => 'tall',
 					'title' => qa_insert_login_links(qa_lang_html('question/answer_must_confirm'), $qa_request)
 				);
 				break;
 			
 			case false:
-				$qa_content['q_view']['a_form']=array(
+				$answerform=array(
 					'title' => qa_lang_html('question/your_answer_title'),
 					
 					'style' => 'tall',
@@ -598,19 +613,26 @@
 				if ($formrequested) { // only show cancel button if user explicitly requested the form
 					$focusonid='content';
 					
-					$qa_content['q_view']['a_form']['buttons']['cancel']=array(
+					$answerform['buttons']['cancel']=array(
 						'tags' => ' NAME="docancel" ',
 						'label' => qa_lang_html('main/cancel_button'),
 					);
 				}
 				
-				qa_set_up_notify_fields($qa_content, $qa_content['q_view']['a_form']['fields'], 'A', qa_get_logged_in_email($qa_db),
+				qa_set_up_notify_fields($qa_content, $answerform['fields'], 'A', qa_get_logged_in_email($qa_db),
 					isset($innotify) ? $innotify : true, @$inemail, @$errors['email']);
 					
 				if ($usecaptcha)
-					qa_set_up_captcha_field($qa_db, $qa_content, $qa_content['q_view']['a_form']['fields'], @$errors,
+					qa_set_up_captcha_field($qa_db, $qa_content, $answerform['fields'], @$errors,
 						qa_insert_login_links(qa_lang_html(isset($qa_login_userid) ? 'misc/captcha_confirm_fix' : 'misc/captcha_login_fix')));
 				break;
+		}
+		
+		if ($formrequested || empty($qa_content['a_list']['as']))
+			$qa_content['q_view']['a_form']=$answerform; // show directly under question
+		else {
+			$answerkeys=array_keys($qa_content['a_list']['as']);
+			$qa_content['a_list']['as'][$answerkeys[count($answerkeys)-1]]['c_form']=$answerform; // under last answer
 		}
 	}
 

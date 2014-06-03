@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-question-post.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: More control for question page if it's submitted by HTTP POST
 
 
@@ -254,7 +254,7 @@
 					$setnotify=$answer['isbyuser'] ? qa_combine_notify_email($answer['userid'], $innotify, $inemail) : $answer['notify'];
 					
 					if ($intocomment && (
-						(($incommenton==$questionid) && $question['commentable']) || 
+						(($incommenton==$questionid) && $question['commentable']) ||
 						(($incommenton!=$answerid) && @$answers[$incommenton]['commentable'])
 					)) { // convert to a comment
 						if (qa_limits_remaining($qa_db, $qa_login_userid, 'C')) { // already checked 'permit_post_c'
@@ -299,7 +299,7 @@
 			
 			} else {
 				$commentparenttype='Q';
-				$commentanswerid=null;			
+				$commentanswerid=null;
 			}
 
 			$commentanswer=@$answers[$comment['parentid']];

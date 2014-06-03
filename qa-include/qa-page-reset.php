@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-reset.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Controller for password reset page (comes after forgot page)
 
 
@@ -53,7 +53,7 @@
 		require_once QA_INCLUDE_DIR.'qa-db-users.php';
 	
 		$inemailhandle=qa_post_text('emailhandle');
-		$incode=qa_post_text('code');
+		$incode=trim(qa_post_text('code')); // trim to prevent passing in blank values to match uninitiated DB rows
 		
 		$errors=array();
 		
@@ -69,7 +69,7 @@
 			$userinfo=qa_db_select_with_pending($qa_db, qa_db_user_account_selectspec($inuserid, true));
 			
 			// strlen() check is vital otherwise we can reset code for most users by entering the empty string
-			if (strlen($incode) && (strtolower($userinfo['emailcode']) == strtolower($incode))) {
+			if (strlen($incode) && (strtolower(trim($userinfo['emailcode'])) == strtolower($incode))) {
 				qa_complete_reset_user($qa_db, $inuserid);
 				qa_redirect('login', array('e' => $inemailhandle, 'ps' => '1')); // redirect to login page
 	

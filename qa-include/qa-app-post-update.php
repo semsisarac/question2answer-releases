@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-update.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Changing questions, answer and comments (application level)
 
 
@@ -118,7 +118,7 @@
 				qa_post_unindex($db, $comment['postid']);
 			
 		qa_db_post_set_type($db, $oldquestion['postid'], $hidden ? 'Q_HIDDEN' : 'Q', $lastuserid);
-		qa_db_ifcategory_qcount_update($db, $oldquestion['categoryid']);	
+		qa_db_ifcategory_qcount_update($db, $oldquestion['categoryid']);
 		qa_db_points_update_ifuser($db, $oldquestion['userid'], array('qposts', 'aselects'));
 		qa_db_qcount_update($db);
 		qa_db_unaqcount_update($db);

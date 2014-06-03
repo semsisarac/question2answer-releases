@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-create.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Creating questions, answers and comments (application level)
 
 
@@ -65,7 +65,7 @@
 			$length=qa_strlen($input);
 			
 			if ($length < $minlength)
-				$errors[$field]=qa_lang_sub('main/min_length_x', $minlength);
+				$errors[$field]=($minlength==1) ? qa_lang('main/field_required') : qa_lang_sub('main/min_length_x', $minlength);
 			elseif ($length > $maxlength)
 				$errors[$field]=qa_lang_sub('main/max_length_x', $maxlength);
 		}
@@ -79,7 +79,7 @@
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 
-		$options=qa_get_options($db, array('min_len_q_title', 'max_len_q_title', 'min_len_q_content', 'max_num_q_tags'));
+		$options=qa_get_options($db, array('min_len_q_title', 'max_len_q_title', 'min_len_q_content', 'min_num_q_tags', 'max_num_q_tags'));
 		
 		$errors=array();
 		
@@ -88,10 +88,18 @@
 		qa_length_validate($errors, 'title', $title, $options['min_len_q_title'], $maxtitlelength);
 		qa_length_validate($errors, 'content', $content, $options['min_len_q_content'], QA_DB_MAX_CONTENT_LENGTH);
 		
-		if (count(qa_tagstring_to_tags($tagstring))>$options['max_num_q_tags'])
-			$errors['tags']=qa_lang_sub('question/max_tags_x', $options['max_num_q_tags']);
-		else
-			qa_length_validate($errors, 'tags', $tagstring, 0, QA_DB_MAX_TAGS_LENGTH);
+		if (isset($tagstring)) {
+			$counttags=count(qa_tagstring_to_tags($tagstring));
+			
+			$mintags=min($options['min_num_q_tags'], $options['max_num_q_tags']); // to deal with silly settings
+			
+			if ($counttags<$mintags)
+				$errors['tags']=qa_lang_sub('question/min_tags_x', $mintags);
+			elseif ($counttags>$options['max_num_q_tags'])
+				$errors['tags']=qa_lang_sub('question/max_tags_x', $options['max_num_q_tags']);
+			else
+				qa_length_validate($errors, 'tags', $tagstring, 0, QA_DB_MAX_TAGS_LENGTH);
+		}
 		
 		qa_notify_validate($errors, $notify, $email);
 			
@@ -165,7 +173,7 @@
 			));
 		}
 		
-		if (qa_get_option($db, 'notify_admin_q_post'))			
+		if (qa_get_option($db, 'notify_admin_q_post'))
 			qa_send_notification($db, null, qa_get_option($db, 'feedback_email'), null, qa_lang('emails/q_posted_subject'), qa_lang('emails/q_posted_body'), array(
 				'^q_title' => $title, // don't censor title or content since we want the admin to see bad words
 				'^q_content' => $content,

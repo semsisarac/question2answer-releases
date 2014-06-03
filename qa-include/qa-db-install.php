@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-install.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Database-level functions for installation and upgrading
 
 
@@ -37,7 +37,7 @@
 	}
 
 
-	define('QA_DB_VERSION_CURRENT', 14);
+	define('QA_DB_VERSION_CURRENT', 15);
 
 
 	function qa_db_user_column_type_verify()
@@ -126,9 +126,9 @@
 				'loginip' => 'INT UNSIGNED NOT NULL', // INET_ATON of IP address of last login
 				'written' => 'DATETIME', // time of last write action done by user
 				'writeip' => 'INT UNSIGNED', // INET_ATON of IP address of last write action done by user
-				'emailcode' => 'BINARY(8) NOT NULL', // for email confirmation or password reset
-				'sessioncode' => 'BINARY(8) NOT NULL', // for comparing against session cookie in browser
-				'flags' => 'TINYINT UNSIGNED NOT NULL', // email confirmed and/or blocked?
+				'emailcode' => 'CHAR(8) CHARACTER SET ascii NOT NULL DEFAULT \'\'', // for email confirmation or password reset
+				'sessioncode' => 'CHAR(8) CHARACTER SET ascii NOT NULL DEFAULT \'\'', // for comparing against session cookie in browser
+				'flags' => 'TINYINT UNSIGNED NOT NULL DEFAULT 0', // email confirmed and/or blocked?
 				'PRIMARY KEY (userid)',
 				'KEY email (email)',
 				'KEY handle (handle)',
@@ -155,7 +155,7 @@
 				'categoryid' => 'SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT',
 				'title' => 'VARCHAR('.QA_DB_MAX_CAT_PAGE_TITLE_LENGTH.') NOT NULL', // category name
 				'tags' => 'VARCHAR('.QA_DB_MAX_CAT_PAGE_TAGS_LENGTH.') NOT NULL', // slug (url fragment) used to identify category
-				'qcount' => 'INT UNSIGNED NOT NULL',
+				'qcount' => 'INT UNSIGNED NOT NULL DEFAULT 0',
 				'position' => 'SMALLINT UNSIGNED NOT NULL',
 				'PRIMARY KEY (categoryid)',
 				'UNIQUE tags (tags)',
@@ -181,15 +181,15 @@
 				'categoryid' => 'SMALLINT UNSIGNED',
 				'type' => "ENUM('Q', 'A', 'C', 'Q_HIDDEN', 'A_HIDDEN', 'C_HIDDEN') NOT NULL",
 				'parentid' => 'INT UNSIGNED', // for follow on questions, all answers and comments
-				'acount' => 'SMALLINT UNSIGNED NOT NULL', // number of answers (for questions)
+				'acount' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0', // number of answers (for questions)
 				'selchildid' => 'INT UNSIGNED', // selected answer (for questions)
 				'userid' => $useridcoltype, // which user wrote it
 				'cookieid' => 'BIGINT UNSIGNED', // which cookie wrote it, if an anonymous post
 				'createip' => 'INT UNSIGNED', // INET_ATON of IP address used to create the post
 				'lastuserid' => $useridcoltype, // which user last modified it
-				'upvotes' => 'SMALLINT UNSIGNED NOT NULL',
-				'downvotes' => 'SMALLINT UNSIGNED NOT NULL',
-				'format' => 'CHAR(1) CHARACTER SET ascii NOT NULL', // for future use, ignored for now
+				'upvotes' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0',
+				'downvotes' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0',
+				'format' => 'CHAR(1) CHARACTER SET ascii NOT NULL DEFAULT \'\'', // for future use, ignored for now
 				'created' => 'DATETIME NOT NULL',
 				'updated' => 'DATETIME', // time of last update
 				'title' => 'VARCHAR('.QA_DB_MAX_TITLE_LENGTH.')',
@@ -211,9 +211,9 @@
 			'words' => array(
 				'wordid' => 'INT UNSIGNED NOT NULL AUTO_INCREMENT',
 				'word' => 'VARCHAR('.QA_DB_MAX_WORD_LENGTH.') NOT NULL',
-				'titlecount' => 'INT UNSIGNED NOT NULL', // only counts one per post
-				'contentcount' => 'INT UNSIGNED NOT NULL', // only counts one per post
-				'tagcount' => 'INT UNSIGNED NOT NULL', // only counts one per post (though no duplicate tags anyway)
+				'titlecount' => 'INT UNSIGNED NOT NULL DEFAULT 0', // only counts one per post
+				'contentcount' => 'INT UNSIGNED NOT NULL DEFAULT 0', // only counts one per post
+				'tagcount' => 'INT UNSIGNED NOT NULL DEFAULT 0', // only counts one per post (though no duplicate tags anyway)
 				'PRIMARY KEY (wordid)',
 				'KEY word (word)',
 				'KEY tagcount (tagcount)', // for sorting by most popular tags
@@ -263,20 +263,20 @@
 			
 			'userpoints' => array(
 				'userid' => $useridcoltype.' NOT NULL',
-				'points' => 'INT NOT NULL', // user's points as displayed, after final multiple
-				'qposts' => 'MEDIUMINT NOT NULL', // number of questions by user (excluding hidden)
-				'aposts' => 'MEDIUMINT NOT NULL', // number of answers by user (excluding hidden)
-				'cposts' => 'MEDIUMINT NOT NULL', // number of comments by user (excluding hidden)
-				'aselects' => 'MEDIUMINT NOT NULL', // number of questions by user where they've selected an answer
-				'aselecteds' => 'MEDIUMINT NOT NULL', // number of answers by user that have been selected as the best
-				'qupvotes' => 'MEDIUMINT NOT NULL', // number of questions the user has voted up
-				'qdownvotes' => 'MEDIUMINT NOT NULL', // number of questions the user has voted down
-				'aupvotes' => 'MEDIUMINT NOT NULL', // number of answers the user has voted up
-				'adownvotes' => 'MEDIUMINT NOT NULL', // number of answers the user has voted down
-				'qvoteds' => 'INT NOT NULL', // points from votes on this user's questions (applying per-question limits), before final multiple
-				'avoteds' => 'INT NOT NULL', // points from votes on this user's answers (applying per-answer limits), before final multiple
-				'upvoteds' => 'INT NOT NULL', // number of up votes received on this user's questions or answers
-				'downvoteds' => 'INT NOT NULL', // number of down votes received on this user's questions or answers
+				'points' => 'INT NOT NULL DEFAULT 0', // user's points as displayed, after final multiple
+				'qposts' => 'MEDIUMINT NOT NULL DEFAULT 0', // number of questions by user (excluding hidden)
+				'aposts' => 'MEDIUMINT NOT NULL DEFAULT 0', // number of answers by user (excluding hidden)
+				'cposts' => 'MEDIUMINT NOT NULL DEFAULT 0', // number of comments by user (excluding hidden)
+				'aselects' => 'MEDIUMINT NOT NULL DEFAULT 0', // number of questions by user where they've selected an answer
+				'aselecteds' => 'MEDIUMINT NOT NULL DEFAULT 0', // number of answers by user that have been selected as the best
+				'qupvotes' => 'MEDIUMINT NOT NULL DEFAULT 0', // number of questions the user has voted up
+				'qdownvotes' => 'MEDIUMINT NOT NULL DEFAULT 0', // number of questions the user has voted down
+				'aupvotes' => 'MEDIUMINT NOT NULL DEFAULT 0', // number of answers the user has voted up
+				'adownvotes' => 'MEDIUMINT NOT NULL DEFAULT 0', // number of answers the user has voted down
+				'qvoteds' => 'INT NOT NULL DEFAULT 0', // points from votes on this user's questions (applying per-question limits), before final multiple
+				'avoteds' => 'INT NOT NULL DEFAULT 0', // points from votes on this user's answers (applying per-answer limits), before final multiple
+				'upvoteds' => 'INT NOT NULL DEFAULT 0', // number of up votes received on this user's questions or answers
+				'downvoteds' => 'INT NOT NULL DEFAULT 0', // number of down votes received on this user's questions or answers
 				'PRIMARY KEY (userid)',
 				'KEY points (points)',
 			),
@@ -622,7 +622,21 @@
 					break;
 					
 			//	Up to here: Version 1.2 beta 1
+			
+				case 15:
+					if (!QA_EXTERNAL_USERS)
+						qa_db_upgrade_table_columns($db, $definitions, 'users', array('emailcode', 'sessioncode', 'flags'));
+					
+					qa_db_upgrade_table_columns($db, $definitions, 'posts', array('acount', 'upvotes', 'downvotes', 'format'));
+					qa_db_upgrade_table_columns($db, $definitions, 'categories', array('qcount'));
+					qa_db_upgrade_table_columns($db, $definitions, 'words', array('titlecount', 'contentcount', 'tagcount'));
+					qa_db_upgrade_table_columns($db, $definitions, 'userpoints', array('points', 'qposts', 'aposts', 'cposts',
+						'aselects', 'aselecteds', 'qupvotes', 'qdownvotes', 'aupvotes', 'adownvotes', 'qvoteds', 'avoteds', 'upvoteds', 'downvoteds'));
+					qa_db_upgrade_query($db, $locktablesquery);
+					break;
 
+			//	Up to here: Version 1.2 (release)
+			
 			}
 			
 			qa_db_set_db_version($db, $newversion);
@@ -646,6 +660,20 @@
 				
 				qa_db_upgrade_progress(qa_recalc_get_message($state));
 			}
+	}
+	
+	
+	function qa_db_upgrade_table_columns($db, $definitions, $table, $columns)
+/*
+	Reset the definitions of $columns in $table according to the $definitions array
+*/
+	{
+		$sqlchanges=array();
+		
+		foreach ($columns as $column)
+			$sqlchanges[]='CHANGE COLUMN '.$column.' '.$column.' '.$definitions[$table][$column];
+
+		qa_db_upgrade_query($db, 'ALTER TABLE ^'.$table.' '.implode(', ', $sqlchanges));
 	}
 
 	

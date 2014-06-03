@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-main.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Language phrases commonly used throughout Q2A, plus a few other misc ones
 
 
@@ -52,6 +52,7 @@
 		'by_x' => 'by ^',
 		'cancel_button' => 'Cancel',
 		'commented' => 'commented',
+		'field_required' => 'Please enter something in this field',
 		'general_error' => 'A server error occurred - please try again.',
 		'highest_users' => 'Top scoring users',
 		'in_category_x' => 'in ^',
@@ -119,6 +120,7 @@
 		'unanswered_qs_title' => 'Recent questions without answers',
 		'vote_disabled_hidden_a' => 'You cannot vote on hidden answers',
 		'vote_disabled_hidden_q' => 'You cannot vote on hidden questions',
+		'vote_disabled_q_page_only' => 'Please view this question to vote',
 		'vote_disabled_my_a' => 'You cannot vote on your own answers',
 		'vote_disabled_my_q' => 'You cannot vote on your own questions',
 		'vote_down_popup' => 'Click to vote down',

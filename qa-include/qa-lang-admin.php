@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-admin.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Language phrases for admin center
 
 
@@ -48,14 +48,15 @@
 		'categories' => 'Categories',
 		'category_already_used' => 'This is already being used by a category',
 		'category_default_slug' => 'category-^',
+		'categories_introduction' => 'To get started with categories, click the \'Add Category\' button.',
 		'category_name_first' => 'Name of first category:',
 		'category_name' => 'Category name:',
 		'category_position' => 'Position in categories:',
 		'category_slug' => 'Category slug (URL fragment):',
 		'click_category_edit' => 'Click a category name to edit:',
-		'click_name_edit' => 'Click a page or link name to edit:',
+		'click_name_edit' => 'Click a custom page or link to edit:',
 		'database_cleanup' => 'Database clean-up operations',
-		'delete_category_reassign' => 'Delete this category and reassign its posts to:',
+		'delete_category_reassign' => 'Delete this category and reassign its questions to:',
 		'delete_category' => 'Delete this category',
 		'delete_hidden_complete' => 'All hidden posts without dependents have been deleted',
 		'delete_hidden_note' => ' - all hidden questions, answer and comments without dependents',
@@ -99,7 +100,7 @@
 		'page_link_position' => 'Position:',
 		'page_name' => 'Name of page (also used for tab or link):',
 		'page_slug' => 'Page slug (URL fragment):',
-		'pages_explanation' => 'Click the \'Add Page\' button below to add custom content to your QA site, or \'Add Link\' to link to any other web page.',
+		'pages_explanation' => 'Click the \'Add Page\' button to add custom content to your QA site, or \'Add Link\' to link to any other web page.',
 		'pages_title' => 'Pages',
 		'permissions_title' => 'Permissions',
 		'points_defaults_shown' => 'Defaults shown below but NOT YET APPLIED:',

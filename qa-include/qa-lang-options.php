@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-options.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Language phrases for all options, as shown in admin center
 
 
@@ -32,6 +32,7 @@
 */
 
 	return array(
+		'allow_multi_answers' => 'Allow multiple answers per user:',
 		'allow_no_category' => 'Allow questions with no category',
 		'block_bad_words' => 'Censored words (separate by spaces or commas):',
 		'block_ips_write' => 'Blocked IP addresses (separate by spaces or commas):',
@@ -96,8 +97,7 @@
 		'min_len_c_content' => 'Minimum characters in comment:',
 		'min_len_q_content' => 'Minimum characters in question body:',
 		'min_len_q_title' => 'Minimum characters in question title:',
-		'nav_questions' => 'Recent questions',
-		'nav_unanswered' => 'Unanswered questions',
+		'min_num_q_tags' => 'Minimum number of question tags:',
 		'neat_urls' => 'URL structure for pages on your site:',
 		'notify_admin_q_post' => 'Email me at this address when a question is posted',
 		'page_size_ask_check_qs' => 'Maximum similar questions to show:',
@@ -119,7 +119,7 @@
 		'permit_block' => 'Blocking or unblocking user or IPs:',
 		'permit_confirmed' => 'Registered users with email confirmed',
 		'permit_create_admins' => 'Creating administrators:',
-		'permit_create_eds_mods' => 'Creating editors and moderators:', 
+		'permit_create_eds_mods' => 'Creating editors and moderators:',
 		'permit_create_experts' => 'Creating experts:',
 		'permit_delete_hidden' => 'Deleting hidden posts:',
 		'permit_edit_a' => 'Editing any answer:',
@@ -156,6 +156,9 @@
 		'points_vote_up_q' => 'Voting up a question:',
 		'recaptcha_private_key' => 'Your reCAPTCHA private key:',
 		'recaptcha_public_key' => 'Your reCAPTCHA public key:',
+		'show_a_form_immediate' => 'Show answer form immediately:',
+		'show_always' => 'Always',
+		'show_c_reply_buttons' => 'Show reply buttons for comments:',
 		'show_custom_footer' => 'Custom HTML at bottom of every page:',
 		'show_custom_header' => 'Custom HTML at top of every page:',
 		'show_custom_home' => 'Custom content in home page (instead of Q&A)',
@@ -163,6 +166,8 @@
 		'show_custom_sidebar' => 'Custom HTML in sidebar box on every page:',
 		'show_custom_sidepanel' => 'Custom HTML in side panel on every page:',
 		'show_home_description' => 'Include <META> description for home page:',
+		'show_if_no_as' => 'If no answers',
+		'show_never' => 'Never',
 		'show_selected_first' => 'Move selected answer to the top:',
 		'show_url_links' => 'Detect and link URLs in entered text:',
 		'show_user_points' => 'Display points next to usernames:',
@@ -171,10 +176,14 @@
 		'site_theme' => 'The visual theme for your site:',
 		'site_title' => 'The name of your website for page titles:',
 		'site_url' => 'The URL to use when referring to your site:',
+		'sort_answers_by' => 'Sort answers by:',
+		'sort_time' => 'Time',
+		'sort_votes' => 'Votes',
 		'tags_or_categories' => 'Classify questions using:',
 		'votes_separated' => 'Show separate up and down votes:',
 		'voting_on_as' => 'Allow voting on answers:',
 		'voting_on_qs' => 'Allow voting on questions:',
+		'voting_on_q_page_only' => 'Allow voting on question page only:',
 	);
 	
 

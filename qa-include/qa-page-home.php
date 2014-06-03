@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-home.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Controller for most question listing pages and custom pages
 
 
@@ -108,7 +108,7 @@
 
 //	Get list of questions, page size and other bits of HTML for appropriate version of page
 
-	qa_options_set_pending(array('voting_on_qs', 'votes_separated', 'show_when_created', 'permit_anon_view_ips', 'show_user_points', 'block_bad_words'));
+	qa_options_set_pending(array('voting_on_qs', 'voting_on_q_page_only', 'votes_separated', 'show_when_created', 'permit_anon_view_ips', 'show_user_points', 'block_bad_words'));
 	
 	$qa_request_0_lc=$qa_request_lc_parts[0];
 	$categorypathprefix=$qa_request_0_lc;
@@ -118,7 +118,7 @@
 	$categoryqcount=false;
 	$description=null;
 	
-	switch ($qa_request_0_lc) { // this file doesn't just serve the home page		
+	switch ($qa_request_0_lc) { // this file doesn't just serve the home page
 		case 'questions':
 			$categoryqcount=true;
 
@@ -136,7 +136,7 @@
 				$suggest=qa_html_suggest_ask($categoryid);
 			break;
 
-		case 'unanswered':			
+		case 'unanswered':
 			if (!qa_home_load_ifcategory(
 				'page_size_una_qs', 'feed_for_unanswered', 'cache_unaqcount', 'main/unanswered_qs_title', 'main/no_una_questions_found', 'main/unanswered_qs_in_x', 'main/no_una_questions_in_x',
 				qa_db_unanswered_qs_selectspec($qa_login_userid, isset($categoryslug) ? 0 : $qa_start, $categoryslug)
@@ -192,19 +192,22 @@
 			))
 				return;
 			
+			if ( ($qa_request_0_lc!='qa') && (!isset($categoryid)) && qa_get_option($qa_db, 'show_home_description') )
+				$description=qa_get_option($qa_db, 'home_description');
+			else
+				$description=null;
+
 			if (($qa_request_0_lc=='') && qa_get_option($qa_db, 'show_custom_home')) {
 				$qa_template='custom';
 				qa_content_prepare();
 				$qa_content['title']=qa_html(qa_get_option($qa_db, 'custom_home_heading'));
+				$qa_content['description']=qa_html($description);
 				$qa_content['custom']=qa_get_option($qa_db, 'custom_home_content');
 				return;
 			}
 
 			if (count($questions)<$pagesize)
 				$suggest=qa_html_suggest_ask($categoryid);
-				
-			if ( ($qa_request_0_lc!='qa') && (!isset($categoryid)) && qa_get_option($qa_db, 'show_home_description') )
-				$description=qa_get_option($qa_db, 'home_description');
 			break;
 	}
 	

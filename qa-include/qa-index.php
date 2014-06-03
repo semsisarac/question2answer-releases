@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-index.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: The Grand Central of Q2A - most requests come through here
 
 
@@ -106,7 +106,7 @@
 		$indexpos=strpos($phpselfunescaped, $indexpath);
 		
 		if (is_numeric($indexpos)) {
-			$qa_used_url_format=QA_URL_FORMAT_INDEX;	
+			$qa_used_url_format=QA_URL_FORMAT_INDEX;
 			$requestparts=explode('/', substr($phpselfunescaped, $indexpos+strlen($indexpath)));
 			$relativedepth=1+count($requestparts);
 			$rootpath=substr($phpselfunescaped, 0, $indexpos);
@@ -128,7 +128,10 @@
 	$qa_request_lc_parts=explode('/', $qa_request_lc);
 
 	$qa_root_url_relative=($relativedepth>1) ? str_repeat('../', $relativedepth-1) : './';
-	$qa_root_url_inferred='http://'.@$_SERVER['HTTP_HOST'].$rootpath.'/';
+	$qa_root_url_inferred='http://'.@$_SERVER['HTTP_HOST'].$rootpath;
+	
+	if (substr($qa_root_url_inferred, -1)!='/')
+		$qa_root_url_inferred.='/';
 	
 
 //	Check for install or url test pages

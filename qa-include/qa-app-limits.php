@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-limits.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Monitoring and rate-limiting user actions (application level)
 
 
@@ -42,7 +42,7 @@
 	function qa_limits_remaining($db, $userid, $actioncode)
 /*
 	Return how many more times user $userid and/or the requesting IP can perform $actioncode this hour,
-	where $actioncode is Q/A/C/V for posting a question, answer, comment or voting respectively.
+	where $actioncode is Q/A/C/V/L for posting a question, answer, comment, voting or logging in.
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
@@ -97,7 +97,7 @@
 		$blockipclauses=qa_block_ips_explode(qa_get_option($db, 'block_ips_write'));
 		
 		foreach ($blockipclauses as $blockipclause)
-			if (qa_block_ip_match(@$_SERVER['REMOTE_ADDR'], $blockipclause))	
+			if (qa_block_ip_match(@$_SERVER['REMOTE_ADDR'], $blockipclause))
 				return true;
 				
 		return false;

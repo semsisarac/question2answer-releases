@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-pages.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Controller for admin page for editing custom pages and external links
 
 
@@ -79,6 +79,7 @@
 		'nav_home' => 'main/nav_home',
 		'nav_activity' => 'main/nav_activity',
 		 $hascustomhome ? 'nav_qa_not_home' : 'nav_qa_is_home' => $hascustomhome ? 'main/nav_qa' : 'admin/nav_qa_is_home',
+		'nav_questions' => 'main/nav_qs',
 		'nav_unanswered' => 'main/nav_unanswered',
 		'nav_tags' => 'main/nav_tags',
 		'nav_users' => 'main/nav_users',
@@ -98,8 +99,8 @@
 	if (qa_clicked('docancel'))
 		$editpage=null;
 
-	elseif (qa_clicked('dosaveoptions')) {
-		foreach ($navoptions as $optionname => $langkey)	
+	elseif (qa_clicked('dosaveoptions') || qa_clicked('doaddpage') || qa_clicked('doaddlink')) {
+		foreach ($navoptions as $optionname => $langkey)
 			qa_set_option($qa_db, $optionname, (int)qa_post_text('option_'.$optionname));
 
 	} elseif (qa_clicked('dosavepage')) {
@@ -126,7 +127,7 @@
 		//	Verify the name (navigation link) is legitimate
 		
 			if (empty($inname))
-				$errors['name']=qa_lang_sub('main/min_length_x', 1);
+				$errors['name']=qa_lang('main/field_required');
 			elseif (qa_strlen($inname)>QA_DB_MAX_CAT_PAGE_TITLE_LENGTH)
 				$errors['name']=qa_lang_sub('main/max_length_x', QA_DB_MAX_CAT_PAGE_TITLE_LENGTH);
 			else
@@ -142,7 +143,7 @@
 			//	Verify the url is legitimate (vaguely)
 			
 				if (empty($inurl))
-					$errors['url']=qa_lang_sub('main/min_length_x', 1);
+					$errors['url']=qa_lang('main/field_required');
 				elseif (qa_strlen($inurl)>QA_DB_MAX_CAT_PAGE_TAGS_LENGTH)
 					$errors['url']=qa_lang_sub('main/max_length_x', QA_DB_MAX_CAT_PAGE_TAGS_LENGTH);
 
@@ -178,7 +179,7 @@
 					);
 					
 					if (empty($inslug))
-						$errors['slug']=qa_lang_sub('main/min_length_x', 1);
+						$errors['slug']=qa_lang('main/field_required');
 					elseif (qa_strlen($inslug)>QA_DB_MAX_CAT_PAGE_TAGS_LENGTH)
 						$errors['slug']=qa_lang_sub('main/max_length_x', QA_DB_MAX_CAT_PAGE_TAGS_LENGTH);
 					elseif (preg_match('/[\\+\\/]/', $inslug))
@@ -252,6 +253,8 @@
 
 	$qa_content['title']=qa_lang_html('admin/admin_title').' - '.qa_lang_html('admin/pages_title');
 	
+	$qa_content['error']=qa_admin_page_error($qa_db);
+
 	if (isset($editpage)) {
 		$positionoptions=array();
 		
@@ -409,10 +412,11 @@
 		$qa_content['focusid']='name';
 	
 	} else {
-		$pagehtml='';
+		$pagehtml='<UL STYLE="margin-bottom:0;">';
 		foreach ($pages as $page)
-			$pagehtml.='<A HREF="'.qa_path_html('admin/pages', array('edit' => $page['pageid'])).'">'.
-				qa_html($page['title']).'</A>'.qa_html("\n", true);
+			$pagehtml.='<LI><A HREF="'.qa_path_html('admin/pages', array('edit' => $page['pageid'])).'">'.
+				qa_html($page['title']).'</A></LI>';
+		$pagehtml.='</UL>';
 		
 		$qa_content['form']=array(
 			'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
@@ -457,7 +461,7 @@
 		$qa_content['form']['fields']['pages']=array(
 			'label' => count($pages) ? qa_lang_html('admin/click_name_edit') : qa_lang_html('admin/pages_explanation'),
 			'type' => 'static',
-			'value' => $pagehtml,
+			'value' => count($pages) ? $pagehtml : null,
 		);
 	}
 

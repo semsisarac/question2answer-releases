@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-stats.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Controller for admin page showing usage statistics and clean-up buttons
 
 
@@ -56,13 +56,13 @@
 
 //	Get the information to display
 
-	$qcount=qa_get_option($qa_db, 'cache_qcount');
+	$qcount=(int)qa_get_option($qa_db, 'cache_qcount');
 	$qcount_anon=qa_db_count_posts($qa_db, 'Q', false);
 
-	$acount=qa_get_option($qa_db, 'cache_acount');
+	$acount=(int)qa_get_option($qa_db, 'cache_acount');
 	$acount_anon=qa_db_count_posts($qa_db, 'A', false);
 
-	$ccount=qa_get_option($qa_db, 'cache_ccount');
+	$ccount=(int)qa_get_option($qa_db, 'cache_ccount');
 	$ccount_anon=qa_db_count_posts($qa_db, 'C', false);
 
 	
@@ -142,7 +142,7 @@
 	
 			'users_active' => array(
 				'label' => qa_lang_html('admin/users_active'),
-				'value' => qa_html(number_format(qa_get_option($qa_db, 'cache_userpointscount'))),
+				'value' => qa_html(number_format((int)qa_get_option($qa_db, 'cache_userpointscount'))),
 			),
 			
 			'users_posted' => array(

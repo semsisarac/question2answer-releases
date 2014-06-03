@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-selects.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Builders of selectspec arrays (see qa-db.php) used to specify database SELECTs
 
 
@@ -42,7 +42,8 @@
 	function qa_db_select_with_pending($db) // any number of extra parameters read via func_get_args()
 /*
 	Return the results of all the SELECT operations specified by the supplied selectspec parameters, while also
-	loading any options which have been queued for retrieval. Uses one DB query unless QA_OPTIMIZE_LOCAL_DB is true.
+	loading any options which have been queued for retrieval, as well as information about custom pages and
+	the logged in user, if those were requested. Uses one DB query unless QA_OPTIMIZE_LOCAL_DB is true.
 	If only one parameter (after $db) is supplied, return its result, otherwise return an array of results.
 */
 	{
@@ -148,8 +149,9 @@
 	
 	function qa_db_recent_qs_selectspec($voteuserid, $start, $categoryslug=null, $createip=null, $hidden=false, $full=false, $count=QA_DB_RETRIEVE_QS_AS)
 /*
-	Return the selectspec to retrieve $count recent questions ($hidden or not),
-	starting from offset $start, with the corresponding vote made by $voteuserid (if not null)
+	Return the selectspec to retrieve $count recent ($hidden or not) questions,	starting from offset $start,
+	restricted to $createip (if not null) and the category for $categoryslug (if not null),
+	with the corresponding vote made by $voteuserid (if not null) and including $full content or not
 */
 	{
 		$selectspec=qa_db_posts_basic_selectspec($voteuserid, $full);
@@ -175,8 +177,9 @@
 	
 	function qa_db_unanswered_qs_selectspec($voteuserid, $start, $categoryslug=null, $hidden=false, $full=false, $count=QA_DB_RETRIEVE_QS_AS)
 /*
-	Return the selectspec to retrieve $count recent unanswered questions ($hidden or not),
-	starting from offset $start, with the corresponding vote made by $voteuserid (if not null)
+	Return the selectspec to retrieve $count recent unanswered ($hidden or not) questions, starting from offset $start,
+	restricted to the category for $categoryslug (if not null),
+	with the corresponding vote made by $voteuserid (if not null) and including $full content or not
 */
 	{
 		$selectspec=qa_db_posts_basic_selectspec($voteuserid, $full);
@@ -196,10 +199,12 @@
 
 	function qa_db_recent_a_qs_selectspec($voteuserid, $start, $categoryslug=null, $createip=null, $hidden=false, $fullanswers=false, $count=QA_DB_RETRIEVE_QS_AS)
 /*
-	For $count most recent answers ($hidden or not), starting from offset $start,
-	return the selectspec to retrieve the antecedent questions for those answers, with the corresponding
-	vote on those questions made by $voteuserid (if not null). The selectspec will also retrieve some
-	information about the answers themselves, in columns named with the prefix 'a'.
+	For $count most recent ($hidden or not) answers, starting from offset $start,
+	restricted to $createip (if not null) and the category for $categoryslug (if not null),
+	return the selectspec to retrieve the antecedent questions for those answers,
+	with the corresponding vote on those questions made by $voteuserid (if not null).
+	The selectspec will also retrieve some information about the answers themselves
+	(including the content if $fullanswers is true), in columns named with the prefix 'a'.
 */
 	{
 		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
@@ -215,7 +220,7 @@
 		if ($fullanswers)
 			$selectspec['columns']['acontent']='BINARY aposts.content';
 
-		$selectspec['columns']['apoints']='auserpoints.points';		
+		$selectspec['columns']['apoints']='auserpoints.points';
 		
 		if (!QA_EXTERNAL_USERS)
 			$selectspec['columns']['ahandle']='BINARY ausers.handle';
@@ -244,10 +249,12 @@
 	
 	function qa_db_recent_c_qs_selectspec($voteuserid, $start, $categoryslug=null, $createip=null, $hidden=false, $fullcomments=false, $count=QA_DB_RETRIEVE_QS_AS)
 /*
-	For $count most recent comments ($hidden or not), starting from offset $start,
-	return the selectspec to retrieve the antecedent questions for those comments, with the corresponding
-	vote on those questions made by $voteuserid (if not null). The selectspec will also retrieve some
-	information about the comments themselves, in columns named with the prefix 'c'.
+	For $count most recent ($hidden or not) comments, starting from offset $start,
+	restricted to $createip (if not null) and the category for $categoryslug (if not null),
+	return the selectspec to retrieve the antecedent questions for those comments,
+	with the corresponding vote on those questions made by $voteuserid (if not null).
+	The selectspec will also retrieve some information about the comments themselves
+	(including the content if $fullanswers is true), in columns named with the prefix 'c'.
 */
 	{
 		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
@@ -357,7 +364,7 @@
 /*
 	Return the selectspec to retrieve the $count most closely related questions to $questionid,
 	with the corresponding vote made by $voteuserid (if not null). This works by looking for other
-	questions which have title words or tag words in common.
+	questions which have title words, tag words or a category in common.
 */
 	{
 		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
@@ -366,10 +373,10 @@
 		
 		// added LOG(postid)/1000000 here to ensure ordering is deterministic even if several posts have same score
 		
-		$selectspec['source'].=" JOIN (SELECT postid, SUM(score)+LOG(postid)/1000000 AS score FROM ((SELECT ^titlewords.postid, LOG(#/titlecount) AS score FROM ^titlewords JOIN ^words ON ^titlewords.wordid=^words.wordid JOIN ^titlewords AS source ON ^titlewords.wordid=source.wordid WHERE source.postid=# AND titlecount<#) UNION ALL (SELECT ^posttags.postid, 2*LOG(#/tagcount) AS score FROM ^posttags JOIN ^words ON ^posttags.wordid=^words.wordid JOIN ^posttags AS source ON ^posttags.wordid=source.wordid WHERE source.postid=# AND tagcount<#)) x GROUP BY postid ORDER BY score DESC LIMIT #) y ON ^posts.postid=y.postid";
+		$selectspec['source'].=" JOIN (SELECT postid, SUM(score)+LOG(postid)/1000000 AS score FROM ((SELECT ^titlewords.postid, LOG(#/titlecount) AS score FROM ^titlewords JOIN ^words ON ^titlewords.wordid=^words.wordid JOIN ^titlewords AS source ON ^titlewords.wordid=source.wordid WHERE source.postid=# AND titlecount<#) UNION ALL (SELECT ^posttags.postid, 2*LOG(#/tagcount) AS score FROM ^posttags JOIN ^words ON ^posttags.wordid=^words.wordid JOIN ^posttags AS source ON ^posttags.wordid=source.wordid WHERE source.postid=# AND tagcount<#) UNION ALL (SELECT ^posts.postid, LOG(#/^categories.qcount) FROM ^posts JOIN ^categories ON ^posts.categoryid=^categories.categoryid AND ^posts.type='Q' WHERE ^categories.categoryid=(SELECT categoryid FROM ^posts WHERE postid=#) AND ^categories.qcount<#)) x GROUP BY postid ORDER BY score DESC LIMIT #) y ON ^posts.postid=y.postid";
 		
-		array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $questionid, QA_IGNORED_WORDS_FREQ,
-			QA_IGNORED_WORDS_FREQ, $questionid, QA_IGNORED_WORDS_FREQ, $count);
+		array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $questionid, QA_IGNORED_WORDS_FREQ, QA_IGNORED_WORDS_FREQ,
+			$questionid, QA_IGNORED_WORDS_FREQ, QA_IGNORED_WORDS_FREQ, $questionid, QA_IGNORED_WORDS_FREQ, $count);
 			
 		$selectspec['sortdesc']='score';
 			
@@ -380,13 +387,15 @@
 	function qa_db_search_posts_selectspec($db, $voteuserid, $titlewords, $contentwords, $tagwords, $handlewords, $start, $full=false, $count=QA_DB_RETRIEVE_QS_AS)
 /*
 	Return the selectspec to retrieve the $count top question matches, starting from the offset $start,
-	with the corresponding vote made by $voteuserid (if not null). The search is performed for any of $titlewords in the title,
-	$contentwords in the content (of the question or an answer or comment for whom that is the antecedent question), $tagwords
-	in tags, and for question author usernames which match a word in $handlewords (so this won't help find a question by an author
-	with a handle that contains more than one word). The results also include a 'score' column based on the matching strength,
-	and a 'matchparts' column that tells us where the score came from (since a question could get weight from a match in the
-	question itself, and/or weight from a match in its answers, comments, or comments on answers). The 'matchparts' is a
-	comma-separated list of matchpostid:matchscore pairs, where a matchpostid can be repeated. See qa-page-search.php for usage.
+	with the corresponding vote made by $voteuserid (if not null) and including $full content or not.
+	The search is performed for any of $titlewords in the title, $contentwords in the content (of the
+	question or an answer or comment for whom that is the antecedent question), $tagwords in tags, and
+	for question author usernames which match a word in $handlewords (so this won't help find a question
+	by an author with a handle that contains more than one word). The results also include a 'score' column
+	based on the matching strength, and a 'matchparts' column that tells us where the score came from
+	(since a question could get weight from a match in the question itself, and/or weight from a match in
+	its answers, comments, or comments on answers). The 'matchparts' is a comma-separated list of tuples
+	matchtype:matchpostid:matchscore to be used with qa_search_max_match_anchor().
 */
 	{
 		// add LOG(postid)/1000000 here to ensure ordering is deterministic even if several posts have same score
@@ -404,7 +413,7 @@
 			// At the indexing stage, duplicate words in title are ignored, so this doesn't count multiple appearances.
 			
 			$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
-				"(SELECT postid AS questionid, LOG(#/titlecount) AS score, 'Q' AS matchposttype, postid AS matchpostid FROM ^titlewords JOIN ^words ON ^titlewords.wordid=^words.wordid WHERE word IN ($) AND titlecount<#)";
+				"(SELECT postid AS questionid, LOG(#/titlecount) AS score, _utf8 'Q' AS matchposttype, postid AS matchpostid FROM ^titlewords JOIN ^words ON ^titlewords.wordid=^words.wordid WHERE word IN ($) AND titlecount<#)";
 
 			array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $titlewords, QA_IGNORED_WORDS_FREQ);
 		}
@@ -427,7 +436,7 @@
 			// This is because tags express explicit semantic intent, whereas titles do not necessarily.
 			
 			$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
-				"(SELECT postid AS questionid, 2*LOG(#/tagcount) AS score, 'Q' AS matchposttype, postid AS matchpostid FROM ^posttags JOIN ^words ON ^posttags.wordid=^words.wordid WHERE word IN ($) AND tagcount<#)";
+				"(SELECT postid AS questionid, 2*LOG(#/tagcount) AS score, _utf8 'Q' AS matchposttype, postid AS matchpostid FROM ^posttags JOIN ^words ON ^posttags.wordid=^words.wordid WHERE word IN ($) AND tagcount<#)";
 
 			array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $tagwords, QA_IGNORED_WORDS_FREQ);
 		}
@@ -438,14 +447,14 @@
 				
 				if (count($userids)) {
 					$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
-						"(SELECT postid AS questionid, LOG(#/qposts) AS score, 'Q' AS matchposttype, postid AS matchpostid FROM ^posts JOIN ^userpoints ON ^posts.userid=^userpoints.userid WHERE ^posts.userid IN ($) AND type='Q')";
+						"(SELECT postid AS questionid, LOG(#/qposts) AS score, _utf8 'Q' AS matchposttype, postid AS matchpostid FROM ^posts JOIN ^userpoints ON ^posts.userid=^userpoints.userid WHERE ^posts.userid IN ($) AND type='Q')";
 					
 					array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $userids);
 				}
 
 			} else {
 				$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
-					"(SELECT postid AS questionid, LOG(#/qposts) AS score, 'Q' AS matchposttype, postid AS matchpostid FROM ^posts JOIN ^users ON ^posts.userid=^users.userid JOIN ^userpoints ON ^userpoints.userid=^users.userid WHERE handle IN ($) AND type='Q')";
+					"(SELECT postid AS questionid, LOG(#/qposts) AS score, _utf8 'Q' AS matchposttype, postid AS matchpostid FROM ^posts JOIN ^users ON ^posts.userid=^users.userid JOIN ^userpoints ON ^userpoints.userid=^users.userid WHERE handle IN ($) AND type='Q')";
 
 				array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $handlewords);
 			}
@@ -516,7 +525,7 @@
 	
 	function qa_db_pages_selectspec()
 /*
-	Return the selectspec to retrieve the list of (static) pages, ordered for display
+	Return the selectspec to retrieve the list of custom pages or links, ordered for display
 */
 	{
 		return array(
@@ -530,7 +539,7 @@
 	
 	function qa_db_page_full_selectspec($slugorpageid, $ispageid)
 /*
-	Return the selectspec to retrieve the full information about a page
+	Return the selectspec to retrieve the full information about a custom page
 */
 	{
 		return array(
@@ -545,7 +554,7 @@
 	function qa_db_tag_recent_qs_selectspec($voteuserid, $tag, $start, $full=false, $count=QA_DB_RETRIEVE_QS_AS)
 /*
 	Return the selectspec to retrieve $count recent questions with $tag, starting from offset $start,
-	with the corresponding vote on those questions made by $voteuserid (if not null).
+	with the corresponding vote on those questions made by $voteuserid (if not null) and including $full content or not
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
@@ -743,7 +752,7 @@
 	
 	function qa_db_users_with_flag_selectspec($flag)
 /*
-	Return the selectspec to get information about users at a certain privilege level or higher
+	Return the selectspec to get information about users with the $flag bit set (unindexed query)
 */
 	{
 		return array(

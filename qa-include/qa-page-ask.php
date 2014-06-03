@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-ask.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Controller for ask-a-question page
 
 
@@ -42,16 +42,16 @@
 	require_once QA_INCLUDE_DIR.'qa-app-options.php';
 	require_once QA_INCLUDE_DIR.'qa-app-captcha.php';
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
-	require_once QA_INCLUDE_DIR.'qa-app-post-create.php';	
-	require_once QA_INCLUDE_DIR.'qa-util-string.php';	
+	require_once QA_INCLUDE_DIR.'qa-app-post-create.php';
+	require_once QA_INCLUDE_DIR.'qa-util-string.php';
 	
 //	Set some pending option requests
 
 	qa_captcha_pending();
 
 	qa_options_set_pending(array('permit_post_q', 'confirm_user_emails', 'min_len_q_title', 'max_len_q_title', 'allow_no_category',
-		'min_len_q_content', 'max_num_q_tags', 'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs',
-		'do_example_tags', 'match_example_tags', 'page_size_ask_tags', 'do_complete_tags', 'voting_on_qs', 'votes_separated',
+		'min_len_q_content', 'min_num_q_tags', 'max_num_q_tags', 'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs',
+		'do_example_tags', 'match_example_tags', 'page_size_ask_tags', 'do_complete_tags', 'voting_on_qs', 'voting_on_q_page_only', 'votes_separated',
 		'captcha_on_anon_post', 'captcha_on_unconfirmed', 'show_when_created', 'show_user_created', 'show_user_points',
 		'permit_anon_view_ips', 'block_ips_write', 'block_bad_words'));
 
@@ -119,7 +119,7 @@
 	
 	//	Process incoming form
 	
-		if (qa_clicked('doask1') || qa_clicked('doask2') || qa_clicked('doask3')) {			
+		if (qa_clicked('doask1') || qa_clicked('doask2') || qa_clicked('doask3')) {
 			
 			if (qa_clicked('doask3')) { // process incoming formfor final stage (ready to create question)
 				require_once QA_INCLUDE_DIR.'qa-util-string.php';
@@ -137,7 +137,7 @@
 					if (!isset($qa_login_userid))
 						$qa_cookieid=qa_cookie_get_create($qa_db); // create a new cookie if necessary
 		
-					$questionid=qa_question_create($qa_db, $followanswer, $qa_login_userid, $qa_cookieid, 
+					$questionid=qa_question_create($qa_db, $followanswer, $qa_login_userid, $qa_cookieid,
 						$intitle, $incontent, $tagstring, $innotify, $inemail, isset($categories[$incategoryid]) ? $incategoryid : null);
 					
 					qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'q_post', $questionid, null, null);
@@ -165,7 +165,7 @@
 			
 				if ($countqs)
 					$relatedquestions=qa_db_select_with_pending($qa_db,
-						qa_db_search_posts_selectspec($qa_db, null, qa_string_to_words($intitle), null, null, null, 0, false, $countqs)
+						qa_db_search_posts_selectspec($qa_db, $qa_login_userid, qa_string_to_words($intitle), null, null, null, 0, false, $countqs)
 					);
 					
 
@@ -306,7 +306,7 @@
 
 			foreach ($suggestquestions as $question)
 				$qa_content['q_list']['qs'][]=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
-					qa_using_tags($qa_db), qa_using_categories($qa_db) ? $categories : null, false,
+					qa_using_tags($qa_db), qa_using_categories($qa_db) ? $categories : null, qa_get_vote_view($qa_db, 'Q', false, false),
 					qa_get_option($qa_db, 'show_when_created'), !qa_user_permit_error($qa_db, 'permit_anon_view_ips'),
 					qa_get_option($qa_db, 'show_user_points'), qa_get_block_words_preg($qa_db));
 		
@@ -381,7 +381,7 @@
 				unset($qa_content['form']['fields']['category']);
 				
 			if (qa_using_tags($qa_db))
-				qa_set_up_tag_field($qa_content, $qa_content['form']['fields']['tags'], 'tags', $exampletags, $completetags, qa_get_option($qa_db, 'page_size_ask_tags'));			
+				qa_set_up_tag_field($qa_content, $qa_content['form']['fields']['tags'], 'tags', $exampletags, $completetags, qa_get_option($qa_db, 'page_size_ask_tags'));
 			else
 				unset($qa_content['form']['fields']['tags']);
 			

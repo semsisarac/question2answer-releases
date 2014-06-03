@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-ip.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Controller for page showing activity for an IP address
 
 
@@ -127,11 +127,11 @@
 	if ($blockable) {
 		require_once QA_INCLUDE_DIR.'qa-app-limits.php';
 		
-		$blockipclauses=qa_block_ips_explode(qa_get_option($qa_db, 'block_ips_write'));		
+		$blockipclauses=qa_block_ips_explode(qa_get_option($qa_db, 'block_ips_write'));
 		$matchclauses=array();
 		
 		foreach ($blockipclauses as $blockipclause)
-			if (qa_block_ip_match($ip, $blockipclause))	
+			if (qa_block_ip_match($ip, $blockipclause))
 				$matchclauses[]=$blockipclause;
 		
 		if (count($matchclauses)) {

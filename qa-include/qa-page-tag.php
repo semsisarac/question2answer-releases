@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-tag.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Controller for page for specific tags
 
 
@@ -44,7 +44,7 @@
 
 //	Find the questions with this tag
 
-	qa_options_set_pending(array('page_size_tag_qs', 'voting_on_qs', 'votes_separated', 'show_when_created', 'show_user_points', 'feed_for_tag_qs', 'permit_anon_view_ips', 'block_bad_words'));
+	qa_options_set_pending(array('page_size_tag_qs', 'voting_on_qs', 'voting_on_q_page_only', 'votes_separated', 'show_when_created', 'show_user_points', 'feed_for_tag_qs', 'permit_anon_view_ips', 'block_bad_words'));
 	
 	list($questions, $qcount, $categories)=qa_db_select_with_pending($qa_db,
 		qa_db_tag_recent_qs_selectspec($qa_login_userid, $tag, $qa_start),

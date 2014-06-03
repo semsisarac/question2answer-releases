@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-confirm.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Controller for email confirmation page (can also request a new code)
 
 
@@ -51,7 +51,7 @@
 
 //	Check if we've been asked to send a new link or have a successful email confirmation
 
-	$incode=qa_get('c');
+	$incode=trim(qa_get('c')); // trim to prevent passing in blank values to match uninitiated DB rows
 	$inhandle=qa_get('u');
 	$useremailed=false;
 	$userconfirmed=false;
@@ -69,7 +69,7 @@
 		if (!empty($inhandle)) { // match based on code and handle provided on URL
 			$userinfo=qa_db_select_with_pending($qa_db, qa_db_user_account_selectspec($inhandle, false));
 	
-			if (strtolower(@$userinfo['emailcode'])==strtolower($incode)) {
+			if (strtolower(trim(@$userinfo['emailcode']))==strtolower($incode)) {
 				qa_complete_confirm($qa_db, $userinfo['userid']);
 				$userconfirmed=true;
 			}
@@ -81,7 +81,7 @@
 			if ($userinfo['flags'] & QA_USER_FLAGS_EMAIL_CONFIRMED) // if they confirmed before, just show message as if it happened now
 				$userconfirmed=true;
 			
-			elseif (strtolower($userinfo['emailcode'])==strtolower($incode)) {
+			elseif (strtolower(trim($userinfo['emailcode']))==strtolower($incode)) {
 				qa_complete_confirm($qa_db, $qa_login_userid);
 				$userconfirmed=true;
 			}

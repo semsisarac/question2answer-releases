@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-hidden.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Controller for admin page showing hidden questions, answers and comments
 
 
@@ -45,7 +45,7 @@
 
 	qa_admin_pending();
 	
-	qa_options_set_pending(array('voting_on_qs', 'votes_separated', 'show_when_created', 'show_user_points', 'block_bad_words'));
+	qa_options_set_pending(array('show_when_created', 'show_user_points', 'block_bad_words'));
 
 
 //	Find recently hidden questions, answers, comments

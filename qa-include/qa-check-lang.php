@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-check-lang.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Development tool to see which language phrases are missing or unused
 
 
@@ -126,13 +126,13 @@
 	foreach ($languages as $code => $language) {
 		echo '<H2>Checking '.$language.' files in qa-lang/'.$code.':</H2>';
 		
-		$langdefined=array();		
+		$langdefined=array();
 		$langsubstitutions=array();
 		$langincludefiles=glob(QA_LANG_DIR.$code.'/qa-*.php');
 		
 		foreach ($langincludefiles as $langincludefile)
 			if (preg_match('/qa-lang-([a-z]+)\.php$/', $langincludefile, $matches)) { // it's a lang file
-				$prefix=$matches[1];				
+				$prefix=$matches[1];
 				$phrases=@include $langincludefile;
 				
 				foreach ($phrases as $key => $value) {

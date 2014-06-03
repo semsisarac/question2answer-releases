@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-categories.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Controller for admin page for editing categories
 
 
@@ -51,6 +51,12 @@
 	$categories=qa_db_select_with_pending($qa_db, qa_db_categories_selectspec());
 	
 
+//	Check admin privileges (do late to allow one DB query)
+
+	if (!qa_admin_check_privileges())
+		return;
+		
+		
 //	Work out the appropriate state for the page
 	
 	if (qa_clicked('doaddcategory'))
@@ -67,7 +73,7 @@
 
 //	Process saving options
 
-	if (qa_clicked('dosaveoptions') || qa_clicked('doaddcategory'))
+	if (count($categories) && (qa_clicked('dosaveoptions') || qa_clicked('doaddcategory')))
 		qa_set_option($qa_db, 'allow_no_category', (int)qa_post_text('option_allow_no_category'));
 
 
@@ -99,7 +105,7 @@
 		//	Verify the name is legitimate
 		
 			if (empty($inname))
-				$errors['name']=qa_lang_sub('main/min_length_x', 1);
+				$errors['name']=qa_lang('main/field_required');
 			elseif (qa_strlen($inname)>QA_DB_MAX_CAT_PAGE_TITLE_LENGTH)
 				$errors['name']=qa_lang_sub('main/max_length_x', QA_DB_MAX_CAT_PAGE_TITLE_LENGTH);
 			else
@@ -135,7 +141,7 @@
 				);
 				
 				if (empty($inslug))
-					$errors['slug']=qa_lang_sub('main/min_length_x', 1);
+					$errors['slug']=qa_lang('main/field_required');
 				elseif (qa_strlen($inslug)>QA_DB_MAX_CAT_PAGE_TAGS_LENGTH)
 					$errors['slug']=qa_lang_sub('main/max_length_x', QA_DB_MAX_CAT_PAGE_TAGS_LENGTH);
 				elseif (preg_match('/[\\+\\/]/', $inslug))
@@ -177,24 +183,20 @@
 						qa_db_category_move($qa_db, $categoryid, $inposition);
 					
 					$categories=qa_db_select_with_pending($qa_db, qa_db_categories_selectspec()); // reload after changes
-					$editcategory=null;	
+					$editcategory=null;
 				}
 			}
 		}
 	}
 		
 	
-//	Check admin privileges (do late to allow one DB query)
-
-	if (!qa_admin_check_privileges())
-		return;
-		
-		
 //	Prepare content for theme
 	
 	qa_content_prepare();
 
 	$qa_content['title']=qa_lang_html('admin/admin_title').' - '.qa_lang_html('admin/categories_title');
+	
+	$qa_content['error']=qa_admin_page_error($qa_db);
 	
 	if (isset($editcategory)) {
 		$positionoptions=array();
@@ -313,10 +315,11 @@
 		$qa_content['focusid']='name';
 	
 	} else {
-		$categoryhtml='';
+		$categoryhtml='<OL STYLE="margin-bottom:0;">';
 		foreach ($categories as $category)
-			$categoryhtml.='<A HREF="'.qa_path_html('admin/categories', array('edit' => $category['categoryid'])).'">'.
-				qa_html($category['title']).'</A> - '.qa_lang_html_sub('main/x_questions', $category['qcount']).qa_html("\n", true);
+			$categoryhtml.='<LI><A HREF="'.qa_path_html('admin/categories', array('edit' => $category['categoryid'])).'">'.
+				qa_html($category['title']).'</A> - '.qa_lang_html_sub('main/x_questions', $category['qcount']).'</LI>';
+		$categoryhtml.='</OL>';
 		
 		$qa_content['form']=array(
 			'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
@@ -324,11 +327,9 @@
 			'style' => 'tall',
 			
 			'fields' => array(
-				'allow_no_category' => array(
-					'label' => qa_lang_html('options/allow_no_category'),
-					'tags' => ' NAME="option_allow_no_category" ',
-					'type' => 'checkbox',
-					'value' => qa_get_option($qa_db, 'allow_no_category'),
+				'intro' => array(
+					'label' => qa_lang_html('admin/categories_introduction'),
+					'type' => 'static',
 				),
 				
 				'categories' => array(
@@ -336,6 +337,14 @@
 					'type' => 'static',
 					'value' => $categoryhtml,
 				),
+
+				'allow_no_category' => array(
+					'label' => qa_lang_html('options/allow_no_category'),
+					'tags' => ' NAME="option_allow_no_category" ',
+					'type' => 'checkbox',
+					'value' => qa_get_option($qa_db, 'allow_no_category'),
+				),
+				
 			),
 
 			'buttons' => array(
@@ -351,8 +360,13 @@
 			),
 		);
 		
-		if (!count($categories))
+		if (count($categories)) {
+			unset($qa_content['form']['fields']['intro']);
+		} else {
+			unset($qa_content['form']['fields']['allow_no_category']);
 			unset($qa_content['form']['fields']['categories']);
+			unset($qa_content['form']['buttons']['save']);
+		}
 	}
 
 

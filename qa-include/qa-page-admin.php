@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin.php
-	Version: 1.2-beta-1
-	Date: 2010-06-27 11:15:58 GMT
+	Version: 1.2
+	Date: 2010-07-20 09:24:45 GMT
 	Description: Controller for most admin pages which just contain options
 
 
@@ -85,7 +85,7 @@
 			$getoptions=qa_get_options($qa_db, array('tags_or_categories'));
 
 			$subtitle='admin/viewing_title';
-			$showoptions=array('voting_on_qs', 'voting_on_as', 'votes_separated', '', 'page_size_home', 'page_size_qs', 'page_size_una_qs', '');
+			$showoptions=array('voting_on_qs', 'voting_on_q_page_only', 'voting_on_as', 'votes_separated', '', 'page_size_home', 'page_size_qs', 'page_size_una_qs', '');
 			
 			if (qa_using_tags($qa_db))
 				array_push($showoptions, 'page_size_tags', 'columns_tags');
@@ -97,7 +97,8 @@
 				
 			array_push($showoptions,
 				'page_size_user_qs', 'page_size_user_as', 'page_size_search', '',
-				'show_when_created', 'show_user_points', 'show_selected_first', 'show_url_links', '',
+				'show_url_links', 'show_when_created', 'show_user_points', '',
+				'sort_answers_by', 'show_selected_first', 'show_a_form_immediate', 'show_c_reply_buttons', '',
 				'do_related_qs', 'match_related_qs', 'page_size_related_qs', '', 'pages_prev_next'
 			);
 
@@ -105,6 +106,7 @@
 
 			$checkboxtodisplay=array(
 				'votes_separated' => 'option_voting_on_qs || option_voting_on_as',
+				'voting_on_q_page_only' => 'option_voting_on_qs',
 				'match_related_qs' => 'option_do_related_qs',
 				'page_size_related_qs' => 'option_do_related_qs',
 			);
@@ -115,12 +117,12 @@
 			
 			$subtitle='admin/posting_title';
 
-			$showoptions=array('comment_on_qs', 'comment_on_as', 'follow_on_as', '', 'min_len_q_title', 'max_len_q_title');
+			$showoptions=array('allow_multi_answers', 'comment_on_qs', 'comment_on_as', 'follow_on_as', '', 'min_len_q_title', 'max_len_q_title');
 			
 			$showoptions[]='min_len_q_content';
 			
 			if (qa_using_tags($qa_db))
-				$showoptions[]='max_num_q_tags';
+				array_push($showoptions, 'min_num_q_tags', 'max_num_q_tags');
 			
 			array_push($showoptions, 'min_len_a_content', 'min_len_c_content', 'block_bad_words', '', 'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs', '');
 
@@ -262,6 +264,7 @@
 		'min_len_c_content' => 'number',
 		'min_len_q_content' => 'number',
 		'min_len_q_title' => 'number',
+		'min_num_q_tags' => 'number',
 		'max_len_q_title' => 'number',
 		'max_num_q_tags' => 'number',
 		'page_size_ask_check_qs' => 'number',
@@ -293,6 +296,7 @@
 		'feed_for_search' => 'checkbox',
 		'feed_per_category' => 'checkbox',
 		'feed_for_tag_qs' => 'checkbox',
+		'show_c_reply_buttons' => 'checkbox',
 		'show_custom_sidebar' => 'checkbox',
 		'show_custom_sidepanel' => 'checkbox',
 		'show_custom_header' => 'checkbox',
@@ -300,6 +304,7 @@
 		'show_custom_in_head' => 'checkbox',
 		'show_custom_home' => 'checkbox',
 		'show_home_description' => 'checkbox',
+		'allow_multi_answers' => 'checkbox',
 		'do_ask_check_qs' => 'checkbox',
 		'do_complete_tags' => 'checkbox',
 		'do_example_tags' => 'checkbox',
@@ -317,6 +322,7 @@
 		'votes_separated' => 'checkbox',
 		'voting_on_as' => 'checkbox',
 		'voting_on_qs' => 'checkbox',
+		'voting_on_q_page_only' => 'checkbox',
 	);
 	
 	$optionmaximum=array(
@@ -442,6 +448,15 @@
 		$qa_content['form']['ok']=qa_lang_html('admin/options_reset');
 	elseif (qa_clicked('dosaveoptions'))
 		$qa_content['form']['ok']=qa_lang_html('admin/options_saved');
+		
+
+	function qa_optionfield_make_select(&$optionfield, $options, $value, $default)
+	{
+		$optionfield['type']='select';
+		$optionfield['options']=$options;
+		$optionfield['value']=isset($options[$value]) ? $options[$value] : $options[$default];
+	}
+	
 
 	foreach ($showoptions as $optionname)
 		if (empty($optionname)) {
@@ -454,11 +469,13 @@
 			if ($type=='number-blank')
 				$type='number';
 			
+			$value=$options[$optionname];
+			
 			$optionfield=array(
 				'id' => $optionname,
 				'label' => qa_lang_html('options/'.$optionname),
 				'tags' => ' NAME="option_'.$optionname.'" ID="option_'.$optionname.'" ',
-				'value' => qa_html($options[$optionname]),
+				'value' => qa_html($value),
 				'type' => $type,
 			);
 			
@@ -472,19 +489,13 @@
 				case 'site_language':
 					require_once QA_INCLUDE_DIR.'qa-util-string.php';
 					
-					$languagevalue=$options[$optionname];
-					$languageoptions=qa_admin_language_options();
-					
-					$optionfield['type']='select';
-					$optionfield['options']=$languageoptions;
-					$optionfield['value']=$languageoptions[isset($languageoptions[$languagevalue]) ? $languagevalue : 'en-US'];
+					qa_optionfield_make_select($optionfield, qa_admin_language_options(), $value, '');
 					
 					if (!qa_has_multibyte())
 						$optionfield['error']=qa_lang_html('admin/no_multibyte');
 					break;
 					
 				case 'neat_urls':
-					$neatvalue=$options[$optionname];
 					$neatoptions=array();
 
 					$rawoptions=array(
@@ -506,30 +517,24 @@
 							)) : '').
 							'</SMALL>';
 							
+					qa_optionfield_make_select($optionfield, $neatoptions, $value, QA_URL_FORMAT_SAFEST);
+							
 					$optionfield['type']='select-radio';
-					$optionfield['options']=$neatoptions;
-					$optionfield['value']=$neatoptions[isset($neatoptions[$neatvalue]) ? $neatvalue : QA_URL_FORMAT_SAFEST];
 					$optionfield['note']=qa_lang_html_sub('admin/url_format_note', '<SPAN STYLE=" '.qa_admin_url_test_html().'/SPAN>');
 					break;
 					
 				case 'site_theme':
-					$themevalue=$options[$optionname];
-					$themeoptions=qa_admin_theme_options();
-					
-					$optionfield['type']='select';
-					$optionfield['options']=$themeoptions;
-					$optionfield['value']=$themeoptions[isset($themeoptions[$themevalue]) ? $themevalue : 'Default'];
+					qa_optionfield_make_select($optionfield, qa_admin_theme_options(), $value, 'Default');
 					break;
 				
 				case 'tags_or_categories':
-					$optionfield['options']=array(
+					qa_optionfield_make_select($optionfield, array(
 						'' => qa_lang_html('admin/no_classification'),
 						't' => qa_lang_html('admin/tags'),
 						'c' => qa_lang_html('admin/categories'),
 						'tc' => qa_lang_html('admin/tags_and_categories'),
-					);
-					$optionfield['type']='select';
-					$optionfield['value']=$optionfield['options'][$options[$optionname]];
+					), $value, 'tc');
+
 					$optionfield['error']='';
 					
 					if (qa_get_option($qa_db, 'cache_tagcount') && !qa_using_tags($qa_db))
@@ -562,25 +567,33 @@
 					break;
 				
 				case 'pages_prev_next':
-					$optionfield['type']='select';
-					$optionfield['options']=array(0 => 0, 1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5);
+					qa_optionfield_make_select($optionfield, array(0 => 0, 1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5), $value, 3);
 					break;
 	
 				case 'columns_tags':
 				case 'columns_users':
-					$optionfield['type']='select';
-					$optionfield['options']=array(1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5);
+					qa_optionfield_make_select($optionfield, array(1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5), $value, 2);
+					break;
+					
+				case 'sort_answers_by':
+					qa_optionfield_make_select($optionfield, array(
+						'created' => qa_lang_html('options/sort_time'),
+						'votes' => qa_lang_html('options/sort_votes'),
+					), $value, 'created');
+					break;
+					
+				case 'show_a_form_immediate':
+					qa_optionfield_make_select($optionfield, array(
+						'always' => qa_lang_html('options/show_always'),
+						'if_no_as' => qa_lang_html('options/show_if_no_as'),
+						'never' => qa_lang_html('options/show_never'),
+					), $value, 'if_no_as');
 					break;
 					
 				case 'match_related_qs':
 				case 'match_ask_check_qs':
 				case 'match_example_tags':
-					$matchvalue=$options[$optionname];
-					$matchoptions=qa_admin_match_options();
-					
-					$optionfield['type']='select';
-					$optionfield['options']=$matchoptions;
-					$optionfield['value']=$matchoptions[isset($matchoptions[$matchvalue]) ? $matchvalue : 3];
+					qa_optionfield_make_select($optionfield, qa_admin_match_options(), $value, 3);
 					break;
 					
 				case 'block_bad_words':
@@ -618,8 +631,6 @@
 				case 'permit_hide_show':
 				case 'permit_delete_hidden':
 				case 'permit_anon_view_ips':
-					$permitvalue=$options[$optionname];
-					
 					if ( ($optionname=='permit_post_q') || ($optionname=='permit_post_a') || ($optionname=='permit_post_c') || ($optionname=='permit_anon_view_ips') )
 						$widest=QA_PERMIT_ALL;
 					elseif ( ($optionname=='permit_select_a') || ($optionname=='permit_hide_show') )
@@ -642,15 +653,13 @@
 					
 					$permitoptions=qa_admin_permit_options($widest, $narrowest, (!QA_EXTERNAL_USERS) && qa_get_option($qa_db, 'confirm_user_emails'));
 					
-					$optionfield['type']='select';
-					$optionfield['options']=$permitoptions;
-					
-					if (isset($permitoptions[$permitvalue]))
-						$optionfield['value']=$permitoptions[$permitvalue];
-					elseif ($permitvalue==QA_PERMIT_CONFIRMED)
-						$optionfield['value']=QA_PERMIT_USERS;
-					else
-						$optionfield['value']=$permitoptions[min(array_keys($permitoptions))];
+					if (count($permitoptions)>1)
+						qa_optionfield_make_select($optionfield, $permitoptions, $value,
+							($value==QA_PERMIT_CONFIRMED) ? QA_PERMIT_USERS : min(array_keys($permitoptions)));
+					else {
+						$optionfield['type']='static';
+						$optionfield['value']=reset($permitoptions);
+					}
 					break;
 					
 				case 'feed_for_qa':
@@ -708,7 +717,7 @@
 					break;
 			}
 
-			if (isset($feedrequest) && $options[$optionname])
+			if (isset($feedrequest) && $value)
 				$optionfield['note']='<A HREF="'.qa_path_html(qa_feed_request($feedrequest)).'">'.qa_lang_html($feedisexample ? 'admin/feed_link_example' : 'admin/feed_link').'</A>';
 
 			$qa_content['form']['fields'][$optionname]=$optionfield;
