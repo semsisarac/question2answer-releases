@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-users.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Controller for top scoring users page
 
 
@@ -56,7 +56,7 @@
 	if (count($users)) {
 		foreach ($users as $userid => $user)
 			$qa_content['ranking']['items'][]=array(
-				'label' => (QA_EXTERNAL_USERS ? '' : (qa_get_user_avatar_html($user['flags'], $user['email'], $user['handle'],
+				'label' => (QA_FINAL_EXTERNAL_USERS ? '' : (qa_get_user_avatar_html($user['flags'], $user['email'], $user['handle'],
 						$user['avatarblobid'], $user['avatarwidth'], $user['avatarheight'], qa_opt('avatar_users_size'), true).' ')).$usershtml[$user['userid']],
 				'score' => qa_html(number_format($user['points'])),
 			);

@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-question.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Language phrases for question page
 
 
@@ -52,7 +52,7 @@
 		'c_notify_email' => 'Email me at this address if a comment is added after mine:',
 		'c_notify_label' => 'Email me if a comment is added after mine',
 		'c_notify_x_label' => 'Email me (^) if a comment is added after mine',
-		'category_js_note' => 'To select any category, please enable Javascript in your browser.',
+		'category_js_note' => 'To select any category, please enable Javascript in your web browser.',
 		'category_required' => 'Please choose a category',
 		'claim_button' => 'I wrote this',
 		'clear_flags_button' => 'clear flags',
@@ -65,12 +65,10 @@
 		'comment_on_a' => 'On answer: ',
 		'comment_on_q' => 'On question: ',
 		'comment_q_popup' => 'Add a comment on this question',
-		'continue_button' => 'Continue',
 		'delete_a_popup' => 'Delete this answer permanently',
 		'delete_button' => 'delete',
 		'delete_c_popup' => 'Delete this comment permanently',
 		'delete_q_popup' => 'Delete this question permanently',
-		'different_button' => 'My Question is Different',
 		'duplicate_content' => 'Your submission appears to be a duplicate.',
 		'edit_a_popup' => 'Edit this answer',
 		'edit_a_title' => 'Edit answer',
@@ -83,15 +81,15 @@
 		'edit_q_title' => 'Edit Question',
 		'edited_x_ago' => 'edited ^ ago',
 		'example_tags' => 'Example tags: ',
-		'flag_button' => 'flag',
-		'flag_hide_button' => 'flag and hide',
 		'flag_a_popup' => 'Flag this answer as spam or inappropriate',
+		'flag_button' => 'flag',
 		'flag_c_popup' => 'Flag this comment as spam or inappropriate',
-		'flag_q_popup' => 'Flag this question as spam or inappropriate',
+		'flag_hide_button' => 'flag and hide',
 		'flag_limit' => 'Too many posts flagged - please try again in an hour',
 		'flag_must_confirm' => 'Please ^5confirm your email address^6 to flag posts.',
 		'flag_must_login' => 'Please ^1log in^2 or ^3register^4 to flag posts.',
 		'flag_not_allowed' => 'Flagging this is not allowed',
+		'flag_q_popup' => 'Flag this question as spam or inappropriate',
 		'follow_a_popup' => 'Ask a new question relating to this answer',
 		'follow_button' => 'ask related question',
 		'follows_a' => 'related to an answer for:',
@@ -114,10 +112,9 @@
 		'q_notify_email' => 'Email me at this address if my question is answered or commented on:',
 		'q_notify_label' => 'Email me if my question is answered or commented on',
 		'q_notify_x_label' => 'Email me (^) if my question is answered or commented on',
-		'q_tags_label' => 'Tags - use hyphens to combine words:',
 		'q_tags_comma_label' => 'Tags - use comma (,) as a separator:',
+		'q_tags_label' => 'Tags - use hyphens to combine words:',
 		'q_title_label' => 'Your question in one sentence:',
-		'q_title_note' => 'You can provide more information in the question body.',
 		'reply_button' => 'reply',
 		'reply_c_popup' => 'Reply to this comment',
 		'reshow_button' => 'reshow',

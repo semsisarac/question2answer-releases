@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-limits.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Monitoring and rate-limiting user actions (application level)
 
 
@@ -34,7 +34,8 @@
 	function qa_limits_remaining($userid, $actioncode)
 /*
 	Return how many more times user $userid and/or the requesting IP can perform $actioncode this hour,
-	where $actioncode is Q/A/C/V/L for posting a question, answer, comment, voting or logging in.
+	where $actioncode is Q/A/C/V/L/U/F/M for posting a question, answer, comment, voting or logging in,
+	uploading a file, flagging a post, or sending a private message.
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';

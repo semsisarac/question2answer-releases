@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-emails.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Wrapper functions for sending email notifications to users
 
 
@@ -37,17 +37,23 @@
 	
 	
 	function qa_suspend_notifications($suspend=true)
+/*
+	Suspend the sending of all email notifications via qa_send_notification(...) if $suspend is
+	true, otherwise reinstate it. A counter is kept to allow multiple calls.
+*/
 	{
 		global $qa_notifications_suspended;
 		
 		$qa_notifications_suspended+=($suspend ? 1 : -1);
 	}
 	
+	
 	function qa_send_notification($userid, $email, $handle, $subject, $body, $subs)
 /*
 	Send email to person with $userid and/or $email and/or $handle (null/invalid values
 	are ignored or retrieved from user database as appropriate). Email uses $subject
-	and $body, after substituting each key in $subs with its corresponding value.
+	and $body, after substituting each key in $subs with its corresponding value, plus
+	applying some standard substitutions such as ^site_title, ^handle and ^email.
 */
 	{
 		global $qa_notifications_suspended;
@@ -64,7 +70,7 @@
 			$needhandle=empty($handle);
 			
 			if ($needemail || $needhandle) {
-				if (QA_EXTERNAL_USERS) {
+				if (QA_FINAL_EXTERNAL_USERS) {
 					if ($needhandle) {
 						$handles=qa_get_public_from_userids(array($userid));
 						$handle=@$handles[$userid];

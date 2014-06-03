@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Controller for most admin pages which just contain options
 
 
@@ -62,13 +62,13 @@
 		'columns_users' => 'number',
 		'feed_number_items' => 'number',
 		'flagging_hide_after' => 'number',
-		'flagging_notify_first' => 'number',
 		'flagging_notify_every' => 'number',
-		'hot_weight_views' => 'number',
-		'hot_weight_answers' => 'number',
-		'hot_weight_votes' => 'number',
-		'hot_weight_q_age' => 'number',
+		'flagging_notify_first' => 'number',
 		'hot_weight_a_age' => 'number',
+		'hot_weight_answers' => 'number',
+		'hot_weight_q_age' => 'number',
+		'hot_weight_views' => 'number',
+		'hot_weight_votes' => 'number',
 		'logo_height' => 'number-blank',
 		'logo_width' => 'number-blank',
 		'max_len_q_title' => 'number',
@@ -93,9 +93,9 @@
 		'min_len_q_content' => 'number',
 		'min_len_q_title' => 'number',
 		'min_num_q_tags' => 'number',
+		'page_size_activity' => 'number',
 		'page_size_ask_check_qs' => 'number',
 		'page_size_ask_tags' => 'number',
-		'page_size_activity' => 'number',
 		'page_size_home' => 'number',
 		'page_size_hot_qs' => 'number',
 		'page_size_qs' => 'number',
@@ -107,7 +107,7 @@
 		'page_size_user_posts' => 'number',
 		'page_size_users' => 'number',
 		'pages_prev_next' => 'number',
-		'title_length_urls' => 'number',
+		'q_urls_title_length' => 'number',
 		
 		'allow_change_usernames' => 'checkbox',
 		'allow_multi_answers' => 'checkbox',
@@ -145,6 +145,7 @@
 		'neat_urls' => 'checkbox',
 		'notify_admin_q_post' => 'checkbox',
 		'notify_users_default' => 'checkbox',
+		'q_urls_remove_accents' => 'checkbox',
 		'show_c_reply_buttons' => 'checkbox',
 		'show_custom_footer' => 'checkbox',
 		'show_custom_header' => 'checkbox',
@@ -171,9 +172,9 @@
 	$optionmaximum=array(
 		'feed_number_items' => QA_DB_RETRIEVE_QS_AS,
 		'max_len_q_title' => QA_DB_MAX_TITLE_LENGTH,
+		'page_size_activity' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_ask_check_qs' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_ask_tags' => QA_DB_RETRIEVE_QS_AS,
-		'page_size_activity' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_home' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_hot_qs' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_qs' => QA_DB_RETRIEVE_QS_AS,
@@ -191,9 +192,9 @@
 		'flagging_notify_every' => 1,
 		'flagging_notify_first' => 1,
 		'max_num_q_tags' => 2,
+		'page_size_activity' => 3,
 		'page_size_ask_check_qs' => 3,
 		'page_size_ask_tags' => 3,
-		'page_size_activity' => 3,
 		'page_size_home' => 3,
 		'page_size_hot_qs' => 3,
 		'page_size_qs' => 3,
@@ -214,7 +215,7 @@
 			$subtitle='admin/emails_title';
 			$showoptions=array('from_email', 'feedback_email', 'notify_admin_q_post', 'feedback_enabled', 'email_privacy');
 			
-			if (!QA_EXTERNAL_USERS)
+			if (!QA_FINAL_EXTERNAL_USERS)
 				$showoptions[]='custom_welcome';
 			break;
 			
@@ -240,7 +241,7 @@
 		case 'users':
 			$subtitle='admin/users_title';
 
-			if (!QA_EXTERNAL_USERS) {
+			if (!QA_FINAL_EXTERNAL_USERS) {
 				require_once QA_INCLUDE_DIR.'qa-util-image.php';
 				
 				$showoptions=array('allow_change_usernames', 'allow_private_messages', '', 'avatar_allow_gravatar');
@@ -268,7 +269,7 @@
 			
 		case 'viewing':
 			$subtitle='admin/viewing_title';
-			$showoptions=array('title_length_urls', 'do_count_q_views', '', 'voting_on_qs', 'voting_on_q_page_only', 'voting_on_as', 'votes_separated', '', 'show_url_links', 'links_in_new_window', 'show_when_created');
+			$showoptions=array('q_urls_title_length', 'q_urls_remove_accents', 'do_count_q_views', '', 'voting_on_qs', 'voting_on_q_page_only', 'voting_on_as', 'votes_separated', '', 'show_url_links', 'links_in_new_window', 'show_when_created');
 			
 			if (count(qa_get_points_to_titles()))
 				$showoptions[]='show_user_titles';
@@ -398,7 +399,7 @@
 			
 			$getoptions=qa_get_options(array('feedback_enabled', 'permit_post_q', 'permit_post_a', 'permit_post_c'));
 			
-			if (!QA_EXTERNAL_USERS)
+			if (!QA_FINAL_EXTERNAL_USERS)
 				array_push($showoptions, 'confirm_user_emails', 'suspend_register_users', '');
 			
 			$maxpermitpost=max($getoptions['permit_post_q'], $getoptions['permit_post_a'], $getoptions['permit_post_c']);
@@ -409,7 +410,7 @@
 			if ($maxpermitpost > QA_PERMIT_CONFIRMED)
 				$showoptions[]='captcha_on_unconfirmed';
 				
-			if (!QA_EXTERNAL_USERS)
+			if (!QA_FINAL_EXTERNAL_USERS)
 				array_push($showoptions, 'captcha_on_register', 'captcha_on_reset_password');
 			
 			if ($getoptions['feedback_enabled'])
@@ -534,25 +535,32 @@
 			
 			$oldblobid=qa_opt('avatar_default_blobid');
 			
-			$imagedata=qa_image_constrain_data(file_get_contents($_FILES['avatar_default_file']['tmp_name']), $width, $height, qa_opt('avatar_store_size'));
+			$toobig=qa_image_file_too_big($_FILES['avatar_default_file']['tmp_name'], qa_opt('avatar_store_size'));
 			
-			if (isset($imagedata)) {
-				require_once QA_INCLUDE_DIR.'qa-db-blobs.php';
+			if ($toobig)
+				$errors['avatar_default_show']=qa_lang_sub('main/image_too_big_x_pc', (int)($toobig*100));
+			
+			else {
+				$imagedata=qa_image_constrain_data(file_get_contents($_FILES['avatar_default_file']['tmp_name']), $width, $height, qa_opt('avatar_store_size'));
 				
-				$newblobid=qa_db_blob_create($imagedata, 'jpeg');
-				
-				if (isset($newblobid)) {
-					qa_set_option('avatar_default_blobid', $newblobid);
-					qa_set_option('avatar_default_width', $width);
-					qa_set_option('avatar_default_height', $height);
-					qa_set_option('avatar_default_show', 1);
-				}
+				if (isset($imagedata)) {
+					require_once QA_INCLUDE_DIR.'qa-db-blobs.php';
 					
-				if (strlen($oldblobid))
-					qa_db_blob_delete($oldblobid);
-
-			} else
-				$errors['avatar_default_show']=qa_lang_sub('main/image_not_read', implode(', ', qa_gd_image_formats()));
+					$newblobid=qa_db_blob_create($imagedata, 'jpeg');
+					
+					if (isset($newblobid)) {
+						qa_set_option('avatar_default_blobid', $newblobid);
+						qa_set_option('avatar_default_width', $width);
+						qa_set_option('avatar_default_height', $height);
+						qa_set_option('avatar_default_show', 1);
+					}
+						
+					if (strlen($oldblobid))
+						qa_db_blob_delete($oldblobid);
+	
+				} else
+					$errors['avatar_default_show']=qa_lang_sub('main/image_not_read', implode(', ', qa_gd_image_formats()));
+			}
 		}
 	}
 
@@ -857,7 +865,7 @@
 					else
 						$narrowest=QA_PERMIT_EXPERTS;
 					
-					$permitoptions=qa_admin_permit_options($widest, $narrowest, (!QA_EXTERNAL_USERS) && qa_opt('confirm_user_emails'));
+					$permitoptions=qa_admin_permit_options($widest, $narrowest, (!QA_FINAL_EXTERNAL_USERS) && qa_opt('confirm_user_emails'));
 					
 					if (count($permitoptions)>1)
 						qa_optionfield_make_select($optionfield, $permitoptions, $value,
@@ -953,7 +961,7 @@
 
 	switch (@$qa_request_lc_parts[1]) {
 		case 'users':
-			if (!QA_EXTERNAL_USERS) {
+			if (!QA_FINAL_EXTERNAL_USERS) {
 				$userfields=qa_db_single_select(qa_db_userfields_selectspec());
 	
 				$listhtml='';
@@ -1071,7 +1079,7 @@
 				'value' => qa_lang_html('options/permit_moderators'),
 			);
 			
-			if (!QA_EXTERNAL_USERS) {
+			if (!QA_FINAL_EXTERNAL_USERS) {
 				$qa_content['form']['fields']['permit_create_experts']=array(
 					'type' => 'static',
 					'label' => qa_lang_html('options/permit_create_experts'),

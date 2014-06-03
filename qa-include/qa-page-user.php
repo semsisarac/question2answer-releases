@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-user.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Controller for user profile page
 
 
@@ -39,7 +39,7 @@
 		qa_redirect('users');
 
 
-	if (QA_EXTERNAL_USERS) {
+	if (QA_FINAL_EXTERNAL_USERS) {
 		$publictouserid=qa_get_userids_from_public(array(@$pass_subrequests[0]));
 		$userid=@$publictouserid[@$pass_subrequests[0]];
 		
@@ -57,12 +57,12 @@
 	
 //	Find the user profile and questions and answers for this handle
 	
-	$identifier=QA_EXTERNAL_USERS ? $userid : $handle;
+	$identifier=QA_FINAL_EXTERNAL_USERS ? $userid : $handle;
 
 	@list($useraccount, $userprofile, $userfields, $userpoints, $userrank, $questions, $answerquestions, $commentquestions)=qa_db_select_with_pending(
-		QA_EXTERNAL_USERS ? null : qa_db_user_account_selectspec($handle, false),
-		QA_EXTERNAL_USERS ? null : qa_db_user_profile_selectspec($handle, false),
-		QA_EXTERNAL_USERS ? null : qa_db_userfields_selectspec(),
+		QA_FINAL_EXTERNAL_USERS ? null : qa_db_user_account_selectspec($handle, false),
+		QA_FINAL_EXTERNAL_USERS ? null : qa_db_user_profile_selectspec($handle, false),
+		QA_FINAL_EXTERNAL_USERS ? null : qa_db_userfields_selectspec(),
 		qa_db_user_points_selectspec($identifier),
 		qa_db_user_rank_selectspec($identifier),
 		qa_db_user_recent_qs_selectspec($qa_login_userid, $identifier),
@@ -73,7 +73,7 @@
 
 //	Check the user exists and work out what can and can't be set (if not using single sign-on)
 	
-	if (!QA_EXTERNAL_USERS) { // if we're using integrated user management, we can know and show more
+	if (!QA_FINAL_EXTERNAL_USERS) { // if we're using integrated user management, we can know and show more
 		if ((!is_array($userpoints)) && !is_array($useraccount))
 			return include QA_INCLUDE_DIR.'qa-page-not-found.php';
 	
@@ -113,7 +113,7 @@
 
 //	Process edit or save button for user
 
-	if (!QA_EXTERNAL_USERS) {
+	if (!QA_FINAL_EXTERNAL_USERS) {
 		$reloaduser=false;
 		
 		if ($usereditbutton) {
@@ -218,11 +218,7 @@
 				require_once QA_INCLUDE_DIR.'qa-db-admin.php';
 				require_once QA_INCLUDE_DIR.'qa-app-posts.php';
 				
-				$postids=array_merge(
-					qa_db_get_user_posts($userid, 'C'),
-					qa_db_get_user_posts($userid, 'A'),
-					qa_db_get_user_posts($userid, 'Q')
-				);
+				$postids=qa_db_get_user_visible_postids($userid);
 				
 				foreach ($postids as $postid)
 					qa_post_set_hidden($postid, true, $qa_login_userid);
@@ -251,7 +247,7 @@
 
 //	General information about the user, only available if we're using internal user management
 	
-	if (!QA_EXTERNAL_USERS) {
+	if (!QA_FINAL_EXTERNAL_USERS) {
 		$qa_content['form_profile']=array(
 			'tags' => 'METHOD="POST" ACTION="'.qa_self_html().'"',
 			
@@ -310,6 +306,7 @@
 				'type' => 'static',
 				'label' => qa_lang_html('profile/extra_privileges'),
 				'value' => qa_html(implode("\n", $showpermits), true),
+				'rows' => count($showpermits),
 			);
 		
 	
@@ -371,7 +368,7 @@
 			$fieldname='field_'.$userfield['fieldid'];
 
 			if (($userfield['flags'] & QA_FIELD_FLAGS_LINK_URL) && !$fieldsediting)
-				$valuehtml=qa_url_to_html_link(@$userprofile[$userfield['title']]);
+				$valuehtml=qa_url_to_html_link(@$userprofile[$userfield['title']], qa_opt('links_in_new_window'));
 			else {
 				$value=@$infield[$fieldname];
 				if (!isset($value))

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-logout.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Controller for logout page (not much to do)
 
 
@@ -30,7 +30,7 @@
 		exit;
 	}
 
-	if (QA_EXTERNAL_USERS)
+	if (QA_FINAL_EXTERNAL_USERS)
 		qa_fatal_error('User logout is handled by external code');
 	
 	if (isset($qa_login_userid))

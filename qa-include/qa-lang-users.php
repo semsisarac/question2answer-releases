@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-users.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Language phrases for user management
 
 
@@ -27,8 +27,6 @@
 
 	return array(
 		'about' => 'About',
-		'private_messages' => 'Private messages:',
-		'private_messages_explanation' => 'Allow users to email me (without seeing my address)',
 		'avatar_default' => 'Default',
 		'avatar_gravatar' => 'Show my ^1Gravatar^2',
 		'avatar_label' => 'Avatar:',
@@ -87,10 +85,12 @@
 		'password_sent' => 'Your new password was emailed to you',
 		'password_to_set' => 'Please set on your account page',
 		'password_wrong' => 'Password not correct',
+		'private_messages_explanation' => 'Allow users to email me (without seeing my address)',
+		'private_messages' => 'Private messages:',
 		'profile_saved' => 'Profile saved',
 		'register_button' => 'Register',
-		'register_title' => 'Register as a new user',
 		'register_suspended' => 'Registration of new users has been temporarily suspended. Please try again soon.',
+		'register_title' => 'Register as a new user',
 		'registered_user' => 'Registered user',
 		'remember_label' => 'Remember me on this computer',
 		'reset_code_another' => 'send another',

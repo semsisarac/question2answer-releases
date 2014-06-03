@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-message.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Controller for private messaging page
 
 
@@ -42,7 +42,7 @@
 
 //	Check we're not using Q2A's single-sign on integration and that we're logged in
 
-	if (QA_EXTERNAL_USERS)
+	if (QA_FINAL_EXTERNAL_USERS)
 		qa_fatal_error('User accounts are handled by external code');
 	
 	if (!isset($qa_login_userid)) {
@@ -154,7 +154,7 @@
 				'type' => $messagesent ? 'static' : '',
 				'label' => qa_lang_html_sub('misc/message_for_x', qa_get_one_user_html($handle, false)),
 				'tags' => 'NAME="message" ID="message"',
-				'value' => qa_html(@$inmessage),
+				'value' => qa_html(@$inmessage, $messagesent),
 				'rows' => 16,
 				'note' => qa_lang_html_sub('misc/message_explanation', qa_html(qa_opt('site_title'))),
 				'error' => qa_html(@$errors['message']),

@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-recalc.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Database functions for recalculations (clean-up operations)
 
 
@@ -199,7 +199,7 @@
 	If using single sign-on integration, base this on user activity rather than the users table which we don't have
 */
 	{
-		if (QA_EXTERNAL_USERS)
+		if (QA_FINAL_EXTERNAL_USERS)
 			return qa_db_read_all_values(qa_db_query_sub(
 				'(SELECT DISTINCT userid FROM ^posts WHERE userid>=# ORDER BY userid LIMIT #) UNION (SELECT DISTINCT userid FROM ^uservotes WHERE userid>=# ORDER BY userid LIMIT #)',
 				$startuserid, $count, $startuserid, $count
@@ -226,7 +226,7 @@
 			$firstuserid, $lastuserid
 		);
 		
-		if (QA_EXTERNAL_USERS)
+		if (QA_FINAL_EXTERNAL_USERS)
 			qa_db_query_sub(
 				'INSERT INTO ^userpoints (userid) SELECT DISTINCT userid FROM ^posts WHERE userid>=# AND userid<=# UNION SELECT DISTINCT userid FROM ^uservotes WHERE userid>=# AND userid<=#',
 				$firstuserid, $lastuserid, $firstuserid, $lastuserid
@@ -284,8 +284,8 @@
 	
 	function qa_db_posts_recalc_categoryid($firstpostid, $lastpostid)
 /*
-	Recalculate the categories for the posts (including hidden) between $firstpostid and $lastpostid
-	in the database, category of comments and answers are based on the category of the antecedent question
+	Recalculate the (exact) categoryid for the posts (including hidden) between $firstpostid and $lastpostid
+	in the database, where the category of comments and answers is set by the category of the antecedent question
 */
 	{
 		qa_db_query_sub(
@@ -296,6 +296,9 @@
 	
 	
 	function qa_db_categories_get_for_recalcs($startcategoryid, $count)
+/*
+	Return the ids of up to $count categories in the database starting from $startcategoryid
+*/
 	{
 		return qa_db_read_all_values(qa_db_query_sub(
 			"SELECT categoryid FROM ^categories WHERE categoryid>=# ORDER BY categoryid LIMIT #",

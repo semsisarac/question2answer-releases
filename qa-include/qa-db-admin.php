@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-admin.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Database access functions which are specific to the admin center
 
 
@@ -85,6 +85,9 @@
 	
 	
 	function qa_db_count_categories()
+/*
+	Return number of categories in the database
+*/
 	{
 		return qa_db_read_one_value(qa_db_query_sub(
 			'SELECT COUNT(*) FROM ^categories'
@@ -92,7 +95,10 @@
 	}
 	
 	
-	function qa_db_count_categoryid_posts($categoryid)
+	function qa_db_count_categoryid_qs($categoryid)
+/*
+	Return number of questions in the database in $categoryid exactly, and not one of its subcategories 
+*/
 	{
 		return qa_db_read_one_value(qa_db_query_sub(
 			"SELECT COUNT(*) FROM ^posts WHERE categoryid<=># AND type='Q'",
@@ -101,25 +107,34 @@
 	}
 	
 	
-	function qa_db_get_user_posts($userid, $type)
+	function qa_db_get_user_visible_postids($userid)
+/*
+	Return list of postids of visible posts by $userid
+*/
 	{
 		return qa_db_read_all_values(qa_db_query_sub(
-			'SELECT postid FROM ^posts WHERE userid=# AND type=$',
-			$userid, $type
+			"SELECT postid FROM ^posts WHERE userid=# AND type IN ('Q', 'A', 'C')",
+			$userid
 		));
 	}
 	
 	
-	function qa_db_get_ip_posts($ip, $type)
+	function qa_db_get_ip_visible_postids($ip)
+/*
+	Return list of postids of visible posts from $ip address
+*/
 	{
 		return qa_db_read_all_values(qa_db_query_sub(
-			'SELECT postid FROM ^posts WHERE createip=INET_ATON($) AND type=$',
-			$ip, $type
+			"SELECT postid FROM ^posts WHERE createip=INET_ATON($) AND type IN ('Q', 'A', 'C')",
+			$ip
 		));
 	}
 
 	
 	function qa_db_category_last_pos($parentid)
+/*
+	Return the maximum position of the categories with $parentid
+*/
 	{
 		return qa_db_read_one_value(qa_db_query_sub(
 			'SELECT COALESCE(MAX(position), 0) FROM ^categories WHERE parentid<=>#',
@@ -129,6 +144,9 @@
 	
 	
 	function qa_db_category_child_depth($categoryid)
+/*
+	Return how many levels of subcategory there are below $categoryid
+*/
 	{
 		// This is potentially a very slow query since it counts all the multi-generational offspring of a particular category
 		// But it's only used for admin purposes when moving a category around so I don't think it's worth making more efficient
@@ -149,7 +167,7 @@
 	
 	function qa_db_category_create($parentid, $title, $tags)
 /*
-	Create a new category with $title (=name) and $tags (=slug) in the database
+	Create a new category with $parentid, $title (=name) and $tags (=slug) in the database
 */
 	{
 		$lastpos=qa_db_category_last_pos($parentid);
@@ -168,6 +186,9 @@
 	
 	
 	function qa_db_categories_recalc_backpaths($firstcategoryid, $lastcategoryid=null)
+/*
+	Recalculate the backpath columns for all categories from $firstcategoryid to $lastcategoryid (if specified)
+*/
 	{
 		if (!isset($lastcategoryid))
 			$lastcategoryid=$firstcategoryid;
@@ -194,6 +215,9 @@
 	
 	
 	function qa_db_category_set_content($categoryid, $content)
+/*
+	Set the content (=description) of $categoryid to $content
+*/
 	{
 		qa_db_query_sub(
 			'UPDATE ^categories SET content=$ WHERE categoryid=#',
@@ -202,29 +226,39 @@
 	}
 	
 	
-	function qa_db_category_set_position($categoryid, $parentid, $newposition)
+	function qa_db_category_get_parent($categoryid)
 /*
-	Move the category $categoryid into position $newposition in the database
+	Return the parentid of $categoryid
 */
 	{
-		qa_db_ordered_move('categories', 'categoryid', $categoryid, $newposition, qa_db_apply_sub('parentid<=>#', array($parentid)));
+		return qa_db_read_one_value(qa_db_query_sub(
+			'SELECT parentid FROM ^categories WHERE categoryid=#',
+			$categoryid
+		));
+	}
+	
+	
+	function qa_db_category_set_position($categoryid, $newposition)
+/*
+	Move the category $categoryid into position $newposition under its parent
+*/
+	{
+		qa_db_ordered_move('categories', 'categoryid', $categoryid, $newposition,
+			qa_db_apply_sub('parentid<=>#', array(qa_db_category_get_parent($categoryid))));
 	}
 	
 	
 	function qa_db_category_set_parent($categoryid, $newparentid)
 /*
-	Move the category $categoryid into position $newposition in the database
+	Set the parent of $categoryid to $newparentid, placing it in last position (doesn't do necessary recalculations)
 */
 	{
-		$oldcategory=qa_db_read_one_assoc(qa_db_query_sub(
-			'SELECT parentid, position FROM ^categories WHERE categoryid=#',
-			$categoryid
-		));
+		$oldparentid=qa_db_category_get_parent($categoryid);
 		
-		if (strcmp($oldcategory['parentid'], $newparentid)) { // if we're changing parent, move to end of old parent, then end of new parent
-			$lastpos=qa_db_category_last_pos($oldcategory['parentid']);
+		if (strcmp($oldparentid, $newparentid)) { // if we're changing parent, move to end of old parent, then end of new parent
+			$lastpos=qa_db_category_last_pos($oldparentid);
 			
-			qa_db_ordered_move('categories', 'categoryid', $categoryid, $lastpos, qa_db_apply_sub('parentid<=>#', array($oldcategory['parentid'])));
+			qa_db_ordered_move('categories', 'categoryid', $categoryid, $lastpos, qa_db_apply_sub('parentid<=>#', array($oldparentid)));
 			
 			$lastpos=qa_db_category_last_pos($newparentid);
 			
@@ -237,28 +271,28 @@
 	
 	
 	function qa_db_category_reassign($categoryid, $reassignid)
+/*
+	Change the categoryid of any posts with (exact) $categoryid to $reassignid
+*/
 	{
 		qa_db_query_sub('UPDATE ^posts SET categoryid=# WHERE categoryid<=>#', $reassignid, $categoryid);
 	}
 	
 	
-	function qa_db_category_delete($categoryid, $reassignid)
+	function qa_db_category_delete($categoryid)
 /*
-	Delete the category $categoryid in the database and reassign its posts to category $reassignid (which can also be null)
+	Delete the category $categoryid in the database
 */
 	{
-		qa_db_category_reassign($categoryid, $reassignid);
-
-		$oldparentid=qa_db_read_one_value(qa_db_query_sub(
-			'SELECT parentid FROM ^categories WHERE categoryid=#',
-			$categoryid
-		));
-		
-		qa_db_ordered_delete('categories', 'categoryid', $categoryid, qa_db_apply_sub('parentid<=>#', array($oldparentid)));
+		qa_db_ordered_delete('categories', 'categoryid', $categoryid,
+			qa_db_apply_sub('parentid<=>#', array(qa_db_category_get_parent($categoryid))));
 	}
 	
 	
 	function qa_db_category_slug_to_id($parentid, $slug)
+/*
+	Return the categoryid for the category with parent $parentid and $slug
+*/
 	{
 		return qa_db_read_one_value(qa_db_query_sub(
 			'SELECT categoryid FROM ^categories WHERE parentid<=># AND tags=$',
@@ -320,7 +354,7 @@
 	
 	function qa_db_ordered_move($table, $idcolumn, $id, $newposition, $conditionsql=null)
 /*
-	Move the entity identified by $idcolumn=$id into position $newposition in $table in the database
+	Move the entity identified by $idcolumn=$id into position $newposition (within optional $conditionsql) in $table in the database
 */
 	{
 		$andsql=isset($conditionsql) ? (' AND '.$conditionsql) : '';
@@ -351,7 +385,7 @@
 	
 	function qa_db_ordered_delete($table, $idcolumn, $id, $conditionsql=null)
 /*
-	Delete the entity identified by $idcolumn=$id in $table in the database
+	Delete the entity identified by $idcolumn=$id (and optional $conditionsql) in $table in the database
 */
 	{
 		$andsql=isset($conditionsql) ? (' AND '.$conditionsql) : '';

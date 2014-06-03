@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-admin.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Language phrases for admin center
 
 
@@ -35,8 +35,8 @@
 		'add_new_title' => 'Add new title',
 		'add_page_button' => 'Add Page',
 		'add_title_button' => 'Add Title',
-		'add_widget_link' => ' - ^1add widget^2',
 		'add_widget_button' => 'Add Widget',
+		'add_widget_link' => ' - ^1add widget^2',
 		'admin_title' => 'Administration center',
 		'after_footer' => 'After links in footer',
 		'after_main_menu' => 'After tabs at top',
@@ -50,27 +50,27 @@
 		'categories_not_shown' => 'Some questions have categories which will not be displayed.',
 		'categories_title' => 'Categories',
 		'categories' => 'Categories',
+		'category_add_sub' => 'add sub-category',
 		'category_added' => 'Category added',
 		'category_already_used' => 'This is already being used by a category',
 		'category_default_slug' => 'category-^',
-		'category_subs' => 'Sub-categories:',
-		'category_no_subs' => 'None',
-		'category_move_parent' => 'move to different parent',
-		'category_max_depth_x' => 'Some options may be hidden to prevent a category going deeper than ^ levels.',
-		'category_add_sub' => 'add sub-category',
 		'category_description' => 'Category description (optional):',
+		'category_max_depth_x' => 'Some options may be hidden to prevent a category going deeper than ^ levels.',
+		'category_move_parent' => 'move to different parent',
 		'category_name_first' => 'Name of first category:',
 		'category_name' => 'Category name:',
-		'category_no_delete_subs' => 'This category cannot be deleted because it has a sub-category',
 		'category_no_add_subs_x' => 'This category cannot have sub-categories because it is already ^ levels down.',
+		'category_no_delete_subs' => 'This category cannot be deleted because it has a sub-category.',
+		'category_no_sub_error' => '^q question/s in this category have no sub-category - ^1set sub-category^2',
+		'category_no_sub_to' => 'Move questions in ^ with no sub-category to:',
+		'category_no_subs' => 'None',
+		'category_none_error' => '^q question/s currently have no category - ^1set category^2',
+		'category_none_to' => 'Move questions with no category to:',
 		'category_parent' => 'Parent category:',
 		'category_saved' => 'Category saved',
 		'category_slug' => 'Category slug (URL fragment):',
+		'category_subs' => 'Sub-categories:',
 		'category_top_level' => 'No parent (top level)',
-		'category_none_error' => '^q question/s currently have no category - ^1set category^2',
-		'category_no_sub_error' => '^q question/s in this category have no sub-category - ^1set sub-category^2',
-		'category_none_to' => 'Move questions with no category to:',
-		'category_no_sub_to' => 'Move questions in ^ with no sub-category to:',
 		'click_category_edit' => 'Click a category name to edit:',
 		'click_name_edit' => 'Custom pages or links:',
 		'database_cleanup' => 'Database clean-up operations',
@@ -128,7 +128,7 @@
 		'no_multibyte' => 'The installed version of PHP was compiled without multibyte string support. Searching will be less effective for non-Roman characters.',
 		'no_plugin_options' => 'None of your installed plugins have options to display.',
 		'no_privileges' => 'Only administrators may access this page.',
-		'not_logged_in' => 'Please ^1log in^2 as the adminstrator to access this page.',
+		'not_logged_in' => 'Please ^1log in^2 as the administrator to access this page.',
 		'opposite_main_menu' => 'Far end of tabs at top',
 		'options_reset' => 'Options reset',
 		'options_saved' => 'Options saved',
@@ -152,10 +152,10 @@
 		'position' => 'Position:',
 		'posting_title' => 'Posting',
 		'profile_fields' => 'Extra fields on user profile:',
-		'question_lists' => 'Question lists',
 		'q2a_db_version' => 'Q2A database version:',
 		'q2a_latest_version' => 'Q2A latest version:',
 		'q2a_version' => 'Question2Answer version:',
+		'question_lists' => 'Question lists',
 		'question_pages' => 'Question pages',
 		'recalc_categories_backpaths' => 'Recalculating URL paths for ^1 of ^2 categories...',
 		'recalc_categories_complete' => 'All categories were successfully recalculated.',
@@ -209,18 +209,18 @@
 		'user_title' => 'User title (HTML allowed):',
 		'user_titles' => 'User titles based on points:',
 		'users_active' => 'Active users:',
+		'users_must_have' => 'Users must have',
 		'users_posted' => 'Users who posted:',
 		'users_registered' => 'Registered users:',
 		'users_title' => 'Users',
 		'users_voted' => 'Users who voted:',
 		'viewing_title' => 'Viewing',
+		'widget_all_pages' => 'Show widget in this position on all available pages',
+		'widget_global_options' => ' - ^1edit global options^2',
 		'widget_name' => 'Name of widget:',
 		'widget_no_positions' => 'This widget has already been added to every available position.',
 		'widget_not_available' => 'This widget is not available. This could be because the plugin providing the widget is no longer installed.',
-		'widget_all_pages' => 'Show widget in this position on all available pages',
 		'widget_pages_explanation' => 'Show widget in this position on the following pages:',
-		'widget_global_options' => ' - ^1edit global options^2',
-		'users_must_have' => 'Users must have',
 	);
 	
 

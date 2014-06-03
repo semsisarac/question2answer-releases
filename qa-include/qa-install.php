@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-install.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: User interface for installing, upgrading and fixing the database
 
 
@@ -60,7 +60,7 @@
 	header('Content-type: text/html; charset=utf-8');
 
 	$success='';
-	$error='';
+	$errorhtml='';
 	$suggest='';
 	$buttons=array();
 	$fields=array();
@@ -69,22 +69,22 @@
 	if (isset($pass_failure_type)) { // this page was requested due to query failure, via the fail handler
 		switch ($pass_failure_type) {
 			case 'connect':
-				$error.='Could not establish database connection. Please check the username, password and hostname in the config file, and if necessary set up the appropriate MySQL user and privileges.';
+				$errorhtml.='Could not establish database connection. Please check the username, password and hostname in the config file, and if necessary set up the appropriate MySQL user and privileges.';
 				break;
 			
 			case 'select':
-				$error.='Could not switch to the Question2Answer database. Please check the database name in the config file, and if necessary create the database in MySQL and grant appropriate user privileges.';
+				$errorhtml.='Could not switch to the Question2Answer database. Please check the database name in the config file, and if necessary create the database in MySQL and grant appropriate user privileges.';
 				break;
 				
 			case 'query':
 				global $pass_failure_from_install;
 				
 				if (@$pass_failure_from_install)
-					$error.="Question2Answer was unable to perform the installation query below. Please check the user in the config file has CREATE and ALTER permissions:\n\n";
+					$errorhtml.="Question2Answer was unable to perform the installation query below. Please check the user in the config file has CREATE and ALTER permissions:\n\n";
 				else
-					$error.="Question2Answer query failed:\n\n";
+					$errorhtml.="Question2Answer query failed:\n\n";
 					
-				$error.=$pass_failure_query."\n\nError ".$pass_failure_errno.": ".$pass_failure_error."\n\n";
+				$errorhtml.=qa_html($pass_failure_query."\n\nError ".$pass_failure_errno.": ".$pass_failure_error."\n\n");
 				break;
 		}
 
@@ -94,9 +94,20 @@
 		if (qa_clicked('create')) {
 			qa_db_install_tables();
 			
-			if (QA_EXTERNAL_USERS)
-				$success.='Your Question2Answer database has been created for external user identity management. Please read the documentation to complete integration.';
-			else
+			if (QA_FINAL_EXTERNAL_USERS) {
+				if (defined('QA_FINAL_WORDPRESS_INTEGRATE_PATH')) {
+					require_once QA_INCLUDE_DIR.'qa-db-admin.php';
+					require_once QA_INCLUDE_DIR.'qa-app-format.php';
+					
+					qa_db_page_move(qa_db_page_create(get_option('blogname'), QA_PAGE_FLAGS_EXTERNAL, get_option('home'), null, null), 'O', 1);
+						// create link back to WordPress home page
+					
+					$success.='Your Question2Answer database has been created and integrated with your WordPress site.';
+
+				} else
+					$success.='Your Question2Answer database has been created for external user identity management. Please read the online documentation to complete integration.';
+			
+			} else
 				$success.='Your Question2Answer database has been created.';
 		}
 		
@@ -147,47 +158,51 @@
 		switch ($check) {
 			case 'none':
 				if (@$pass_failure_errno==1146) // don't show error if we're in installation process
-					$error='';
+					$errorhtml='';
 					
-				$error.='Welcome to Question2Answer. It\'s time to set up your database!';
+				$errorhtml.='Welcome to Question2Answer. It\'s time to set up your database!';
 
-				if (QA_EXTERNAL_USERS) {
-					$error.="\n\nWhen you click below, your Question2Answer site will be set up to integrate with your existing user database and management. Users will be referenced with database column type ".qa_get_mysql_user_column_type().". Please consult the documentation for more information.";
+				if (QA_FINAL_EXTERNAL_USERS) {
+					if (defined('QA_FINAL_WORDPRESS_INTEGRATE_PATH'))
+						$errorhtml.="\n\nWhen you click below, your Question2Answer site will be set up to integrate with the users of your WordPress site <A HREF=\"".qa_html(get_option('home'))."\" TARGET=\"_blank\">".qa_html(get_option('blogname'))."</A>. Please consult the online documentation for more information.";
+					else
+						$errorhtml.="\n\nWhen you click below, your Question2Answer site will be set up to integrate with your existing user database and management. Users will be referenced with database column type ".qa_html(qa_get_mysql_user_column_type()).". Please consult the online documentation for more information.";
+					
 					$buttons=array('create' => 'Create Database');
 				} else {
-					$error.="\n\nWhen you click below, your Question2Answer database will be set up to manage user identities and logins internally.\n\nIf you want to offer a single sign-on for an existing user base or website, please consult the documentation before proceeding.";
+					$errorhtml.="\n\nWhen you click below, your Question2Answer database will be set up to manage user identities and logins internally.\n\nIf you want to offer a single sign-on for an existing user base or website, please consult the online documentation before proceeding.";
 					$buttons=array('create' => 'Create Database including User Management');
 				}
 				break;
 				
 			case 'old-version':
 				if (!@$pass_failure_from_install)
-					$error=''; // don't show error if we need to upgrade
+					$errorhtml=''; // don't show error if we need to upgrade
 					
-				$error.='Your Question2Answer database needs to be upgraded for this version of the software.'; // don't show error before this
+				$errorhtml.='Your Question2Answer database needs to be upgraded for this version of the software.'; // don't show error before this
 				$buttons=array('upgrade' => 'Upgrade Database');
 				break;
 				
 			case 'non-users-missing':
-				$error='This Question2Answer site is sharing its users with another site, but it needs some additional database tables for its own content. Click below to create those.';
+				$errorhtml='This Question2Answer site is sharing its users with another site, but it needs some additional database tables for its own content. Click below to create those.';
 				$buttons=array('nonuser' => 'Create Tables');
 				break;
 				
 			case 'table-missing':
-				$error.='One or more tables are missing from your Question2Answer database.';
+				$errorhtml.='One or more tables are missing from your Question2Answer database.';
 				$buttons=array('repair' => 'Repair Database');
 				break;
 				
 			case 'column-missing':
-				$error.='One or more Question2Answer database tables are missing a column.';
+				$errorhtml.='One or more Question2Answer database tables are missing a column.';
 				$buttons=array('repair' => 'Repair Database');
 				break;
 				
 			default:
 				require_once QA_INCLUDE_DIR.'qa-db-admin.php';
 
-				if ( (!QA_EXTERNAL_USERS) && (qa_db_count_users()==0) ) {
-					$error.="There are currently no users in the Question2Answer database.\n\nPlease enter your details below to create the super administrator:";
+				if ( (!QA_FINAL_EXTERNAL_USERS) && (qa_db_count_users()==0) ) {
+					$errorhtml.="There are currently no users in the Question2Answer database.\n\nPlease enter your details below to create the super administrator:";
 					$fields=array('handle' => 'Username:', 'password' => 'Password:', 'email' => 'Email address:');
 					$buttons=array('super' => 'Create Super Administrator');
 				}
@@ -195,7 +210,7 @@
 		}
 	}
 	
-	if (empty($error)) {
+	if (empty($errorhtml)) {
 		if (empty($success))
 			$success='Your Question2Answer database has been checked with no problems.';
 		
@@ -218,8 +233,8 @@
 	if (strlen($success))
 		echo '<P><FONT COLOR="#006600">'.nl2br(qa_html($success)).'</FONT></P>'; // green
 		
-	if (strlen($error))
-		echo '<P><FONT COLOR="#990000">'.nl2br(qa_html($error)).'</FONT></P>'; // red
+	if (strlen($errorhtml))
+		echo '<P><FONT COLOR="#990000">'.nl2br($errorhtml).'</FONT></P>'; // red
 		
 	if (strlen($suggest))
 		echo '<P>'.$suggest.'</P>';

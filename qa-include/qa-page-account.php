@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-account.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Controller for user account page
 
 
@@ -39,7 +39,7 @@
 	
 //	Check we're not using single-sign on integration, that we're logged in, and we're not blocked
 	
-	if (QA_EXTERNAL_USERS)
+	if (QA_FINAL_EXTERNAL_USERS)
 		qa_fatal_error('User accounts are handled by external code');
 		
 	if (!isset($qa_login_userid))
@@ -112,7 +112,11 @@
 				case false:
 					qa_limits_increment($qa_login_userid, 'U');
 					
-					if (!qa_set_user_avatar($qa_login_userid, file_get_contents($_FILES['file']['tmp_name']), $useraccount['avatarblobid']))
+					$toobig=qa_image_file_too_big($_FILES['file']['tmp_name'], qa_opt('avatar_store_size'));
+					
+					if ($toobig)
+						$errors['avatar']=qa_lang_sub('main/image_too_big_x_pc', (int)($toobig*100));
+					elseif (!qa_set_user_avatar($qa_login_userid, file_get_contents($_FILES['file']['tmp_name']), $useraccount['avatarblobid']))
 						$errors['avatar']=qa_lang_sub('main/image_not_read', implode(', ', qa_gd_image_formats()));
 					break;
 			}

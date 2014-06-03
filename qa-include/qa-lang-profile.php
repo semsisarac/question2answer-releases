@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-profile.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Language phrases for user profile page
 
 
@@ -33,6 +33,7 @@
 		'activity_by_x' => 'Activity by ^',
 		'answers' => 'Answers:',
 		'comments' => 'Comments:',
+		'extra_privileges' => 'Extra privileges:',
 		'gave_out' => 'Gave out:',
 		'my_account_title' => 'My account details',
 		'no_posts_by_x' => 'No posts by ^',
@@ -50,13 +51,12 @@
 		'permit_view_q_page' => 'Viewing question pages',
 		'permit_vote_a' => 'Voting on answers',
 		'permit_vote_q' => 'Voting on questions',
-		'extra_privileges' => 'Extra privileges:',
 		'questions' => 'Questions:',
-		'send_private_message' => ' - ^1send private message^2',
 		'ranked_x' => ' (ranked #^)',
 		'received' => 'Received:',
 		'recent_activity_by_x' => 'Recent activity by ^',
 		'score' => 'Score:',
+		'send_private_message' => ' - ^1send private message^2',
 		'title' => 'Title:',
 		'user_x' => 'User ^',
 		'voted_on' => 'Voted on:',

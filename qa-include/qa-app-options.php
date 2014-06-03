@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-options.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Getting and setting admin options (application level)
 
 
@@ -214,15 +214,15 @@
 			'feed_per_category' => 1,
 			'feedback_enabled' => 1,
 			'flagging_hide_after' => 5,
-			'flagging_notify_first' => 1,
 			'flagging_notify_every' => 2,
+			'flagging_notify_first' => 1,
 			'flagging_of_posts' => 1,
 			'follow_on_as' => 1,
-			'hot_weight_views' => 100,
-			'hot_weight_answers' => 100,
-			'hot_weight_votes' => 100,
-			'hot_weight_q_age' => 100,
 			'hot_weight_a_age' => 100,
+			'hot_weight_answers' => 100,
+			'hot_weight_q_age' => 100,
+			'hot_weight_views' => 100,
+			'hot_weight_votes' => 100,
 			'match_ask_check_qs' => 3,
 			'match_example_tags' => 3,
 			'match_related_qs' => 3,
@@ -256,9 +256,9 @@
 			'nav_users' => 1,
 			'neat_urls' => QA_URL_FORMAT_SAFEST,
 			'notify_users_default' => 1,
+			'page_size_activity' => 20,
 			'page_size_ask_check_qs' => 5,
 			'page_size_ask_tags' => 5,
-			'page_size_activity' => 20,
 			'page_size_home' => 20,
 			'page_size_hot_qs' => 20,
 			'page_size_qs' => 20,
@@ -293,6 +293,7 @@
 			'points_q_voted_max_gain' => 10,
 			'points_q_voted_max_loss' => 3,
 			'points_select_a' => 3,
+			'q_urls_title_length' => 50,
 			'show_a_c_links' => 1,
 			'show_a_form_immediate' => 'if_no_as',
 			'show_c_reply_buttons' => 1,
@@ -304,7 +305,6 @@
 			'site_theme' => 'Default',
 			'sort_answers_by' => 'created',
 			'tags_or_categories' => 'tc',
-			'title_length_urls' => 50,
 			'voting_on_as' => 1,
 			'voting_on_qs' => 1,
 		);
@@ -486,6 +486,17 @@
 	}
 	
 	
+	function qa_has_custom_home()
+/*
+	Returns true if the home page has been customized, either due to admin setting, or $QA_CONST_PATH_MAP
+*/
+	{
+		global $QA_CONST_PATH_MAP;
+		
+		return qa_opt('show_custom_home') || (isset($QA_CONST_PATH_MAP) && (array_search('', $QA_CONST_PATH_MAP)!==false));
+	}
+	
+	
 	function qa_using_tags()
 /*
 	Return whether the option is set to classify questions by tags
@@ -558,6 +569,9 @@
 	
 	
 	function qa_get_permit_options()
+/*
+	Return an array of relevant permissions settings, based on other options
+*/
 	{
 		$permits=array('permit_view_q_page', 'permit_post_q', 'permit_post_a');
 		

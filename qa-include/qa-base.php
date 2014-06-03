@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Sets up Q2A environment, plus many globally useful functions
 
 
@@ -32,7 +32,7 @@
 
 //	Set the version to be used for internal reference and a suffix for .js and .css requests, and other constants
 
-	define('QA_VERSION', '1.4-beta-1');
+	define('QA_VERSION', '1.4-beta-2');
 	define('QA_CATEGORY_DEPTH', 4); // you can't change this number!
 	
 
@@ -85,6 +85,41 @@
 	@define('QA_COOKIE_DOMAIN', ''); // default if not set
 
 	
+//	Handle WordPress integration
+
+	if (defined('QA_WORDPRESS_INTEGRATE_PATH') && strlen(QA_WORDPRESS_INTEGRATE_PATH)) {
+		define('QA_FINAL_WORDPRESS_INTEGRATE_PATH', QA_WORDPRESS_INTEGRATE_PATH.((substr(QA_WORDPRESS_INTEGRATE_PATH, -1)=='/') ? '' : '/'));
+
+		$wordpressfile=QA_FINAL_WORDPRESS_INTEGRATE_PATH.'wp-load.php';
+		if (!is_readable($wordpressfile))
+			qa_fatal_error('Could not find wp-load.php file for WordPress integration - please check QA_WORDPRESS_INTEGRATE_PATH in qa-config.php');
+
+		require_once $wordpressfile;
+
+		define('QA_FINAL_MYSQL_HOSTNAME', DB_HOST);
+		define('QA_FINAL_MYSQL_USERNAME', DB_USER);
+		define('QA_FINAL_MYSQL_PASSWORD', DB_PASSWORD);
+		define('QA_FINAL_MYSQL_DATABASE', DB_NAME);
+		define('QA_FINAL_EXTERNAL_USERS', true);
+		
+		// Undo WordPress's addition of magic quotes to various things (leave $_COOKIE as is since WP code might need that)
+		foreach ($_GET as $key => $value)
+			$_GET[$key]=strtr(stripslashes($value), array('\\\'' => '\'', '\"' => '"')); // also compensate for WordPress's .htaccess file
+
+		foreach ($_POST as $key => $value)
+			$_POST[$key]=stripslashes($value);
+			
+		$_SERVER['PHP_SELF']=stripslashes($_SERVER['PHP_SELF']);
+
+	} else {
+		define('QA_FINAL_MYSQL_HOSTNAME', QA_MYSQL_HOSTNAME);
+		define('QA_FINAL_MYSQL_USERNAME', QA_MYSQL_USERNAME);
+		define('QA_FINAL_MYSQL_PASSWORD', QA_MYSQL_PASSWORD);
+		define('QA_FINAL_MYSQL_DATABASE', QA_MYSQL_DATABASE);
+		define('QA_FINAL_EXTERNAL_USERS', QA_EXTERNAL_USERS);
+	}	
+
+
 //	General HTML/JS functions
 
 	function qa_html($string, $multiline=false)
@@ -126,6 +161,9 @@
 	
 	
 	function qa_sanitize_html_hook_tag($element, $attributes)
+/*
+	htmLawed hook function used to process tags in qa_sanitize_html(...)
+*/
 	{
 		if ( ($element=='param') && (trim(strtolower(@$attributes['name']))=='allowscriptaccess') )
 			$attributes['name']='allowscriptaccess_denied';
@@ -226,6 +264,10 @@
 	
 	
 	function qa_is_human_probably()
+/*
+	Return true if it appears the page request is coming from a human using a web browser, rather than a search engine
+	or other bot. Based on a whitelist of terms in user agents, this can easily be tricked by a scraper or bad bot.
+*/
 	{
 		$useragent=@$_SERVER['HTTP_USER_AGENT'];
 		
@@ -354,7 +396,7 @@
 	define('QA_URL_FORMAT_PARAM', 3); // http://.../?qa=questions/123/why-is-the-sky-blue
 	define('QA_URL_FORMAT_PARAMS', 4); // http://.../?qa=questions&qa_1=123&qa_2=why-is-the-sky-blue
 	define('QA_URL_FORMAT_SAFEST', 5); // http://.../index.php?qa=questions&qa_1=123&qa_2=why-is-the-sky-blue
-	define('QA_URL_TEST_STRING', '$&-_~#%\\@^*()=!()][`\\\';:|\\".{},<>?# π§½Жש'); // tests escaping, spaces, quote slashing and unicode - but not + and /
+	define('QA_URL_TEST_STRING', '$&-_~#%\\@^*()=!()][`\';:|".{},<>?# π§½Жש'); // tests escaping, spaces, quote slashing and unicode - but not + and /
 
 	function qa_path($request, $params=null, $rooturl=null, $neaturls=null, $anchor=null)
 /*
@@ -379,7 +421,7 @@
 		
 		$requestparts=explode('/', $request);
 		
-		if ( strlen(@$requestparts[0]) && isset($QA_CONST_PATH_MAP) && strlen(@$QA_CONST_PATH_MAP[$requestparts[0]]) )
+		if (isset($QA_CONST_PATH_MAP[$requestparts[0]]))
 			$requestparts[0]=$QA_CONST_PATH_MAP[$requestparts[0]];
 		
 		foreach ($requestparts as $index => $requestpart)
@@ -434,7 +476,7 @@
 		foreach ($words as $index => $word)
 			$wordlength[$index]=qa_strlen($word);
 
-		$remaining=qa_opt('title_length_urls');
+		$remaining=qa_opt('q_urls_title_length');
 		
 		if (array_sum($wordlength)>$remaining) {
 			arsort($wordlength, SORT_NUMERIC); // sort with longest words first
@@ -447,7 +489,11 @@
 			}
 		}
 		
-		return (int)$questionid.'/'.implode('-', $words);
+		$title=implode('-', $words);
+		if (qa_opt('q_urls_remove_accents'))
+			$title=qa_string_remove_accents($title);
+		
+		return (int)$questionid.'/'.$title;
 	}
 
 	
@@ -585,7 +631,7 @@
 */
 	{
 		echo '<FONT COLOR="red">'.qa_html($message).'</FONT>';
-		@error_log('Question2Answer error: '.$message);
+		@error_log('Question2Answer fatal error: '.$message);
 		exit;
 	}
 	
@@ -721,6 +767,10 @@
 	
 	
 	function qa_suspend_event_reports($suspend=true)
+/*
+	Suspend the reporting of events to event modules via qa_report_event(...) if $suspend is
+	true, otherwise reinstate it. A counter is kept to allow multiple calls.
+*/
 	{
 		global $qa_event_reports_suspended;
 		
@@ -728,9 +778,9 @@
 	}
 	
 	
-	function qa_report_event($type, $userid, $handle, $cookieid, $params=array())
+	function qa_report_event($event, $userid, $handle, $cookieid, $params=array())
 /*
-	Send a notification of event $type by $userid, $handle and $cookieid to all event modules, with extra $params
+	Send a notification of event $event by $userid, $handle and $cookieid to all event modules, with extra $params
 */
 	{
 		global $qa_event_reports_suspended;
@@ -746,7 +796,7 @@
 			$trymodule=qa_load_module('event', $tryname);
 			
 			if (method_exists($trymodule, 'process_event'))
-				$trymodule->process_event($type, $userid, $handle, $cookieid, $params);
+				$trymodule->process_event($event, $userid, $handle, $cookieid, $params);
 		}
 	}
 	

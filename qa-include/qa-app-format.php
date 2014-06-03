@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Common functions for creating theme-ready structures from data
 
 
@@ -98,7 +98,7 @@
 		
 		global $qa_root_url_relative;
 			
-		if (QA_EXTERNAL_USERS) {
+		if (QA_FINAL_EXTERNAL_USERS) {
 			$keyuserids=array();
 	
 			foreach ($useridhandles as $useridhandle) {
@@ -140,6 +140,10 @@
 
 	
 	function qa_category_path($navcategories, $categoryid)
+/*
+	Given $navcategories retrieved for $categoryid from the database (using qa_db_category_nav_selectspec(...)),
+	return an array of elements from $navcategories for the hierarchy down to $categoryid.
+*/
 	{
 		$upcategories=array();
 		
@@ -151,6 +155,10 @@
 	
 
 	function qa_category_path_html($navcategories, $categoryid)
+/*
+	Given $navcategories retrieved for $categoryid from the database (using qa_db_category_nav_selectspec(...)),
+	return some HTML that shows the category hierarchy down to $categoryid.
+*/
 	{
 		$categories=qa_category_path($navcategories, $categoryid);
 		
@@ -163,6 +171,10 @@
 	
 	
 	function qa_category_path_request($navcategories, $categoryid)
+/*
+	Given $navcategories retrieved for $categoryid from the database (using qa_db_category_nav_selectspec(...)),
+	return a QA request string that represents the category hierarchy down to $categoryid.
+*/
 	{
 		$categories=qa_category_path($navcategories, $categoryid);
 
@@ -193,10 +205,12 @@
 	$usershtml is an array of [user id] => [HTML representation of user] built ahead of time.
 	$dummy is a placeholder (used to be $categories parameter but that's no longer needed)
 	$options is an array of non-required elements which set what is displayed. It can contain true for keys:
-	tagsview, answersview, voteview, whatlink, whenview, whoview, ipview, pointsview, showurllinks, microformats, isselected.
+	'tagsview', 'answersview', 'viewsview', 'voteview', 'flagsview', 'whatlink', 'whenview', 'whoview', 'ipview',
+	'pointsview', 'showurllinks', 'microformats', 'isselected'. $options also has other optional elements:
 	$options['blockwordspreg'] can be a pre-prepared regular expression fragment for censored words.
 	$options['pointstitle'] can be an array of [points] => [user title] for custom user titles.
 	$options['avatarsize'] can be the size in pixels of an avatar to be displayed.
+	$options['categorypathprefix'] can be a prefix to use for category links (e.g. 'activity/').
 	If something is missing from $post (e.g. ['content']), correponding HTML also omitted.
 */
 	{
@@ -434,7 +448,7 @@
 				$fields['who']['level']=qa_html(qa_user_level_string($post['level']));
 		}
 
-		if ((!QA_EXTERNAL_USERS) && (@$options['avatarsize']>0))
+		if ((!QA_FINAL_EXTERNAL_USERS) && (@$options['avatarsize']>0))
 			$fields['avatar']=qa_get_user_avatar_html($post['flags'], $post['email'], $post['handle'],
 				$post['avatarblobid'], $post['avatarwidth'], $post['avatarheight'], $options['avatarsize']);
 
@@ -496,7 +510,7 @@
 /*
 	Return array of mostly HTML to be passed to theme layer, to *link* to an answer, comment or edit on
 	$question, as retrieved from database, with fields prefixed 'o' for the answer, comment or edit.
-	$userid, $cookieid, $usershtml, $categories, $options are passed through to qa_post_html_fields().
+	$userid, $cookieid, $usershtml, $options are passed through to qa_post_html_fields().
 */
 	{
 		$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, null, $options);
@@ -545,7 +559,7 @@
 				: qa_lang_html_sub_split('main/x_flags', $post['oflagcount']);
 
 		unset($fields['avatar']);
-		if ((!QA_EXTERNAL_USERS) && (@$options['avatarsize']>0))
+		if ((!QA_FINAL_EXTERNAL_USERS) && (@$options['avatarsize']>0))
 			$fields['avatar']=qa_get_user_avatar_html($question['oflags'], $question['oemail'], $question['ohandle'],
 				$question['oavatarblobid'], $question['oavatarwidth'], $question['oavatarheight'], $options['avatarsize']);
 		
@@ -654,20 +668,20 @@
 	}
 
 
-	function qa_html_convert_urls($html)
+	function qa_html_convert_urls($html, $newwindow=false)
 /*
-	Return $html with any URLs converted into links (with nofollow)
+	Return $html with any URLs converted into links (with nofollow and in a new window if $newwindow)
 	URL regular expressions can get crazy: http://internet.ls-la.net/folklore/url-regexpr.html
 	So this is something quick and dirty that should do the trick in most cases
 */
 	{
-		return trim(preg_replace('/([^A-Za-z0-9])((http|https|ftp):\/\/([^\s&<>"\'\.])+\.([^\s&<>"\']|&amp;)+)/i', '\1<A HREF="\2" rel="nofollow"'.(qa_opt('links_in_new_window') ? ' target="_blank"' : '').'>\2</A>', ' '.$html.' '));
+		return trim(preg_replace('/([^A-Za-z0-9])((http|https|ftp):\/\/([^\s&<>"\'\.])+\.([^\s&<>"\']|&amp;)+)/i', '\1<A HREF="\2" rel="nofollow"'.($newwindow ? ' target="_blank"' : '').'>\2</A>', ' '.$html.' '));
 	}
 
 	
-	function qa_url_to_html_link($url)
+	function qa_url_to_html_link($url, $newwindow=false)
 /*
-	Return HTML representation of $url, linked with nofollow if we could see an URL in there
+	Return HTML representation of $url (if it appears to be an URL), linked with nofollow and in a new window if $newwindow
 */
 	{
 		if (is_numeric(strpos($url, '.'))) {
@@ -675,7 +689,7 @@
 			if (!is_numeric(strpos($linkurl, ':/')))
 				$linkurl='http://'.$linkurl;
 				
-			return '<A HREF="'.qa_html($linkurl).'" rel="nofollow"'.(qa_opt('links_in_new_window') ? ' target="_blank"' : '').'>'.qa_html($url).'</A>';
+			return '<A HREF="'.qa_html($linkurl).'" rel="nofollow"'.($newwindow ? ' target="_blank"' : '').'>'.qa_html($url).'</A>';
 		
 		} else
 			return qa_html($url);
@@ -769,7 +783,7 @@
 	
 	function qa_html_suggest_qs_tags($usingtags=false, $categoryrequest=null)
 /*
-	Return HTML that suggests browsing all questions (in the category with $categoryslug, if
+	Return HTML that suggests browsing all questions (in the category specified by $categoryrequest, if
 	it's not null) and also popular tags if $usingtags is true
 */
 	{
@@ -811,7 +825,7 @@
 	
 	function qa_category_navigation($categories, $selectedid=null, $pathprefix='', $showqcount=true)
 /*
-	Return the navigation structure for the category menu, with $selectedid selected,
+	Return the navigation structure for the category hierarchical menu, with $selectedid selected,
 	and links beginning with $pathprefix, and showing question counts if $showqcount
 */
 	{
@@ -827,6 +841,9 @@
 	
 	
 	function qa_category_navigation_sub($parentcategories, $parentid, $selecteds, $pathprefix, $showqcount)
+/*
+	Recursion function used by qa_category_navigation(...) to build hierarchical category menu.
+*/
 	{
 		$navigation=array();
 		
@@ -860,7 +877,7 @@
 	{
 		global $qa_login_userid;
 		
-		if ((!QA_EXTERNAL_USERS) && isset($qa_login_userid) && (qa_get_logged_in_level()>=QA_USER_LEVEL_MODERATOR)) {
+		if ((!QA_FINAL_EXTERNAL_USERS) && isset($qa_login_userid) && (qa_get_logged_in_level()>=QA_USER_LEVEL_MODERATOR)) {
 			return array(
 				'users$' => array(
 					'url' => qa_path_html('users'),
@@ -921,10 +938,9 @@
 	
 	function qa_set_display_rules(&$qa_content, $effects)
 /*
-	For each [target] => [source] in $effects, set up $qa_content so that the visibility of
-	the DOM element ID target is equal to the checked state of the DOM element ID source.
-	Each source can also combine multiple DOM IDs using JavaScript(=PHP) Boolean operators.
-	This is pretty twisted, but also rather convenient.
+	For each [target] => [source] in $effects, set up $qa_content so that the visibility of the DOM element ID
+	target is equal to the checked state or boolean-casted value of the DOM element ID source. Each source can
+	also combine multiple DOM IDs using JavaScript(=PHP) operators. This is twisted but rather convenient.
 */
 	{
 		$function='qa_display_rule_'.count(@$qa_content['script_lines']);
@@ -1001,6 +1017,9 @@
 	
 	
 	function qa_get_tags_field_value($fieldname)
+/*
+	Get a list of user-entered tags submitted from a field that was created with qa_set_up_tag_field(...)
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 		
@@ -1014,6 +1033,13 @@
 	
 	
 	function qa_set_up_category_field(&$qa_content, &$field, $fieldname, $navcategories, $categoryid, $allownone, $allownosub, $maxdepth=null, $excludecategoryid=null)
+/*
+	Set up $qa_content and $field (with HTML name $fieldname) for hierarchical category navigation, with the initial value
+	set to $categoryid (and $navcategories retrieved for $categoryid using qa_db_category_nav_selectspec(...)).
+	If $allownone is true, it will allow selection of no category. If $allownosub is true, it will allow a category to be
+	selected without selecting a subcategory within. Set $maxdepth to the maximum depth of category that can be selected
+	(or null for no maximum) and $excludecategoryid to a category that should not be included.
+*/
 	{
 		$pathcategories=qa_category_path($navcategories, $categoryid);
 
@@ -1095,11 +1121,20 @@
 	
 	
 	function qa_get_category_field_value($fieldname)
+/*
+	Get the user-entered category id submitted from a field that was created with qa_set_up_category_field(...)
+*/
 	{
-		for ($level=QA_CATEGORY_DEPTH; $level>=0; $level--) {
+		for ($level=QA_CATEGORY_DEPTH; $level>=1; $level--) {
 			$levelid=qa_post_text($fieldname.'_'.$level);
-			if (isset($levelid))
-				return strlen($levelid) ? $levelid : null;
+			if (strlen($levelid))
+				return $levelid;
+		}
+		
+		if (!isset($levelid)) { // no Javascript-generated menu was present so take original menu
+			$levelid=qa_post_text($fieldname.'_0');
+			if (strlen($levelid))
+				return $levelid;
 		}
 		
 		return null;
@@ -1169,7 +1204,8 @@
 	
 	function qa_load_theme_class($theme, $template, $content, $request)
 /*
-	Return the initialized class for $theme (or the default if it's gone), passing $template, $content and $request. Also applies any registered plugin layers.
+	Return the initialized class for $theme (or the default if it's gone), passing $template, $content and $request.
+	Also applies any registered plugin layers.
 */
 	{
 		global $qa_root_url_relative, $qa_layers;

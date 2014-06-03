@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-admin.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Functions used in the admin center pages
 
 
@@ -358,6 +358,47 @@
 */
 	{
 		return '; font-size:9px; color:#060; font-weight:bold; font-family:arial,sans-serif; border-color:#060;">OK<';
+	}
+
+
+	function qa_admin_is_slug_reserved($requestpart)
+/*
+	Returns whether a URL path beginning with $requestpart is reserved by the engine or a plugin page module
+*/
+	{
+		global $QA_CONST_ROUTING, $QA_CONST_PATH_MAP;
+		
+		$requestpart=trim(strtolower($requestpart));
+		
+		if (isset($QA_CONST_ROUTING[$requestpart]) || isset($QA_CONST_ROUTING[$requestpart.'/']) || is_numeric($requestpart))
+			return true;
+			
+		if (isset($QA_CONST_PATH_MAP))
+			foreach ($QA_CONST_PATH_MAP as $requestmap)
+				if (trim(strtolower($requestmap)) == $requestpart)
+					return true;
+			
+		switch ($requestpart) {
+			case '':
+			case 'qa':
+			case 'feed':
+			case 'install':
+			case 'url':
+			case 'image':
+			case 'ajax':
+				return true;
+		}
+		
+		$modulenames=qa_list_modules('page');
+		
+		foreach ($modulenames as $tryname) {
+			$trypage=qa_load_module('page', $tryname);
+
+			if (method_exists($trypage, 'match_request') && $trypage->match_request($requestpart))
+				return true;
+		}
+			
+		return false;
 	}
 
 

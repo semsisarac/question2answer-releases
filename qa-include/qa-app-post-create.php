@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-create.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Creating questions, answers and comments (application level)
 
 
@@ -120,6 +120,7 @@
 /*
 	Add a question (application level) - create record, update appropriate counts, index it, send notifications.
 	If question is follow-on from an answer, $followanswer should contain answer database record, otherwise null.
+	See qa-app-posts.php for a higher-level function which is easier to use.
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
@@ -195,6 +196,10 @@
 
 	
 	function qa_suspend_post_indexing($suspend=true)
+/*
+	Suspend the indexing (and unindexing) of posts via qa_post_index(...) and qa_post_unindex(...)
+	if $suspend is true, otherwise reinstate it. A counter is kept to allow multiple calls.
+*/
 	{
 		global $qa_post_indexing_suspended;
 		
@@ -282,6 +287,7 @@
 /*
 	Add an answer (application level) - create record, update appropriate counts, index it, send notifications.
 	$question should contain database record for the question this is an answer to.
+	See qa-app-posts.php for a higher-level function which is easier to use.
 */
 	{
 		$postid=qa_db_post_create('A', $question['postid'], $userid, isset($userid) ? null : $cookieid,
@@ -354,6 +360,7 @@
 	If this is a comment on an answer, $answer should contain database record for the answer, otherwise null.
 	$commentsfollows should contain database records for all previous comments on the same question or answer,
 	but it can also contain other records that are ignored.
+	See qa-app-posts.php for a higher-level function which is easier to use.
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-emails.php';

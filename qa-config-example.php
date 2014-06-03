@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-config-example.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: After renaming, use this to set up database details and other stuff
 
 
@@ -103,6 +103,15 @@
 	define('QA_EXTERNAL_USERS', false);
 	define('QA_EXTERNAL_LANG', false);
 	define('QA_EXTERNAL_EMAILER', false);
+
+/*
+	Out-of-the-box WordPress 3.x integration - to integrate with your WordPress site and user
+	database, define QA_WORDPRESS_INTEGRATE_PATH as the full path to the WordPress directory
+	containing wp-load.php. You do not need to set the QA_MYSQL_* constants above since these
+	will be taken from WordPress automatically. See online documentation for more details.
+	
+	define('QA_WORDPRESS_INTEGRATE_PATH', '/PATH/TO/WORDPRESS');
+*/
 
 /*
 	Some settings to help optimize your QA site's performance.

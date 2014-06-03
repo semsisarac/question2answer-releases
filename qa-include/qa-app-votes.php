@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-votes.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Handling incoming votes (application level)
 
 
@@ -74,8 +74,8 @@
 	
 	function qa_vote_set($post, $userid, $handle, $cookieid, $vote)
 /*
-	Actually set (application level) the $vote (-1/0/1) by $userid (with $handle) on $postid.
-	Handles user points, recounting and notifications as appropriate.
+	Actually set (application level) the $vote (-1/0/1) by $userid (with $handle and $cookieid) on $postid.
+	Handles user points, recounting and event reports as appropriate.
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-db-points.php';
@@ -124,6 +124,10 @@
 	
 	
 	function qa_flag_error_html($post, $userid, $topage)
+/*
+	Check if $userid can flag $post, on the page $topage.
+	Return an HTML error to display if there was a problem, or false if it's OK.
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
@@ -163,6 +167,9 @@
 
 	function qa_flag_set_tohide($post, $userid, $handle, $cookieid, $question)
 /*
+	Set (application level) a flag by $userid (with $handle and $cookieid) on $post which belongs to $question.
+	Handles recounting, admin notifications and event reports as appropriate.
+	Returns true if the post should now be hidden because it has accumulated enough flags.
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-db-votes.php';
@@ -220,6 +227,8 @@
 
 	function qa_flag_clear($post, $userid, $handle, $cookieid)
 /*
+	Clear (application level) a flag on $post by $userid (with $handle and $cookieid).
+	Handles recounting and event reports as appropriate.
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-db-votes.php';
@@ -252,6 +261,10 @@
 	
 	
 	function qa_flags_clear_all($post, $userid, $handle, $cookieid)
+/*
+	Clear (application level) all flags on $post by $userid (with $handle and $cookieid).
+	Handles recounting and event reports as appropriate.
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-db-votes.php';
 		require_once QA_INCLUDE_DIR.'qa-app-limits.php';

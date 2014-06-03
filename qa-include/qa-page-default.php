@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-default.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Controller for home page, Q&A listing page, custom pages and plugin pages
 
 
@@ -79,6 +79,12 @@
 		return $qa_content;
 	}
 
+
+//	Then, see if we should redirect because the 'qa' page is the same as the home page
+
+	if ($explicitqa && (!qa_is_http_post()) && !qa_has_custom_home())
+		qa_redirect(qa_category_path_request($categories, $categoryid), $_GET);
+		
 
 //	Then, if there's a slug that matches no category, check page modules provided by plugins
 

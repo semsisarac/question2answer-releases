@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-blobs.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Application-level blob-management functions
 
 
@@ -33,14 +33,17 @@
 	
 	function qa_get_blob_url($blobid, $absolute=false)
 /*
-	Return the absolute URL which will output $blobid from the database
+	Return the URL which will output $blobid from the database when requested, $absolute or relative
 */
 	{
 		return qa_path('blob', array('qa_blobid' => $blobid), $absolute ? qa_opt('site_url') : null, QA_URL_FORMAT_PARAMS);
 	}
 	
 	
-	function qa_get_max_blob_upload_size()
+	function qa_get_max_upload_size()
+/*
+	Return the maximum size of file that can be uploaded, based on database and PHP limits
+*/
 	{
 		$mindb=16777215; // from MEDIUMBLOB column type
 		

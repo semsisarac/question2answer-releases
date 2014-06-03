@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-check-lang.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Development tool to see which language phrases are missing or unused
 
 
@@ -52,6 +52,9 @@
 				
 		return $substitutions;
 	}
+	
+	echo '<font color="#c00"><code>Dark red = important to review.</code></font><br>';
+	echo '<font color="#c99"><code>Light red = probably safe to ignore.</code></font>';
 	
 	echo '<H1>Checking US English files in <code>qa-include</code>...</H1>';
 	

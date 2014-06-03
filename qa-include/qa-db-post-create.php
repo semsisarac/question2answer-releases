@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-post-create.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Database functions for creating a question, answer or comment
 
 
@@ -46,6 +46,9 @@
 
 	
 	function qa_db_posts_calc_category_path($firstpostid, $lastpostid=null)
+/*
+	Recalculate the full category path (i.e. columns catidpath1/2/3) for posts from $firstpostid to $lastpostid (if specified)
+*/
 	{
 		if (!isset($lastpostid))
 			$lastpostid=$firstpostid;
@@ -62,6 +65,9 @@
 	
 	
 	function qa_db_post_get_category_path($postid)
+/*
+	Get the full category path (including categoryid) for $postid
+*/
 	{
 		return qa_db_read_one_assoc(qa_db_query_sub(
 			'SELECT categoryid, catidpath1, catidpath2, catidpath3 FROM ^posts WHERE postid=#',
@@ -72,7 +78,7 @@
 	
 	function qa_db_post_acount_update($questionid)
 /*
-	Update the cached number of answers for question $questionid in the database
+	Update the cached number of answers for $questionid in the database
 */
 	{
 		if (qa_should_update_counts())
@@ -84,6 +90,9 @@
 	
 	
 	function qa_db_category_path_qcount_update($path)
+/*
+	Recalculate the number of questions for each category in $path retrieved via qa_db_post_get_category_path()
+*/
 	{
 		qa_db_ifcategory_qcount_update($path['categoryid']); // requires QA_CATEGORY_DEPTH=4
 		qa_db_ifcategory_qcount_update($path['catidpath1']);
@@ -94,10 +103,12 @@
 	
 	function qa_db_ifcategory_qcount_update($categoryid)
 /*
-	Update the cached number of questions for category $categoryid in the database
+	Update the cached number of questions for category $categoryid in the database, including its subcategories
 */
 	{
 		if (qa_should_update_counts() && isset($categoryid)) {
+			// This seemed like the most sensible approach which avoids explicitly calculating the category's depth in the hierarchy
+
 			qa_db_query_sub(
 				"UPDATE ^categories SET qcount=GREATEST( (SELECT COUNT(*) FROM ^posts WHERE categoryid=# AND type='Q'), (SELECT COUNT(*) FROM ^posts WHERE catidpath1=# AND type='Q'), (SELECT COUNT(*) FROM ^posts WHERE catidpath2=# AND type='Q'), (SELECT COUNT(*) FROM ^posts WHERE catidpath3=# AND type='Q') ) WHERE categoryid=#",
 				$categoryid, $categoryid, $categoryid, $categoryid, $categoryid

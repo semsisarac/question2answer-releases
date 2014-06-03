@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/xml-sitemap/qa-xml-sitemap.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Page module class for XML sitemap plugin
 
 
@@ -127,7 +127,7 @@
 			
 		//	User pages
 		
-			if (!QA_EXTERNAL_USERS) {
+			if (!QA_FINAL_EXTERNAL_USERS) {
 				$nextuserid=0;
 				
 				while (1) {

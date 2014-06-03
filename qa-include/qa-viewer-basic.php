@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-viewer-basic.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Basic viewer module for displaying HTML or plain text
 
 
@@ -109,7 +109,7 @@
 				
 				if (@$options['showurllinks']) {
 					require_once QA_INCLUDE_DIR.'qa-app-format.php';
-					$html=qa_html_convert_urls($html);
+					$html=qa_html_convert_urls($html, qa_opt('links_in_new_window'));
 				}
 			}
 			

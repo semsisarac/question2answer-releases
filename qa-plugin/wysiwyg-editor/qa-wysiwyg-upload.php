@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/wysiwyg-editor/qa-wysiwyg-upload.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Page module class for WYSIWYG editor (CKEditor) file upload receiver
 
 
@@ -77,7 +77,7 @@
 					$extension=strtolower(@$pathinfo['extension']);
 					$filesize=$file['size'];
 
-					$maxsize=min(qa_opt('wysiwyg_editor_upload_max_size'), qa_get_max_blob_upload_size());
+					$maxsize=min(qa_opt('wysiwyg_editor_upload_max_size'), qa_get_max_upload_size());
 					
 					if ( ($filesize<=0) || ($filesize>$maxsize) ) // if file was too big for PHP, $filesize will be zero
 						$message='Maximum upload size is '.number_format($maxsize/1048576, 1).'MB';
@@ -123,5 +123,7 @@
 		}
 	}
 
-?>	
 
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/

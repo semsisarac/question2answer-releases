@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-update.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Changing questions, answer and comments (application level)
 
 
@@ -39,8 +39,10 @@
 	
 	function qa_question_set_content($oldquestion, $title, $content, $format, $text, $tagstring, $notify, $userid, $handle, $cookieid)
 /*
-	Change the fields of a question (application level) to $title, $content, $format, $tagstring and $notify, and reindex based on $text.
-	Pass the question's database record before changes in $oldquestion and details of the user doing this in $userid, $handle and $cookieid.
+	Change the fields of a question (application level) to $title, $content, $format, $tagstring and $notify,
+	and reindex based on $text. Pass the question's database record before changes in $oldquestion and details
+	of the user doing this in $userid, $handle and $cookieid. Reports event as appropriate.
+	See qa-app-posts.php for a higher-level function which is easier to use.
 */
 	{
 		qa_post_unindex($oldquestion['postid']);
@@ -73,6 +75,7 @@
 	Set the selected answer (application level) of $oldquestion to $selchildid. Pass details of the user doing this
 	in $userid, $handle and $cookieid, and the database records for all answers to the question in $answers.
 	Handles user points values and notifications.
+	See qa-app-posts.php for a higher-level function which is easier to use.
 */
 	{
 		$oldselchildid=$oldquestion['selchildid'];
@@ -127,7 +130,8 @@
 	in $userid, $handle and $cookieid, the database records for all answers to the question in $answers,
 	and the database records for all comments on the question or the question's answers in $commentsfollows
 	($commentsfollows can also contain records for follow-on questions which are ignored).
-	Handles indexing, user points, cached counts and notifications.
+	Handles indexing, user points, cached counts and event reports.
+	See qa-app-posts.php for a higher-level function which is easier to use.
 */
 	{
 		qa_post_unindex($oldquestion['postid']);
@@ -175,7 +179,8 @@
 	in $userid, $handle and $cookieid, the database records for all answers to the question in $answers,
 	and the database records for all comments on the question or the question's answers in $commentsfollows
 	($commentsfollows can also contain records for follow-on questions which are ignored).
-	Handles cached counts and notifications and will reset category IDs for all answers and comments.
+	Handles cached counts and event reports and will reset category IDs and paths for all answers and comments.
+	See qa-app-posts.php for a higher-level function which is easier to use.
 */
 	{
 		$oldpath=qa_db_post_get_category_path($oldquestion['postid']);
@@ -210,7 +215,8 @@
 /*
 	Permanently delete a question (application level) from the database. The question must not have any
 	answers or comments on it. Pass details of the user doing this in $userid, $handle and $cookieid.
-	Handles unindexing, votes, points, cached counts and notifications.
+	Handles unindexing, votes, points, cached counts and event reports.
+	See qa-app-posts.php for a higher-level function which is easier to use.
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-db-votes.php';
@@ -243,7 +249,7 @@
 	function qa_question_set_userid($oldquestion, $userid, $handle, $cookieid)
 /*
 	Set the author (application level) of $oldquestion to $userid and also pass $handle and $cookieid
-	of user. Updates points and sends notificatoins as appropriate.
+	of user. Updates points and reports events as appropriate.
 */
 	{
 		qa_db_post_set_userid($oldquestion['postid'], $userid);
@@ -289,7 +295,8 @@
 /*
 	Change the fields of an answer (application level) to $content, $format and $notify, and reindex based on $text.
 	Pass the answer's database record before changes in $oldanswer, the question's in $question, and details of the
-	user doing this in $userid, $handle and $cookieid. Sends appropriate notifications.
+	user doing this in $userid, $handle and $cookieid. Handle indexing and event reports as appropriate.
+	See qa-app-posts.php for a higher-level function which is easier to use.
 */
 	{
 		qa_post_unindex($oldanswer['postid']);
@@ -319,7 +326,8 @@
 	Set the hidden status (application level) of $oldanswer to $hidden. Pass details of the user doing this
 	in $userid, $handle and $cookieid, the database record for the question in $question, and the database
 	records for all comments on the answer in $commentsfollows ($commentsfollows can also contain other
-	records which are ignored). Handles indexing, user points, cached counts and notifications.
+	records which are ignored). Handles indexing, user points, cached counts and event reports.
+	See qa-app-posts.php for a higher-level function which is easier to use.
 */
 	{
 		qa_post_unindex($oldanswer['postid']);
@@ -359,7 +367,8 @@
 /*
 	Permanently delete an answer (application level) from the database. The answer must not have any comments or
 	follow-on questions. Pass the database record for the question in $question and details of the user doing this
-	in $userid, $handle and $cookieid. Handles unindexing, votes, points, cached counts and notifications.
+	in $userid, $handle and $cookieid. Handles unindexing, votes, points, cached counts and event reports.
+	See qa-app-posts.php for a higher-level function which is easier to use.
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-db-votes.php';
@@ -398,7 +407,7 @@
 	function qa_answer_set_userid($oldanswer, $userid, $handle, $cookieid)
 /*
 	Set the author (application level) of $oldanswer to $userid and also pass $handle and $cookieid
-	of user. Updates points and sends notifications as appropriate.
+	of user. Updates points and reports events as appropriate.
 */
 	{
 		qa_db_post_set_userid($oldanswer['postid'], $userid);
@@ -418,7 +427,8 @@
 	Change the fields of a comment (application level) to $content, $format and $notify, and reindex based on $text.
 	Pass the comment's database record before changes in $oldcomment, details of the user doing this in  $userid,
 	$handle and $cookieid, the antecedent question in $question and the answer's database record in $answer if this
-	is a comment on an answer, otherwise null. Sends appropriate notifications.
+	is a comment on an answer, otherwise null. Handles unindexing and event reports.
+	See qa-app-posts.php for a higher-level function which is easier to use.
 */
 	{
 		qa_post_unindex($oldcomment['postid']);
@@ -452,7 +462,7 @@
 	user doing this in $userid, $handle and $cookieid, the antecedent question's record in $question, the records for
 	all answers to that question in $answers, and the records for all comments on the (old) answer and questions
 	following from the (old) answer in $commentsfollows ($commentsfollows can also contain other records which are ignored).
-	Handles indexing (based on $text), user points, cached counts and notifications.
+	Handles indexing (based on $text), user points, cached counts and event reports.
 */
 	{
 		$parent=isset($answers[$parentid]) ? $answers[$parentid] : $question;
@@ -498,7 +508,8 @@
 /*
 	Set the hidden status (application level) of $oldcomment to $hidden. Pass the antecedent question's record in $question,
 	details of the user doing this in $userid, $handle and $cookieid, and the answer's database record in $answer if this
-	is a comment on an answer, otherwise null. Handles indexing, user points, cached counts and notifications.
+	is a comment on an answer, otherwise null. Handles indexing, user points, cached counts and event reports.
+	See qa-app-posts.php for a higher-level function which is easier to use.
 */
 	{
 		qa_post_unindex($oldcomment['postid']);
@@ -526,7 +537,8 @@
 /*
 	Permanently delete a comment in $oldcomment (application level) from the database. Pass the database question in $question
 	and the answer's database record in $answer if this is a comment on an answer, otherwise null. Pass details of the user
-	doing this in $userid, $handle and $cookieid. Handles unindexing, points, cached counts and notifications.
+	doing this in $userid, $handle and $cookieid. Handles unindexing, points, cached counts and event reports.
+	See qa-app-posts.php for a higher-level function which is easier to use.
 */
 	{
 		if (!$oldcomment['hidden'])
@@ -549,7 +561,7 @@
 	function qa_comment_set_userid($oldcomment, $userid, $handle, $cookieid)
 /*
 	Set the author (application level) of $oldcomment to $userid and also pass $handle and $cookieid
-	of user. Updates points and sends notifications as appropriate.
+	of user. Updates points and reports events as appropriate.
 */
 	{
 		qa_db_post_set_userid($oldcomment['postid'], $userid);

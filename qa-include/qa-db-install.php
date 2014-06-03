@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-install.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Database-level functions for installation and upgrading
 
 
@@ -395,7 +395,7 @@
 			),
 		);
 		
-		if (QA_EXTERNAL_USERS) {
+		if (QA_FINAL_EXTERNAL_USERS) {
 			unset($tables['users']);
 			unset($tables['userlogins']);
 			unset($tables['userprofile']);
@@ -680,7 +680,7 @@
 					break;
 					
 				case 7:
-					if (!QA_EXTERNAL_USERS) {
+					if (!QA_FINAL_EXTERNAL_USERS) {
 						qa_db_upgrade_query('ALTER TABLE ^users ADD COLUMN sessioncode '.$definitions['users']['sessioncode']);
 						qa_db_upgrade_query($locktablesquery);
 					}
@@ -695,7 +695,7 @@
 			//	Up to here: Version 1.0 beta 3, 1.0, 1.0.1 beta, 1.0.1
 			
 				case 9:
-					if (!QA_EXTERNAL_USERS) {
+					if (!QA_FINAL_EXTERNAL_USERS) {
 						qa_db_upgrade_query('ALTER TABLE ^users CHANGE COLUMN resetcode emailcode '.$definitions['users']['emailcode'].', ADD COLUMN flags '.$definitions['users']['flags']);
 						qa_db_upgrade_query($locktablesquery);
 						qa_db_upgrade_query('UPDATE ^users SET flags=1');
@@ -756,7 +756,7 @@
 			//	Up to here: Version 1.2 beta 1
 			
 				case 15:
-					if (!QA_EXTERNAL_USERS)
+					if (!QA_FINAL_EXTERNAL_USERS)
 						qa_db_upgrade_table_columns($definitions, 'users', array('emailcode', 'sessioncode', 'flags'));
 					
 					qa_db_upgrade_table_columns($definitions, 'posts', array('acount', 'upvotes', 'downvotes', 'format'));
@@ -786,7 +786,7 @@
 					break;
 					
 				case 19:
-					if (!QA_EXTERNAL_USERS)
+					if (!QA_FINAL_EXTERNAL_USERS)
 						qa_db_upgrade_query('ALTER TABLE ^users ADD COLUMN avatarblobid '.$definitions['users']['avatarblobid'].', ADD COLUMN avatarwidth '.$definitions['users']['avatarwidth'].', ADD COLUMN avatarheight '.$definitions['users']['avatarheight']);
 					
 					// hard-code list of columns and indexes to ensure we ignore any added at a later stage
@@ -813,7 +813,7 @@
 					break;
 					
 				case 20:
-					if (!QA_EXTERNAL_USERS) {
+					if (!QA_FINAL_EXTERNAL_USERS) {
 						qa_db_upgrade_query(qa_db_create_table_sql('userlogins', array(
 							'userid' => $definitions['userlogins']['userid'],
 							'source' => $definitions['userlogins']['source'],
@@ -832,7 +832,7 @@
 					break;
 					
 				case 21:
-					if (!QA_EXTERNAL_USERS) {
+					if (!QA_FINAL_EXTERNAL_USERS) {
 						qa_db_upgrade_query(qa_db_create_table_sql('userfields', array(
 							'fieldid' => $definitions['userfields']['fieldid'],
 							'title' => $definitions['userfields']['title'],
@@ -852,7 +852,7 @@
 			//	Up to here: Version 1.3 beta 1
 			
 				case 22:
-					if (!QA_EXTERNAL_USERS) {
+					if (!QA_FINAL_EXTERNAL_USERS) {
 						qa_db_upgrade_query('ALTER TABLE ^users ADD COLUMN sessionsource '.$definitions['users']['sessionsource']);
 						qa_db_upgrade_query($locktablesquery);
 					}
@@ -896,8 +896,16 @@
 			//	Up to here: Version 1.4 developer preview
 			
 				case 25:
-					qa_db_upgrade_query('ALTER TABLE ^blobs ADD COLUMN filename '.$definitions['blobs']['filename'].', ADD COLUMN userid '.$definitions['blobs']['userid'].', ADD COLUMN cookieid '.$definitions['blobs']['cookieid'].', ADD COLUMN createip '.$definitions['blobs']['createip'].', ADD COLUMN created '.$definitions['blobs']['created']);
-					qa_db_upgrade_query($locktablesquery);
+					$keycolumns=qa_array_to_lower_keys(qa_db_read_all_values(qa_db_query_sub('SHOW COLUMNS FROM ^blobs')));
+						// might be using blobs table shared with another installation, so check if we need to upgrade
+					
+					if (isset($keycolumns['filename']))
+						qa_db_upgrade_progress('Skipping upgrading blobs table since it was already upgraded by another QA site sharing it.');
+
+					else {
+						qa_db_upgrade_query('ALTER TABLE ^blobs ADD COLUMN filename '.$definitions['blobs']['filename'].', ADD COLUMN userid '.$definitions['blobs']['userid'].', ADD COLUMN cookieid '.$definitions['blobs']['cookieid'].', ADD COLUMN createip '.$definitions['blobs']['createip'].', ADD COLUMN created '.$definitions['blobs']['created']);
+						qa_db_upgrade_query($locktablesquery);
+					}
 					break;
 					
 				case 26:
@@ -949,10 +957,9 @@
 					qa_db_upgrade_query($locktablesquery);
 					
 					$keyrecalc['dorecalccategories']=true;
-					break;
+					break;					
 					
-					
-			//	Up to here: Version 1.4 beta 1
+			//	Up to here: Version 1.4 beta 1 and 2
 					
 			}
 			

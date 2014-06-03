@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-options.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Language phrases for all options, as shown in admin center
 
 
@@ -81,16 +81,16 @@
 		'feedback_email' => 'Email address for admin messages (not shown to users):',
 		'feedback_enabled' => 'Provide a form for users to send me feedback',
 		'flagging_hide_after' => 'Automatically hide posts which reach:',
-		'flagging_notify_first' => 'Email me first once a post receives:',
 		'flagging_notify_every' => 'Email me again after every additional:',
+		'flagging_notify_first' => 'Email me first once a post receives:',
 		'flagging_of_posts' => 'Allow posts to be flagged as inappropriate:',
 		'follow_on_as' => 'Allow new questions to be related to answers:',
 		'from_email' => 'Sender address for all administrative messages:',
-		'hot_weight_views' => 'Relative weight of number of views for hotness:',
-		'hot_weight_answers' => 'Relative weight of number of answers for hotness:',
-		'hot_weight_votes' => 'Relative weight of votes for hotness:',
-		'hot_weight_q_age' => 'Relative weight of question age for hotness:',
 		'hot_weight_a_age' => 'Relative weight of last answer age for hotness:',
+		'hot_weight_answers' => 'Relative weight of number of answers for hotness:',
+		'hot_weight_q_age' => 'Relative weight of question age for hotness:',
+		'hot_weight_views' => 'Relative weight of number of views for hotness:',
+		'hot_weight_votes' => 'Relative weight of votes for hotness:',
 		'links_in_new_window' => 'Open entered links in a new window:',
 		'logo_height' => 'Height of logo in pixels:',
 		'logo_show' => 'Show a logo image in the page header',
@@ -129,9 +129,9 @@
 		'neat_urls' => 'URL structure for pages on your site:',
 		'notify_admin_q_post' => 'Email me at this address when a question is posted',
 		'notify_users_default' => 'Check email notification box by default:',
+		'page_size_activity' => 'All activity page length:',
 		'page_size_ask_check_qs' => 'Maximum similar questions to show:',
 		'page_size_ask_tags' => 'Maximum tag hints to show:',
-		'page_size_activity' => 'All activity page length:',
 		'page_size_home' => 'Home page length:',
 		'page_size_hot_qs' => 'Hot questions page length:',
 		'page_size_qs' => 'Questions page length:',
@@ -147,29 +147,29 @@
 		'permit_all' => 'Anybody',
 		'permit_block' => 'Blocking or unblocking user or IPs:',
 		'permit_confirmed' => 'Registered users with email confirmed',
-		'permit_points_confirmed' => 'Registered & email confirmed & enough points',
 		'permit_create_admins' => 'Creating administrators:',
 		'permit_create_eds_mods' => 'Creating editors and moderators:',
 		'permit_create_experts' => 'Creating experts:',
 		'permit_editors' => 'Editors, Moderators, Admins',
 		'permit_experts' => 'Experts, Editors, Moderators, Admins',
 		'permit_moderators' => 'Moderators and Admins',
+		'permit_points_confirmed' => 'Registered & email confirmed & enough points',
+		'permit_points' => 'Registered users with enough points',
 		'permit_see_emails' => 'Viewing user email addresses:',
 		'permit_supers' => 'Super Administrators',
 		'permit_users' => 'Registered users',
-		'permit_points' => 'Registered users with enough points',
-		'place_full_top' => 'Full width - Top of page',
-		'place_full_below_nav' => 'Full width - Below navigation',
 		'place_full_below_content' => 'Full width - Below content',
 		'place_full_below_footer' => 'Full width - Below footer',
-		'place_main_top' => 'Main area - Top',
-		'place_main_below_title' => 'Main area - Below title',
+		'place_full_below_nav' => 'Full width - Below navigation',
+		'place_full_top' => 'Full width - Top of page',
 		'place_main_below_lists' => 'Main area - Below lists',
+		'place_main_below_title' => 'Main area - Below title',
 		'place_main_bottom' => 'Main area - Bottom',
-		'place_side_top' => 'Side panel - Top',
-		'place_side_below_sidebar' => 'Side panel - Below sidebar box',
+		'place_main_top' => 'Main area - Top',
 		'place_side_below_categories' => 'Side panel - Below categories',
+		'place_side_below_sidebar' => 'Side panel - Below sidebar box',
 		'place_side_last' => 'Side panel - Last',
+		'place_side_top' => 'Side panel - Top',
 		'points_a_selected' => 'Having your answer selected as the best:',
 		'points_a_voted_max_gain' => 'Limit from up votes on each answer:',
 		'points_a_voted_max_loss' => 'Limit from down votes on each answer:',
@@ -186,6 +186,8 @@
 		'points_vote_down_q' => 'Voting down a question:',
 		'points_vote_up_a' => 'Voting up an answer:',
 		'points_vote_up_q' => 'Voting up a question:',
+		'q_urls_remove_accents' => 'Remove accents from question URLs:',
+		'q_urls_title_length' => 'Question title length in URLs:',
 		'recaptcha_private_key' => 'Your reCAPTCHA private key:',
 		'recaptcha_public_key' => 'Your reCAPTCHA public key:',
 		'show_a_form_immediate' => 'Show answer form immediately:',
@@ -215,9 +217,8 @@
 		'sort_time' => 'Time',
 		'sort_votes' => 'Votes',
 		'suspend_register_users' => 'Temporarily suspend new user registrations:',
-		'tags_or_categories' => 'Classify questions using:',
 		'tag_separator_comma' => 'Only use comma as a tag separator:',
-		'title_length_urls' => 'Question title length in URLs:',
+		'tags_or_categories' => 'Classify questions using:',
 		'votes_separated' => 'Show separate up and down votes:',
 		'voting_on_as' => 'Allow voting on answers:',
 		'voting_on_q_page_only' => 'Allow voting on question page only:',

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-index.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: The Grand Central of Q2A - most requests come through here
 
 
@@ -126,10 +126,10 @@
 	reset($requestparts);
 	$key=key($requestparts);
 	
-	if ( strlen(@$requestparts[$key]) && isset($QA_CONST_PATH_MAP) ) {
-		$replacement=array_search($requestparts[$key], $QA_CONST_PATH_MAP, true);
+	if (isset($QA_CONST_PATH_MAP)) {
+		$replacement=array_search(@$requestparts[$key], $QA_CONST_PATH_MAP);
 		
-		if (strlen($replacement))
+		if ($replacement!==false)
 			$requestparts[$key]=$replacement;
 	}
 
@@ -145,7 +145,7 @@
 	if (substr($qa_root_url_inferred, -1)!='/')
 		$qa_root_url_inferred.='/';
 	
-
+	
 //	Check for install or url test pages
 
 	if ($qa_request_lc=='install')

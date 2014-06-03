@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-q-list.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Controller for most question listing pages, plus custom pages and plugin pages
 
 
@@ -32,17 +32,19 @@
 
 	
 	function qa_q_list_page_content($questions, $pagesize, $start, $count, $sometitle, $nonetitle,
-		$categories, $categoryid, $categoryqcount, $categorypathprefix, $feedpathprefix, $suggest, $pagelinkparams=array())
+		$navcategories, $categoryid, $categoryqcount, $categorypathprefix, $feedpathprefix, $suggest, $pagelinkparams=array())
 /*
 	Returns the $qa_content structure for a question list page showing $questions retrieved from the database.
 	If $pagesize is not null, it sets the max number of questions to display.
 	If $count is not null, pagination is determined by $start and $count.
 	The page title is $sometitle unless there are no questions shown, in which case it's $nonetitle.
-	$categories should contain the category list from the database, and $categoryid the current category shown.
+	$navcategories should contain the categories from the database using qa_db_category_nav_selectspec(...)
+	for $categoryid, which is the current category shown.
 	For the category navigation menu, per-category question counts are shown if $categoryqcount is true, and the 
 	menu links have $categorypathprefix as their prefix. But if $categorypathprefix is null, it's not shown.
 	If $feedpathprefix is set, the page has an RSS feed whose URL uses that prefix.
 	If there are no links to other pages, $suggest is used to suggest what the user should do.
+	The $pagelinkparams are passed through to qa_html_page_links(...) which creates links for page 2, 3, etc..
 	
 */
 	{
@@ -61,7 +63,7 @@
 
 	//	Prepare content for theme
 		
-		$qa_content=qa_content_prepare(true, array_keys(qa_category_path($categories, $categoryid)));
+		$qa_content=qa_content_prepare(true, array_keys(qa_category_path($navcategories, $categoryid)));
 	
 		$qa_content['q_list']['form']=array(
 			'tags' => 'METHOD="POST" ACTION="'.qa_self_html().'"',
@@ -88,12 +90,12 @@
 		if (empty($qa_content['page_links']))
 			$qa_content['suggest_next']=$suggest;
 			
-		if (qa_using_categories() && count($categories) && isset($categorypathprefix))
-			$qa_content['navigation']['cat']=qa_category_navigation($categories, $categoryid, $categorypathprefix, $categoryqcount);
+		if (qa_using_categories() && count($navcategories) && isset($categorypathprefix))
+			$qa_content['navigation']['cat']=qa_category_navigation($navcategories, $categoryid, $categorypathprefix, $categoryqcount);
 		
 		if (isset($feedpathprefix) && (qa_opt('feed_per_category') || !isset($categoryid)) )
 			$qa_content['feed']=array(
-				'url' => qa_path_html(qa_feed_request($feedpathprefix.(isset($categoryid) ? ('/'.qa_category_path_request($categories, $categoryid)) : ''))),
+				'url' => qa_path_html(qa_feed_request($feedpathprefix.(isset($categoryid) ? ('/'.qa_category_path_request($navcategories, $categoryid)) : ''))),
 				'label' => strip_tags($sometitle),
 			);
 			

@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-posts.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Higher-level functions to create and manipulate posts
 
 
@@ -40,6 +40,20 @@
 
 
 	function qa_post_create($type, $parentpostid, $title, $content, $format='', $categoryid=null, $tags=null, $userid=null, $notify=null, $email=null)
+/*
+	Create a new post in the database, and return its postid.
+	
+	Set $type to 'Q' for a new question, 'A' for an answer, or 'C' for a comment. For questions, set $parentpostid to
+	the postid of the answer to which the question is related, or null if (as in most cases) the question is not related
+	to an answer. For answers, set $parentpostid to the postid of the question being answered. For comments, set
+	$parentpostid to the postid of the question or answer to which the comment relates. The $content and $format
+	parameters go together - if $format is '' then $content should be in plain UTF-8 text, and if $format is 'html' then
+	$content should be in UTF-8 HTML. Other values of $format may be allowed if an appropriate viewer module is
+	installed. The $title, $categoryid and $tags parameters are only relevant when creating a question - $tags can
+	either be an array of tags, or a string of tags separated by commas. The new post will be assigned to $userid if it
+	is not null, otherwise it will be anonymous. If $notify is true then the author will be sent notifications relating
+	to the post - either to $email if it is specified and valid, or to the current email address of $userid if $email is '@'.
+*/
 	{
 		$handle=qa_post_userid_to_handle($userid);
 		$text=qa_post_content_to_text($content, $format);
@@ -74,6 +88,11 @@
 	
 	
 	function qa_post_set_content($postid, $title, $content, $format=null, $tags=null, $notify=null, $email=null, $byuserid=null)
+/*
+	Change the data stored for post $postid based on any of the $title, $content, $format, $tags, $notify and $email
+	parameters passed which are not null. The meaning of these parameters is the same as for qa_post_create() above.
+	Pass the identify of the user making this change in $byuserid (or null for an anonymous change).
+*/
 	{
 		$oldpost=qa_post_get_full($postid, 'QAC');
 		
@@ -120,6 +139,11 @@
 
 	
 	function qa_post_set_category($postid, $categoryid, $byuserid=null)
+/*
+	Change the category of $postid to $categoryid. The category of all related posts (shown together on the same
+	question page) will also be changed. Pass the identify of the user making this change in $byuserid (or null for an
+	anonymous change).
+*/
 	{
 		$oldpost=qa_post_get_full($postid, 'QAC');
 		
@@ -134,20 +158,28 @@
 	}
 
 	
-	function qa_post_set_selchildid($questionid, $selchildid, $byuserid=null)
+	function qa_post_set_selchildid($questionid, $answerid, $byuserid=null)
+/*
+	Set the selected best answer of $questionid to $answerid (or to none if $answerid is null). Pass the identify of the
+	user in $byuserid (or null for an anonymous change).
+*/
 	{
 		$oldquestion=qa_post_get_full($questionid, 'Q');
 		$byhandle=qa_post_userid_to_handle($byuserid);
 		$answers=qa_post_get_question_answers($questionid);
 		
-		if (isset($selchildid) && !isset($answers[$selchildid]))
-			qa_fatal_error('Answer ID could not be found: '.$selchildid);
+		if (isset($answerid) && !isset($answers[$answerid]))
+			qa_fatal_error('Answer ID could not be found: '.$answerid);
 		
-		qa_question_set_selchildid($byuserid, $byuserid, null, $oldquestion, $selchildid, $answers);
+		qa_question_set_selchildid($byuserid, $byuserid, null, $oldquestion, $answerid, $answers);
 	}
 
 	
 	function qa_post_set_hidden($postid, $hidden=true, $byuserid=null)
+/*
+	Hide $postid if $hidden is true, show the post. Pass the identify of the user making this change in $byuserid (or
+	null for an anonymous change).
+*/
 	{
 		$oldpost=qa_post_get_full($postid, 'QAC');
 		$byhandle=qa_post_userid_to_handle($byuserid);
@@ -176,6 +208,9 @@
 
 	
 	function qa_post_delete($postid)
+/*
+	Delete $postid from the database, hiding it first if appropriate.
+*/
 	{
 		$oldpost=qa_post_get_full($postid, 'QAC');
 		
@@ -216,6 +251,9 @@
 
 
 	function qa_post_get_full($postid, $requiredbasetypes=null)
+/*
+	Return the full information from the database for $postid in an array.
+*/
 	{
 		$post=qa_db_single_select(qa_db_full_post_selectspec(null, $postid));
 			
@@ -230,6 +268,9 @@
 
 	
 	function qa_post_userid_to_handle($userid)
+/*
+	Return the handle corresponding to $userid, unless it is null in which case return null.
+*/
 	{
 		if (isset($userid)) {
 			$user=qa_db_single_select(qa_db_user_account_selectspec($userid, true));
@@ -245,6 +286,9 @@
 
 
 	function qa_post_content_to_text($content, $format)
+/*
+	Return the textual rendition of $content in $format (used for indexing).
+*/
 	{
 		$viewer=qa_load_viewer($content, $format);
 		
@@ -256,15 +300,21 @@
 
 	
 	function qa_post_tags_to_tagstring($tags)
+/*
+	Return tagstring to store in the database based on $tags as an array or a comma-separated string.
+*/
 	{
 		if (is_array($tags))
 			$tags=implode(',', $tags);
-			
-		return qa_tags_to_tagstring(array_unique(qa_string_to_words($tags, true, false, false, false)));
+		
+		return qa_tags_to_tagstring(array_unique(preg_split('/\s*,\s*/', qa_strtolower(strtr($tags, '/', ' ')), -1, PREG_SPLIT_NO_EMPTY)));
 	}
 
 	
 	function qa_post_get_question_answers($questionid)
+/*
+	Return the full database records for all answers to question $questionid
+*/
 	{
 		$answers=array();
 		
@@ -279,6 +329,9 @@
 
 	
 	function qa_post_get_question_commentsfollows($questionid)
+/*
+	Return the full database records for all comments or follow-on questions for question $questionid or its answers
+*/
 	{
 		$commentsfollows=array();
 		
@@ -300,6 +353,9 @@
 
 	
 	function qa_post_get_answer_commentsfollows($answerid)
+/*
+	Return the full database records for all comments or follow-on questions for answer $answerid
+*/
 	{
 		$commentsfollows=array();
 		
@@ -314,6 +370,9 @@
 	
 
 	function qa_post_parent_to_question($parentpost)
+/*
+	Return $parentpost if it's the database record for a question, otherwise return the database record for its parent
+*/
 	{
 		if ($parentpost['basetype']=='Q')
 			$question=$parentpost;
@@ -325,6 +384,9 @@
 
 	
 	function qa_post_parent_to_answer($parentpost)
+/*
+	Return $parentpost if it's the database record for an answer, otherwise return null
+*/
 	{
 		if ($parentpost['basetype']=='A')
 			$answer=$parentpost;

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Common functions for connecting to and accessing database
 
 
@@ -33,7 +33,7 @@
 
 	$qa_db=null;
 	
-
+	
 	function qa_db_connect($failhandler=null)
 /*
 	Connect to the QA database, select the right database, optionally install the $failhandler (and call it if necessary)
@@ -45,12 +45,12 @@
 			$qa_db_fail_handler=$failhandler;
 			
 			if (QA_PERSISTENT_CONN_DB)
-				$db=mysql_pconnect(QA_MYSQL_HOSTNAME, QA_MYSQL_USERNAME, QA_MYSQL_PASSWORD);
+				$db=mysql_pconnect(QA_FINAL_MYSQL_HOSTNAME, QA_FINAL_MYSQL_USERNAME, QA_FINAL_MYSQL_PASSWORD);
 			else
-				$db=mysql_connect(QA_MYSQL_HOSTNAME, QA_MYSQL_USERNAME, QA_MYSQL_PASSWORD);
+				$db=mysql_connect(QA_FINAL_MYSQL_HOSTNAME, QA_FINAL_MYSQL_USERNAME, QA_FINAL_MYSQL_PASSWORD);
 			
 			if (is_resource($db)) {
-				if (!mysql_select_db(QA_MYSQL_DATABASE, $db)) {
+				if (!mysql_select_db(QA_FINAL_MYSQL_DATABASE, $db)) {
 					mysql_close($db);
 					qa_db_fail_error('select');
 				}
@@ -69,6 +69,8 @@
 */
 	{
 		global $qa_db_fail_handler;
+		
+		@error_log('Question2Answer MySQL '.$type.' error '.$errno.': '.$error);
 		
 		if (function_exists($qa_db_fail_handler))
 			$qa_db_fail_handler($type, $errno, $error, $query);
@@ -601,6 +603,10 @@
 
 	
 	function qa_suspend_update_counts($suspend=true)
+/*
+	Suspend the updating of counts (of many different types) in the database, to save time when making a lot of changes
+	if $suspend is true, otherwise reinstate it. A counter is kept to allow multiple calls.
+*/
 	{
 		global $qa_update_counts_suspended;
 		
@@ -609,6 +615,9 @@
 
 	
 	function qa_should_update_counts()
+/*
+	Returns whether counts should currently be updated (i.e. if count updating has not been suspended)
+*/
 	{
 		global $qa_update_counts_suspended;
 		

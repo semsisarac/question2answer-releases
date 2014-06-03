@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/wysiwyg-editor/qa-wysiwyg-editor.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Editor module class for WYSIWYG editor plugin
 
 
@@ -39,7 +39,7 @@
 			if ($option=='wysiwyg_editor_upload_max_size') {
 				require_once QA_INCLUDE_DIR.'qa-app-blobs.php';
 				
-				return min(qa_get_max_blob_upload_size(), 1048576);
+				return min(qa_get_max_upload_size(), 1048576);
 			}
 		}
 		
@@ -57,7 +57,7 @@
 			if (qa_clicked('wysiwyg_editor_save_button')) {
 				qa_opt('wysiwyg_editor_upload_images', (int)qa_post_text('wysiwyg_editor_upload_images_field'));
 				qa_opt('wysiwyg_editor_upload_all', (int)qa_post_text('wysiwyg_editor_upload_all_field'));
-				qa_opt('wysiwyg_editor_upload_max_size', min(qa_get_max_blob_upload_size(), 1048576*(float)qa_post_text('wysiwyg_editor_upload_max_size_field')));
+				qa_opt('wysiwyg_editor_upload_max_size', min(qa_get_max_upload_size(), 1048576*(float)qa_post_text('wysiwyg_editor_upload_max_size_field')));
 				$saved=true;
 			}
 			
@@ -87,7 +87,7 @@
 					
 					array(
 						'id' => 'wysiwyg_editor_upload_max_size_display',
-						'label' => 'Maximum size of uploads in MB (max '.$this->bytes_to_mega_html(qa_get_max_blob_upload_size()).'):',
+						'label' => 'Maximum size of uploads in MB (max '.$this->bytes_to_mega_html(qa_get_max_upload_size()).'):',
 						'type' => 'number',
 						'value' => $this->bytes_to_mega_html(qa_opt('wysiwyg_editor_upload_max_size')),
 						'tags' => 'NAME="wysiwyg_editor_upload_max_size_field"',
@@ -118,7 +118,7 @@
 			$uploadimages=qa_opt('wysiwyg_editor_upload_images');
 			$uploadall=$uploadimages && qa_opt('wysiwyg_editor_upload_all');
 			
-			$qa_content['script_src'][]=$this->urltoroot.'ckeditor.js';
+			$qa_content['script_src'][]=$this->urltoroot.'ckeditor.js?'.QA_VERSION;
 			
 			$qa_content['script_onloads'][]="CKEDITOR.replace(".qa_js($fieldname).
 			", {toolbar:[".

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-util-image.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Some useful image-related functions (using GD)
 
 
@@ -24,7 +24,7 @@
 
 	More about this license: http://www.question2answer.org/license.php
 */
-
+	
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
 		header('Location: ../');
 		exit;
@@ -39,6 +39,51 @@
 		return extension_loaded('gd') && function_exists('imagecreatefromstring') && function_exists('imagejpeg');
 	}
 
+
+	function qa_image_file_too_big($imagefile, $size=null)
+/*
+	Check if the image in $imagefile will be too big for PHP/GD to process given memory usage and limits
+	Pass the width and height limit beyond which the image will require scaling in $size (if any)
+	Returns false if the image will fit fine, otherwise a safe estimate of the factor the image should be sized by
+*/
+	{
+		if (function_exists('memory_get_usage')) {
+			$gotbytes=trim(@ini_get('memory_limit'));
+			
+			switch (strtolower(substr($gotbytes, -1))) {
+				case 'g':
+					$gotbytes*=1024;
+				case 'm':
+					$gotbytes*=1024;
+				case 'k':
+					$gotbytes*=1024;
+			}
+			
+			if ($gotbytes>0) { // otherwise we clearly don't know our limit
+				$gotbytes=($gotbytes-memory_get_usage())*0.9; // safety margin of 10%
+				
+				$needbytes=filesize($imagefile); // memory to store file contents
+
+				$imagesize=@getimagesize($imagefile);
+				
+				if (is_array($imagesize)) { // if image can't be parsed, don't worry about anything else
+					$width=$imagesize[0];
+					$height=$imagesize[1];
+					
+					$needbytes+=$width*$height*$imagesize['bits']*$imagesize['channels']/8*2; // memory to load original image
+					
+					if (isset($size) && qa_image_constrain($width, $height, $size)) // memory for constrained image
+						$needbytes+=$width*$height*3*2; // *2 here and above based on empirical tests
+				}
+				
+				if ($needbytes>$gotbytes)
+					return sqrt($gotbytes/($needbytes*1.5)); // additional 50% safety margin since JPEG quality may change
+			}
+		}
+		
+		return false;
+	}
+	
 	
 	function qa_image_constrain_data($imagedata, &$width, &$height, $size)
 /*

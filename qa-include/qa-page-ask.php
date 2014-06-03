@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-ask.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Controller for ask-a-question page
 
 
@@ -47,6 +47,9 @@
 		isset($infollow) ? qa_db_full_post_selectspec($qa_login_userid, $infollow) : null,
 		qa_db_popular_tags_selectspec(0, QA_DB_RETRIEVE_COMPLETE_TAGS)
 	);
+	
+	if (!isset($categories[$incategoryid]))
+		$incategoryid=null;
 	
 	if (@$followanswer['basetype']!='A')
 		$followanswer=null;

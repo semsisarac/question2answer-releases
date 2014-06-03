@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-categories.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Controller for admin page for editing categories
 
 
@@ -113,7 +113,8 @@
 
 			if (!$hassubcategory) {
 				$inreassign=qa_get_category_field_value('reassign');
-				qa_db_category_delete($editcategory['categoryid'], $inreassign);
+				qa_db_category_reassign($editcategory['categoryid'], $inreassign);
+				qa_db_category_delete($editcategory['categoryid']);
 				qa_redirect($qa_request, array('recalc' => 1, 'edit' => $editcategory['parentid']));
 			}
 		
@@ -178,7 +179,7 @@
 					$errors['slug']=qa_lang_sub('main/max_length_x', QA_DB_MAX_CAT_PAGE_TAGS_LENGTH);
 				elseif (preg_match('/[\\+\\/]/', $inslug))
 					$errors['slug']=qa_lang_sub('admin/slug_bad_chars', '+ /');
-				elseif ( (!isset($inparentid)) && qa_is_slug_reserved($inslug)) // only top level is a problem
+				elseif ( (!isset($inparentid)) && qa_admin_is_slug_reserved($inslug)) // only top level is a problem
 					$errors['slug']=qa_lang('admin/slug_reserved');
 				elseif (isset($matchcategoryid) && strcmp($matchcategoryid, @$editcategory['categoryid']))
 					$errors['slug']=qa_lang('admin/category_already_used');
@@ -204,7 +205,7 @@
 						$recalc=true;
 					} else {
 						qa_db_category_set_content($editcategory['categoryid'], $incontent);
-						qa_db_category_set_position($editcategory['categoryid'], $editcategory['parentid'], $inposition);
+						qa_db_category_set_position($editcategory['categoryid'], $inposition);
 						$recalc=($hassubcategory && ($inslug !== $editcategory['tags']));
 					}
 					
@@ -216,7 +217,7 @@
 					qa_db_category_set_content($categoryid, $incontent);
 					
 					if (isset($inposition))
-						qa_db_category_set_position($categoryid, $inparentid, $inposition);
+						qa_db_category_set_position($categoryid, $inposition);
 					
 					qa_redirect($qa_request, array('edit' => $inparentid, 'added' => true));
 				}
@@ -380,11 +381,15 @@
 			$qa_content['form']['fields']['questions']=array(
 				'label' => qa_lang_html('admin/total_qs'),
 				'type' => 'static',
-				'value' => qa_html(number_format($editcategory['qcount'])),
+				'value' => '<A HREF="'.qa_path_html('questions/'.qa_category_path_request($categories, $editcategory['categoryid'])).'">'.
+								( ($editcategory['qcount']==1)
+									? qa_lang_html_sub('main/1_question', '1', '1')
+									: qa_lang_html_sub('main/x_questions', number_format($editcategory['qcount']))
+								).'</A>',
 			);
-				
+
 			if ($hassubcategory && !qa_opt('allow_no_sub_category')) {
-				$nosubcount=qa_db_count_categoryid_posts($editcategory['categoryid']);
+				$nosubcount=qa_db_count_categoryid_qs($editcategory['categoryid']);
 				
 				if ($nosubcount)
 					$qa_content['form']['fields']['questions']['error']=
@@ -520,6 +525,11 @@
 			),
 			
 			'buttons' => array(
+				'save' => array(
+					'tags' => 'NAME="dosaveoptions"',
+					'label' => qa_lang_html('main/save_button'),
+				),
+				
 				'add' => array(
 					'tags' => 'NAME="doaddcategory"',
 					'label' => qa_lang_html('admin/add_category_button'),
@@ -551,7 +561,7 @@
 			);
 			
 			if (!qa_opt('allow_no_category')) {
-				$nocatcount=qa_db_count_categoryid_posts(null);
+				$nocatcount=qa_db_count_categoryid_qs(null);
 				
 				if ($nocatcount)
 					$qa_content['form']['fields']['allow_no_category']['error']=
@@ -568,12 +578,9 @@
 				'type' => 'checkbox',
 				'value' => qa_opt('allow_no_sub_category'),
 			);
-			
-			$qa_content['form']['buttons']['save']=array(
-				'tags' => 'NAME="dosaveoptions"',
-				'label' => qa_lang_html('main/save_button'),
-			);
-		}
+
+		} else
+			unset($qa_content['form']['buttons']['save']);
 	}
 
 	if (qa_get('recalc')) {

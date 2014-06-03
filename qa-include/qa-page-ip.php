@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-ip.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Controller for page showing activity for an IP address
 
 
@@ -89,11 +89,7 @@
 			require_once QA_INCLUDE_DIR.'qa-db-admin.php';
 			require_once QA_INCLUDE_DIR.'qa-app-posts.php';
 		
-			$postids=array_merge(
-				qa_db_get_ip_posts($ip, 'C'),
-				qa_db_get_ip_posts($ip, 'A'),
-				qa_db_get_ip_posts($ip, 'Q')
-			);
+			$postids=qa_db_get_ip_visible_postids($ip);
 
 			foreach ($postids as $postid)
 				qa_post_set_hidden($postid, true, $qa_login_userid);

@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-post-update.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description:  Database functions for changing a question, answer or comment
 
 
@@ -57,7 +57,7 @@
 	
 	function qa_db_post_set_parent($postid, $parentid, $lastuserid=null, $lastip=null)
 /*
-	Set the parent in the database of $postid to $parentid, and optioanlly record that $lastuserid did it from $lastip
+	Set the parent in the database of $postid to $parentid, and optioanlly record that $lastuserid did it from $lastip (if at least one is specified)
 */
 	{
 		if (isset($lastuserid) || isset($lastip))
@@ -73,9 +73,10 @@
 	}
 
 	
-	function qa_db_post_set_content($postid, $title, $content, $format, $tagstring, $notify, $lastuserid, $lastip)
+	function qa_db_post_set_content($postid, $title, $content, $format, $tagstring, $notify, $lastuserid=null, $lastip=null)
 /*
-	Set the text fields in the database of $postid to $title, $content, $tagstring and $notify, and record that $lastuserid did it
+	Set the text fields in the database of $postid to $title, $content, $tagstring and $notify, and record
+	that $lastuserid did it from $lastip (if at least one is specified)
 */
 	{
 		if (isset($lastuserid) || isset($lastip))
@@ -105,7 +106,7 @@
 	
 	function qa_db_post_set_category($postid, $categoryid)
 /*
-	Set the category in the database of $postid to $categoryid, and record that $lastuserid did it
+	Set the (exact) category in the database of $postid to $categoryid
 */
 	{
 		qa_db_query_sub(
@@ -117,7 +118,7 @@
 	
 	function qa_db_posts_set_category_path($postids, $path)
 /*
-	Set the category in the database of each of $postids to $categoryid, but don't record it as a user-initiated change
+	Set the category path in the database of each of $postids to $path retrieved via qa_db_post_get_category_path()
 */
 	{
 		if (count($postids))

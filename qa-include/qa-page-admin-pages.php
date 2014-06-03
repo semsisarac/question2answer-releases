@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-pages.php
-	Version: 1.4-beta-1
-	Date: 2011-05-25 07:38:57 GMT
+	Version: 1.4-beta-2
+	Date: 2011-06-02 08:27:10 GMT
 	Description: Controller for admin page for editing custom pages and external links
 
 
@@ -62,7 +62,7 @@
 		
 //	Define an array of navigation settings we can change, option name => language key
 	
-	$hascustomhome=qa_opt('show_custom_home');
+	$hascustomhome=qa_has_custom_home();
 	
 	$navoptions=array(
 		'nav_home' => 'main/nav_home',
@@ -189,7 +189,7 @@
 						$errors['slug']=qa_lang_sub('main/max_length_x', QA_DB_MAX_CAT_PAGE_TAGS_LENGTH);
 					elseif (preg_match('/[\\+\\/]/', $inslug))
 						$errors['slug']=qa_lang_sub('admin/slug_bad_chars', '+ /');
-					elseif (qa_is_slug_reserved($inslug))
+					elseif (qa_admin_is_slug_reserved($inslug))
 						$errors['slug']=qa_lang('admin/slug_reserved');
 					elseif (isset($matchpage) && ($matchpage['pageid']!=@$editpage['pageid']))
 						$errors['slug']=qa_lang('admin/page_already_used');
