@@ -1,14 +1,14 @@
-<?php
+﻿<?php
 
 /*
-	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-util-string.php
-	Version: 1.3.1
-	Date: 2011-02-01 12:56:28 GMT
+	Version: 1.3.2
+	Date: 2011-03-14 09:01:08 GMT
 	Description: Some useful string-related stuff
 
 
@@ -38,6 +38,9 @@
 		
 	define('QA_PREG_BLOCK_WORD_SEPARATOR', '[\n\r\t\ \!\"\\\'\(\)\+\,\.\/\:\;\<\=\>\?\[\\\\\]\^\`\{\|\}\~\$\&\-\_\#\%\@]');
 		// Asterisk (*) excluded here because it's used to match anything
+		
+	define('QA_PREG_CJK_IDEOGRAPHS_UTF8', '\xE2[\xBA-\xBF][\x80-\xBF]|\xE3[\x80\x88-\xBF][\x80-\xBF]|[\xE4-\xE9][\x80-\xBF][\x80-\xBF]|\xEF[\xA4-\xAB][\x80-\xBF]|\xF0[\xA0-\xAF][\x80-\xBF][\x80-\xBF]');
+		// Pattern to match Chinese/Japanese/Korean ideographic symbols in UTF-8 encoding
 	
 	global $qa_utf8punctuation; // we could already be inside a function here
 	
@@ -100,7 +103,7 @@
 	
 	function qa_string_to_words($string, $tolowercase=true, $delimiters=false)
 /*
-	Return the input string converted into an array of words, changed $tolowercase (or not),
+	Return the UTF-8 input string converted into an array of words, changed $tolowercase (or not),
 	and including or not the $delimiters after each word
 */
 	{
@@ -108,11 +111,16 @@
 		
 		$string=strtr($tolowercase ? qa_strtolower($string) : $string, $qa_utf8punctuation);
 		
-		if (!$delimiters)
-			$string=preg_replace("/(\S)'(\S)/", '\1\2', $string); // remove apostrophes in words
+		if ($delimiters) {
+			$separator=QA_PREG_INDEX_WORD_SEPARATOR.'|'.QA_PREG_CJK_IDEOGRAPHS_UTF8;
 		
-		return preg_split('/('.QA_PREG_INDEX_WORD_SEPARATOR.'+)/', $string, -1,
-			PREG_SPLIT_NO_EMPTY | ($delimiters ? PREG_SPLIT_DELIM_CAPTURE : 0));
+		} else {
+			$string=preg_replace("/(\S)'(\S)/", '\1\2', $string); // remove apostrophes in words
+			$string=preg_replace('/'.QA_PREG_CJK_IDEOGRAPHS_UTF8.'/', ' \0 ', $string); // put spaces around CJK ideographs so they're treated as separate words
+			$separator=QA_PREG_INDEX_WORD_SEPARATOR;
+		}
+		
+		return preg_split('/('.$separator.'+)/', $string, -1, PREG_SPLIT_NO_EMPTY | ($delimiters ? PREG_SPLIT_DELIM_CAPTURE : 0));
 	}
 
 	

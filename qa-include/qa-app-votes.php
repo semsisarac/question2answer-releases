@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-votes.php
-	Version: 1.3.1
-	Date: 2011-02-01 12:56:28 GMT
+	Version: 1.3.2
+	Date: 2011-03-14 09:01:08 GMT
 	Description: Handling incoming votes (application level)
 
 
@@ -37,7 +37,6 @@
 	Return an error to display if there was a problem, or false if all went smoothly.
 */
 	{
-		require_once QA_INCLUDE_DIR.'qa-db.php';
 		require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 		require_once QA_INCLUDE_DIR.'qa-app-users.php';

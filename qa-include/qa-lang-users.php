@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-users.php
-	Version: 1.3.1
-	Date: 2011-02-01 12:56:28 GMT
+	Version: 1.3.2
+	Date: 2011-03-14 09:01:08 GMT
 	Description: Language phrases for user management
 
 

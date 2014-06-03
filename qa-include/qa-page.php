@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page.php
-	Version: 1.3.1
-	Date: 2011-02-01 12:56:28 GMT
+	Version: 1.3.2
+	Date: 2011-03-14 09:01:08 GMT
 	Description: Routing and utility functions for page requests
 
 
@@ -264,6 +264,12 @@
 			qa_usage_mark('control');
 		
 		$qa_content=array(
+			'content_type' => 'text/html; charset=utf-8',
+			
+			'site_title' => qa_html(qa_opt('site_title')),
+			
+			'head_lines' => array(),
+			
 			'navigation' => array(
 				'user' => array(),
 
@@ -282,7 +288,16 @@
 			
 			'sidepanel' => qa_opt('show_custom_sidepanel') ? qa_opt('custom_sidepanel') : null,
 		);
+
+		if (qa_opt('show_custom_in_head'))
+			$qa_content['head_lines'][]=qa_opt('custom_in_head');
 		
+		if (qa_opt('show_custom_header'))
+			$qa_content['custom_header']=qa_opt('custom_header');
+	
+		if (qa_opt('show_custom_footer'))
+			$qa_content['custom_footer']=qa_opt('custom_footer');
+
 		if (isset($categoryid))
 			$qa_content['categoryid']=$categoryid;
 		
@@ -607,53 +622,18 @@
 		}
 	
 	
-	//	Load the appropriate theme class
+	//	Combine various Javascript elements in $qa_content into single array for theme layer
 	
-		$themeclass=qa_load_theme_class(qa_opt('site_theme'), $qa_template, $qa_content, $qa_request);
-	
-	
-	//	Set HTTP header and output start of HTML document
-			
-		header('Content-type: text/html; charset=utf-8');
+		$script=array('<SCRIPT TYPE="text/javascript"><!--');
 		
-		$themeclass->doctype();
-		$themeclass->output(
-			'<HTML>',
-			'<!-- Powered by Question2Answer - http://www.question2answer.org/ -->'
-		);
-	
-	
-	//	Output <HEAD> section, mainly a bunch of dynamic JavaScripts
-			
-		$themeclass->output(
-			'<HEAD>',
-			'<META HTTP-EQUIV="Content-type" CONTENT="text/html; charset=utf-8"/>',
-			'<TITLE>'.((empty($qa_content['title']) || empty($qa_request)) ? '' : (strip_tags($qa_content['title']).' - ')).qa_html(qa_opt('site_title')).'</TITLE>'
-		);
-		
-		if (!empty($qa_content['description']))
-			$themeclass->output('<META NAME="description" CONTENT="'.$qa_content['description'].'"/>');
-		
-		if (!empty($qa_content['keywords']))
-			$themeclass->output('<META NAME="keywords" CONTENT="'.$qa_content['keywords'].'"/>');
-				// as far as I know, META keywords have zero effect on search rankings or listings
-				
-		if (!empty($qa_content['canonical']))
-			$themeclass->output('<LINK REL="canonical" HREF="'.$qa_content['canonical'].'"/>');
-			
-		if (!empty($qa_content['feed']['url']))
-			$themeclass->output('<LINK REL="alternate" TYPE="application/rss+xml" HREF="'.$qa_content['feed']['url'].'" TITLE="'.@$qa_content['feed']['label'].'"/>');
-			
-		$themeclass->output('<SCRIPT TYPE="text/javascript"><!--');
-	
 		if (isset($qa_content['script_var']))
 			foreach ($qa_content['script_var'] as $var => $value)
-				$themeclass->output('var '.$var.'='.qa_js($value).';');
-		
+				$script[]='var '.$var.'='.qa_js($value).';';
+				
 		if (isset($qa_content['script_lines']))
-			foreach ($qa_content['script_lines'] as $script) {
-				$themeclass->output('');
-				$themeclass->output_array($script);
+			foreach ($qa_content['script_lines'] as $scriptlines) {
+				$script[]='';
+				$script=array_merge($script, $scriptlines);
 			}
 			
 		if (isset($qa_content['focusid']))
@@ -666,7 +646,7 @@
 			);
 			
 		if (isset($qa_content['script_onloads'])) {
-			$themeclass->output(
+			array_push($script,
 				'',
 				'var qa_oldonload=window.onload;',
 				'window.onload=function() {',
@@ -674,67 +654,37 @@
 				"\t\tqa_oldonload();"
 			);
 			
-			foreach ($qa_content['script_onloads'] as $script) {
-				$themeclass->output("\t");
+			foreach ($qa_content['script_onloads'] as $scriptonload) {
+				$script[]="\t";
 				
-				foreach ((array)$script as $scriptline)
-					$themeclass->output("\t".$scriptline);
+				foreach ((array)$scriptonload as $scriptline)
+					$script[]="\t".$scriptline;
 			}
 	
-			$themeclass->output('}');
+			$script[]='}';
 		}
-	
-		$themeclass->output('--></SCRIPT>');
+		
+		$script[]='--></SCRIPT>';
 		
 		if (isset($qa_content['script_rel']))
 			foreach ($qa_content['script_rel'] as $script_rel)
-				$themeclass->output('<SCRIPT SRC="'.qa_html($qa_root_url_relative.$script_rel).'" TYPE="text/javascript"></SCRIPT>');
+				$script[]='<SCRIPT SRC="'.qa_html($qa_root_url_relative.$script_rel).'" TYPE="text/javascript"></SCRIPT>';
 	
 		if (isset($qa_content['script_src']))
 			foreach ($qa_content['script_src'] as $script_src)
-				$themeclass->output('<SCRIPT SRC="'.qa_html($script_src).'" TYPE="text/javascript"></SCRIPT>');
+				$script[]='<SCRIPT SRC="'.qa_html($script_src).'" TYPE="text/javascript"></SCRIPT>';
 	
-		$themeclass->head_css();
-		$themeclass->head_custom();
+		$qa_content['script']=$script;
 		
-		if (isset($qa_content['css_src']))
-			foreach ($qa_content['css_src'] as $css_src)
-				$themeclass->output('<LINK REL="stylesheet" TYPE="text/css" HREF="'.$css_src.'"/>');
+	
+	//	Load the appropriate theme class and output the page
+	
+		$themeclass=qa_load_theme_class(qa_opt('site_theme'), $qa_template, $qa_content, $qa_request);
+	
+		header('Content-type: '.$qa_content['content_type']);
 		
-		if (isset($qa_content['head_lines']))
-			foreach ($qa_content['head_lines'] as $line)
-				$themeclass->output_raw($line);
-	
-		if (qa_opt('show_custom_in_head'))
-			$themeclass->output_raw(qa_opt('custom_in_head'));
-	
-		$themeclass->output('</HEAD>');
-	
-		
-	//	Output <BODY> section
-	
-		$themeclass->output('<BODY');
-		$themeclass->body_tags();
-		$themeclass->output('>');
-	
-		if (qa_opt('show_custom_header'))
-			$themeclass->output_raw(qa_opt('custom_header'));
-	
-		$themeclass->body_content();
-	
-		if (qa_opt('show_custom_footer'))
-			$themeclass->output_raw(qa_opt('custom_footer'));
-	
-		$themeclass->output('</BODY>');
-	
-	
-	//	Output end of HTML document and let theme do any clearing up
-		
-		$themeclass->output(
-			'<!-- Powered by Question2Answer - http://www.question2answer.org/ -->',
-			'</HTML>'
-		);
-	
+		$themeclass->doctype();
+		$themeclass->html();
 		$themeclass->finish();
 	
 				

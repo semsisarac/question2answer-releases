@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-account.php
-	Version: 1.3.1
-	Date: 2011-02-01 12:56:28 GMT
+	Version: 1.3.2
+	Date: 2011-03-14 09:01:08 GMT
 	Description: Controller for user account page
 
 
@@ -141,7 +141,8 @@
 			
 		if (empty($errors)) {
 			qa_db_user_set_password($qa_login_userid, $innewpassword1);
-			unset($inoldpassword);
+			qa_db_user_set($qa_login_userid, 'sessioncode', ''); // stop old 'Remember me' style logins from still working
+			qa_set_logged_in_user($qa_login_userid, $useraccount['handle'], false, $useraccount['sessionsource']); // reinstate this specific session
 			qa_redirect('account', array('state' => 'password-changed'));
 		}
 	}

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users.php
-	Version: 1.3.1
-	Date: 2011-02-01 12:56:28 GMT
+	Version: 1.3.2
+	Date: 2011-03-14 09:01:08 GMT
 	Description: User management (application level) for basic user operations
 
 
@@ -144,17 +144,26 @@
 				// Logging in from a second browser will make the previous browser's 'Remember me' no longer
 				// work - I'm not sure if this is the right behavior - could see it either way.
 
-				$sessioncode=qa_db_user_rand_sessioncode();
-				qa_db_user_set($userid, 'sessioncode', $sessioncode);
-				qa_db_user_set($userid, 'sessionsource', $source);
+				require_once QA_INCLUDE_DIR.'qa-db-selects.php';
+				
+				$userinfo=qa_db_single_select(qa_db_user_account_selectspec($userid, true));
+				
+				// if we have logged in before, and are logging in the same way as before, we don't need to change the sessioncode/source
+				// this means it will be possible to automatically log in (via cookies) to the same account from more than one browser
+				
+				if (empty($userinfo['sessioncode']) || ($source!==$userinfo['sessionsource'])) {
+					$sessioncode=qa_db_user_rand_sessioncode();
+					qa_db_user_set($userid, 'sessioncode', $sessioncode);
+					qa_db_user_set($userid, 'sessionsource', $source);
+				} else
+					$sessioncode=$userinfo['sessioncode'];
+				
 				qa_db_user_logged_in($userid, @$_SERVER['REMOTE_ADDR']);
 				qa_set_session_cookie($handle, $sessioncode, $remember);
 				
 			} else {
 				require_once QA_INCLUDE_DIR.'qa-db-users.php';
 
-				qa_db_user_set($_SESSION['qa_session_userid'], 'sessioncode', '');
-				qa_db_user_set($_SESSION['qa_session_userid'], 'sessionsource', '');
 				qa_clear_session_cookie();
 
 				unset($_SESSION['qa_session_userid']);
@@ -198,7 +207,7 @@
 				$profilefields=array('name', 'location', 'website', 'about');
 				
 				foreach ($profilefields as $fieldname)
-					if (strlen($fields[$fieldname]))
+					if (strlen(@$fields[$fieldname]))
 						qa_db_user_profile_set($userid, $fieldname, $fields[$fieldname]);
 						
 				if (strlen(@$fields['avatar']))

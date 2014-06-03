@@ -6,22 +6,26 @@ Question2Answer_ (Q2A) is a popular open source Q&A platform for PHP/MySQL.
 --------------
 Release Notes
 --------------
-Version 1.3.1
+Version 1.3.2
 
-- Source changes to help theme and plugin developers, plus a few bug fixes, 1st February 2011.
-
-**Source Code Changes**
-
-- Added CSS classes to <BODY> tag to allow per-category and per-template styling.
-- Added extra CSS class to answers count box if a best answer has been selected.
-- Pass the level (e.g. editor) of users to the theme layer for use by advanced themes.
-- Allow page and editor modules to add CSS files or other HTML tags in the <HEAD> of a page.
+- Small improvements and bug fixes plus more changes for theme and plugin developers, 14th March 2011.
 
 **Bug Fixes**
 
-- HTML sanitizer now allows Flash content (e.g. YouTube movies added via WYSIWYG editor).
-- Users who log in via an external identity provider now have their last login time updated.
-- Set the locale so that strtolower() doesn't break UTF-8 characters under Windows/IIS.
+- Fixed Facebook Login plugin which was retrieving partial user details after change in Facebook API.
+- Worked around MySQL bug which caused truncation of long usernames containing non-ASCII characters.
+
+**Other Changes**
+
+- Identify Chinese, Japanese and Korean (CJK) ideographs as separate words for indexing and searching.
+- Allow automatic login ('Remember me') to the same account from multiple browsers.
+- Searching by username now works with multi-word usernames, if the search query contains nothing else.
+
+**Source Code Changes**
+
+- All HTML is output from within the theme class, to allow full control by custom themes.
+- External PHP code no longer needs to define QA_BASE_DIR or call qa_base_db_connect().
+- An error failure handler is no longer required to connect to the database (default automatically used).
 
 
 

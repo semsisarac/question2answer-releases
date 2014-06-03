@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-selects.php
-	Version: 1.3.1
-	Date: 2011-02-01 12:56:28 GMT
+	Version: 1.3.2
+	Date: 2011-03-14 09:01:08 GMT
 	Description: Builders of selectspec arrays (see qa-db.php) used to specify database SELECTs
 
 
@@ -127,14 +127,14 @@
 				$selectspec['columns'][]='^users.flags';
 				$selectspec['columns'][]='^users.level';
 				$selectspec['columns']['email']='BINARY ^users.email';
-				$selectspec['columns']['handle']='BINARY ^users.handle';
+				$selectspec['columns']['handle']='CONVERT(^users.handle USING BINARY)'; // because of MySQL bug #29205
 				$selectspec['columns'][]='^users.avatarblobid';
 				$selectspec['columns'][]='^users.avatarwidth';
 				$selectspec['columns'][]='^users.avatarheight';
 				$selectspec['source'].=' LEFT JOIN ^users ON ^posts.userid=^users.userid';
 				
 				if ($full) {
-					$selectspec['columns']['lasthandle']='BINARY lastusers.handle';
+					$selectspec['columns']['lasthandle']='CONVERT(lastusers.handle USING BINARY)'; // because of MySQL bug #29205
 					$selectspec['source'].=' LEFT JOIN ^users AS lastusers ON ^posts.lastuserid=lastusers.userid';
 				}
 			}
@@ -228,7 +228,7 @@
 			$selectspec['columns']['oflags']='ausers.flags';
 			$selectspec['columns']['olevel']='ausers.level';
 			$selectspec['columns']['oemail']='BINARY ausers.email';
-			$selectspec['columns']['ohandle']='BINARY ausers.handle';
+			$selectspec['columns']['ohandle']='CONVERT(ausers.handle USING BINARY)'; // because of MySQL bug #29205
 			$selectspec['columns']['oavatarblobid']='BINARY ausers.avatarblobid'; // cast to BINARY due to MySQL bug which renders it signed in a union
 			$selectspec['columns']['oavatarwidth']='ausers.avatarwidth';
 			$selectspec['columns']['oavatarheight']='ausers.avatarheight';
@@ -288,7 +288,7 @@
 			$selectspec['columns']['oflags']='cusers.flags';
 			$selectspec['columns']['olevel']='cusers.level';
 			$selectspec['columns']['oemail']='BINARY cusers.email';
-			$selectspec['columns']['ohandle']='BINARY cusers.handle';
+			$selectspec['columns']['ohandle']='CONVERT(cusers.handle USING BINARY)'; // because of MySQL bug #29205
 			$selectspec['columns']['oavatarblobid']='BINARY cusers.avatarblobid'; // cast to BINARY due to MySQL bug which renders it signed in a union
 			$selectspec['columns']['oavatarwidth']='cusers.avatarwidth';
 			$selectspec['columns']['oavatarheight']='cusers.avatarheight';
@@ -350,8 +350,8 @@
 			$selectspec['columns']['oflags']='editusers.flags';
 			$selectspec['columns']['olevel']='editusers.level';
 			$selectspec['columns']['oemail']='BINARY editusers.email';
-			$selectspec['columns']['ohandle']='BINARY editusers.handle';
-			$selectspec['columns']['oavatarblobid']='BINARY editusers.avatarblobid'; // // cast to BINARY due to MySQL bug which renders it signed in a union
+			$selectspec['columns']['ohandle']='CONVERT(editusers.handle USING BINARY)'; // because of MySQL bug #29205
+			$selectspec['columns']['oavatarblobid']='BINARY editusers.avatarblobid'; // cast to BINARY due to MySQL bug which renders it signed in a union
 			$selectspec['columns']['oavatarwidth']='editusers.avatarwidth';
 			$selectspec['columns']['oavatarheight']='editusers.avatarheight';
 		}
@@ -467,18 +467,18 @@
 	}
 	
 
-	function qa_db_search_posts_selectspec($voteuserid, $titlewords, $contentwords, $tagwords, $handlewords, $start, $full=false, $count=QA_DB_RETRIEVE_QS_AS)
+	function qa_db_search_posts_selectspec($voteuserid, $titlewords, $contentwords, $tagwords, $handlewords, $handle, $start, $full=false, $count=QA_DB_RETRIEVE_QS_AS)
 /*
 	Return the selectspec to retrieve the $count top question matches, starting from the offset $start,
 	with the corresponding vote made by $voteuserid (if not null) and including $full content or not.
 	The search is performed for any of $titlewords in the title, $contentwords in the content (of the
-	question or an answer or comment for whom that is the antecedent question), $tagwords in tags, and
-	for question author usernames which match a word in $handlewords (so this won't help find a question
-	by an author with a handle that contains more than one word). The results also include a 'score' column
-	based on the matching strength, and a 'matchparts' column that tells us where the score came from
-	(since a question could get weight from a match in the question itself, and/or weight from a match in
-	its answers, comments, or comments on answers). The 'matchparts' is a comma-separated list of tuples
-	matchtype:matchpostid:matchscore to be used with qa_search_max_match_anchor().
+	question or an answer or comment for whom that is the antecedent question), $tagwords in tags, for
+	question author usernames which match a word in $handlewords or which match $handle as a whole.
+	The results also include a 'score' column based on the matching strength, and a 'matchparts' column
+	that tells us where the score came from (since a question could get weight from a match in the
+	question itself, and/or weight from a match in its answers, comments, or comments on answers).
+	The 'matchparts' is a comma-separated list of tuples matchtype:matchpostid:matchscore to be used
+	with qa_search_max_match_anchor().
 */
 	{
 		// add LOG(postid)/1000000 here to ensure ordering is deterministic even if several posts have same score
@@ -540,6 +540,26 @@
 					"(SELECT postid AS questionid, LOG(#/qposts) AS score, _utf8 'Q' AS matchposttype, postid AS matchpostid FROM ^posts JOIN ^users ON ^posts.userid=^users.userid JOIN ^userpoints ON ^userpoints.userid=^users.userid WHERE handle IN ($) AND type='Q')";
 
 				array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $handlewords);
+			}
+		}
+		
+		if (strlen($handle)) { // to allow searching for multi-word usernames (only works if search query contains full username and nothing else)
+			if (QA_EXTERNAL_USERS) {
+				$userids=qa_get_userids_from_public(array($handle));
+				$userid=@$userids[$handle];
+				
+				if (strlen($userid)) {
+					$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
+						"(SELECT postid AS questionid, LOG(#/qposts) AS score, _utf8 'Q' AS matchposttype, postid AS matchpostid FROM ^posts JOIN ^userpoints ON ^posts.userid=^userpoints.userid WHERE ^posts.userid=$ AND type='Q')";
+					
+					array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $userid);
+				}
+
+			} else {
+				$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
+					"(SELECT postid AS questionid, LOG(#/qposts) AS score, _utf8 'Q' AS matchposttype, postid AS matchpostid FROM ^posts JOIN ^users ON ^posts.userid=^users.userid JOIN ^userpoints ON ^userpoints.userid=^users.userid WHERE handle=$ AND type='Q')";
+
+				array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $handle);
 			}
 		}
 		
@@ -789,7 +809,8 @@
 	{
 		return array(
 			'columns' => array(
-				'userid', 'passsalt', 'passcheck' => 'HEX(passcheck)', 'email' => 'BINARY email', 'level', 'handle' => 'BINARY handle', 'emailcode',
+				'userid', 'passsalt', 'passcheck' => 'HEX(passcheck)', 'email' => 'BINARY email', 'level', 'emailcode',
+				'handle' => 'CONVERT(handle USING BINARY)', // because of MySQL bug #29205
 				'created' => 'UNIX_TIMESTAMP(created)', 'sessioncode', 'sessionsource', 'flags', 'loggedin' => 'UNIX_TIMESTAMP(loggedin)',
 				'loginip' => 'INET_NTOA(loginip)', 'written' => 'UNIX_TIMESTAMP(written)', 'writeip' => 'INET_NTOA(writeip)',
 				'avatarblobid', 'avatarwidth', 'avatarheight'
@@ -866,7 +887,7 @@
 		
 		else
 			return array(
-				'columns' => array('^users.userid', 'handle' => 'BINARY handle', 'points', 'flags', 'email' => 'BINARY ^users.email', 'avatarblobid', 'avatarwidth', 'avatarheight'),
+				'columns' => array('^users.userid', 'handle' => 'CONVERT(handle USING BINARY)', 'points', 'flags', 'email' => 'BINARY ^users.email', 'avatarblobid', 'avatarwidth', 'avatarheight'),
 				'source' => '^users JOIN (SELECT userid FROM ^userpoints ORDER BY points DESC LIMIT #,#) y ON ^users.userid=y.userid JOIN ^userpoints ON ^users.userid=^userpoints.userid',
 				'arguments' => array($start, $count),
 				'arraykey' => 'userid',
@@ -881,7 +902,7 @@
 */
 	{
 		return array(
-			'columns' => array('^users.userid', 'handle' => 'BINARY handle', 'level'),
+			'columns' => array('^users.userid', 'handle' => 'CONVERT(handle USING BINARY)', 'level'),
 			'source' => '^users WHERE level>=# ORDER BY level DESC',
 			'arguments' => array($level),
 			'sortdesc' => 'level',
@@ -895,7 +916,7 @@
 */
 	{
 		return array(
-			'columns' => array('^users.userid', 'handle' => 'BINARY handle', 'flags', 'level'),
+			'columns' => array('^users.userid', 'handle' => 'CONVERT(handle USING BINARY)', 'flags', 'level'),
 			'source' => '^users WHERE (flags & #)',
 			'arguments' => array($flag),
 		);

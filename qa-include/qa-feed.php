@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-feed.php
-	Version: 1.3.1
-	Date: 2011-02-01 12:56:28 GMT
+	Version: 1.3.2
+	Date: 2011-03-14 09:01:08 GMT
 	Description: Handles all requests to RSS feeds, first checking if they should be available
 
 
@@ -233,7 +233,7 @@
 			$words=qa_string_to_words($query);
 
 			qa_feed_load_ifcategory(null, null,
-				qa_db_search_posts_selectspec(null, $words, $words, $words, $words, 0, $full, $count)
+				qa_db_search_posts_selectspec(null, $words, $words, $words, $words, trim($query), 0, $full, $count)
 			);
 		
 			$title=qa_lang_sub('main/results_for_x', $query);
@@ -242,8 +242,6 @@
 			break;
 	}
 
-	qa_base_db_disconnect(); // disconnect as quickly as possible to free up resources
-	
 
 //	Remove duplicate questions (perhaps referenced in an answer and a comment) and cut down to size
 	
@@ -255,6 +253,11 @@
 	
 	$questions=array_slice($questions, 0, $count);
 	$blockwordspreg=qa_get_block_words_preg();
+
+
+//	Disconnect as quickly as possible to free up resources
+
+	qa_base_db_disconnect();
 
 
 //	Prepare the XML output

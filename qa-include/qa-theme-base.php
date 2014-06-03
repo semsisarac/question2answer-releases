@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-theme-base.php
-	Version: 1.3.1
-	Date: 2011-02-01 12:56:28 GMT
+	Version: 1.3.2
+	Date: 2011-03-14 09:01:08 GMT
 	Description: Default theme class, broken into lots of little functions for easy overriding
 
 
@@ -139,28 +139,122 @@
 		}
 
 		
-	//	From here on, we have a large number of class methods which output particular pieces of HTML markup
-	//	The calling chain is initiated from qa-index.php, or qa-ajax-vote.php for refreshing the voting box
-	//	For most HTML elements, the name of the function is similar to the element's CSS class, for example:
-	//	search() outputs <DIV CLASS="qa-search">, q_list() outputs <DIV CLASS="qa-q-list">, etc...
-
 		function doctype()
 		{
 			$this->output('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">');
 		}
 		
+	//	From here on, we have a large number of class methods which output particular pieces of HTML markup
+	//	The calling chain is initiated from qa-index.php, or qa-ajax-vote.php for refreshing the voting box
+	//	For most HTML elements, the name of the function is similar to the element's CSS class, for example:
+	//	search() outputs <DIV CLASS="qa-search">, q_list() outputs <DIV CLASS="qa-q-list">, etc...
+
+		function html()
+		{
+			$this->output(
+				'<HTML>',
+				'<!-- Powered by Question2Answer - http://www.question2answer.org/ -->'
+			);
+			
+			$this->head();
+			$this->body();
+			
+			$this->output(
+				'<!-- Powered by Question2Answer - http://www.question2answer.org/ -->',
+				'</HTML>'
+			);
+		}
+		
+		function head()
+		{
+			$this->output(
+				'<HEAD>',
+				'<META HTTP-EQUIV="Content-type" CONTENT="'.$this->content['content_type'].'"/>'
+			);
+			
+			$this->head_title();
+			$this->head_metas();
+			$this->head_links();
+			$this->head_script();
+			$this->head_css();
+			$this->head_lines();
+			$this->head_custom();
+			
+			$this->output('</HEAD>');
+		}
+		
+		function head_title()
+		{
+			$pagetitle=strlen($this->request) ? strip_tags(@$this->content['title']) : '';
+			$headtitle=(strlen($pagetitle) ? ($pagetitle.' - ') : '').$this->content['site_title'];
+			
+			$this->output('<TITLE>'.$headtitle.'</TITLE>');
+		}
+		
+		function head_metas()
+		{
+			if (strlen(@$this->content['description']))
+				$this->output('<META NAME="description" CONTENT="'.$this->content['description'].'"/>');
+			
+			if (strlen(@$this->content['keywords'])) // as far as I know, META keywords have zero effect on search rankings or listings
+				$this->output('<META NAME="keywords" CONTENT="'.$this->content['keywords'].'"/>');
+		}
+		
+		function head_links()
+		{
+			if (isset($this->content['canonical']))
+				$this->output('<LINK REL="canonical" HREF="'.$this->content['canonical'].'"/>');
+				
+			if (isset($this->content['feed']['url']))
+				$this->output('<LINK REL="alternate" TYPE="application/rss+xml" HREF="'.$this->content['feed']['url'].'" TITLE="'.@$this->content['feed']['label'].'"/>');
+		}
+		
+		function head_script()
+		{
+			if (isset($this->content['script']))
+				$this->output_array($this->content['script']);
+		}
+		
 		function head_css()
 		{
 			$this->output('<LINK REL="stylesheet" TYPE="text/css" HREF="'.$this->rooturl.$this->css_name().'"/>');
+			
+			if (isset($this->content['css_src']))
+				foreach ($this->content['css_src'] as $css_src)
+					$this->output('<LINK REL="stylesheet" TYPE="text/css" HREF="'.$css_src.'"/>');
 		}
 		
 		function css_name()
 		{
 			return 'qa-styles.css?'.QA_VERSION;
 		}
+		
+		function head_lines()
+		{
+			if (isset($this->content['head_lines']))
+				foreach ($this->content['head_lines'] as $line)
+					$this->output_raw($line);
+		}
 
 		function head_custom()
 		{} // abstract method
+		
+		function body()
+		{
+			$this->output('<BODY');
+			$this->body_tags();
+			$this->output('>');
+			
+			if (isset($this->content['custom_header']))
+				$this->output_raw($this->content['custom_header']);
+				
+			$this->body_content();
+			
+			if (isset($this->content['custom_footer']))
+				$this->output_raw($this->content['custom_footer']);
+				
+			$this->output('</BODY>');
+		}
 		
 		function body_content()
 		{

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/facebook-login/qa-facebook-login.php
-	Version: 1.3.1
-	Date: 2011-02-01 12:56:28 GMT
+	Version: 1.3.2
+	Date: 2011-03-14 09:01:08 GMT
 	Description: Login module class for Facebook login plugin
 
 
@@ -66,7 +66,7 @@
 						$payload.=$key.'='.$value;
 						
 				if (md5($payload.qa_opt('facebook_app_secret'))==$args['sig']) {
-					$rawuser=qa_retrieve_url('https://graph.facebook.com/me?access_token='.$args['access_token'].'&fields=picture');
+					$rawuser=qa_retrieve_url('https://graph.facebook.com/me?access_token='.$args['access_token'].'&fields=email,name,verified,location,website,about,picture');
 					
 					if (strlen($rawuser)) {
 						require_once $this->directory.'JSON.php';
@@ -112,7 +112,7 @@
 		window.location=<?php echo qa_js($tourl)?>;
 	});
 </script>
-<fb:login-button perms="email,user_about_me,user_website"></fb:login-button>
+<fb:login-button perms="email,user_about_me,user_location,user_website"></fb:login-button>
 <?php
 
 		}

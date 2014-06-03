@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db.php
-	Version: 1.3.1
-	Date: 2011-02-01 12:56:28 GMT
+	Version: 1.3.2
+	Date: 2011-03-14 09:01:08 GMT
 	Description: Common functions for connecting to and accessing database
 
 
@@ -34,9 +34,9 @@
 	$qa_db=null;
 	
 	
-	function qa_db_connect($failhandler)
+	function qa_db_connect($failhandler=null)
 /*
-	Connect to the QA database, select the right database, install the $failhandler (and call it if necessary)
+	Connect to the QA database, select the right database, optionally install the $failhandler (and call it if necessary)
 */
 	{
 		global $qa_db, $qa_db_fail_handler;
@@ -52,23 +52,48 @@
 			if (is_resource($db)) {
 				if (!mysql_select_db(QA_MYSQL_DATABASE, $db)) {
 					mysql_close($db);
-					$qa_db_fail_handler('select');
+					qa_db_fail_error('select');
 				}
 					
 			} else
-				$qa_db_fail_handler('connect');
+				qa_db_fail_error('connect');
 		
 			$qa_db=$db;
 		}
 	}
 	
 	
+	function qa_db_fail_error($type, $errno=null, $error=null, $query=null)
+/*
+	If a DB error occurs, call the installed fail handler (if any) otherwise report error and exit immediately
+*/
+	{
+		global $qa_db_fail_handler;
+		
+		if (function_exists($qa_db_fail_handler))
+			$qa_db_fail_handler($type, $errno, $error, $query);
+		
+		else {
+			echo '<HR><FONT COLOR="red">Database '.htmlspecialchars($type.' error '.$errno).'<P>'.nl2br(htmlspecialchars($error."\n\n".$query));
+			exit;
+		}
+	}
+
+	
 	function qa_db_connection()
 /*
-	Return the current connection to the QA database, if any
+	Return the current connection to the QA database, connecting if necessary with default fail handler
 */
 	{
 		global $qa_db;
+		
+		if (!is_resource($qa_db)) {
+			qa_db_connect();
+			
+			if (!is_resource($qa_db))
+				qa_fatal_error('Failed to connect to database');
+		}
+		
 		return $qa_db;
 	}
 
@@ -96,16 +121,13 @@
 	If appropriate, also track the resources used by database queries, and the queries themselves, for performance debugging.
 */
 	{
-		global $qa_db, $qa_db_fail_handler;
-		
-		if (!is_resource($qa_db))
-			qa_fatal_error('Trying to run query before connecting to database');
+		$db=qa_db_connection();
 		
 		if (QA_DEBUG_PERFORMANCE) {
 			global $qa_database_usage, $qa_database_queries;
 			
 			$oldtime=array_sum(explode(' ', microtime()));
-			$result=mysql_query($query, $qa_db);
+			$result=mysql_query($query, $db);
 			$usedtime=array_sum(explode(' ', microtime()))-$oldtime;
 
 			if (is_array($qa_database_usage)) {
@@ -118,10 +140,10 @@
 			}
 		
 		} else
-			$result=mysql_query($query, $qa_db);
+			$result=mysql_query($query, $db);
 	
 		if ($result===false)
-			$qa_db_fail_handler('query', mysql_errno($qa_db), mysql_error($qa_db), $query);
+			qa_db_fail_error('query', mysql_errno($db), mysql_error($db), $query);
 			
 		return $result;
 	}
@@ -132,12 +154,7 @@
 	Return $string escaped for use in queries to the QA database (to which a connection must have been made)
 */
 	{
-		global $qa_db;
-		
-		if (!is_resource($qa_db))
-			qa_fatal_error('Called qa_db_escape() before connecting to database');
-		
-		return mysql_real_escape_string($string, $qa_db);
+		return mysql_real_escape_string($string, qa_db_connection());
 	}
 
 	
@@ -237,9 +254,7 @@
 	For the previous INSERT ... ON DUPLICATE KEY UPDATE query, return whether an insert operation took place
 */
 	{
-		global $qa_db;
-		
-		return mysql_affected_rows($qa_db)==1;
+		return mysql_affected_rows(qa_db_connection())==1;
 	}
 
 	

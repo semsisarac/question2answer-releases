@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-ask.php
-	Version: 1.3.1
-	Date: 2011-02-01 12:56:28 GMT
+	Version: 1.3.2
+	Date: 2011-03-14 09:01:08 GMT
 	Description: Controller for ask-a-question page
 
 
@@ -153,7 +153,7 @@
 			
 				if ($countqs)
 					$relatedquestions=qa_db_select_with_pending(
-						qa_db_search_posts_selectspec($qa_login_userid, qa_string_to_words($intitle), null, null, null, 0, false, $countqs)
+						qa_db_search_posts_selectspec($qa_login_userid, qa_string_to_words($intitle), null, null, null, null, 0, false, $countqs)
 					);
 					
 

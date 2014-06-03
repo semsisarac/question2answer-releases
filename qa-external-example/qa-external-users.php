@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.1 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-external-example/qa-external-users.php
-	Version: 1.3.1
-	Date: 2011-02-01 12:56:28 GMT
+	Version: 1.3.2
+	Date: 2011-03-14 09:01:08 GMT
 	Description: Example of how to integrate with your own user database
 
 
@@ -68,9 +68,9 @@
 	/*
 		Example 2 - suitable if:
 		
-		* You use unsigned numerical user identifiers in an UNSIGNED INT column
+		* You use unsigned numerical user identifiers in an INT UNSIGNED column
 		
-		return 'UNSIGNED INT';
+		return 'INT UNSIGNED';
 	*/
 	}
 
