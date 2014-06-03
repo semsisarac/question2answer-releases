@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Common functions for creating theme-ready structures from data
 
 
@@ -193,10 +193,10 @@
 	//	High level information
 
 		$fields['hidden']=$post['hidden'];
-		$fields['tags']=' ID="'.$anchor.'" ';
+		$fields['tags']='ID="'.$anchor.'"';
 		
 		if ($microformats)
-			$fields['classes']=' hentry '.($isquestion ? 'question' : ($isanswer ? ($isselected ? 'answer answer-selected' : 'answer') : 'comment'));
+			$fields['classes']='hentry '.($isquestion ? 'question' : ($isanswer ? ($isselected ? 'answer answer-selected' : 'answer') : 'comment'));
 	
 	//	Question-specific stuff (title, URL, tags, answer count, category)
 	
@@ -321,38 +321,38 @@
 		
 		//	Voting buttons
 			
-			$fields['vote_tags']=' ID="voting_'.qa_html($postid).'" ';
-			$onclick='onClick="return qa_vote_click(this);" ';
+			$fields['vote_tags']='ID="voting_'.qa_html($postid).'"';
+			$onclick='onClick="return qa_vote_click(this);"';
 			
 			if ($fields['hidden']) {
 				$fields['vote_state']='disabled';
-				$fields['vote_up_tags']=' TITLE="'.qa_lang_html($isanswer ? 'main/vote_disabled_hidden_a' : 'main/vote_disabled_hidden_q').'" ';
+				$fields['vote_up_tags']='TITLE="'.qa_lang_html($isanswer ? 'main/vote_disabled_hidden_a' : 'main/vote_disabled_hidden_q').'"';
 				$fields['vote_down_tags']=$fields['vote_up_tags'];
 			
 			} elseif ($isbyuser) {
 				$fields['vote_state']='disabled';
-				$fields['vote_up_tags']=' TITLE="'.qa_lang_html($isanswer ? 'main/vote_disabled_my_a' : 'main/vote_disabled_my_q').'" ';
+				$fields['vote_up_tags']='TITLE="'.qa_lang_html($isanswer ? 'main/vote_disabled_my_a' : 'main/vote_disabled_my_q').'"';
 				$fields['vote_down_tags']=$fields['vote_up_tags'];
 				
 			} elseif (($voteview=='updown-disabled') || ($voteview=='net-disabled')) {
 				$fields['vote_state']=(@$post['uservote']>0) ? 'voted_up_disabled' : ((@$post['uservote']<0) ? 'voted_down_disabled' : 'disabled');
-				$fields['vote_up_tags']=' TITLE="'.qa_lang_html('main/vote_disabled_q_page_only').'" ';
+				$fields['vote_up_tags']='TITLE="'.qa_lang_html('main/vote_disabled_q_page_only').'"';
 				$fields['vote_down_tags']=$fields['vote_up_tags'];
 
 			} elseif (@$post['uservote']>0) {
 				$fields['vote_state']='voted_up';
-				$fields['vote_up_tags']=' TITLE="'.qa_lang_html('main/voted_up_popup').'" NAME="'.qa_html('vote_'.$postid.'_0_'.$anchor).'" '.$onclick;
+				$fields['vote_up_tags']='TITLE="'.qa_lang_html('main/voted_up_popup').'" NAME="'.qa_html('vote_'.$postid.'_0_'.$anchor).'"'.$onclick;
 				$fields['vote_down_tags']=' ';
 
 			} elseif (@$post['uservote']<0) {
 				$fields['vote_state']='voted_down';
 				$fields['vote_up_tags']=' ';
-				$fields['vote_down_tags']=' TITLE="'.qa_lang_html('main/voted_down_popup').'" NAME="'.qa_html('vote_'.$postid.'_0_'.$anchor).'" '.$onclick;
+				$fields['vote_down_tags']='TITLE="'.qa_lang_html('main/voted_down_popup').'" NAME="'.qa_html('vote_'.$postid.'_0_'.$anchor).'" '.$onclick;
 				
 			} else {
 				$fields['vote_state']='enabled';
-				$fields['vote_up_tags']=' TITLE="'.qa_lang_html('main/vote_up_popup').'" NAME="'.qa_html('vote_'.$postid.'_1_'.$anchor).'" '.$onclick;
-				$fields['vote_down_tags']=' TITLE="'.qa_lang_html('main/vote_down_popup').'" NAME="'.qa_html('vote_'.$postid.'_-1_'.$anchor).'" '.$onclick;
+				$fields['vote_up_tags']='TITLE="'.qa_lang_html('main/vote_up_popup').'" NAME="'.qa_html('vote_'.$postid.'_1_'.$anchor).'" '.$onclick;
+				$fields['vote_down_tags']='TITLE="'.qa_lang_html('main/vote_down_popup').'" NAME="'.qa_html('vote_'.$postid.'_-1_'.$anchor).'" '.$onclick;
 			}
 		}
 		
@@ -908,7 +908,7 @@
 		$qa_content['script_var']['qa_tags_complete']=qa_html(implode(' ', $completetags));
 		$qa_content['script_var']['qa_tags_max']=(int)$maxtags;
 		
-		$field['tags']=' NAME="'.$fieldname.'" ID="tags" AUTOCOMPLETE="off" onKeyUp="qa_tag_hints();" onMouseUp="qa_tag_hints();" ';
+		$field['tags']='NAME="'.$fieldname.'" ID="tags" AUTOCOMPLETE="off" onKeyUp="qa_tag_hints();" onMouseUp="qa_tag_hints();"';
 		
 		$sdn=' STYLE="display:none;"';
 		
@@ -931,7 +931,7 @@
 */
 	{
 		$fields['notify']=array(
-			'tags' => ' NAME="notify" ',
+			'tags' => 'NAME="notify"',
 			'type' => 'checkbox',
 			'value' => qa_html($innotify),
 		);
@@ -961,12 +961,12 @@
 				'<SPAN ID="email_shown">'.$labelaskemail.'</SPAN>'.
 				'<SPAN ID="email_hidden" STYLE="display:none;">'.$labelonly.'</SPAN>';
 			
-			$fields['notify']['tags'].=' ID="notify" onclick="if (document.getElementById(\'notify\').checked) document.getElementById(\'email\').focus();" ';
+			$fields['notify']['tags'].='ID="notify" onclick="if (document.getElementById(\'notify\').checked) document.getElementById(\'email\').focus();"';
 			$fields['notify']['tight']=true;
 			
 			$fields['email']=array(
 				'id' => 'email_display',
-				'tags' => ' NAME="email" ID="email" ',
+				'tags' => 'NAME="email" ID="email"',
 				'value' => qa_html($inemail),
 				'note' => qa_lang_html('question/notify_email_note'),
 				'error' => qa_html($errors_email),
@@ -986,29 +986,70 @@
 	
 	function qa_load_theme_class($theme, $template, $content, $request)
 /*
-	Return the initialized class for $theme (or the default if it's gone), passing $template, $content and $request
+	Return the initialized class for $theme (or the default if it's gone), passing $template, $content and $request. Also applies any registered plugin layers.
 */
 	{
-		global $qa_root_url_relative;
+		global $qa_root_url_relative, $qa_layers;
+		
+	//	First load the default class
 		
 		require_once QA_INCLUDE_DIR.'qa-theme-base.php';
 		
-		$themephpfile=QA_THEME_DIR.$theme.'/qa-theme.php';
+		$classname='qa_html_theme_base';
+		
+	//	Then load the selected theme if valid, otherwise load the default theme
+	
+		if (!(file_exists(QA_THEME_DIR.$theme.'/qa-theme.php') && file_exists(QA_THEME_DIR.$theme.'/qa-styles.css')))
+			$theme='Default';
+
 		$themeroothtml=qa_html($qa_root_url_relative.'qa-theme/'.$theme.'/');
 		
-		if (file_exists($themephpfile)) {
+		if (file_exists(QA_THEME_DIR.$theme.'/qa-theme.php')) {
 			require_once QA_THEME_DIR.$theme.'/qa-theme.php';
 	
 			if (class_exists('qa_html_theme'))
-				$themeclass=new qa_html_theme($template, $content, $themeroothtml, $request);
+				$classname='qa_html_theme';
 		}
 		
-		if (!isset($themeclass)) {
-			if (!file_exists(QA_THEME_DIR.$theme.'/qa-styles.css'))
-				$themeroothtml=qa_html($qa_root_url_relative.'qa-theme/Default/');
+	//	Then load any theme layers using some class-munging magic (substitute class names)
+	
+		$layerindex=0;
+		
+		foreach ($qa_layers as $layer) {
+			$layerphp=trim(@file_get_contents($layer['directory'].$layer['include']));
+			
+			if (strlen($layerphp)) {
+				$newclassname='qa_html_theme_layer_'.(++$layerindex);
 				
-			$themeclass=new qa_html_theme_base($template, $content, $themeroothtml, $request);
+				if (preg_match('/\s+class\s+qa_html_theme_layer\s+extends\s+qa_html_theme_base\s+/im', $layerphp)!=1)
+					qa_fatal_error('Class for layer must be declared as "class qa_html_theme_layer extends qa_html_theme_base" in '.$layer['directory'].$layer['include']);
+				
+				$searchwordreplace=array(
+					'qa_html_theme_layer' => $newclassname,
+					'qa_html_theme_base' => $classname,
+					'QA_HTML_THEME_LAYER_DIRECTORY' => "'".$layer['directory']."'",
+					'QA_HTML_THEME_LAYER_URLTOROOT' => "'".$qa_root_url_relative.$layer['urltoroot']."'",
+				);
+				
+				foreach ($searchwordreplace as $searchword => $replace)
+					if (preg_match_all('/\W('.preg_quote($searchword, '/').')\W/im', $layerphp, $matches, PREG_PATTERN_ORDER|PREG_OFFSET_CAPTURE)) {
+						$searchmatches=array_reverse($matches[1]); // don't use preg_replace due to complication of escaping replacement phrase
+						
+						foreach ($searchmatches as $searchmatch)
+							$layerphp=substr_replace($layerphp, $replace, $searchmatch[1], strlen($searchmatch[0]));
+					}
+				
+				// echo '<PRE STYLE="text-align:left;">'.htmlspecialchars($layerphp).'</PRE>'; // to debug munged code
+				
+				eval('?'.'>'.$layerphp);
+				
+				$classname=$newclassname;
+			}
 		}
+		
+	//	Finally, instantiate the object
+			
+		$themeclass=new $classname($template, $content, $themeroothtml, $request);
 		
 		return $themeclass;
 	}
@@ -1051,7 +1092,7 @@
 	
 	function qa_load_viewer($content, $format)
 /*
-	Return an instantiation of the appropriate viewer modlue class, given $content in $format
+	Return an instantiation of the appropriate viewer module class, given $content in $format
 */
 	{
 		$maxviewer=null;

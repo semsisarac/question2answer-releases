@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-options.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Language phrases for all options, as shown in admin center
 
 
@@ -144,6 +144,18 @@
 		'permit_users' => 'Registered users',
 		'permit_vote_a' => 'Voting on answers:',
 		'permit_vote_q' => 'Voting on questions:',
+		'place_full_top' => 'Full width - Top of page',
+		'place_full_below_nav' => 'Full width - Below navigation',
+		'place_full_below_content' => 'Full width - Below content',
+		'place_full_below_footer' => 'Full width - Below footer',
+		'place_main_top' => 'Main area - Top',
+		'place_main_below_title' => 'Main area - Below title',
+		'place_main_below_lists' => 'Main area - Below lists',
+		'place_main_bottom' => 'Main area - Bottom',
+		'place_side_top' => 'Side panel - Top',
+		'place_side_below_sidebar' => 'Side panel - Below sidebar box',
+		'place_side_below_categories' => 'Side panel - Below categories',
+		'place_side_last' => 'Side panel - Last',
 		'points_a_selected' => 'Having your answer selected as the best:',
 		'points_a_voted_max_gain' => 'Limit from up votes on each answer:',
 		'points_a_voted_max_loss' => 'Limit from down votes on each answer:',

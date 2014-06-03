@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-theme-base.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Default theme class, broken into lots of little functions for easy overriding
 
 
@@ -124,6 +124,22 @@
 			);
 		}
 
+		
+		function widgets($region, $place)
+		{
+			if (count(@$this->content['widgets'][$region][$place])) {
+				$this->output('<DIV CLASS="qa-widgets-'.$region.' qa-widgets-'.$region.'-'.$place.'">');
+				
+				foreach ($this->content['widgets'][$region][$place] as $module) {
+					$this->output('<DIV CLASS="qa-widget-'.$region.' qa-widget-'.$region.'-'.$place.'">');
+					$module->output_widget($region, $place, $this, $this->template, $this->request, $this->content);
+					$this->output('</DIV>');
+				}
+				
+				$this->output('</DIV>', '');
+			}
+		}
+		
 		
 		function finish()
 	/*
@@ -262,10 +278,14 @@
 			
 			$this->output('<DIV CLASS="qa-body-wrapper">', '');
 
+			$this->widgets('full', 'top');
 			$this->header();
+			$this->widgets('full', 'high');
 			$this->sidepanel();
 			$this->main();
+			$this->widgets('full', 'low');
 			$this->footer();
+			$this->widgets('full', 'bottom');
 			
 			$this->output('</DIV> <!-- END body-wrapper -->');
 			
@@ -327,7 +347,7 @@
 			
 			$this->output(
 				'<DIV CLASS="qa-search">',
-				'<FORM '.$search['form_tags'].' >',
+				'<FORM '.$search['form_tags'].'>',
 				@$search['form_extra']
 			);
 			
@@ -429,10 +449,14 @@
 		function sidepanel()
 		{
 			$this->output('<DIV CLASS="qa-sidepanel">');
+			$this->widgets('side', 'top');
 			$this->sidebar();
+			$this->widgets('side', 'high');
 			$this->nav('cat');
+			$this->widgets('side', 'low');
 			$this->output_raw(@$this->content['sidepanel']);
 			$this->feed();
+			$this->widgets('side', 'bottom');
 			$this->output('</DIV>', '');
 		}
 		
@@ -464,20 +488,28 @@
 
 			$this->output('<DIV CLASS="qa-main'.(@$this->content['hidden'] ? ' qa-main-hidden' : '').'">');
 			
+			$this->widgets('main', 'top');
+			
 			$this->page_title();			
 			$this->page_error();
 			
+			$this->widgets('main', 'high');
+
 			if (isset($content['main_form_tags']))
-				$this->output('<FORM '.$content['main_form_tags'].' >');
+				$this->output('<FORM '.$content['main_form_tags'].'>');
 				
 			$this->main_parts($content);
 		
 			if (isset($content['main_form_tags']))
 				$this->output('</FORM>');
 				
+			$this->widgets('main', 'low');
+
 			$this->page_links();
 			$this->suggest_next();
 			
+			$this->widgets('main', 'bottom');
+
 			$this->output('</DIV> <!-- END qa-main -->', '');
 		}
 		
@@ -648,7 +680,7 @@
 				$colspan=null;
 			
 			$prefixed=((@$field['type']=='checkbox') && ($columns==1) && !empty($field['label']));
-			$suffixed=((@$field['type']=='select') && ($columns==1) && !empty($field['label']));
+			$suffixed=(((@$field['type']=='select') || (@$field['type']=='number')) && ($columns==1) && !empty($field['label']));
 			$skipdata=@$field['tight'];
 			$tworows=($columns==1) && (!empty($field['label'])) && (!$skipdata);
 			
@@ -679,19 +711,17 @@
 		
 		function form_label($field, $style, $columns, $prefixed, $suffixed, $colspan)
 		{
-			$this->output(
-				'<TD CLASS="qa-form-'.$style.'-label"'.(isset($colspan) ? (' COLSPAN="'.$colspan.'"') : '').'>'
-			);
+			$this->output('<TD CLASS="qa-form-'.$style.'-label"'.(isset($colspan) ? (' COLSPAN="'.$colspan.'"') : '').'>');
 			
 			if ($prefixed)
 				$this->form_field($field, $style);
 					
-			$this->output(
-				@$field['label']
-			);
+			$this->output(@$field['label']);
 			
-			if ($suffixed)
+			if ($suffixed) {
+				$this->output('&nbsp;');
 				$this->form_field($field, $style);
+			}
 			
 			$this->output('</TD>');
 		}
@@ -791,7 +821,7 @@
 			$baseclass='qa-form-'.$style.'-button qa-form-'.$style.'-button-'.$key;
 			$hoverclass='qa-form-'.$style.'-hover qa-form-'.$style.'-hover-'.$key;
 			
-			$this->output('<INPUT '.@$button['tags'].' VALUE="'.@$button['label'].'" TITLE="'.@$button['popup'].'" TYPE="submit" CLASS="'.$baseclass.'" onmouseover="this.className=\''.$hoverclass.'\';" onmouseout="this.className=\''.$baseclass.'\';"/>');
+			$this->output('<INPUT'.rtrim(' '.@$button['tags']).' VALUE="'.@$button['label'].'" TITLE="'.@$button['popup'].'" TYPE="submit" CLASS="'.$baseclass.'" onmouseover="this.className=\''.$hoverclass.'\';" onmouseout="this.className=\''.$baseclass.'\';"/>');
 		}
 		
 		function form_button_note($button, $style)
@@ -997,7 +1027,7 @@
 		
 		function q_list_item($question)
 		{
-			$this->output('<DIV CLASS="qa-q-list-item '.@$question['classes'].'" '.@$question['tags'].'>');
+			$this->output('<DIV CLASS="qa-q-list-item'.rtrim(' '.@$question['classes']).'" '.@$question['tags'].'>');
 
 			$this->q_item_stats($question);
 			$this->q_item_main($question);
@@ -1048,7 +1078,7 @@
 		function voting($post)
 		{
 			if (isset($post['vote_view'])) {
-				$this->output('<DIV CLASS="qa-voting '.(($post['vote_view']=='updown') ? 'qa-voting-updown' : 'qa-voting-net').'" '.@$post['vote_tags'].' >');
+				$this->output('<DIV CLASS="qa-voting '.(($post['vote_view']=='updown') ? 'qa-voting-updown' : 'qa-voting-net').'" '.@$post['vote_tags'].'>');
 				$this->voting_inner_html($post);
 				$this->output('</DIV>');
 			}
@@ -1389,7 +1419,7 @@
 		function q_view($q_view)
 		{
 			if (!empty($q_view)) {
-				$this->output('<DIV CLASS="qa-q-view'.(@$q_view['hidden'] ? ' qa-q-view-hidden' : '').' '.@$q_view['classes'].'" '.@$q_view['tags'].'>');
+				$this->output('<DIV CLASS="qa-q-view'.(@$q_view['hidden'] ? ' qa-q-view-hidden' : '').rtrim(' '.@$q_view['classes']).'"'.rtrim(' '.@$q_view['tags']).'>');
 	
 				$this->voting($q_view);
 				$this->a_count($q_view);

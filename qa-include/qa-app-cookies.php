@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-cookies.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: User cookie management (application level) for tracking anonymous posts
 
 
@@ -55,7 +55,7 @@
 		else
 			$cookieid=qa_db_cookie_create(@$_SERVER['REMOTE_ADDR']);
 		
-		setcookie('qa_id', $cookieid, time()+86400*365, '/');
+		setcookie('qa_id', $cookieid, time()+86400*365, '/', QA_COOKIE_DOMAIN);
 		
 		return $cookieid;
 	}

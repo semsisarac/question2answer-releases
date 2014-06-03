@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-usertitles.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for admin page for editing custom user titles
 
 
@@ -117,20 +117,20 @@
 	$qa_content['error']=qa_admin_page_error();
 
 	$qa_content['form']=array(
-		'tags' => ' METHOD="POST" ACTION="'.qa_path_html($qa_request).'" ',
+		'tags' => 'METHOD="POST" ACTION="'.qa_path_html($qa_request).'"',
 		
 		'style' => 'tall',
 		
 		'fields' => array(
 			'title' => array(
-				'tags' => ' NAME="title" ID="title" ',
+				'tags' => 'NAME="title" ID="title"',
 				'label' => qa_lang_html('admin/user_title'),
 				'value' => qa_html(isset($intitle) ? $intitle : @$pointstitle[$oldpoints]),
 				'error' => qa_html(@$errors['title']),
 			),
 			
 			'delete' => array(
-				'tags' => ' NAME="dodelete" ID="dodelete" ',
+				'tags' => 'NAME="dodelete" ID="dodelete"',
 				'label' => qa_lang_html('admin/delete_title'),
 				'value' => 0,
 				'type' => 'checkbox',
@@ -138,7 +138,7 @@
 			
 			'points' => array(
 				'id' => 'points_display',
-				'tags' => ' NAME="points" ',
+				'tags' => 'NAME="points"',
 				'label' => qa_lang_html('admin/points_required'),
 				'type' => 'number',
 				'value' => qa_html(isset($inpoints) ? $inpoints : @$oldpoints),
@@ -152,7 +152,7 @@
 			),
 			
 			'cancel' => array(
-				'tags' => ' NAME="docancel" ',
+				'tags' => 'NAME="docancel"',
 				'label' => qa_lang_html('main/cancel_button'),
 			),
 		),

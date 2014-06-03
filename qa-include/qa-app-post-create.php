@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-create.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Creating questions, answers and comments (application level)
 
 
@@ -175,6 +175,19 @@
 				'^q_content' => $text,
 				'^url' => qa_path(qa_q_request($postid, $title), null, qa_opt('site_url')),
 			));
+			
+		qa_report_event('q_post', $userid, $handle, $cookieid, array(
+			'postid' => $postid,
+			'parentid' => @$followanswer['postid'],
+			'title' => $title,
+			'content' => $content,
+			'format' => $format,
+			'text' => $text,
+			'tags' => $tagstring,
+			'categoryid' => $categoryid,
+			'notify' => $notify,
+			'email' => $email,
+		));
 		
 		return $postid;
 	}
@@ -206,11 +219,12 @@
 	
 		$titlewords=array_unique(qa_string_to_words($title));
 		$contentcount=array_count_values(qa_string_to_words($text));
-		$tagwords=array_unique(qa_tagstring_to_tags($tagstring));
+		$tagwords=array_unique(qa_string_to_words($tagstring));
+		$wholetags=array_unique(qa_tagstring_to_tags($tagstring));
 		
 	//	Map all words to their word IDs
 		
-		$words=array_unique(array_merge($titlewords, array_keys($contentcount), $tagwords));
+		$words=array_unique(array_merge($titlewords, array_keys($contentcount), $tagwords, $wholetags));
 		$wordtoid=qa_db_word_mapto_ids_add($words);
 		
 	//	Add to title words index
@@ -228,16 +242,22 @@
 		qa_db_contentwords_add_post_wordidcounts($postid, $type, $questionid, $contentwordidcounts);
 		
 	//	Add to tag words index
-
+	
 		$tagwordids=qa_array_filter_by_keys($wordtoid, $tagwords);
-		qa_db_posttags_add_post_wordids($postid, $tagwordids);
+		qa_db_tagwords_add_post_wordids($postid, $tagwordids);
+	
+	//	Add to whole tags index
+
+		$wholetagids=qa_array_filter_by_keys($wordtoid, $wholetags);
+		qa_db_posttags_add_post_wordids($postid, $wholetagids);
 		
 	//	Update counts cached in database
 		
 		if (!$skipcounts) {
 			qa_db_word_titlecount_update($titlewordids);
 			qa_db_word_contentcount_update(array_keys($contentwordidcounts));
-			qa_db_word_tagcount_update($tagwordids);
+			qa_db_word_tagwordcount_update($tagwordids);
+			qa_db_word_tagcount_update($wholetagids);
 			qa_db_tagcount_update();
 		}
 	}
@@ -293,6 +313,17 @@
 				'^url' => qa_path(qa_q_request($question['postid'], $sendtitle), null, qa_opt('site_url'), null, qa_anchor('A', $postid)),
 			));
 		}
+		
+		qa_report_event('a_post', $userid, $handle, $cookieid, array(
+			'postid' => $postid,
+			'parentid' => $question['postid'],
+			'content' => $content,
+			'format' => $format,
+			'text' => $text,
+			'categoryid' => $question['categoryid'],
+			'notify' => $notify,
+			'email' => $email,
+		));
 		
 		return $postid;
 	}
@@ -413,8 +444,20 @@
 						'^url' => $sendurl,
 					));
 				}
-
-
+				
+		qa_report_event('c_post', $userid, $handle, $cookieid, array(
+			'postid' => $postid,
+			'parentid' => $parent['postid'],
+			'parenttype' => $parent['basetype'],
+			'questionid' => $question['postid'],
+			'content' => $content,
+			'format' => $format,
+			'text' => $text,
+			'categoryid' => $question['categoryid'],
+			'notify' => $notify,
+			'email' => $email,
+		));
+		
 		return $postid;
 	}
 	

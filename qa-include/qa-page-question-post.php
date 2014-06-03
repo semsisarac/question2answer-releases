@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-question-post.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: More control for question page if it's submitted by HTTP POST
 
 
@@ -128,26 +128,26 @@
 //	Process hiding or showing or claiming or comment on a question
 		
 	if (qa_clicked('dohideq') && $question['hideable']) {
-		qa_question_set_hidden($question, true, $qa_login_userid, $answers, $commentsfollows);
+		qa_question_set_hidden($question, true, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $answers, $commentsfollows);
 		qa_report_write_action($qa_login_userid, $qa_cookieid, 'q_hide', $questionid, null, null);
 		qa_redirect($qa_request);
 	}
 	
 	if (qa_clicked('doshowq') && $question['reshowable']) {
-		qa_question_set_hidden($question, false, $qa_login_userid, $answers, $commentsfollows);
+		qa_question_set_hidden($question, false, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $answers, $commentsfollows);
 		qa_report_write_action($qa_login_userid, $qa_cookieid, 'q_reshow', $questionid, null, null);
 		qa_redirect($qa_request);
 	}
 	
 	if (qa_clicked('dodeleteq') && $question['deleteable']) {
-		qa_question_delete($question);
+		qa_question_delete($question, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid);
 		qa_report_write_action($qa_login_userid, $qa_cookieid, 'q_delete', $questionid, null, null);
 		qa_redirect(''); // redirect since question has gone
 	}
 	
 	if (qa_clicked('doclaimq') && $question['claimable']) {
 		if (qa_limits_remaining($qa_login_userid, 'Q')) { // already checked 'permit_post_q'
-			qa_question_set_userid($question, $qa_login_userid);
+			qa_question_set_userid($question, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid);
 			qa_report_write_action($qa_login_userid, $qa_cookieid, 'q_claim', $questionid, null, null);
 			qa_redirect($qa_request);
 
@@ -170,7 +170,7 @@
 			$inqtitle=qa_post_text('qtitle');
 
 			$inqtags=qa_post_text('qtags');
-			$tagstring=qa_using_tags() ? qa_tags_to_tagstring(array_unique(qa_string_to_words($inqtags))) : $question['tags'];
+			$tagstring=qa_using_tags() ? qa_tags_to_tagstring(array_unique(qa_string_to_words($inqtags, true, false, false, false))) : $question['tags'];
 	
 			qa_get_post_content('editor', 'qcontent', $ineditor, $inqcontent, $inqformat, $inqtext);
 
@@ -183,9 +183,12 @@
 				$setnotify=$question['isbyuser'] ? qa_combine_notify_email($question['userid'], $innotify, $inemail) : $question['notify'];
 				
 				if (qa_using_categories() && ($incategoryid!=$question['categoryid']))
-					qa_question_set_category($question, strlen($incategoryid) ? $incategoryid : null, $qa_login_userid, $answers, $commentsfollows);
+					qa_question_set_category($question, strlen($incategoryid) ? $incategoryid : null,
+						$qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $answers, $commentsfollows);
 				
-				qa_question_set_content($question, $inqtitle, $inqcontent, $inqformat, $inqtext, $tagstring, $setnotify, $qa_login_userid);
+				qa_question_set_content($question, $inqtitle, $inqcontent, $inqformat, $inqtext, $tagstring, $setnotify,
+					$qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid);
+
 				qa_report_write_action($qa_login_userid, $qa_cookieid, 'q_edit', $questionid, null, null);
 				
 				if (qa_q_request($questionid, $question['title']) != qa_q_request($questionid, $inqtitle))
@@ -223,26 +226,26 @@
 
 	foreach ($answers as $answerid => $answer) {
 		if (qa_clicked('dohidea_'.$answerid) && $answer['hideable']) {
-			qa_answer_set_hidden($answer, true, $qa_login_userid, $question, $commentsfollows);
+			qa_answer_set_hidden($answer, true, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $question, $commentsfollows);
 			qa_report_write_action($qa_login_userid, $qa_cookieid, 'a_hide', $questionid, $answerid, null);
 			qa_redirect($qa_request, null, null, null, qa_anchor('A', $answerid));
 		}
 		
 		if (qa_clicked('doshowa_'.$answerid) && $answer['reshowable']) {
-			qa_answer_set_hidden($answer, false, $qa_login_userid, $question, $commentsfollows);
+			qa_answer_set_hidden($answer, false, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $question, $commentsfollows);
 			qa_report_write_action($qa_login_userid, $qa_cookieid, 'a_reshow', $questionid, $answerid, null);
 			qa_redirect($qa_request, null, null, null, qa_anchor('A', $answerid));
 		}
 		
 		if (qa_clicked('dodeletea_'.$answerid) && $answer['deleteable']) {
-			qa_answer_delete($answer, $question);
+			qa_answer_delete($answer, $question, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid);
 			qa_report_write_action($qa_login_userid, $qa_cookieid, 'a_delete', $questionid, $answerid, null);
 			qa_redirect($qa_request);
 		}
 		
 		if (qa_clicked('doclaima_'.$answerid) && $answer['claimable']) {
 			if (qa_limits_remaining($qa_login_userid, 'A')) { // already checked 'permit_post_a'
-				qa_answer_set_userid($answer, $qa_login_userid);
+				qa_answer_set_userid($answer, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid);
 				qa_report_write_action($qa_login_userid, $qa_cookieid, 'a_claim', $questionid, $answerid, null);
 				qa_redirect($qa_request, null, null, null, qa_anchor('A', $answerid));
 			
@@ -275,7 +278,8 @@
 						(($incommenton!=$answerid) && @$answers[$incommenton]['commentable'])
 					)) { // convert to a comment
 						if (qa_limits_remaining($qa_login_userid, 'C')) { // already checked 'permit_post_c'
-							qa_answer_to_comment($answer, $incommenton, $inacontent, $inaformat, $inatext, $setnotify, $qa_login_userid, $question, $answers, $commentsfollows);
+							qa_answer_to_comment($answer, $incommenton, $inacontent, $inaformat, $inatext, $setnotify,
+								$qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $question, $answers, $commentsfollows);
 							qa_report_write_action($qa_login_userid, $qa_cookieid, 'a_to_c', $questionid, $answerid, null);
 							qa_redirect($qa_request, null, null, null, qa_anchor('C', $answerid));
 
@@ -284,7 +288,8 @@
 						}
 					
 					} else {
-						qa_answer_set_content($answer, $inacontent, $inaformat, $inatext, $setnotify, $qa_login_userid, $question);
+						qa_answer_set_content($answer, $inacontent, $inaformat, $inatext, $setnotify,
+							$qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $question);
 						qa_report_write_action($qa_login_userid, $qa_cookieid, 'a_edit', $questionid, $answerid, null);
 						qa_redirect($qa_request, null, null, null, qa_anchor('A', $answerid));
 					}
@@ -332,26 +337,26 @@
 			$commentanswerid=$commentanswer['postid'];
 			
 			if (qa_clicked('dohidec_'.$commentid) && $comment['hideable']) {
-				qa_comment_set_hidden($comment, true, $qa_login_userid, $question, $commentanswer);
+				qa_comment_set_hidden($comment, true, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $question, $commentanswer);
 				qa_report_write_action($qa_login_userid, $qa_cookieid, 'c_hide', $questionid, $commentanswerid, $commentid);
 				qa_redirect($qa_request, null, null, null, qa_anchor($commentparenttype, $comment['parentid']));
 			}
 			
 			if (qa_clicked('doshowc_'.$commentid) && $comment['reshowable']) {
-				qa_comment_set_hidden($comment, false, $qa_login_userid, $question, $commentanswer);
+				qa_comment_set_hidden($comment, false, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $question, $commentanswer);
 				qa_report_write_action($qa_login_userid, $qa_cookieid, 'c_reshow', $questionid, $commentanswerid, $commentid);
 				qa_redirect($qa_request, null, null, null, qa_anchor($commentparenttype, $comment['parentid']));
 			}
 			
 			if (qa_clicked('dodeletec_'.$commentid) && $comment['deleteable']) {
-				qa_comment_delete($comment);
+				qa_comment_delete($comment, $question, $commentanswer, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid);
 				qa_report_write_action($qa_login_userid, $qa_cookieid, 'c_delete', $questionid, $commentanswerid, $commentid);
 				qa_redirect($qa_request, null, null, null, qa_anchor($commentparenttype, $comment['parentid']));
 			}
 			
 			if (qa_clicked('doclaimc_'.$commentid) && $comment['claimable']) {
 				if (qa_limits_remaining($qa_login_userid, 'C')) {
-					qa_comment_set_userid($comment, $qa_login_userid);
+					qa_comment_set_userid($comment, $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid);
 					qa_report_write_action($qa_login_userid, $qa_cookieid, 'c_claim', $questionid, $commentanswerid, $commentid);
 					qa_redirect($qa_request, null, null, null, qa_anchor($commentparenttype, $comment['parentid']));
 					
@@ -377,7 +382,8 @@
 					if (empty($errors)) {
 						$setnotify=$comment['isbyuser'] ? qa_combine_notify_email($comment['userid'], $innotify, $inemail) : $comment['notify'];
 						
-						qa_comment_set_content($comment, $incomment, $informat, $intext, $setnotify, $qa_login_userid, $question, $commentanswer);
+						qa_comment_set_content($comment, $incomment, $informat, $intext, $setnotify,
+							$qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, $question, $commentanswer);
 						qa_report_write_action($qa_login_userid, $qa_cookieid, 'c_edit', $questionid, $commentanswerid, $commentid);
 						qa_redirect($qa_request, null, null, null, qa_anchor($commentparenttype, $comment['parentid']));
 					
@@ -449,14 +455,14 @@
 			'fields' => array(
 				'title' => array(
 					'label' => qa_lang_html('question/q_title_label'),
-					'tags' => ' NAME="qtitle" ',
+					'tags' => 'NAME="qtitle"',
 					'value' => qa_html(isset($inqtitle) ? $inqtitle : $question['title']),
 					'error' => qa_html(@$qerrors['title']),
 				),
 				
 				'category' => array(
 					'label' => qa_lang_html('question/q_category_label'),
-					'tags' => ' NAME="category" ',
+					'tags' => 'NAME="category"',
 					'value' => @$categoryoptions[isset($incategoryid) ? $incategoryid : $question['categoryid']],
 					'type' => 'select',
 					'options' => $categoryoptions,
@@ -484,7 +490,7 @@
 				),
 				
 				'cancel' => array(
-					'tags' => ' NAME="docancel" ',
+					'tags' => 'NAME="docancel"',
 					'label' => qa_lang_html('main/cancel_button'),
 				),
 			),
@@ -555,7 +561,7 @@
 				),
 				
 				'cancel' => array(
-					'tags' => ' NAME="docancel" ',
+					'tags' => 'NAME="docancel"',
 					'label' => qa_lang_html('main/cancel_button'),
 				),
 			),
@@ -590,7 +596,7 @@
 				
 		if (count($commentonoptions)) {
 			$form['fields']['tocomment']=array(
-				'tags' => ' NAME="tocomment" ID="tocomment" ',
+				'tags' => 'NAME="tocomment" ID="tocomment"',
 				'label' => '<SPAN ID="tocomment_shown">'.qa_lang_html('question/a_convert_to_c_on').'</SPAN>'.
 								'<SPAN ID="tocomment_hidden" STYLE="display:none;">'.qa_lang_html('question/a_convert_to_c').'</SPAN>',
 				'type' => 'checkbox',
@@ -598,7 +604,7 @@
 			);
 			
 			$form['fields']['commenton']=array(
-				'tags' => ' NAME="commenton" ',
+				'tags' => 'NAME="commenton"',
 				'id' => 'commenton',
 				'type' => 'select',
 				'note' => qa_lang_html($hascomments ? 'question/a_convert_warn_cs' : 'question/a_convert_warn'),
@@ -733,12 +739,12 @@
 			
 			'buttons' => array(
 				'comment' => array(
-					'tags' => ' NAME="'.(isset($answerid) ? ('docommentadda_'.$answerid) : 'docommentaddq').'" ',
+					'tags' => 'NAME="'.(isset($answerid) ? ('docommentadda_'.$answerid) : 'docommentaddq').'"',
 					'label' => qa_lang_html('question/add_comment_button'),
 				),
 				
 				'cancel' => array(
-					'tags' => ' NAME="docancel" ',
+					'tags' => 'NAME="docancel"',
 					'label' => qa_lang_html('main/cancel_button'),
 				),
 			),
@@ -796,7 +802,7 @@
 				),
 				
 				'cancel' => array(
-					'tags' => ' NAME="docancel" ',
+					'tags' => 'NAME="docancel"',
 					'label' => qa_lang_html('main/cancel_button'),
 				),
 			),

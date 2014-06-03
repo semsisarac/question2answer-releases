@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-admin.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Database access functions which are specific to the admin center
 
 
@@ -267,6 +267,57 @@
 		qa_db_ordered_delete('userfields', 'fieldid', $fieldid);
 	}
 	
+	
+	function qa_db_widget_create($title, $tags)
+/*
+	Return the ID of a new widget, to be displayed by the widget module named $title on templates within $tags (comma-separated list)
+*/
+	{
+		$position=qa_db_read_one_value(qa_db_query_sub('SELECT 1+COALESCE(MAX(position), 0) FROM ^widgets'));
+		
+		qa_db_query_sub(
+			'INSERT INTO ^widgets (place, position, tags, title) VALUES (\'\', #, $, $)',
+			$position, $tags, $title
+		);
+		
+		return qa_db_last_insert_id();
+	}
+	
+	
+	function qa_db_widget_set_fields($widgetid, $tags)
+/*
+	Set the comma-separated list of templates for $widgetid to $tags
+*/
+	{
+		qa_db_query_sub(
+			'UPDATE ^widgets SET tags=$ WHERE widgetid=#',
+			$tags, $widgetid
+		);
+	}
+	
+	
+	function qa_db_widget_move($widgetid, $place, $newposition)
+/*
+	Move the widget $widgetit into position $position in the database's order, and show it in $place on the page
+*/
+	{
+		qa_db_query_sub(
+			'UPDATE ^widgets SET place=$ WHERE widgetid=#',
+			$place, $widgetid
+		);
+
+		qa_db_ordered_move('widgets', 'widgetid', $widgetid, $newposition);
+	}
+	
+	
+	function qa_db_widget_delete($widgetid)
+/*
+	Delete the widget $widgetid in the database
+*/
+	{
+		qa_db_ordered_delete('widgets', 'widgetid', $widgetid);
+	}
+
 
 /*
 	Omit PHP closing tag to help avoid accidental output

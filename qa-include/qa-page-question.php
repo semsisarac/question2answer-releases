@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-question.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for question page (only viewing functionality here)
 
 
@@ -194,40 +194,40 @@
 					
 						if ($commentfollow['editbutton'])
 							$c_view['form']['buttons']['edit']=array(
-								'tags' => ' NAME="doeditc_'.qa_html($commentfollowid).'" ',
+								'tags' => 'NAME="doeditc_'.qa_html($commentfollowid).'"',
 								'label' => qa_lang_html('question/edit_button'),
 								'popup' => qa_lang_html('question/edit_c_popup'),
 							);
 							
 						if ($commentfollow['hideable'])
 							$c_view['form']['buttons']['hide']=array(
-								'tags' => ' NAME="dohidec_'.qa_html($commentfollowid).'" ',
+								'tags' => 'NAME="dohidec_'.qa_html($commentfollowid).'"',
 								'label' => qa_lang_html('question/hide_button'),
 								'popup' => qa_lang_html('question/hide_c_popup'),
 							);
 							
 						if ($commentfollow['reshowable'])
 							$c_view['form']['buttons']['reshow']=array(
-								'tags' => ' NAME="doshowc_'.qa_html($commentfollowid).'" ',
+								'tags' => 'NAME="doshowc_'.qa_html($commentfollowid).'"',
 								'label' => qa_lang_html('question/reshow_button'),
 							);
 							
 						if ($commentfollow['deleteable'])
 							$c_view['form']['buttons']['delete']=array(
-								'tags' => ' NAME="dodeletec_'.qa_html($commentfollowid).'" ',
+								'tags' => 'NAME="dodeletec_'.qa_html($commentfollowid).'"',
 								'label' => qa_lang_html('question/delete_button'),
 								'popup' => qa_lang_html('question/delete_c_popup'),
 							);
 							
 						if ($commentfollow['claimable'])
 							$c_view['form']['buttons']['claim']=array(
-								'tags' => ' NAME="doclaimc_'.qa_html($commentfollowid).'" ',
+								'tags' => 'NAME="doclaimc_'.qa_html($commentfollowid).'"',
 								'label' => qa_lang_html('question/claim_button'),
 							);
 							
 						if ($parent['commentbutton'] && qa_opt('show_c_reply_buttons') && !$commentfollow['hidden'])
 							$c_view['form']['buttons']['comment']=array(
-								'tags' => ' NAME="'.(($parent['basetype']=='Q') ? 'docommentq' : ('docommenta_'.qa_html($parent['postid']))).'" ',
+								'tags' => 'NAME="'.(($parent['basetype']=='Q') ? 'docommentq' : ('docommenta_'.qa_html($parent['postid']))).'"',
 								'label' => qa_lang_html('question/reply_button'),
 								'popup' => qa_lang_html('question/reply_c_popup'),
 							);
@@ -256,17 +256,10 @@
 	$usecaptcha=qa_user_use_captcha('captcha_on_anon_post');
 
 
-//	Deal with question not found or not viewable
+//	Deal with question not found or not viewable, otherwise report the view event
 
-	if (!isset($question)) {
-		header('HTTP/1.0 404 Not Found');
-		$qa_template='not-found';
-		$qa_content=qa_content_prepare();
-		$qa_content['error']=qa_lang_html('question/q_not_found');
-		$qa_content['suggest_next']=qa_html_suggest_qs_tags(qa_using_tags());
-
-		return $qa_content;
-	}
+	if (!isset($question))
+		return include QA_INCLUDE_DIR.'qa-page-not-found.php';
 
 	if (!$question['viewable']) {
 		$qa_content=qa_content_prepare();
@@ -275,8 +268,8 @@
 
 		return $qa_content;
 	}
+	
 
-		
 //	If we're responding to an HTTP POST, include file that handles all posting/editing/etc... logic
 //	This is in a separate file because it's a *lot* of logic, and will slow down ordinary page views
 
@@ -310,7 +303,7 @@
 	
 	$qa_content=qa_content_prepare(true, $question['categoryid']);
 	
-	$qa_content['main_form_tags']=' METHOD="POST" ACTION="'.qa_self_html().'" ';
+	$qa_content['main_form_tags']='METHOD="POST" ACTION="'.qa_self_html().'"';
 	
 	if (isset($pageerror))
 		$qa_content['error']=$pageerror; // might also show voting error set in qa-index.php
@@ -359,47 +352,47 @@
 			
 			if ($question['editbutton'])
 				$qa_content['q_view']['form']['buttons']['edit']=array(
-					'tags' => ' NAME="doeditq" ',
+					'tags' => 'NAME="doeditq"',
 					'label' => qa_lang_html('question/edit_button'),
 					'popup' => qa_lang_html('question/edit_q_popup'),
 				);
 				
 			if ($question['hideable'])
 				$qa_content['q_view']['form']['buttons']['hide']=array(
-					'tags' => ' NAME="dohideq" ',
+					'tags' => 'NAME="dohideq"',
 					'label' => qa_lang_html('question/hide_button'),
 					'popup' => qa_lang_html('question/hide_q_popup'),
 				);
 				
 			if ($question['reshowable'])
 				$qa_content['q_view']['form']['buttons']['reshow']=array(
-					'tags' => ' NAME="doshowq" ',
+					'tags' => 'NAME="doshowq"',
 					'label' => qa_lang_html('question/reshow_button'),
 				);
 				
 			if ($question['deleteable'])
 				$qa_content['q_view']['form']['buttons']['delete']=array(
-					'tags' => ' NAME="dodeleteq" ',
+					'tags' => 'NAME="dodeleteq"',
 					'label' => qa_lang_html('question/delete_button'),
 					'popup' => qa_lang_html('question/delete_q_popup'),
 				);
 				
 			if ($question['claimable'])
 				$qa_content['q_view']['form']['buttons']['claim']=array(
-					'tags' => ' NAME="doclaimq" ',
+					'tags' => 'NAME="doclaimq"',
 					'label' => qa_lang_html('question/claim_button'),
 				);
 			
 			if ($question['answerbutton'] && ($formtype!='a_add')) // don't show if shown by default
 				$qa_content['q_view']['form']['buttons']['answer']=array(
-					'tags' => ' NAME="doanswerq" ',
+					'tags' => 'NAME="doanswerq"',
 					'label' => qa_lang_html('question/answer_button'),
 					'popup' => qa_lang_html('question/answer_q_popup'),
 				);
 			
 			if ($question['commentbutton'])
 				$qa_content['q_view']['form']['buttons']['comment']=array(
-					'tags' => ' NAME="docommentq" ',
+					'tags' => 'NAME="docommentq"',
 					'label' => qa_lang_html('question/comment_button'),
 					'popup' => qa_lang_html('question/comment_q_popup'),
 				);
@@ -467,9 +460,9 @@
 			if (!$formrequested) { // don't show if another form is currently being shown on page
 				if ($question['aselectable'] && !$answer['hidden']) {
 					if ($answer['isselected'])
-						$a_view['unselect_tags']=' TITLE="'.qa_lang_html('question/unselect_popup').'" NAME="select_" ';
+						$a_view['unselect_tags']='TITLE="'.qa_lang_html('question/unselect_popup').'" NAME="select_"';
 					elseif (!isset($question['selchildid']))
-						$a_view['select_tags']=' TITLE="'.qa_lang_html('question/select_popup').'" NAME="select_'.qa_html($answerid).'" ';
+						$a_view['select_tags']='TITLE="'.qa_lang_html('question/select_popup').'" NAME="select_'.qa_html($answerid).'"';
 				}
 				
 				$a_view['form']=array(
@@ -479,47 +472,47 @@
 				
 				if ($answer['editbutton'])
 					$a_view['form']['buttons']['edit']=array(
-						'tags' => ' NAME="doedita_'.qa_html($answerid).'" ',
+						'tags' => 'NAME="doedita_'.qa_html($answerid).'"',
 						'label' => qa_lang_html('question/edit_button'),
 						'popup' => qa_lang_html('question/edit_a_popup'),
 					);
 					
 				if ($answer['hideable'])
 					$a_view['form']['buttons']['hide']=array(
-						'tags' => ' NAME="dohidea_'.qa_html($answerid).'" ',
+						'tags' => 'NAME="dohidea_'.qa_html($answerid).'"',
 						'label' => qa_lang_html('question/hide_button'),
 						'popup' => qa_lang_html('question/hide_a_popup'),
 					);
 					
 				if ($answer['reshowable'])
 					$a_view['form']['buttons']['reshow']=array(
-						'tags' => ' NAME="doshowa_'.qa_html($answerid).'" ',
+						'tags' => 'NAME="doshowa_'.qa_html($answerid).'"',
 						'label' => qa_lang_html('question/reshow_button'),
 					);
 					
 				if ($answer['deleteable'])
 					$a_view['form']['buttons']['delete']=array(
-						'tags' => ' NAME="dodeletea_'.qa_html($answerid).'" ',
+						'tags' => 'NAME="dodeletea_'.qa_html($answerid).'"',
 						'label' => qa_lang_html('question/delete_button'),
 						'popup' => qa_lang_html('question/delete_a_popup'),
 					);
 					
 				if ($answer['claimable'])
 					$a_view['form']['buttons']['claim']=array(
-						'tags' => ' NAME="doclaima_'.qa_html($answerid).'" ',
+						'tags' => 'NAME="doclaima_'.qa_html($answerid).'"',
 						'label' => qa_lang_html('question/claim_button'),
 					);
 
 				if ($answer['followable'])
 					$a_view['form']['buttons']['follow']=array(
-						'tags' => ' NAME="dofollowa_'.qa_html($answerid).'" ',
+						'tags' => 'NAME="dofollowa_'.qa_html($answerid).'"',
 						'label' => qa_lang_html('question/follow_button'),
 						'popup' => qa_lang_html('question/follow_a_popup'),
 					);
 
 				if ($answer['commentbutton'])
 					$a_view['form']['buttons']['comment']=array(
-						'tags' => ' NAME="docommenta_'.qa_html($answerid).'" ',
+						'tags' => 'NAME="docommenta_'.qa_html($answerid).'"',
 						'label' => qa_lang_html('question/comment_button'),
 						'popup' => qa_lang_html('question/comment_a_popup'),
 					);
@@ -603,7 +596,7 @@
 					
 					'buttons' => array(
 						'answer' => array(
-							'tags' => ' NAME="doansweradd" ',
+							'tags' => 'NAME="doansweradd"',
 							'label' => qa_lang_html('question/add_answer_button'),
 						),
 					),
@@ -615,7 +608,7 @@
 				
 				if ($formrequested) { // only show cancel button if user explicitly requested the form
 					$answerform['buttons']['cancel']=array(
-						'tags' => ' NAME="docancel" ',
+						'tags' => 'NAME="docancel"',
 						'label' => qa_lang_html('main/cancel_button'),
 					);
 				}

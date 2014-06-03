@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-admin.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Language phrases for admin center
 
 
@@ -26,6 +26,7 @@
 */
 
 	return array(
+		'active_widgets_explanation' => 'The following widgets are currently active:',
 		'add_category_button' => 'Add Category',
 		'add_field_button' => 'Add Field',
 		'add_link_button' => 'Add Link',
@@ -34,7 +35,9 @@
 		'add_new_title' => 'Add new title',
 		'add_page_button' => 'Add Page',
 		'add_title_button' => 'Add Title',
-		'admin_title' => 'Administration Center',
+		'add_widget_link' => ' - ^1add widget^2',
+		'add_widget_button' => 'Add Widget',
+		'admin_title' => 'Administration center',
 		'after_footer' => 'After links in footer',
 		'after_main_menu' => 'After tabs at top',
 		'after_x_tab' => 'After "^" tab',
@@ -66,11 +69,13 @@
 		'delete_page' => 'Delete this page',
 		'delete_stop' => 'Stop deleting',
 		'delete_title' => 'Delete this title',
+		'delete_widget_position' => 'Delete this widget from this position',
 		'edit_custom_page' => 'Edit custom page',
 		'edit_field' => ' - ^1edit field^2',
 		'edit_link' => ' - ^1edit link^2',
 		'edit_page' => ' - ^1edit page^2',
 		'edit_title' => ' - ^1edit title^2',
+		'edit_widget_position' => ' - ^1edit widget position^2',
 		'emails_title' => 'Emails',
 		'feed_link_example' => 'Example feed',
 		'feed_link' => 'Feed',
@@ -82,7 +87,7 @@
 		'field_type' => 'Field type:',
 		'first' => 'First',
 		'from_anon' => 'From anonymous:',
-		'from_plugin' => ' (from plugin: ^)',
+		'from_plugin_module' => ' (from plugin module: ^)',
 		'from_users' => 'From users:',
 		'general_title' => 'General',
 		'hidden_answers_deleted' => 'Deleted ^1 of ^2 hidden answers without dependents...',
@@ -90,6 +95,7 @@
 		'hidden_questions_deleted' => 'Deleted ^1 of ^2 hidden questions without dependents...',
 		'hidden_title' => 'Hidden',
 		'installed_plugins' => 'Installed plugins:',
+		'ip_address_pages' => 'IP address pages',
 		'layout_title' => 'Layout',
 		'link_name' => 'Text of link:',
 		'link_new_window' => 'Open link in a new window',
@@ -122,6 +128,7 @@
 		'permissions_title' => 'Permissions',
 		'php_version' => 'PHP version:',
 		'plugin_pages_explanation' => 'The following pages are available via plugins:',
+		'plugin_widgets_explanation' => 'The following widgets are available via plugins:',
 		'plugins_title' => 'Plugins',
 		'points_defaults_shown' => 'Defaults shown below but NOT YET APPLIED:',
 		'points_required' => 'Points required to receive title:',
@@ -133,6 +140,7 @@
 		'q2a_db_version' => 'Q2A database version:',
 		'q2a_latest_version' => 'Q2A latest version:',
 		'q2a_version' => 'Question2Answer version:',
+		'question_pages' => 'Question pages',
 		'recalc_categories_complete' => 'All categories were successfully recalculated.',
 		'recalc_categories_note' => ' - for post categories and category counts',
 		'recalc_categories_recounting' => 'Recalculating category question totals...',
@@ -169,6 +177,7 @@
 		'spam_title' => 'Spam',
 		'stats_title' => 'Stats',
 		'stop_recalc_warning' => 'A database clean-up operation is running. If you close this page now, the operation will be interrupted.',
+		'tag_pages' => 'Tag pages',
 		'tags_and_categories' => 'Tags and Categories',
 		'tags_not_shown' => 'Some questions have tags which will not be displayed.',
 		'tags' => 'Tags',
@@ -179,6 +188,7 @@
 		'unnamed_plugin' => 'Unnamed Plugin',
 		'upgrade_db' => 'Your Question2Answer database needs to be ^1upgraded^2 for this version.',
 		'url_format_note' => 'Options with the ^ label are working for your site\'s configuration. For best search engine optimization (SEO), use the first ^ option available.',
+		'user_pages' => 'User pages',
 		'user_title' => 'User title (HTML allowed):',
 		'user_titles' => 'User titles based on points:',
 		'users_active' => 'Active users:',
@@ -187,6 +197,12 @@
 		'users_title' => 'Users',
 		'users_voted' => 'Users who voted:',
 		'viewing_title' => 'Viewing',
+		'widget_name' => 'Name of widget:',
+		'widget_no_positions' => 'This widget has already been added to every available position.',
+		'widget_not_available' => 'This widget is not available. This could be because the plugin providing the widget is no longer installed.',
+		'widget_all_pages' => 'Show widget in this position on all available pages',
+		'widget_pages_explanation' => 'Show widget in this position on the following pages:',
+		'widget_global_options' => ' - ^1edit global options^2'
 	);
 	
 

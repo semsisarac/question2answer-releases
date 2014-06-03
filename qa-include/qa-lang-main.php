@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-main.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Language phrases commonly used throughout Q2A
 
 
@@ -108,7 +108,7 @@
 		'results_for_x' => 'Search results for ^',
 		'save_button' => 'Save Changes',
 		'search_button' => 'Search',
-		'search_title' => 'Search Questions',
+		'search_title' => 'Search questions',
 		'send_button' => 'Send',
 		'suggest_ask' => 'Help get things started by ^1asking a question^2.',
 		'suggest_category_qs' => 'To see more, click for all the ^1questions in this category^2.',

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-config-example.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: After renaming, use this to set up database details and other stuff
 
 
@@ -54,11 +54,29 @@
 	 OPTIONAL CONSTANT DEFINITIONS, INCLUDING SUPPORT FOR SINGLE SIGN-ON
 	======================================================================
 
-	QA_MYSQL_TABLE_PREFIX will be added to all table names, to allow multiple datasets
+	QA_MYSQL_TABLE_PREFIX will be added to table names, to allow multiple datasets
 	in a single MySQL database, or to include the QA tables in an existing database.
 */
 
 	define('QA_MYSQL_TABLE_PREFIX', 'qa_');
+	
+/*
+	If you wish, you can define QA_MYSQL_USERS_PREFIX separately from QA_MYSQL_TABLE_PREFIX.
+	If so, it is used instead of QA_MYSQL_TABLE_PREFIX as the prefix for tables containing
+	information about QA user accounts (not including users' activity and points). To share a
+	single user base between multiple QA sites, use the same values for all the QA_MYSQL_*
+	constants in each site's qa-config.php file, with the exception of QA_MYSQL_TABLE_PREFIX.
+
+	define('QA_MYSQL_USERS_PREFIX', 'qa_users_');
+*/
+
+/*
+	If you wish, you can define QA_COOKIE_DOMAIN so that any cookies created by QA are assigned
+	to a specific domain name, instead of the full domain name of the request by default. This is
+	useful if you're running multiple QA sites on subdomains with a shared user base. 
+	
+	define('QA_COOKIE_DOMAIN', '.example.com'); // be sure to keep the leading period
+*/
 
 /*
 	Flags for using external code - set to true if you're replacing default functions

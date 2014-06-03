@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-util-string.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Some useful string-related stuff
 
 
@@ -101,7 +101,7 @@
 	);
 	
 	
-	function qa_string_to_words($string, $tolowercase=true, $delimiters=false)
+	function qa_string_to_words($string, $tolowercase=true, $delimiters=false, $splitideographs=true, $splithyphens=true)
 /*
 	Return the UTF-8 input string converted into an array of words, changed $tolowercase (or not),
 	and including or not the $delimiters after each word
@@ -109,15 +109,24 @@
 	{
 		global $qa_utf8punctuation;
 		
-		$string=strtr($tolowercase ? qa_strtolower($string) : $string, $qa_utf8punctuation);
+		if ($tolowercase)
+			$string=qa_strtolower($string);
 		
+		$string=strtr($string, $qa_utf8punctuation);
+		
+		$separator=QA_PREG_INDEX_WORD_SEPARATOR;
+		if ($splithyphens)
+			$separator.='|\-';
+
 		if ($delimiters) {
-			$separator=QA_PREG_INDEX_WORD_SEPARATOR.'|'.QA_PREG_CJK_IDEOGRAPHS_UTF8;
+			if ($splitideographs)
+				$separator.='|'.QA_PREG_CJK_IDEOGRAPHS_UTF8;
 		
 		} else {
 			$string=preg_replace("/(\S)'(\S)/", '\1\2', $string); // remove apostrophes in words
-			$string=preg_replace('/'.QA_PREG_CJK_IDEOGRAPHS_UTF8.'/', ' \0 ', $string); // put spaces around CJK ideographs so they're treated as separate words
-			$separator=QA_PREG_INDEX_WORD_SEPARATOR;
+			
+			if ($splitideographs) // put spaces around CJK ideographs so they're treated as separate words
+				$string=preg_replace('/'.QA_PREG_CJK_IDEOGRAPHS_UTF8.'/', ' \0 ', $string);
 		}
 		
 		return preg_split('/('.$separator.'+)/', $string, -1, PREG_SPLIT_NO_EMPTY | ($delimiters ? PREG_SPLIT_DELIM_CAPTURE : 0));

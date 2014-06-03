@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-maxima.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Definitions that determine database column size and rows retrieved
 
 
@@ -43,6 +43,8 @@
 	@define('QA_DB_MAX_WORD_LENGTH', 80);
 	@define('QA_DB_MAX_CAT_PAGE_TITLE_LENGTH', 80);
 	@define('QA_DB_MAX_CAT_PAGE_TAGS_LENGTH', 200);
+	@define('QA_DB_MAX_WIDGET_TAGS_LENGTH', 800);
+	@define('QA_DB_MAX_WIDGET_TITLE_LENGTH', 80);
 	@define('QA_DB_MAX_OPTION_TITLE_LENGTH', 40);
 	@define('QA_DB_MAX_PROFILE_TITLE_LENGTH', 40);
 	@define('QA_DB_MAX_PROFILE_CONTENT_LENGTH', 8000);

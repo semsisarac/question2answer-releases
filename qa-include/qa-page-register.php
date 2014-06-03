@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-register.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for register page
 
 
@@ -87,14 +87,14 @@
 	$qa_content['title']=qa_lang_html('users/register_title');
 
 	$qa_content['form']=array(
-		'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
+		'tags' => 'METHOD="POST" ACTION="'.qa_self_html().'"',
 		
 		'style' => 'tall',
 		
 		'fields' => array(
 			'handle' => array(
 				'label' => qa_lang_html('users/handle_label'),
-				'tags' => ' NAME="handle" ID="handle" ',
+				'tags' => 'NAME="handle" ID="handle"',
 				'value' => qa_html(@$inhandle),
 				'error' => qa_html(@$errors['handle']),
 			),
@@ -102,14 +102,14 @@
 			'password' => array(
 				'type' => 'password',
 				'label' => qa_lang_html('users/password_label'),
-				'tags' => ' NAME="password" ID="password" ',
+				'tags' => 'NAME="password" ID="password"',
 				'value' => qa_html(@$inpassword),
 				'error' => qa_html(@$errors['password']),
 			),
 
 			'email' => array(
 				'label' => qa_lang_html('users/email_label'),
-				'tags' => ' NAME="email" ID="email" ',
+				'tags' => 'NAME="email" ID="email"',
 				'value' => qa_html(@$inemail),
 				'note' => qa_opt('email_privacy'),
 				'error' => qa_html(@$errors['email']),

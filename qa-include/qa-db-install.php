@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-install.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Database-level functions for installation and upgrading
 
 
@@ -31,7 +31,7 @@
 	}
 
 
-	define('QA_DB_VERSION_CURRENT', 22);
+	define('QA_DB_VERSION_CURRENT', 24);
 
 
 	function qa_db_user_column_type_verify()
@@ -192,6 +192,19 @@
 				'UNIQUE position (position)',
 			),
 			
+			'widgets' => array(
+				'widgetid' => 'SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT',
+				'place' => 'CHAR(2) CHARACTER SET ascii NOT NULL',
+					// full region: FT=very top of page, FH=below nav area, FL=above footer, FB = very bottom of page
+					// side region: ST=top of side, SH=below sidebar, SL=below categories, SB=very bottom of side
+					// main region: MT=top of main, MH=below page title, ML=above links, MB=very bottom of main region
+				'position' => 'SMALLINT UNSIGNED NOT NULL', // global ordering, which allows widgets to be ordered within each place
+				'tags' => 'VARCHAR('.QA_DB_MAX_WIDGET_TAGS_LENGTH.') CHARACTER SET ascii NOT NULL', // comma-separated list of templates to display on
+				'title' => 'VARCHAR('.QA_DB_MAX_WIDGET_TITLE_LENGTH.') NOT NULL', // name of widget module that should be displayed
+				'PRIMARY KEY (widgetid)',
+				'UNIQUE position (position)',
+			),
+			
 			'posts' => array(
 				'postid' => 'INT UNSIGNED NOT NULL AUTO_INCREMENT',
 				'categoryid' => 'SMALLINT UNSIGNED',
@@ -240,7 +253,8 @@
 				'word' => 'VARCHAR('.QA_DB_MAX_WORD_LENGTH.') NOT NULL',
 				'titlecount' => 'INT UNSIGNED NOT NULL DEFAULT 0', // only counts one per post
 				'contentcount' => 'INT UNSIGNED NOT NULL DEFAULT 0', // only counts one per post
-				'tagcount' => 'INT UNSIGNED NOT NULL DEFAULT 0', // only counts one per post (though no duplicate tags anyway)
+				'tagwordcount' => 'INT UNSIGNED NOT NULL DEFAULT 0', // for words in tags - only counts one per post
+				'tagcount' => 'INT UNSIGNED NOT NULL DEFAULT 0', // for tags as a whole - only counts one per post (though no duplicate tags anyway)
 				'PRIMARY KEY (wordid)',
 				'KEY word (word)',
 				'KEY tagcount (tagcount)', // for sorting by most popular tags
@@ -265,6 +279,15 @@
 				'KEY wordid (wordid)',
 				'CONSTRAINT ^contentwords_ibfk_1 FOREIGN KEY (postid) REFERENCES ^posts(postid) ON DELETE CASCADE',
 				'CONSTRAINT ^contentwords_ibfk_2 FOREIGN KEY (wordid) REFERENCES ^words(wordid)',
+			),
+			
+			'tagwords' => array(
+				'postid' => 'INT UNSIGNED NOT NULL',
+				'wordid' => 'INT UNSIGNED NOT NULL',
+				'KEY postid (postid)',
+				'KEY wordid (wordid)',
+				'CONSTRAINT ^tagwords_ibfk_1 FOREIGN KEY (postid) REFERENCES ^posts(postid) ON DELETE CASCADE',
+				'CONSTRAINT ^tagwords_ibfk_2 FOREIGN KEY (wordid) REFERENCES ^words(wordid)',
 			),
 				
 			'posttags' => array(
@@ -386,7 +409,7 @@
 		$missing=array();
 		
 		foreach ($definitions as $rawname => $definition)
-			if (!isset($keydbtables[strtolower(QA_MYSQL_TABLE_PREFIX.$rawname)]))
+			if (!isset($keydbtables[strtolower(qa_db_add_table_prefix($rawname))]))
 				$missing[$rawname]=$definition;
 		
 		return $missing;
@@ -463,10 +486,26 @@
 					return 'old-version';
 			}
 		
-			if (count($missing))
+			if (count($missing)) {
+				if (defined('QA_MYSQL_USERS_PREFIX')) { // special case if two installations sharing users
+					$datacount=0;
+					$datamissing=0;
+					
+					foreach ($definitions as $rawname => $definition)
+						if (qa_db_add_table_prefix($rawname)==(QA_MYSQL_TABLE_PREFIX.$rawname)) {
+							$datacount++;
+							
+							if (isset($missing[$rawname]))
+								$datamissing++;
+						}
+						
+					if ( ($datacount==$datamissing) && ($datamissing==count($missing)) )
+						return 'non-users-missing';
+				}
+							
 				return 'table-missing';
 				
-			else
+			} else
 				foreach ($definitions as $table => $definition)
 					if (count(qa_db_missing_columns($table, $definition)))
 						return 'column-missing';
@@ -551,12 +590,11 @@
 		
 	//	Write-lock all QA tables before we start so no one can read or write anything
 
-		$tables=qa_db_read_all_values(qa_db_query_raw('SHOW TABLES'));
+		$keydbtables=qa_array_to_lower_keys(qa_db_read_all_values(qa_db_query_raw('SHOW TABLES')));
 
-		$locks=array();
-		foreach ($tables as $table)
-			if (strpos($table, QA_MYSQL_TABLE_PREFIX)===0) // could have other tables not belonging to QA
-				$locks[]=$table.' WRITE';
+		foreach ($definitions as $rawname => $definition)
+			if (isset($keydbtables[strtolower(qa_db_add_table_prefix($rawname))]))
+				$locks[]='^'.$rawname.' WRITE';
 				
 		$locktablesquery='LOCK TABLES '.implode(', ', $locks);
 			
@@ -791,7 +829,42 @@
 					}
 					break;
 			
-			//	Up to here: Version 1.3 beta 2 and 1.3 release			
+			//	Up to here: Version 1.3 beta 2 and release
+			
+				case 23:
+					qa_db_upgrade_query(qa_db_create_table_sql('widgets', array(
+						'widgetid' => $definitions['widgets']['widgetid'],
+						'place' => $definitions['widgets']['place'],
+						'position' => $definitions['widgets']['position'],
+						'tags' => $definitions['widgets']['tags'],
+						'title' => $definitions['widgets']['title'],
+						'PRIMARY KEY (widgetid)',
+						'UNIQUE position (position)',
+					)));
+					
+					$locktablesquery.=', ^widgets WRITE';
+					qa_db_upgrade_query($locktablesquery);
+					break;
+					
+				case 24:
+					qa_db_upgrade_query(qa_db_create_table_sql('tagwords', array(
+						'postid' => $definitions['tagwords']['postid'],
+						'wordid' => $definitions['tagwords']['wordid'],
+						'KEY postid (postid)',
+						'KEY wordid (wordid)',
+						'CONSTRAINT ^tagwords_ibfk_1 FOREIGN KEY (postid) REFERENCES ^posts(postid) ON DELETE CASCADE',
+						'CONSTRAINT ^tagwords_ibfk_2 FOREIGN KEY (wordid) REFERENCES ^words(wordid)',
+					)));
+					
+					$locktablesquery.=', ^tagwords WRITE';
+					
+					qa_db_upgrade_query('ALTER TABLE ^words ADD COLUMN tagwordcount '.$definitions['words']['tagwordcount']);
+					qa_db_upgrade_query($locktablesquery);
+					
+					$keyrecalc['doreindexposts']=true;
+					break;
+					
+			//	Up to here: Version 1.4 developer preview
 					
 			}
 			
@@ -838,7 +911,7 @@
 	Perform upgrade $query and output progress to the browser
 */
 	{
-		qa_db_upgrade_progress('Running query: '.strtr($query, array('^' => QA_MYSQL_TABLE_PREFIX)).' ...');
+		qa_db_upgrade_progress('Running query: '.qa_db_apply_sub($query, array()).' ...');
 		qa_db_query_sub($query);
 	}
 

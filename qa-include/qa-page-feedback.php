@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-feedback.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for feedback page
 
 
@@ -47,13 +47,8 @@
 
 //	Check feedback is enabled
 
-	if (!qa_opt('feedback_enabled')) {
-		header('HTTP/1.0 404 Not Found');
-		$qa_template='not-found';
-		$qa_content=qa_content_prepare();
-		$qa_content['error']=qa_lang_html('main/page_not_found');
-		return $qa_content;
-	}
+	if (!qa_opt('feedback_enabled'))
+		return include QA_INCLUDE_DIR.'qa-page-not-found.php';
 
 
 //	Send the feedback form
@@ -98,6 +93,14 @@
 				$feedbacksent=true;
 			else
 				$page_error=qa_lang_html('main/general_error');
+				
+			qa_report_event('feedback', $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, array(
+				'email' => $inemail,
+				'name' => $inname,
+				'message' => $inmessage,
+				'previous' => $inreferer,
+				'browser' => @$_SERVER['HTTP_USER_AGENT'],
+			));
 		}
 	}
 	
@@ -111,7 +114,7 @@
 	$qa_content['error']=@$page_error;
 
 	$qa_content['form']=array(
-		'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
+		'tags' => 'METHOD="POST" ACTION="'.qa_self_html().'"',
 		
 		'style' => 'tall',
 		
@@ -119,7 +122,7 @@
 			'message' => array(
 				'type' => $feedbacksent ? 'static' : '',
 				'label' => qa_lang_html_sub('misc/feedback_message', qa_opt('site_title')),
-				'tags' => ' NAME="message" ID="message" ',
+				'tags' => 'NAME="message" ID="message"',
 				'value' => qa_html(@$inmessage),
 				'rows' => 8,
 				'error' => qa_html(@$errors['message']),
@@ -128,14 +131,14 @@
 			'name' => array(
 				'type' => $feedbacksent ? 'static' : '',
 				'label' => qa_lang_html('misc/feedback_name'),
-				'tags' => ' NAME="name" ',
+				'tags' => 'NAME="name"',
 				'value' => qa_html(isset($inname) ? $inname : @$userprofile['name']),
 			),
 
 			'email' => array(
 				'type' => $feedbacksent ? 'static' : '',
 				'label' => qa_lang_html('misc/feedback_email'),
-				'tags' => ' NAME="email" ',
+				'tags' => 'NAME="email"',
 				'value' => qa_html(isset($inemail) ? $inemail : qa_get_logged_in_email()),
 				'note' => $feedbacksent ? null : qa_opt('email_privacy'),
 			),

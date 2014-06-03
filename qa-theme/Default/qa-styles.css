@@ -1,12 +1,12 @@
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-theme/Default/qa-styles.css
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: CSS file for included Candy theme
 
 
@@ -32,7 +32,7 @@ a:link,a:active,a:visited {text-decoration:none;}
 a:hover {text-decoration:underline;}
 p {margin-top:0;}
 
-.qa-body-wrapper {background:#fff; border-left:1px solid #293d39; border-right:1px solid #293d39; width:980px; margin:0 auto; text-align:left;}
+.qa-body-wrapper {background:#fff; border:1px solid #293d39; width:980px; margin:0 auto; margin-top:-1px; text-align:left;}
 
 /* Clearing classes */
 
@@ -63,10 +63,22 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-sidebar {padding:12px; font-size:14px; background:#f5e4c3; border:1px solid #f3c772; margin:24px 0;}
 .qa-feed {background:url(feed-icon-14x14.png) no-repeat left top; padding-left:20px; height:16px; margin:24px 0;}
 .qa-feed-link {font-size:10px; color:#666;}
-.qa-main {padding-left:20px; float:left; margin-bottom:2em; width:750px;}
+.qa-main {padding-left:20px; float:left; margin-bottom:2em; width:750px; clear:left;}
 .qa-main-hidden h1 {color:#999;}
 .qa-footer {clear:both; background:#293D39; color:#FFF; font-size:10px; padding:12px;}
 * html .qa-footer {padding-top:6px;} /* IE6 */
+
+/* Widget wrappers */
+
+.qa-widgets-full-top {margin-bottom:-4px;}
+.qa-widget-full {clear:both; margin:20px; width:942px;}
+.qa-widget-full-high {margin-bottom:0;}
+.qa-widgets-main-top {margin-top:24px;}
+.qa-widgets-main-high {margin-bottom:24px;}
+.qa-widget-main {margin:20px 0; width:728px;}
+.qa-widget-main-bottom {margin-bottom:0;}
+.qa-widgets-side-top {margin-top:24px;}
+.qa-widget-side {margin:16px 0; width:176px;}
 
 /* Header sections */
 

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-ask.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for ask-a-question page
 
 
@@ -108,7 +108,7 @@
 			if (qa_clicked('doask3')) { // process incoming formfor final stage (ready to create question)
 				require_once QA_INCLUDE_DIR.'qa-util-string.php';
 				
-				$tagstring=qa_tags_to_tagstring(array_unique(qa_string_to_words(@$intags)));
+				$tagstring=qa_tags_to_tagstring(array_unique(qa_string_to_words(@$intags, true, false, false, false)));
 
 				$innotify=qa_post_text('notify');
 				$inemail=qa_post_text('email');
@@ -240,14 +240,14 @@
 
 		if ($stage==1) { // see stages in comment above
 			$qa_content['form']=array(
-				'tags' => ' NAME="ask" METHOD="POST" ACTION="'.qa_self_html().'" ',
+				'tags' => 'NAME="ask" METHOD="POST" ACTION="'.qa_self_html().'"',
 				
 				'style' => 'tall',
 				
 				'fields' => array(
 					'title' => array(
 						'label' => qa_lang_html('question/q_title_label'),
-						'tags' => ' NAME="title" ID="title" ',
+						'tags' => 'NAME="title" ID="title"',
 						'value' => qa_html(@$intitle),
 						'error' => qa_html(@$errors['title']),
 						'note' => qa_lang_html('question/q_title_note'),
@@ -255,7 +255,7 @@
 
 					'category' => array(
 						'label' => qa_lang_html('question/q_category_label'),
-						'tags' => ' NAME="category" ',
+						'tags' => 'NAME="category"',
 						'value' => @$categoryoptions[$incategoryid],
 						'type' => 'select',
 						'options' => $categoryoptions,
@@ -304,13 +304,13 @@
 
 		
 			$qa_content['q_list']['form']=array(
-				'tags' => ' NAME="ask" METHOD="POST" ACTION="'.qa_self_html().'" ',
+				'tags' => 'NAME="ask" METHOD="POST" ACTION="'.qa_self_html().'"',
 				
 				'style' => 'basic',
 				
 				'buttons' => array(
 					'proceed' => array(
-						'tags' => ' NAME="doask2" ',
+						'tags' => 'NAME="doask2"',
 						'label' => qa_lang_html('question/different_button'),
 					),
 				),
@@ -326,21 +326,21 @@
 			$editor=qa_load_editor(@$incontent, @$informat, $editorname);
 
 			$qa_content['form']=array(
-				'tags' => ' NAME="ask" METHOD="POST" ACTION="'.qa_self_html().'" ',
+				'tags' => 'NAME="ask" METHOD="POST" ACTION="'.qa_self_html().'"',
 				
 				'style' => 'tall',
 				
 				'fields' => array(
 					'title' => array(
 						'label' => qa_lang_html('question/q_title_label'),
-						'tags' => ' NAME="title" ',
+						'tags' => 'NAME="title"',
 						'value' => qa_html(@$intitle),
 						'error' => qa_html(@$errors['title']),
 					),
 					
 					'category' => array(
 						'label' => qa_lang_html('question/q_category_label'),
-						'tags' => ' NAME="category" ',
+						'tags' => 'NAME="category"',
 						'value' => @$categoryoptions[$incategoryid],
 						'type' => 'select',
 						'options' => $categoryoptions,

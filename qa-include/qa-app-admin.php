@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-admin.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Functions used in the admin center pages
 
 
@@ -88,6 +88,7 @@
 			'is' => 'Icelandic - Íslenska',
 			'it' => 'Italian - Italiano',
 			'ja' => 'Japanese - 日本語',
+			'kh' => 'Khmer - ភាសាខ្មែរ',
 			'ko' => 'Korean - 한국어',
 			'lt' => 'Lithuanian - Lietuvių',
 			'nl' => 'Dutch - Nederlands',
@@ -143,6 +144,28 @@
 		asort($options, SORT_STRING);
 		
 		return $options;
+	}
+	
+	
+	function qa_admin_place_options()
+/*
+	Return an array of widget placement options, with keys matching the database value
+*/
+	{
+		return array(
+			'FT' => qa_lang_html('options/place_full_top'),
+			'FH' => qa_lang_html('options/place_full_below_nav'),
+			'FL' => qa_lang_html('options/place_full_below_content'),
+			'FB' => qa_lang_html('options/place_full_below_footer'),
+			'MT' => qa_lang_html('options/place_main_top'),
+			'MH' => qa_lang_html('options/place_main_below_title'),
+			'ML' => qa_lang_html('options/place_main_below_lists'),
+			'MB' => qa_lang_html('options/place_main_bottom'),
+			'ST' => qa_lang_html('options/place_side_top'),
+			'SH' => qa_lang_html('options/place_side_below_sidebar'),
+			'SL' => qa_lang_html('options/place_side_below_categories'),
+			'SB' => qa_lang_html('options/place_side_last'),
+		);
 	}
 
 	

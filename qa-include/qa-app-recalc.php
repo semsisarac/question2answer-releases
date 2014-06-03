@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-recalc.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Managing database recalculations (clean-up operations) and status messages
 
 
@@ -32,7 +32,8 @@
 	===============================
 	^titlewords (all): index of words in titles of posts
 	^contentwords (all): index of words in content of posts
-	^posttags (all): index of words in tags of posts
+	^tagwords (all): index of words in tags of posts (a tag can contain multiple words)
+	^posttags (all): index tags of posts
 	^words (all): list of words used for indexes
 	^options (title=cache_qcount|cache_acount|cache_ccount|cache_tagcount|cache_unaqcount): total Qs, As, Cs, tags, unanswered Qs
 	
@@ -233,7 +234,17 @@
 					$postid=$posts[0];
 					
 					$oldcomment=qa_db_single_select(qa_db_full_post_selectspec(null, $postid));
-					qa_comment_delete($oldcomment);
+					$parent=qa_db_single_select(qa_db_full_post_selectspec(null, $oldcomment['parentid']));
+					
+					if ($parent['basetype']=='Q') {
+						$question=$parent;
+						$answer=null;
+					} else {
+						$question=qa_db_single_select(qa_db_full_post_selectspec(null, $parent['parentid']));
+						$answer=$parent;
+					}
+
+					qa_comment_delete($oldcomment, $question, $answer, null, null, null);
 					
 					$next=1+$postid;
 					$done++;
@@ -251,7 +262,7 @@
 					
 					$oldanswer=qa_db_single_select(qa_db_full_post_selectspec(null, $postid));
 					$question=qa_db_single_select(qa_db_full_post_selectspec(null, $oldanswer['parentid']));
-					qa_answer_delete($oldanswer, $question);
+					qa_answer_delete($oldanswer, $question, null, null, null);
 					
 					$next=1+$postid;
 					$done++;
@@ -268,7 +279,7 @@
 					$postid=$posts[0];
 					
 					$oldquestion=qa_db_single_select(qa_db_full_post_selectspec(null, $postid));
-					qa_question_delete($oldquestion);
+					qa_question_delete($oldquestion, null, null, null);
 					
 					$next=1+$postid;
 					$done++;
@@ -350,6 +361,9 @@
 */
 	{
 		@list($operation, $length, $next, $done)=explode(',', $state);
+		
+		$done=(int)$done;
+		$length=(int)$length;
 		
 		switch ($operation) {
 			case 'doreindexposts_postcount':

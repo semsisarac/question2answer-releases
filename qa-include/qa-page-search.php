@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-search.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for search page
 
 
@@ -39,12 +39,12 @@
 		require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 
-		$inquery=qa_get('q');
+		$inquery=trim(qa_get('q'));
 		$words=qa_string_to_words($inquery);
 		$retrieve=2*QA_DB_RETRIEVE_QS_AS+1; // get enough results to be able to give some idea of how many pages of search results there are
 		
 		list($questions, $categories)=qa_db_select_with_pending(
-			qa_db_search_posts_selectspec($qa_login_userid, $words, $words, $words, $words, trim($inquery), $qa_start, false, $retrieve),
+			qa_db_search_posts_selectspec($qa_login_userid, $words, $words, $words, $words, $inquery, $qa_start, false, $retrieve),
 			qa_db_categories_selectspec()
 		);
 		
@@ -52,6 +52,11 @@
 		$gotcount=count($questions);
 		$questions=array_slice($questions, 0, $pagesize);
 		$usershtml=qa_userids_handles_html($questions);
+		
+		qa_report_event('search', $qa_login_userid, qa_get_logged_in_handle(), $qa_cookieid, array(
+			'query' => $inquery,
+			'start' => $qa_start,
+		));
 	}
 
 
@@ -69,7 +74,7 @@
 			$qa_content['title']=qa_lang_html_sub('main/no_results_for_x', qa_html($inquery));
 			
 		$qa_content['q_list']['form']=array(
-			'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
+			'tags' => 'METHOD="POST" ACTION="'.qa_self_html().'"',
 		);
 		
 		$qa_content['q_list']['qs']=array();

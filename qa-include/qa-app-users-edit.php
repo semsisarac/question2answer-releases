@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users-edit.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: User management (application level) for creating/modifying users
 
 
@@ -138,9 +138,10 @@
 	}
 
 	
-	function qa_create_new_user($email, $password, $handle, $level=QA_USER_LEVEL_BASIC)
+	function qa_create_new_user($email, $password, $handle, $level=QA_USER_LEVEL_BASIC, $confirmed=false)
 /*
 	Create a new user (application level) with $email, $password, $handle and $level.
+	Set $confirmed to true if the email address has been confirmed elsewhere.
 	Handles user points, notification and optional email confirmation.
 */
 	{
@@ -148,15 +149,19 @@
 		require_once QA_INCLUDE_DIR.'qa-db-points.php';
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 		require_once QA_INCLUDE_DIR.'qa-app-emails.php';
+		require_once QA_INCLUDE_DIR.'qa-app-cookies.php';
 
 		$userid=qa_db_user_create($email, $password, $handle, $level, @$_SERVER['REMOTE_ADDR']);
 		qa_db_points_update_ifuser($userid, null);
+		
+		if ($confirmed)
+			qa_db_user_set_flag($userid, QA_USER_FLAGS_EMAIL_CONFIRMED, true);
 		
 		$options=qa_get_options(array('custom_welcome', 'site_url', 'confirm_user_emails'));
 		
 		$custom=trim($options['custom_welcome']);
 		
-		if ($options['confirm_user_emails'] && ($level<QA_USER_LEVEL_EXPERT))
+		if ($options['confirm_user_emails'] && ($level<QA_USER_LEVEL_EXPERT) && !$confirmed)
 			$confirm=strtr(qa_lang('emails/welcome_confirm'), array(
 				'^url' => qa_get_new_confirm_url($userid, $handle)
 			));
@@ -164,10 +169,15 @@
 			$confirm='';
 		
 		qa_send_notification($userid, $email, $handle, qa_lang('emails/welcome_subject'), qa_lang('emails/welcome_body'), array(
-			'^password' => $password,
+			'^password' => isset($password) ? $password : qa_lang('users/password_to_set'),
 			'^url' => $options['site_url'],
 			'^custom' => empty($custom) ? '' : ($custom."\n\n"),
 			'^confirm' => $confirm,
+		));
+		
+		qa_report_event('u_register', $userid, $handle, qa_cookie_get(), array(
+			'email' => $email,
+			'level' => $level,
 		));
 		
 		return $userid;
@@ -206,15 +216,20 @@
 	}
 
 	
-	function qa_complete_confirm($userid)
+	function qa_complete_confirm($userid, $email, $handle)
 /*
 	Complete the email confirmation process for the user
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-db-users.php';
+		require_once QA_INCLUDE_DIR.'qa-app-cookies.php';
 		
 		qa_db_user_set_flag($userid, QA_USER_FLAGS_EMAIL_CONFIRMED, true);
-		qa_db_user_set($userid, 'emailcode', ''); // to prevent re-use	of the code
+		qa_db_user_set($userid, 'emailcode', ''); // to prevent re-use of the code
+
+		qa_report_event('u_confirmed', $userid, $handle, qa_cookie_get(), array(
+			'email' => $email,
+		));
 	}
 
 	
@@ -248,6 +263,7 @@
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 		require_once QA_INCLUDE_DIR.'qa-app-emails.php';
+		require_once QA_INCLUDE_DIR.'qa-app-cookies.php';
 		require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 	
 		$password=qa_random_alphanum(max(QA_MIN_PASSWORD_LEN, QA_NEW_PASSWORD_LEN));
@@ -262,6 +278,10 @@
 		
 		qa_db_user_set_password($userid, $password); // do this last, to be safe
 		qa_db_user_set($userid, 'emailcode', ''); // so can't be reused
+
+		qa_report_event('u_reset', $userid, $userinfo['handle'], qa_cookie_get(), array(
+			'email' => $userinfo['email'],
+		));
 	}
 
 	

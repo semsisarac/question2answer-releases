@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-users.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Language phrases for user management
 
 
@@ -83,6 +83,7 @@
 		'password_mismatch' => 'New passwords do not match',
 		'password_none' => 'None. To log in directly, set a password below.',
 		'password_sent' => 'Your new password was emailed to you',
+		'password_to_set' => 'Please set on your account page',
 		'password_wrong' => 'Password not correct',
 		'profile_saved' => 'Profile saved',
 		'register_button' => 'Register',

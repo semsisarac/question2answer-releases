@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Sets up Q2A environment, plus many globally useful functions
 
 
@@ -31,7 +31,7 @@
 	
 //	Set the version to be used for internal reference and a suffix for .js and .css requests
 
-	define('QA_VERSION', '1.3.3');
+	define('QA_VERSION', '1.4-dev');
 
 //	Basic PHP configuration checks and unregister globals
 
@@ -73,6 +73,8 @@
 	
 	require_once QA_BASE_DIR.'qa-config.php';
 	require_once QA_INCLUDE_DIR.'qa-db.php';
+	
+	@define('QA_COOKIE_DOMAIN', ''); // default if not set
 
 	
 //	General HTML/JS functions
@@ -82,7 +84,7 @@
 	Return HTML representation of $string, work well with blocks of text if $multiline is true
 */
 	{
-		$html=htmlspecialchars($string);
+		$html=htmlspecialchars((string)$string);
 		
 		if ($multiline) {
 			$html=preg_replace('/\r\n?/', "\n", $html);
@@ -117,12 +119,12 @@
 	}
 	
 	
-	function qa_js($value)
+	function qa_js($value, $forcequotes=false)
 /*
-	Return JavaScript representation of $value, putting in quotes if appropriate
+	Return JavaScript representation of $value, putting in quotes if non-numeric or if $forcequote is true
 */
 	{
-		if (is_numeric($value))
+		if (is_numeric($value) && !$forcequotes)
 			return $value;
 		else
 			return "'".strtr($value, array(
@@ -378,7 +380,7 @@
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 	
-		$words=qa_string_to_words($title);
+		$words=qa_string_to_words($title, true, false, false);
 
 		$wordlength=array();
 		foreach ($words as $index => $word)
@@ -541,13 +543,20 @@
 	
 //	Module (and plugin) management
 	
+	$qa_modules=array();
+	$qa_layers=array();
+
+
 	function qa_register_module($type, $include, $class, $name, $directory=QA_INCLUDE_DIR, $urltoroot=null)
 /*
 	Register a module of $type named $name, whose class named $class is defined in file $include (or null if no include necessary)
-	If this modules comes from a plugin, pass in the local plugin $directory and the $urltoroot relative url for that directory 
+	If this module comes from a plugin, pass in the local plugin $directory and the $urltoroot relative url for that directory 
 */
 	{
 		global $qa_modules;
+		
+		if (isset($qa_modules[$type][$name]))
+			qa_fatal_error('A '.$type.' module named '.$name.' already exists. Please check there are no duplicate plugins.');
 		
 		$qa_modules[$type][$name]=array(
 			'directory' => $directory,
@@ -555,6 +564,65 @@
 			'include' => $include,
 			'class' => $class,
 		);
+	}
+	
+	
+	function qa_register_plugin_module($type, $include, $class, $name)
+/*
+	Register a plugin module of $type named $name, whose class named $class is defined in file $include (or null if no include necessary)
+	This function relies on some global variable values and can only be called from a plugin's qa-plugin.php file
+*/
+	{
+		global $qa_plugin_directory, $qa_plugin_urltoroot;
+		
+		if (empty($qa_plugin_directory) || empty($qa_plugin_urltoroot))
+			qa_fatal_error('qa_register_plugin_module() can only be called from a plugin qa-plugin.php file');
+
+		qa_register_module($type, $include, $class, $name, $qa_plugin_directory, $qa_plugin_urltoroot);
+	}
+
+	
+	function qa_register_layer($include, $name, $directory=QA_INCLUDE_DIR, $urltoroot=null)
+/*
+	Register a layer named $name, defined in file $include. If this layer comes from a plugin (as all currently do),
+	pass in the local plugin $directory and the $urltoroot relative url for that directory 
+*/
+	{
+		global $qa_layers;
+		
+		if (isset($qa_layers[$name]))
+			qa_fatal_error('A layer named '.$name.' already exists. Please check there are no duplicate plugins.');
+			
+		$qa_layers[$name]=array(
+			'directory' => $directory,
+			'urltoroot' => $urltoroot,
+			'include' => $include,
+		);
+	}
+
+	
+	function qa_register_plugin_layer($include, $name)
+/*
+	Register a plugin layer named $name, defined in file $include. Can only be called from a plugin's qa-plugin.php file
+*/
+	{
+		global $qa_plugin_directory, $qa_plugin_urltoroot;
+		
+		if (empty($qa_plugin_directory) || empty($qa_plugin_urltoroot))
+			qa_fatal_error('qa_register_plugin_layer() can only be called from a plugin qa-plugin.php file');
+
+		qa_register_layer($include, $name, $qa_plugin_directory, $qa_plugin_urltoroot);
+	}
+	
+	
+	function qa_list_module_types()
+/*
+	Return an array of all the module types for which at least one module has been registered
+*/
+	{
+		global $qa_modules;
+		
+		return array_keys($qa_modules);
 	}
 
 	
@@ -600,24 +668,25 @@
 	}
 	
 	
-	function qa_register_plugin_module($type, $include, $class, $name)
+	function qa_report_event($type, $userid, $handle, $cookieid, $params=array())
 /*
-	Register a plugin module of $type named $name, whose class named $class is defined in file $include (or null if no include necessary)
-	This function relies on some global variable values and can only be called from a plugin's qa-plugin.php file
+	Send a notification of event $type by $userid, $handle and $cookieid to all event modules, with extra $params
 */
 	{
-		global $qa_plugin_directory, $qa_plugin_urltoroot;
+		require_once QA_INCLUDE_DIR.'qa-app-cookies.php';
 		
-		if (empty($qa_plugin_directory) || empty($qa_plugin_urltoroot))
-			qa_fatal_error('qa_register_plugin_module() can only be called from a plugin qa-plugin.php file');
-
-		qa_register_module($type, $include, $class, $name, $qa_plugin_directory, $qa_plugin_urltoroot);
+		$modulenames=qa_list_modules('event');
+		
+		foreach ($modulenames as $tryname) {
+			$trymodule=qa_load_module('event', $tryname);
+			
+			if (method_exists($trymodule, 'process_event'))
+				$trymodule->process_event($type, $userid, $handle, $cookieid, $params);
+		}
 	}
 	
 
-//	Register default editor and viewer modules and others via plugin qa-plugin.php files
-
-	$qa_modules=array();
+//	Register default editor and viewer modules and other modules and layers via plugin qa-plugin.php files
 
 	qa_register_module('editor', 'qa-editor-basic.php', 'qa_editor_basic', '');
 	qa_register_module('viewer', 'qa-viewer-basic.php', 'qa_viewer_basic', '');

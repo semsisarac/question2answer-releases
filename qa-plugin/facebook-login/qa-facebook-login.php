@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/facebook-login/qa-facebook-login.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Login module class for Facebook login plugin
 
 
@@ -123,6 +123,8 @@
 
 			if (!strlen($app_id))
 				return;
+				
+			if (isset($_COOKIE['fbs_'.$app_id])) { // check we still have a Facebook cookie ...
 
 ?>		
 <span id="fb-root"></span>
@@ -136,6 +138,8 @@
 <fb:login-button autologoutlink="true"></fb:login-button>
 <?php
 
+			} else // ... if not, show a standard logout link, since sometimes the redirect to Q2A's logout page doesn't complete
+				echo '<A HREF="'.qa_html($tourl).'">'.qa_lang_html('main/nav_logout').'</A>';
 		}
 		
 		function admin_form()

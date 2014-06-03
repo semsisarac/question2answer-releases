@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-post-update.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description:  Database functions for changing a question, answer or comment
 
 
@@ -128,30 +128,6 @@
 	}
 
 	
-	function qa_db_posttags_get_post_wordids($postid)
-/*
-	Return an array of wordids that were indexed in the database for the tags of $postid
-*/
-	{
-		return qa_db_read_all_values(qa_db_query_sub(
-			'SELECT wordid FROM ^posttags WHERE postid=#',
-			$postid
-		));
-	}
-
-	
-	function qa_db_posttags_delete_post($postid)
-/*
-	Remove all entries in the database index of post tags for $postid
-*/
-	{
-		qa_db_query_sub(
-			'DELETE FROM ^posttags WHERE postid=#',
-			$postid
-		);
-	}
-
-
 	function qa_db_titlewords_get_post_wordids($postid)
 /*
 	Return an array of wordids that were indexed in the database for the title of $postid
@@ -195,6 +171,54 @@
 	{
 		qa_db_query_sub(
 			'DELETE FROM ^contentwords WHERE postid=#',
+			$postid
+		);
+	}
+	
+	
+	function qa_db_tagwords_get_post_wordids($postid)
+/*
+	Return an array of wordids that were indexed in the database for the individual words in tags of $postid
+*/
+	{
+		return qa_db_read_all_values(qa_db_query_sub(
+			'SELECT wordid FROM ^tagwords WHERE postid=#',
+			$postid
+		));
+	}
+	
+	
+	function qa_db_tagwords_delete_post($postid)
+/*
+	Remove all entries in the database index of individual words in tags of $postid
+*/
+	{
+		qa_db_query_sub(
+			'DELETE FROM ^tagwords WHERE postid=#',
+			$postid
+		);
+	}
+
+
+	function qa_db_posttags_get_post_wordids($postid)
+/*
+	Return an array of wordids that were indexed in the database for the whole tags of $postid
+*/
+	{
+		return qa_db_read_all_values(qa_db_query_sub(
+			'SELECT wordid FROM ^posttags WHERE postid=#',
+			$postid
+		));
+	}
+
+	
+	function qa_db_posttags_delete_post($postid)
+/*
+	Remove all entries in the database index of whole tags for $postid
+*/
+	{
+		qa_db_query_sub(
+			'DELETE FROM ^posttags WHERE postid=#',
 			$postid
 		);
 	}

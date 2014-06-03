@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-ip.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for page showing activity for an IP address
 
 
@@ -34,7 +34,9 @@
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 
 	
-	$ip=$pass_ip; // picked up from qa-page.php
+	$ip=$pass_subrequest; // picked up from qa-page.php
+	if (long2ip(ip2long($ip))!==$ip)
+		return include QA_INCLUDE_DIR.'qa-page-not-found.php';
 
 
 //	Find recently (hidden or not) questions, answers, comments and edits
@@ -102,7 +104,7 @@
 	$qa_content['title']=qa_lang_html_sub('main/ip_address_x', qa_html($ip));
 
 	$qa_content['form']=array(
-			'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
+			'tags' => 'METHOD="POST" ACTION="'.qa_self_html().'"',
 			
 			'style' => 'wide',
 			
@@ -134,13 +136,13 @@
 			);
 			
 			$qa_content['form']['buttons']['unblock']=array(
-				'tags' => ' NAME="dounblock" ',
+				'tags' => 'NAME="dounblock"',
 				'label' => qa_lang_html('misc/unblock_ip_button'),
 			);
 
 		} else
 			$qa_content['form']['buttons']['block']=array(
-				'tags' => ' NAME="doblock" ',
+				'tags' => 'NAME="doblock"',
 				'label' => qa_lang_html('misc/block_ip_button'),
 			);
 	}

@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-options.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Getting and setting admin options (application level)
 
 
@@ -360,7 +360,23 @@
 					$value=is_numeric($oldvalue) ? $oldvalue : 1;
 					break;
 				
-				default:
+				default: // call option_default method in any registered modules
+					$moduletypes=qa_list_module_types();
+					
+					foreach ($moduletypes as $moduletype) {
+						$modulenames=qa_list_modules($moduletype);
+						
+						foreach ($modulenames as $modulename) {
+							$module=qa_load_module($moduletype, $modulename);
+							
+							if (method_exists($module, 'option_default')) {
+								$value=$module->option_default($name);
+								if (isset($value))
+									return $value;
+							}
+						}
+					}
+
 					$value='';
 					break;
 			}

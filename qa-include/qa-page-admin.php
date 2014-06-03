@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for most admin pages which just contain options
 
 
@@ -489,7 +489,7 @@
 	$qa_content['error']=qa_admin_page_error();
 
 	$qa_content['form']=array(
-		'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
+		'tags' => 'METHOD="POST" ACTION="'.qa_self_html().'"',
 		
 		'style' => $formstyle,
 		
@@ -501,7 +501,7 @@
 			),
 			
 			'reset' => array(
-				'tags' => ' NAME="doresetoptions" ',
+				'tags' => 'NAME="doresetoptions"',
 				'label' => qa_lang_html('admin/reset_options_button'),
 			),
 		),
@@ -541,7 +541,7 @@
 			$optionfield=array(
 				'id' => $optionname,
 				'label' => qa_lang_html('options/'.$optionname),
-				'tags' => ' NAME="option_'.$optionname.'" ID="option_'.$optionname.'" ',
+				'tags' => 'NAME="option_'.$optionname.'" ID="option_'.$optionname.'"',
 				'value' => qa_html($value),
 				'type' => $type,
 				'error' => @$errors[$optionname],
@@ -647,7 +647,7 @@
 					break;
 					
 				case 'avatar_default_show';
-					$qa_content['form']['tags'].=' ENCTYPE="multipart/form-data" ';
+					$qa_content['form']['tags'].='ENCTYPE="multipart/form-data"';
 					$optionfield['label'].=' <SPAN STYLE="margin:2px 0; display:inline-block;">'.
 						qa_get_avatar_blob_html(qa_opt('avatar_default_blobid'), qa_opt('avatar_default_width'), qa_opt('avatar_default_height'), 32).
 						'</SPAN> <INPUT NAME="avatar_default_file" TYPE="file" STYLE="width:16em;">';
@@ -881,6 +881,63 @@
 			);
 			break;
 			
+		case 'layout':
+			$modulenames=qa_list_modules('widget');
+			
+			$listhtml='';
+			
+			foreach ($modulenames as $tryname) {
+				$trywidget=qa_load_module('widget', $tryname);
+				
+				if (method_exists($trywidget, 'allow_template') && method_exists($trywidget, 'allow_region')) {
+					$listhtml.='<LI><B>'.qa_html($tryname).'</B>';
+					
+					$listhtml.=strtr(qa_lang_html('admin/add_widget_link'), array(
+						'^1' => '<A HREF="'.qa_path_html('admin/layoutwidgets', array('title' => $tryname)).'">',
+						'^2' => '</A>',
+					));
+					
+					if (method_exists($trywidget, 'admin_form'))
+						$listhtml.=strtr(qa_lang_html('admin/widget_global_options'), array(
+							'^1' => '<A HREF="'.qa_path_html('admin/plugins', null, null, null, md5('widget/'.$tryname)).'">',
+							'^2' => '</A>',
+						));
+						
+					$listhtml.='</LI>';
+				}
+			}
+			
+			if (strlen($listhtml))
+				$qa_content['form']['fields']['plugins']=array(
+					'label' => qa_lang_html('admin/plugin_widgets_explanation'),
+					'style' => 'tall',
+					'type' => 'custom',
+					'html' => '<UL STYLE="margin-bottom:0;">'.$listhtml.'</UL>',
+				);
+			
+			$widgets=qa_db_single_select(qa_db_widgets_selectspec());
+			
+			$listhtml='';
+			
+			$placeoptions=qa_admin_place_options();
+			
+			foreach ($widgets as $widget) {
+				$listhtml.='<LI><B>'.qa_html($widget['title']).'</B> - '.
+					'<A HREF="'.qa_path_html('admin/layoutwidgets', array('edit' => $widget['widgetid'])).'">'.
+					@$placeoptions[$widget['place']].'</A>';
+			
+				$listhtml.='</LI>';
+			}
+			
+			if (strlen($listhtml))
+				$qa_content['form']['fields']['widgets']=array(
+					'label' => qa_lang_html('admin/active_widgets_explanation'),
+					'type' => 'custom',
+					'html' => '<UL STYLE="margin-bottom:0;">'.$listhtml.'</UL>',
+				);
+			
+			break;
+		
 		case 'permissions':
 			$qa_content['form']['fields']['permit_block']=array(
 				'type' => 'static',

@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-categories.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for admin page for editing categories
 
 
@@ -218,21 +218,21 @@
 		}
 		
 		$qa_content['form']=array(
-			'tags' => ' METHOD="POST" ACTION="'.qa_path_html($qa_request).'" ',
+			'tags' => 'METHOD="POST" ACTION="'.qa_path_html($qa_request).'"',
 			
 			'style' => 'tall',
 			
 			'fields' => array(
 				'name' => array(
 					'id' => 'name_display',
-					'tags' => ' NAME="name" ID="name" ',
+					'tags' => 'NAME="name" ID="name"',
 					'label' => qa_lang_html(count($categories) ? 'admin/category_name' : 'admin/category_name_first'),
 					'value' => qa_html(isset($inname) ? $inname : @$editcategory['title']),
 					'error' => qa_html(@$errors['name']),
 				),
 				
 				'delete' => array(
-					'tags' => ' NAME="dodelete" ID="dodelete" ',
+					'tags' => 'NAME="dodelete" ID="dodelete"',
 					'label' =>
 						'<SPAN ID="reassign_shown">'.qa_lang_html('admin/delete_category_reassign').'</SPAN>'.
 						'<SPAN ID="reassign_hidden" STYLE="display:none;">'.qa_lang_html('admin/delete_category').'</SPAN>',
@@ -242,7 +242,7 @@
 				
 				'slug' => array(
 					'id' => 'slug_display',
-					'tags' => ' NAME="slug" ',
+					'tags' => 'NAME="slug"',
 					'label' => qa_lang_html('admin/category_slug'),
 					'value' => qa_html(isset($inslug) ? $inslug : @$editcategory['tags']),
 					'error' => qa_html(@$errors['slug']),
@@ -250,14 +250,14 @@
 				
 				'reassign' => array(
 					'id' => 'reassign_display',
-					'tags' => ' NAME="reassign" ',
+					'tags' => 'NAME="reassign"',
 					'type' => 'select',
 					'options' => $reassignoptions,
 				),
 				
 				'position' => array(
 					'id' => 'position_display',
-					'tags' => ' NAME="position" ',
+					'tags' => 'NAME="position"',
 					'label' => qa_lang_html('admin/category_position'),
 					'type' => 'select',
 					'options' => $positionoptions,
@@ -271,7 +271,7 @@
 				),
 				
 				'cancel' => array(
-					'tags' => ' NAME="docancel" ',
+					'tags' => 'NAME="docancel"',
 					'label' => qa_lang_html('main/cancel_button'),
 				),
 			),
@@ -310,7 +310,7 @@
 		$categoryhtml.='</OL>';
 		
 		$qa_content['form']=array(
-			'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
+			'tags' => 'METHOD="POST" ACTION="'.qa_self_html().'"',
 			
 			'style' => 'tall',
 			
@@ -328,7 +328,7 @@
 
 				'allow_no_category' => array(
 					'label' => qa_lang_html('options/allow_no_category'),
-					'tags' => ' NAME="option_allow_no_category" ',
+					'tags' => 'NAME="option_allow_no_category"',
 					'type' => 'checkbox',
 					'value' => qa_opt('allow_no_category'),
 				),
@@ -337,12 +337,12 @@
 
 			'buttons' => array(
 				'save' => array(
-					'tags' => ' NAME="dosaveoptions" ',
+					'tags' => 'NAME="dosaveoptions"',
 					'label' => qa_lang_html('main/save_button'),
 				),
 
 				'add' => array(
-					'tags' => ' NAME="doaddcategory" ',
+					'tags' => 'NAME="doaddcategory"',
 					'label' => qa_lang_html('admin/add_category_button'),
 				),
 			),

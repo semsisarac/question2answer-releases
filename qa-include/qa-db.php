@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Common functions for connecting to and accessing database
 
 
@@ -33,7 +33,7 @@
 
 	$qa_db=null;
 	
-	
+
 	function qa_db_connect($failhandler=null)
 /*
 	Connect to the QA database, select the right database, optionally install the $failhandler (and call it if necessary)
@@ -186,6 +186,39 @@
 		
 		return $result;
 	}
+	
+	
+	function qa_db_add_table_prefix($rawname)
+/*
+	Return the full name (with prefix) of database table $rawname, usually if it used after a ^ symbol
+*/
+	{
+		$prefix=QA_MYSQL_TABLE_PREFIX;
+		
+		if (defined('QA_MYSQL_USERS_PREFIX'))
+			switch (strtolower($rawname)) {
+				case 'users':
+				case 'userlogins':
+				case 'userprofile':
+				case 'userfields':
+				case 'cookies':
+				case 'blobs':
+				case 'cache':
+					$prefix=QA_MYSQL_USERS_PREFIX;
+					break;
+			}
+			
+		return $prefix.$rawname;
+	}
+	
+	
+	function qa_db_prefix_callback($matches)
+/*
+	Callback function to add table prefixes, as used in qa_db_apply_sub()
+*/
+	{
+		return qa_db_add_table_prefix($matches[1]);
+	}
 
 	
 	function qa_db_apply_sub($query, $arguments)
@@ -197,7 +230,7 @@
 	It's important to use $ when matching a textual column since MySQL won't use indexes to compare text against numbers.
 */
 	{
-		$query=strtr($query, array('^' => QA_MYSQL_TABLE_PREFIX));
+		$query=preg_replace_callback('/\^([A-Za-z_0-9]+)/', 'qa_db_prefix_callback', $query);
 		
 		if (is_array($arguments)) {
 			$countargs=count($arguments);

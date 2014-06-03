@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-install.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: User interface for installing, upgrading and fixing the database
 
 
@@ -100,6 +100,11 @@
 				$success.='Your Question2Answer database has been created.';
 		}
 		
+		if (qa_clicked('nonuser')) {
+			qa_db_install_tables();
+			$success.='The additional Question2Answer database tables have been created.';
+		}
+		
 		if (qa_clicked('upgrade')) {
 			qa_db_upgrade_tables();
 			$success.='Your Question2Answer database has been updated.';
@@ -161,6 +166,11 @@
 					
 				$error.='Your Question2Answer database needs to be upgraded for this version of the software.'; // don't show error before this
 				$buttons=array('upgrade' => 'Upgrade Database');
+				break;
+				
+			case 'non-users-missing':
+				$error='This Question2Answer site is sharing its users with another site, but it needs some additional database tables for its own content. Click below to create those.';
+				$buttons=array('nonuser' => 'Create Tables');
 				break;
 				
 			case 'table-missing':

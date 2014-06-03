@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-post-create.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Database functions for creating a question, answer or comment
 
 
@@ -71,19 +71,6 @@
 	}
 
 	
-	function qa_db_posttags_add_post_wordids($postid, $wordids)
-/*
-	Add rows into the database tags index, where $postid contains the words $wordids
-*/
-	{
-		if (count($wordids))
-			qa_db_query_sub(
-				'INSERT INTO ^posttags (postid, wordid, postcreated) SELECT postid, wordid, created FROM ^words, ^posts WHERE postid=# AND wordid IN ($)',
-				$postid, $wordids
-			);
-	}
-
-	
 	function qa_db_titlewords_add_post_wordids($postid, $wordids)
 /*
 	Add rows into the database title index, where $postid contains the words $wordids - this does the same sort
@@ -119,6 +106,37 @@
 				$rowstoadd
 			);
 		}
+	}
+	
+	
+	function qa_db_tagwords_add_post_wordids($postid, $wordids)
+/*
+	Add rows into the database index of individual tag words, where $postid contains the words $wordids
+*/
+	{
+		if (count($wordids)) {
+			$rowstoadd=array();
+			foreach ($wordids as $wordid)
+				$rowstoadd[]=array($postid, $wordid);
+			
+			qa_db_query_sub(
+				'INSERT INTO ^tagwords (postid, wordid) VALUES #',
+				$rowstoadd
+			);
+		}
+	}
+
+	
+	function qa_db_posttags_add_post_wordids($postid, $wordids)
+/*
+	Add rows into the database index of whole tags, where $postid contains the tags $wordids
+*/
+	{
+		if (count($wordids))
+			qa_db_query_sub(
+				'INSERT INTO ^posttags (postid, wordid, postcreated) SELECT postid, wordid, created FROM ^words, ^posts WHERE postid=# AND wordid IN ($)',
+				$postid, $wordids
+			);
 	}
 
 	
@@ -182,19 +200,6 @@
 	}
 
 	
-	function qa_db_word_tagcount_update($wordids)
-/*
-	Update the tagcount column in the database for the words in $wordids, based on how many posts they appear in the tags of
-*/
-	{
-		if (count($wordids))
-			qa_db_query_sub(
-				'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^posttags.wordid) AS tagcount FROM ^words LEFT JOIN ^posttags ON ^posttags.wordid=^words.wordid WHERE ^words.wordid IN (#) GROUP BY wordid) AS a SET x.tagcount=a.tagcount WHERE x.wordid=a.wordid',
-				$wordids
-			);
-	}
-
-	
 	function qa_db_word_contentcount_update($wordids)
 /*
 	Update the contentcount column in the database for the words in $wordids, based on how many posts they appear in the content of
@@ -203,6 +208,32 @@
 		if (count($wordids))
 			qa_db_query_sub(
 				'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^contentwords.wordid) AS contentcount FROM ^words LEFT JOIN ^contentwords ON ^contentwords.wordid=^words.wordid WHERE ^words.wordid IN (#) GROUP BY wordid) AS a SET x.contentcount=a.contentcount WHERE x.wordid=a.wordid',
+				$wordids
+			);
+	}
+
+	
+	function qa_db_word_tagwordcount_update($wordids)
+/*
+	Update the tagwordcount column in the database for the individual tag words in $wordids, based on how many posts they appear in the tags of
+*/
+	{
+		if (count($wordids))
+			qa_db_query_sub(
+				'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^tagwords.wordid) AS tagwordcount FROM ^words LEFT JOIN ^tagwords ON ^tagwords.wordid=^words.wordid WHERE ^words.wordid IN (#) GROUP BY wordid) AS a SET x.tagwordcount=a.tagwordcount WHERE x.wordid=a.wordid',
+				$wordids
+			);
+	}
+
+	
+	function qa_db_word_tagcount_update($wordids)
+/*
+	Update the tagcount column in the database for the whole tags in $wordids, based on how many posts they appear as tags of
+*/
+	{
+		if (count($wordids))
+			qa_db_query_sub(
+				'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^posttags.wordid) AS tagcount FROM ^words LEFT JOIN ^posttags ON ^posttags.wordid=^words.wordid WHERE ^words.wordid IN (#) GROUP BY wordid) AS a SET x.tagcount=a.tagcount WHERE x.wordid=a.wordid',
 				$wordids
 			);
 	}

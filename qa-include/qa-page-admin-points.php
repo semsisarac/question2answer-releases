@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-points.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for admin page for user points
 
 
@@ -77,13 +77,13 @@
 	$qa_content['error']=qa_admin_page_error();
 
 	$qa_content['form']=array(
-		'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" NAME="points_form" onsubmit="document.forms.points_form.has_js.value=1; return true;" ',
+		'tags' => 'METHOD="POST" ACTION="'.qa_self_html().'" NAME="points_form" onsubmit="document.forms.points_form.has_js.value=1; return true;"',
 		
 		'style' => 'wide',
 		
 		'buttons' => array(
 			'saverecalc' => array(
-				'tags' => ' NAME="dorecalcpoints" ID="dosaverecalc" ', // name important for recalc logic
+				'tags' => 'NAME="dorecalcpoints" ID="dosaverecalc"', // name important for recalc logic
 				'label' => qa_lang_html('admin/save_recalc_button'),
 			),
 		),
@@ -99,7 +99,7 @@
 		$qa_content['form']['ok']=qa_lang_html('admin/points_defaults_shown');
 	
 		$qa_content['form']['buttons']['cancel']=array(
-			'tags' => ' NAME="docancel" ',
+			'tags' => 'NAME="docancel"',
 			'label' => qa_lang_html('main/cancel_button'),
 		);
 
@@ -119,7 +119,7 @@
 		}
 		
 		$qa_content['form']['buttons']['showdefaults']=array(
-			'tags' => ' NAME="doshowdefaults" ',
+			'tags' => 'NAME="doshowdefaults"',
 			'label' => qa_lang_html('admin/show_defaults_button'),
 		);
 	}
@@ -128,7 +128,7 @@
 	foreach ($optionnames as $optionname) {
 		$optionfield=array(
 			'label' => qa_lang_html('options/'.$optionname),
-			'tags' => ' NAME="option_'.$optionname.'" ',
+			'tags' => 'NAME="option_'.$optionname.'"',
 			'value' => qa_html($options[$optionname]),
 			'type' => 'number',
 			'note' => qa_lang_html('admin/points'),

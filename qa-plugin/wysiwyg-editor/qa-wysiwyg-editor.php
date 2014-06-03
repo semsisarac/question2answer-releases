@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/wysiwyg-editor/qa-wysiwyg-editor.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Editor module class for WYSIWYG editor plugin
 
 
@@ -65,7 +65,7 @@
 				$html=qa_html($content, true);
 			
 			return array(
-				'tags' => ' NAME="'.$fieldname.'" ',
+				'tags' => 'NAME="'.$fieldname.'"',
 				'value' => qa_html($html),
 				'rows' => $rows,
 			);

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-votes.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Handling incoming votes (application level)
 
 
@@ -41,7 +41,10 @@
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 		require_once QA_INCLUDE_DIR.'qa-app-users.php';
 		
-		$post=qa_db_select_with_pending(qa_db_full_post_selectspec($userid, $postid));
+		list($post, $userinfo)=qa_db_select_with_pending(
+			qa_db_full_post_selectspec($userid, $postid),
+			qa_db_user_account_selectspec($userid, true)
+		);
 		
 		if (
 			is_array($post) &&
@@ -69,7 +72,7 @@
 					
 				case false:
 					require_once QA_INCLUDE_DIR.'qa-db-votes.php';
-					qa_set_user_vote($post, $userid, $vote);
+					qa_set_user_vote($post, $userid, $userinfo['handle'], $vote);
 					return false;
 			}
 		
@@ -78,10 +81,10 @@
 	}
 
 	
-	function qa_set_user_vote($post, $userid, $vote)
+	function qa_set_user_vote($post, $userid, $handle, $vote)
 /*
-	Actually set (application level) the $vote (-1/0/1) by $userid on $postid.
-	Handles user points and recounting as appropriate.
+	Actually set (application level) the $vote (-1/0/1) by $userid (with $handle) on $postid.
+	Handles user points, recounting and notifications as appropriate.
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-db-points.php';
@@ -116,6 +119,12 @@
 			$action=$postisanswer ? 'a_vote_nil' : 'q_vote_nil';
 		
 		qa_report_write_action($userid, null, $action, $postisanswer ? null : $post['postid'], $postisanswer ? $post['postid'] : null, null);
+
+		qa_report_event($action, $userid, $handle, qa_cookie_get(), array(
+			'postid' => $post['postid'],
+			'vote' => $vote,
+			'oldvote' => $oldvote,
+		));
 	}
 	
 

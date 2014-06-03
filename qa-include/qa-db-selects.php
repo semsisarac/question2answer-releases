@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-selects.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Builders of selectspec arrays (see qa-db.php) used to specify database SELECTs
 
 
@@ -36,14 +36,14 @@
 	function qa_db_select_with_pending() // any number of parameters read via func_get_args()
 /*
 	Return the results of all the SELECT operations specified by the supplied selectspec parameters, while also
-	loading all options, plus custom pages and information about the logged in user, if those were requested.
+	loading all options, plus custom pages, widgets and information about the logged in user, if those were requested.
 	Uses one DB query unless QA_OPTIMIZE_LOCAL_DB is true.
 	If only one parameter is supplied, return its result, otherwise return an array of results.
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 		
-		global $qa_nav_pages_pending, $qa_nav_pages_cached, $qa_logged_in_pending;
+		global $qa_nav_pages_pending, $qa_nav_pages_cached, $qa_widgets_pending, $qa_widgets_cached, $qa_logged_in_pending;
 		
 		$selectspecs=func_get_args();
 		$singleresult=(count($selectspecs)==1);
@@ -66,6 +66,9 @@
 		
 		if (@$qa_nav_pages_pending && !isset($qa_nav_pages_cached))
 			$selectspecs['_navpages']=qa_db_pages_selectspec(array('B', 'M', 'O', 'F'));
+			
+		if (@$qa_widgets_pending && !isset($qa_widgets_cached))
+			$selectspecs['_widgets']=qa_db_widgets_selectspec();
 		
 		$outresults=qa_db_multi_select($selectspecs);
 		
@@ -76,6 +79,9 @@
 			
 		if (@$qa_nav_pages_pending && !isset($qa_nav_pages_cached))
 			$qa_nav_pages_cached=$outresults['_navpages'];
+			
+		if (@$qa_widgets_pending && !isset($qa_widgets_cached))
+			$qa_widgets_cached=$outresults['_widgets'];
 			
 		return $singleresult ? $outresults[0] : $outresults;
 	}
@@ -427,22 +433,22 @@
 	}
 	
 
-	function qa_db_post_parent_q_selectspec($questionid)
+	function qa_db_post_parent_q_selectspec($postid)
 /*
-	Return the selectspec to retrieve the question for the parent of $questionid (where $questionid is a follow-on question),
+	Return the selectspec to retrieve the question for the parent of $postid (where $postid is of a follow-on question or comment),
 	i.e. the parent of $questionid's parent if $questionid's parent is an answer, otherwise $questionid's parent itself.
 */
 	{
 		$selectspec=qa_db_posts_basic_selectspec();
 		
 		$selectspec['source'].=" WHERE ^posts.postid=(SELECT IF((parent.type='A') OR (parent.type='A_HIDDEN'), parent.parentid, parent.postid) FROM ^posts AS child LEFT JOIN ^posts AS parent ON parent.postid=child.parentid WHERE child.postid=#)";
-		$selectspec['arguments']=array($questionid);
+		$selectspec['arguments']=array($postid);
 		$selectspec['single']=true;
 		
 		return $selectspec;
 	}
 	
-
+	
 	function qa_db_related_qs_selectspec($voteuserid, $questionid, $count=QA_DB_RETRIEVE_QS_AS)
 /*
 	Return the selectspec to retrieve the $count most closely related questions to $questionid,
@@ -515,11 +521,11 @@
 		}
 		
 		if (!empty($tagwords)) {
-			// Appearances in the tag list count like 2 appearances in the title (ignoring the tagcount/titlecount factor).
+			// Appearances in the tag words count like 2 appearances in the title (ignoring the tagcount/titlecount factor).
 			// This is because tags express explicit semantic intent, whereas titles do not necessarily.
 			
 			$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
-				"(SELECT postid AS questionid, 2*LOG(#/tagcount) AS score, _utf8 'Q' AS matchposttype, postid AS matchpostid FROM ^posttags JOIN ^words ON ^posttags.wordid=^words.wordid WHERE word IN ($) AND tagcount<#)";
+				"(SELECT postid AS questionid, 2*LOG(#/tagwordcount) AS score, _utf8 'Q' AS matchposttype, postid AS matchpostid FROM ^tagwords JOIN ^words ON ^tagwords.wordid=^words.wordid WHERE word IN ($) AND tagwordcount<#)";
 
 			array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $tagwords, QA_IGNORED_WORDS_FREQ);
 		}
@@ -644,6 +650,19 @@
 			$selectspec['source']='^pages ORDER BY position';
 		
 		return $selectspec;
+	}
+	
+	
+	function qa_db_widgets_selectspec()
+/*
+	Return the selectspec to retrieve the list of widgets, ordered for display
+*/
+	{
+		return array(
+			'columns' => array('widgetid', 'place', 'position', 'tags', 'title' => 'BINARY title'),
+			'source' => '^widgets ORDER BY position',
+			'sortasc' => 'position',
+		);
 	}
 	
 	

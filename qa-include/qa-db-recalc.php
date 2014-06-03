@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-recalc.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Database functions for recalculations (clean-up operations)
 
 
@@ -63,6 +63,11 @@
 		);
 
 		qa_db_query_sub(
+			'DELETE FROM ^tagwords WHERE postid>=# AND postid<=#',
+			$firstpostid, $lastpostid
+		);
+
+		qa_db_query_sub(
 			'DELETE FROM ^posttags WHERE postid>=# AND postid<=#',
 			$firstpostid, $lastpostid
 		);
@@ -81,6 +86,11 @@
 
 		qa_db_query_sub(
 			'DELETE FROM ^contentwords WHERE postid>=#',
+			$firstpostid
+		);
+
+		qa_db_query_sub(
+			'DELETE FROM ^tagwords WHERE postid>=#',
 			$firstpostid
 		);
 
@@ -130,12 +140,17 @@
 		);
 
 		qa_db_query_sub(
+			'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^tagwords.wordid) AS tagwordcount FROM ^words LEFT JOIN ^tagwords ON ^tagwords.wordid=^words.wordid WHERE ^words.wordid>=# AND ^words.wordid<=# GROUP BY wordid) AS a SET x.tagwordcount=a.tagwordcount WHERE x.wordid=a.wordid',
+			$firstwordid, $lastwordid
+		);
+
+		qa_db_query_sub(
 			'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^posttags.wordid) AS tagcount FROM ^words LEFT JOIN ^posttags ON ^posttags.wordid=^words.wordid WHERE ^words.wordid>=# AND ^words.wordid<=# GROUP BY wordid) AS a SET x.tagcount=a.tagcount WHERE x.wordid=a.wordid',
 			$firstwordid, $lastwordid
 		);
 		
 		qa_db_query_sub(
-			'DELETE FROM ^words WHERE wordid>=# AND wordid<=# AND titlecount=0 AND contentcount=0 AND tagcount=0',
+			'DELETE FROM ^words WHERE wordid>=# AND wordid<=# AND titlecount=0 AND contentcount=0 AND tagwordcount=0 AND tagcount=0',
 			$firstwordid, $lastwordid
 		);
 	}

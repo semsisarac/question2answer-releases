@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-tag.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for page for a specific tag
 
 
@@ -33,7 +33,9 @@
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 	
-	$tag=$pass_tag; // picked up from index.php
+	$tag=$pass_subrequest; // picked up from qa-page.php
+	if (!strlen($tag))
+		qa_redirect('tags');
 
 
 //	Find the questions with this tag
@@ -59,7 +61,7 @@
 		$qa_content['q_list']['title']=qa_lang_html('main/no_questions_found');
 
 	$qa_content['q_list']['form']=array(
-		'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
+		'tags' => 'METHOD="POST" ACTION="'.qa_self_html().'"',
 	);
 
 	$qa_content['q_list']['qs']=array();

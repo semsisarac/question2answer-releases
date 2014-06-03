@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-stats.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for admin page showing usage statistics and clean-up buttons
 
 
@@ -187,7 +187,7 @@
 			$qa_content['form']['fields'][$index]['type']='static';
 	
 	$qa_content['form_2']=array(
-		'tags' => ' METHOD="POST" ACTION="'.qa_path_html('admin/recalc').'" ',
+		'tags' => 'METHOD="POST" ACTION="'.qa_path_html('admin/recalc').'"',
 		
 		'title' => qa_lang_html('admin/database_cleanup'),
 		
@@ -196,31 +196,31 @@
 		'buttons' => array(
 			'recount_posts' => array(
 				'label' => qa_lang_html('admin/recount_posts'),
-				'tags' => ' NAME="dorecountposts" onClick="return qa_recalc_click(this, '.qa_js(qa_lang('admin/recount_posts_stop')).', \'recount_posts_note\');" ',
+				'tags' => 'NAME="dorecountposts" onClick="return qa_recalc_click(this, '.qa_js(qa_lang('admin/recount_posts_stop')).', \'recount_posts_note\');"',
 				'note' => '<SPAN ID="recount_posts_note">'.qa_lang_html('admin/recount_posts_note').'</SPAN>',
 			),
 	
 			'reindex_posts' => array(
 				'label' => qa_lang_html('admin/reindex_posts'),
-				'tags' => ' NAME="doreindexposts" onClick="return qa_recalc_click(this, '.qa_js(qa_lang('admin/reindex_posts_stop')).', \'reindex_posts_note\');" ',
+				'tags' => 'NAME="doreindexposts" onClick="return qa_recalc_click(this, '.qa_js(qa_lang('admin/reindex_posts_stop')).', \'reindex_posts_note\');"',
 				'note' => '<SPAN ID="reindex_posts_note">'.qa_lang_html('admin/reindex_posts_note').'</SPAN>',
 			),
 			
 			'recalc_points' => array(
 				'label' => qa_lang_html('admin/recalc_points'),
-				'tags' => ' NAME="dorecalcpoints" onClick="return qa_recalc_click(this, '.qa_js(qa_lang('admin/recalc_stop')).', \'recalc_points_note\');" ',
+				'tags' => 'NAME="dorecalcpoints" onClick="return qa_recalc_click(this, '.qa_js(qa_lang('admin/recalc_stop')).', \'recalc_points_note\');"',
 				'note' => '<SPAN ID="recalc_points_note">'.qa_lang_html('admin/recalc_points_note').'</SPAN>',
 			),
 			
 			'recalc_categories' => array(
 				'label' => qa_lang_html('admin/recalc_categories'),
-				'tags' => ' NAME="dorecalccategories" onClick="return qa_recalc_click(this, '.qa_js(qa_lang('admin/recalc_stop')).', \'recalc_categories_note\');" ',
+				'tags' => 'NAME="dorecalccategories" onClick="return qa_recalc_click(this, '.qa_js(qa_lang('admin/recalc_stop')).', \'recalc_categories_note\');"',
 				'note' => '<SPAN ID="recalc_categories_note">'.qa_lang_html('admin/recalc_categories_note').'</SPAN>',
 			),
 			
 			'delete_hidden' => array(
 				'label' => qa_lang_html('admin/delete_hidden'),
-				'tags' => ' NAME="dodeletehidden" onClick="return qa_recalc_click(this, '.qa_js(qa_lang('admin/delete_stop')).', \'delete_hidden_note\');" ',
+				'tags' => 'NAME="dodeletehidden" onClick="return qa_recalc_click(this, '.qa_js(qa_lang('admin/delete_stop')).', \'delete_hidden_note\');"',
 				'note' => '<SPAN ID="delete_hidden_note">'.qa_lang_html('admin/delete_hidden_note').'</SPAN>',
 			),
 		),

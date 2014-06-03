@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-userfields.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for admin page for editing custom user fields
 
 
@@ -159,13 +159,13 @@
 	);
 	
 	$qa_content['form']=array(
-		'tags' => ' METHOD="POST" ACTION="'.qa_path_html($qa_request).'" ',
+		'tags' => 'METHOD="POST" ACTION="'.qa_path_html($qa_request).'"',
 		
 		'style' => 'tall',
 		
 		'fields' => array(
 			'name' => array(
-				'tags' => ' NAME="name" ID="name" ',
+				'tags' => 'NAME="name" ID="name"',
 				'label' => qa_lang_html('admin/field_name'),
 				'value' => qa_html(isset($inname) ? $inname : qa_user_userfield_label($editfield)),
 				'error' => qa_html(@$errors['name']),
@@ -173,7 +173,7 @@
 			
 			'type' => array(
 				'id' => 'type_display',
-				'tags' => ' NAME="flags" ',
+				'tags' => 'NAME="flags"',
 				'label' => qa_lang_html('admin/field_type'),
 				'type' => 'select',
 				'options' => $typeoptions,
@@ -181,7 +181,7 @@
 			),
 			
 			'delete' => array(
-				'tags' => ' NAME="dodelete" ID="dodelete" ',
+				'tags' => 'NAME="dodelete" ID="dodelete"',
 				'label' => qa_lang_html('admin/delete_field'),
 				'value' => 0,
 				'type' => 'checkbox',
@@ -189,7 +189,7 @@
 			
 			'position' => array(
 				'id' => 'position_display',
-				'tags' => ' NAME="position" ',
+				'tags' => 'NAME="position"',
 				'label' => qa_lang_html('admin/position'),
 				'type' => 'select',
 				'options' => $positionoptions,
@@ -203,7 +203,7 @@
 			),
 			
 			'cancel' => array(
-				'tags' => ' NAME="docancel" ',
+				'tags' => 'NAME="docancel"',
 				'label' => qa_lang_html('main/cancel_button'),
 			),
 		),

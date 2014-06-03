@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-reset.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for password reset page (comes after forgot page)
 
 
@@ -91,7 +91,7 @@
 		$forgotpath=qa_path('forgot',  array('e' => $inemailhandle));
 	
 	$qa_content['form']=array(
-		'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
+		'tags' => 'METHOD="POST" ACTION="'.qa_self_html().'"',
 		
 		'style' => 'tall',
 		
@@ -100,14 +100,14 @@
 		'fields' => array(
 			'email_handle' => array(
 				'label' => qa_lang_html('users/email_handle_label'),
-				'tags' => ' NAME="emailhandle" ID="emailhandle" ',
+				'tags' => 'NAME="emailhandle" ID="emailhandle"',
 				'value' => qa_html(@$inemailhandle),
 				'error' => qa_html(@$errors['emailhandle']),
 			),
 
 			'code' => array(
 				'label' => qa_lang_html('users/reset_code_label'),
-				'tags' => ' NAME="code" ID="code" ',
+				'tags' => 'NAME="code" ID="code"',
 				'value' => qa_html(@$incode),
 				'error' => qa_html(@$errors['code']),
 				'note' => qa_lang_html('users/reset_code_emailed').' - '.

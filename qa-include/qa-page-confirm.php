@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-confirm.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for email confirmation page (can also request a new code)
 
 
@@ -64,7 +64,7 @@
 			$userinfo=qa_db_select_with_pending(qa_db_user_account_selectspec($inhandle, false));
 	
 			if (strtolower(trim(@$userinfo['emailcode']))==strtolower($incode)) {
-				qa_complete_confirm($userinfo['userid']);
+				qa_complete_confirm($userinfo['userid'], $userinfo['email'], $userinfo['handle']);
 				$userconfirmed=true;
 			}
 		}
@@ -76,7 +76,7 @@
 				$userconfirmed=true;
 			
 			elseif (strtolower(trim($userinfo['emailcode']))==strtolower($incode)) {
-				qa_complete_confirm($qa_login_userid);
+				qa_complete_confirm($userinfo['userid'], $userinfo['email'], $userinfo['handle']);
 				$userconfirmed=true;
 			}
 		}
@@ -120,7 +120,7 @@
 			$qa_content['error']=qa_lang_html('users/confirm_wrong_resend');
 
 		$qa_content['form']=array(
-			'tags' => ' METHOD="POST" ACTION="'.qa_path_html('confirm').'" ',
+			'tags' => 'METHOD="POST" ACTION="'.qa_path_html('confirm').'"',
 			
 			'style' => 'tall',
 			
@@ -134,7 +134,7 @@
 			
 			'buttons' => array(
 				'send' => array(
-					'tags' => ' NAME="dosendconfirm" ',
+					'tags' => 'NAME="dosendconfirm"',
 					'label' => qa_lang_html('users/send_confirm_button'),
 				),
 			),

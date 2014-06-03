@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-profile.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Language phrases for user profile page
 
 
@@ -34,7 +34,7 @@
 		'answers' => 'Answers:',
 		'comments' => 'Comments:',
 		'gave_out' => 'Gave out:',
-		'my_account_title' => 'My Account Details',
+		'my_account_title' => 'My account details',
 		'no_posts_by_x' => 'No posts by ^',
 		'questions' => 'Questions:',
 		'ranked_x' => ' (ranked #^)',

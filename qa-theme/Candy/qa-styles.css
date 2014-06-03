@@ -1,12 +1,12 @@
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-theme/Candy/qa-styles.css
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: CSS file for included Candy theme
 
 
@@ -34,7 +34,7 @@ a:hover {text-decoration:underline;}
 input {outline:none;}
 p {margin-top:0;}
 
-.qa-body-wrapper {background:#fff; border-left:1px solid #597700; border-right:1px solid #597700; width:980px; margin:0 auto; text-align:left;}
+.qa-body-wrapper {background:#fff; border:1px solid #597700; width:980px; margin:0 auto; margin-top:-1px; text-align:left;}
 
 /* Clearing classes */
 
@@ -63,17 +63,27 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 .qa-sidebar {padding:12px; font-size:14px; background:#ebc5e2 url(sidebar-bg.png) repeat-y right top; border: 2px solid #6a1b56; border-right:none; margin:18px 0;}
 .qa-feed {background:url(feed-icon-14x14.png) no-repeat left 1px; padding-left:20px; margin:18px 12px 18px 0;}
 .qa-feed-link {font-size:12px; color:#666;}
-.qa-main {padding-left:20px; float:left; width:750px; margin-bottom:24px;}
+.qa-main {padding-left:20px; float:left; width:750px; margin-bottom:24px; clear:left;}
 .qa-main-hidden h1 {color:#999;}
 .qa-footer {clear:both; background:#3b7c1f url(footer-bg.png) repeat-x left top; color:#FFF; font-size:10px; padding:10px;}
 * html .qa-footer {padding-top:6px;} /* IE6 */
+
+/* Widget wrappers */
+
+.qa-widget-full {clear:both; margin:12px 20px; width:920px;}
+.qa-widget-full-high {margin-bottom:0;}
+.qa-widgets-main-high {margin-bottom:24px;}
+.qa-widget-main {margin:12px 0; width:728px;}
+.qa-widget-main-low {margin-bottom:0;}
+.qa-widgets-main-bottom {margin-top:32px;}
+.qa-widget-side {margin:16px 0; width:160px;}
 
 /* Header sections */
 
 .qa-logo {float:left; margin-bottom:16px; padding-left:20px; padding-top:10px; font-size:48px; font-weight:bold; color:#6a1b56;}
 .qa-logo-link, .qa-logo-link:hover {color:#6a1b56;}
 
-.qa-search {float:right; background:#efecb2; border:2px solid #c0b600; border-top:none; padding:10px; margin-right:10px; white-space:nowrap;}
+.qa-search {float:right; background:#efecb2; border:2px solid #c0b600; margin-top:-2px; padding:10px; margin-right:10px; white-space:nowrap;}
 * html .qa-search {margin-right:6px;} /* IE6 */
 .qa-search form {margin:0;} /* IE6/7 */
 .qa-search-field {width:12em; margin-right:2px;}

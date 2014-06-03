@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-plugins.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Controller for admin page listing plugins and showing their options
 
 
@@ -123,19 +123,27 @@
 	}
 	
 	$formadded=false;
+	
+	$moduletypes=qa_list_module_types();
+	
+	foreach ($moduletypes as $type) {
+		$modulenames=qa_list_modules($type);
 		
-	foreach ($qa_modules as $type => $modules)
-		foreach ($modules as $name => $fields) {
+		foreach ($modulenames as $name) {
 			$module=qa_load_module($type, $name);
 			
 			if (method_exists($module, 'admin_form')) {
-				$form=$module->admin_form();
+				$form=$module->admin_form($qa_content);
 
 				if (!isset($form['title']))
 					$form['title']=qa_html($name);
+				
+				$identifierhtml=qa_html(md5($type.'/'.$name));
+				
+				$form['title']='<A NAME="'.$identifierhtml.'">'.$form['title'].'</A>';
 					
 				if (!isset($form['tags']))
-					$form['tags']=' METHOD="POST" ACTION="'.qa_self_html().'" ';
+					$form['tags']='METHOD="POST" ACTION="'.qa_self_html().'#'.$identifierhtml.'"';
 				
 				if (!isset($form['style']))
 					$form['style']='tall';
@@ -144,6 +152,7 @@
 				$formadded=true;
 			}
 		}
+	}
 		
 	if (!$formadded)
 		$qa_content['suggest_next']=qa_lang_html('admin/no_plugin_options');

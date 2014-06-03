@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: Routing and utility functions for page requests
 
 
@@ -29,13 +29,21 @@
 //	Table routing requests to the appropriate PHP file
 
 	$qa_routing=array(
+		'answers/' => QA_INCLUDE_DIR.'qa-page-answers.php',
+		'comments/' => QA_INCLUDE_DIR.'qa-page-comments.php',
+		'unanswered/' => QA_INCLUDE_DIR.'qa-page-unanswered.php',
+		'activity/' => QA_INCLUDE_DIR.'qa-page-activity.php',
+		'questions/' => QA_INCLUDE_DIR.'qa-page-questions.php',
 		'ask' => QA_INCLUDE_DIR.'qa-page-ask.php',
 		'search' => QA_INCLUDE_DIR.'qa-page-search.php',
 		'categories' => QA_INCLUDE_DIR.'qa-page-categories.php',
 		'tags' => QA_INCLUDE_DIR.'qa-page-tags.php',
+		'tag/' => QA_INCLUDE_DIR.'qa-page-tag.php',
 		'users' => QA_INCLUDE_DIR.'qa-page-users.php',
 		'users/special' => QA_INCLUDE_DIR.'qa-page-users-special.php',
 		'users/blocked' => QA_INCLUDE_DIR.'qa-page-users-blocked.php',
+		'user/' => QA_INCLUDE_DIR.'qa-page-user.php',
+		'ip/' => QA_INCLUDE_DIR.'qa-page-ip.php',
 		'register' => QA_INCLUDE_DIR.'qa-page-register.php',
 		'confirm' => QA_INCLUDE_DIR.'qa-page-confirm.php',
 		'account' => QA_INCLUDE_DIR.'qa-page-account.php',
@@ -57,6 +65,7 @@
 		'admin/userfields' => QA_INCLUDE_DIR.'qa-page-admin-userfields.php',
 		'admin/usertitles' => QA_INCLUDE_DIR.'qa-page-admin-usertitles.php',
 		'admin/pages' => QA_INCLUDE_DIR.'qa-page-admin-pages.php',
+		'admin/layoutwidgets' => QA_INCLUDE_DIR.'qa-page-admin-widgets.php',
 		'login' => QA_INCLUDE_DIR.'qa-page-login.php',
 		'forgot' => QA_INCLUDE_DIR.'qa-page-forgot.php',
 		'reset' => QA_INCLUDE_DIR.'qa-page-reset.php',
@@ -227,6 +236,7 @@
 	unset($_GET['state']); // to prevent being passed through on forms
 
 	$qa_nav_pages_pending=true;
+	$qa_widgets_pending=true;
 	$qa_logged_in_pending=true;
 
 	$qa_login_userid=qa_get_logged_in_userid();
@@ -258,7 +268,7 @@
 	in the context of $categoryid (if not null)
 */
 	{
-		global $qa_root_url_relative, $qa_request, $qa_login_userid, $qa_vote_error, $qa_nav_pages_cached, $qa_routing;
+		global $qa_root_url_relative, $qa_request, $qa_template, $qa_login_userid, $qa_vote_error, $qa_nav_pages_cached, $qa_widgets_cached, $qa_routing;
 		
 		if (QA_DEBUG_PERFORMANCE)
 			qa_usage_mark('control');
@@ -287,6 +297,8 @@
 			'sidebar' => qa_opt('show_custom_sidebar') ? qa_opt('custom_sidebar') : null,
 			
 			'sidepanel' => qa_opt('show_custom_sidepanel') ? qa_opt('custom_sidepanel') : null,
+			
+			'widgets' => array(),
 		);
 
 		if (qa_opt('show_custom_in_head'))
@@ -370,10 +382,10 @@
 			);
 		
 		$qa_content['search']=array(
-			'form_tags' => ' METHOD="GET" ACTION="'.qa_path_html('search').'" ',
+			'form_tags' => 'METHOD="GET" ACTION="'.qa_path_html('search').'"',
 			'form_extra' => qa_path_form_html('search'),
 			'title' => qa_lang_html('main/search_title'),
-			'field_tags' => ' NAME="q" ',
+			'field_tags' => 'NAME="q"',
 			'button_label' => qa_lang_html('main/search_button'),
 		);
 		
@@ -383,7 +395,36 @@
 		foreach ($qa_nav_pages_cached as $page)
 			if ( ($page['nav']=='M') || ($page['nav']=='O') || ($page['nav']=='F') )
 				qa_navigation_add_page($qa_content['navigation'][($page['nav']=='F') ? 'footer' : 'main'], $page);
+				
+		$regioncodes=array(
+			'F' => 'full',
+			'M' => 'main',
+			'S' => 'side',
+		);
 		
+		$placecodes=array(
+			'T' => 'top',
+			'H' => 'high',
+			'L' => 'low',
+			'B' => 'bottom',
+		);
+
+		foreach ($qa_widgets_cached as $widget)
+			if (is_numeric(strpos(','.$widget['tags'].',', ','.$qa_template.',')) || is_numeric(strpos(','.$widget['tags'].',', ',all,'))) { // see if it has been selected for display on this template
+				$region=@$regioncodes[substr($widget['place'], 0, 1)];
+				$place=@$placecodes[substr($widget['place'], 1, 2)];
+				
+				if (isset($region) && isset($place)) { // check region/place codes recognized
+					$module=qa_load_module('widget', $widget['title']);
+					
+					if (
+						isset($module) && method_exists($module, 'allow_template') && $module->allow_template($qa_template) &&
+						method_exists($module, 'allow_region') && $module->allow_region($region) && method_exists($module, 'output_widget')
+					)
+						$qa_content['widgets'][$region][$place][]=$module; // if module loaded and happy to be displayed here, tell theme about it
+				}
+			}
+			
 		$logoshow=qa_opt('logo_show');
 		$logourl=qa_opt('logo_url');
 		$logowidth=qa_opt('logo_width');
@@ -432,7 +473,7 @@
 						
 						if (method_exists($module, 'match_source') && $module->match_source($source) && method_exists($module, 'logout_html')) {
 							ob_start();
-							$module->logout_html(qa_path('logout'));
+							$module->logout_html(qa_path('logout', array(), qa_opt('site_url')));
 							$qa_content['navigation']['user']['logout']=array('label' => ob_get_clean());
 						}
 					}
@@ -505,40 +546,30 @@
 
 
 //	Otherwise include the appropriate PHP file for the page in the request
-	
+
 	if (!isset($qa_content)) {
 		if (isset($qa_routing[$qa_request_lc])) {
 			if ($qa_request_lc_parts[0]=='admin') {
 				$_COOKIE['qa_admin_last']=$qa_request_lc; // for navigation tab now...
-				setcookie('qa_admin_last', $_COOKIE['qa_admin_last'], 0, '/'); // ...and in future
+				setcookie('qa_admin_last', $_COOKIE['qa_admin_last'], 0, '/', QA_COOKIE_DOMAIN); // ...and in future
 			}
 			
 			$qa_template=$qa_request_lc_parts[0];
 			$qa_content=require $qa_routing[$qa_request_lc];
 	
+		} elseif (isset($qa_routing[$qa_request_lc_parts[0].'/'])) {
+			$pass_subrequest=@$qa_request_parts[1]; // effectively a parameter that is passed to file
+			$qa_template=$qa_request_lc_parts[0];
+			$qa_content=require $qa_routing[$qa_request_lc_parts[0].'/'];
+			
 		} elseif (is_numeric($qa_request_parts[0])) {
 			$pass_questionid=$qa_request_parts[0]; // effectively a parameter that is passed to file
 			$qa_template='question';
 			$qa_content=require QA_INCLUDE_DIR.'qa-page-question.php';
 	
-		} elseif ( ($qa_request_lc_parts[0]=='tag') && strlen(@$qa_request_parts[1]) ) {
-			$pass_tag=$qa_request_parts[1]; // effectively a parameter that is passed to file
-			$qa_template='tag';
-			$qa_content=require QA_INCLUDE_DIR.'qa-page-tag.php';
-	
-		} elseif ( ($qa_request_lc_parts[0]=='user') && strlen(@$qa_request_parts[1]) ) {
-			$pass_handle=$qa_request_parts[1]; // effectively a parameter that is passed to file
-			$qa_template='user';
-			$qa_content=require QA_INCLUDE_DIR.'qa-page-user.php';
-	
-		} elseif ( ($qa_request_lc_parts[0]=='ip') && (long2ip(ip2long(@$qa_request_parts[1]))==@$qa_request_parts[1]) ) {
-			$pass_ip=$qa_request_parts[1]; // effectively a parameter that is passed to file
-			$qa_template='ip';
-			$qa_content=require QA_INCLUDE_DIR.'qa-page-ip.php';
-	
 		} else {
 			$qa_template=strlen($qa_request_lc_parts[0]) ? $qa_request_lc_parts[0] : 'qa';
-			$qa_content=require QA_INCLUDE_DIR.'qa-page-home.php'; // handles many other pages, including custom pages and page modules
+			$qa_content=require QA_INCLUDE_DIR.'qa-page-default.php'; // handles many other pages, including custom pages and page modules
 		}
 	}
 	
@@ -552,24 +583,17 @@
 		
 		$requestpart=trim(strtolower($requestpart));
 		
-		if (isset($qa_routing[$requestpart]) || is_numeric($requestpart))
+		if (isset($qa_routing[$requestpart]) || isset($qa_routing[$requestpart.'/']) || is_numeric($requestpart))
 			return true;
 			
 		switch ($requestpart) {
 			case '':
 			case 'qa':
-			case 'questions':
-			case 'unanswered':
-			case 'answers':
-			case 'comments':
-			case 'activity':
-			case 'tag':
-			case 'user':
-			case 'ip':
 			case 'feed':
 			case 'install':
 			case 'url':
 			case 'image':
+			case 'ajax':
 				return true;
 		}
 		

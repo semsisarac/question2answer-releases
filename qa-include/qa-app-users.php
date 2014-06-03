@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4-dev (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users.php
-	Version: 1.3.3
-	Date: 2011-03-16 12:46:02 GMT
+	Version: 1.4-dev
+	Date: 2011-04-04 09:06:42 GMT
 	Description: User management (application level) for basic user operations
 
 
@@ -102,6 +102,7 @@
 		{
 			@ini_set('session.gc_maxlifetime', 86400); // worth a try, but won't help in shared hosting environment
 			@ini_set('session.use_trans_sid', false); // sessions need cookies to work, since we redirect after login
+			@ini_set('session.cookie_domain', QA_COOKIE_DOMAIN);
 
 			if (!isset($_SESSION))
 				session_start();
@@ -115,7 +116,7 @@
 	*/
 		{
 			// if $remember is true, store in browser for a month, otherwise store only until browser is closed
-			setcookie('qa_session', $handle.'/'.$sessioncode.'/'.($remember ? 1 : 0), $remember ? (time()+2592000) : 0, '/');
+			setcookie('qa_session', $handle.'/'.$sessioncode.'/'.($remember ? 1 : 0), $remember ? (time()+2592000) : 0, '/', QA_COOKIE_DOMAIN);
 		}
 
 		
@@ -124,7 +125,7 @@
 		Remove session cookie from browser
 	*/
 		{
-			setcookie('qa_session', false, 0, '/');
+			setcookie('qa_session', false, 0, '/', QA_COOKIE_DOMAIN);
 		}
 
 		
@@ -134,6 +135,8 @@
 		$remember states if 'Remember me' was checked in the login form.
 	*/
 		{
+			require_once QA_INCLUDE_DIR.'qa-app-cookies.php';
+			
 			qa_start_session();
 			
 			if (isset($userid)) {
@@ -161,13 +164,18 @@
 				qa_db_user_logged_in($userid, @$_SERVER['REMOTE_ADDR']);
 				qa_set_session_cookie($handle, $sessioncode, $remember);
 				
+				qa_report_event('u_login', $userid, $userinfo['handle'], qa_cookie_get());
+
 			} else {
-				require_once QA_INCLUDE_DIR.'qa-db-users.php';
+				$olduserid=qa_get_logged_in_userid();
+				$oldhandle=qa_get_logged_in_handle();
 
 				qa_clear_session_cookie();
 
 				unset($_SESSION['qa_session_userid']);
 				unset($_SESSION['qa_session_source']);
+
+				qa_report_event('u_logout', $olduserid, $oldhandle, qa_cookie_get());
 			}
 		}
 		
@@ -190,19 +198,14 @@
 				qa_set_logged_in_user($users[0]['userid'], $users[0]['handle'], false, $source);
 			
 			else { // create and log in user
-				require_once QA_INCLUDE_DIR.'qa-db-points.php';
 				require_once QA_INCLUDE_DIR.'qa-app-users-edit.php';
 				
-				$email=(string)@$fields['email'];
 				$handle=qa_handle_make_valid(@$fields['handle']);
-				$level=isset($fields['level']) ? $fields['level'] : QA_USER_LEVEL_BASIC;
 				
-				$userid=qa_db_user_create($email, null /* no password */, $handle, $level, @$_SERVER['REMOTE_ADDR']);
-				qa_db_points_update_ifuser($userid, null);
+				$userid=qa_create_new_user((string)@$fields['email'], null /* no password */, $handle,
+					isset($fields['level']) ? $fields['level'] : QA_USER_LEVEL_BASIC, @$fields['confirmed']);
+				
 				qa_db_user_login_add($userid, $source, $identifier);
-				
-				if (@$fields['confirmed'])
-					qa_db_user_set_flag($userid, QA_USER_FLAGS_EMAIL_CONFIRMED, true);
 				
 				$profilefields=array('name', 'location', 'website', 'about');
 				
@@ -213,7 +216,7 @@
 				if (strlen(@$fields['avatar']))
 					qa_set_user_avatar($userid, $fields['avatar']);
 						
-				qa_set_logged_in_user($userid, @$fields['handle'], false, $source);
+				qa_set_logged_in_user($userid, $handle, false, $source);
 			}
 		}
 
