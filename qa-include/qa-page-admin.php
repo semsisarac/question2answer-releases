@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin.php
-	Version: 1.0
-	Date: 2010-04-09 16:07:28 GMT
+	Version: 1.0.1-beta
+	Date: 2010-05-11 12:36:30 GMT
 	Description: Controller for most admin pages which just contain options
 
 
@@ -319,7 +319,33 @@
 					break;
 					
 				case 'neat_urls':
-					$optionfield['label'].='&nbsp; <IFRAME SRC="'.qa_path_html('rewrite-test', null, null, false).'" WIDTH="200" HEIGHT="22" STYLE="vertical-align:middle; border:1px solid #999;" SCROLLING="no" FRAMEBORDER="0"></IFRAME>';
+					$neatvalue=$options[$optionname];
+					$neatoptions=array();
+
+					$rawoptions=array(
+						QA_URL_FORMAT_NEAT,
+						QA_URL_FORMAT_INDEX,
+						QA_URL_FORMAT_QUERY,
+						QA_URL_FORMAT_PARAM,
+						QA_URL_FORMAT_PARAMS,
+						QA_URL_FORMAT_SAFEST,
+					);
+					
+					foreach ($rawoptions as $rawoption)
+						$neatoptions[$rawoption]=
+							'<IFRAME SRC="'.qa_path_html('url/test/$&-_#%@', array('dummy' => '', 'param' => '$&-_#%@'), null, $rawoption).'" WIDTH="20" HEIGHT="16" STYLE="vertical-align:middle; border:0" SCROLLING="no" FRAMEBORDER="0"></IFRAME>&nbsp;'.
+							'<SMALL>'.
+							qa_path_html('questions/123/why-do-birds-sing', null, '/', $rawoption).
+							(($rawoption==QA_URL_FORMAT_NEAT) ? strtr(qa_lang_html('admin/neat_urls_note'), array(
+								'^1' => '<A HREF="http://www.question2answer.org/htaccess.php" TARGET="_blank">',
+								'^2' => '</A>',
+							)) : '').
+							'</SMALL>';
+							
+					$optionfield['type']='select-radio';
+					$optionfield['options']=$neatoptions;
+					$optionfield['value']=$neatoptions[isset($neatoptions[$neatvalue]) ? $neatvalue : QA_URL_FORMAT_SAFE];
+					$optionfield['note']=qa_lang_sub_html('admin/url_format_note', '<SPAN STYLE=" '.qa_admin_url_test_html().'/SPAN>');
 					break;
 					
 				case 'site_theme':

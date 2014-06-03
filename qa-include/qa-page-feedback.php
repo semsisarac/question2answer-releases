@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-feedback.php
-	Version: 1.0
-	Date: 2010-04-09 16:07:28 GMT
+	Version: 1.0.1-beta
+	Date: 2010-05-11 12:36:30 GMT
 	Description: Controller for feedback page
 
 
@@ -41,14 +41,17 @@
 
 //	Queue required options and get useful information on the logged in user
 
-	qa_options_set_pending(array('email_privacy', 'from_email', 'feedback_enabled', 'feedback_email', 'site_url', 'captcha_on_feedback'));
 	qa_captcha_pending();
+
+	qa_options_set_pending(array('email_privacy', 'from_email', 'feedback_enabled', 'feedback_email', 'site_url', 'captcha_on_feedback'));
 	
 	if (isset($qa_login_userid) && !QA_EXTERNAL_USERS)
 		list($useraccount, $userprofile)=qa_db_select_with_pending($qa_db,
 			qa_db_user_account_selectspec($qa_login_userid, true),
 			qa_db_user_profile_selectspec($qa_login_userid, true)
 		);
+
+	$usecaptcha=(!isset($qa_login_userid)) && qa_get_option($qa_db, 'captcha_on_feedback');
 
 
 //	Check feedback is enabled
@@ -76,7 +79,7 @@
 		if (empty($inmessage))
 			$errors['message']=qa_lang('main/feedback_empty');
 		
-		if (qa_get_option($qa_db, 'captcha_on_feedback'))
+		if ($usecaptcha)
 			qa_captcha_validate($qa_db, $_POST, $errors);
 
 		if (empty($errors)) {
@@ -157,7 +160,7 @@
 		),
 	);
 	
-	if (qa_get_option($qa_db, 'captcha_on_feedback') && !$feedbacksent)
+	if ($usecaptcha && !$feedbacksent)
 		qa_set_up_captcha_field($qa_db, $qa_content, $qa_content['form']['fields'], @$errors);
 
 	$qa_content['focusid']='message';

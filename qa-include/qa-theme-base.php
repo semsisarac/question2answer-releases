@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-theme-base.php
-	Version: 1.0
-	Date: 2010-04-09 16:07:28 GMT
+	Version: 1.0.1-beta
+	Date: 2010-05-11 12:36:30 GMT
 	Description: Default theme class, broken into lots of little functions for easy overriding
 
 
@@ -230,7 +230,8 @@
 			
 			$this->output(
 				'<DIV CLASS="qa-search">',
-				'<FORM '.$search['form_tags'].' >'
+				'<FORM '.$search['form_tags'].' >',
+				@$search['form_extra']
 			);
 			
 			$this->search_field($search);
@@ -611,6 +612,10 @@
 					$this->form_select($field, $style);
 					break;
 					
+				case 'select-radio':
+					$this->form_select_radio($field, $style);
+					break;
+					
 				case 'custom':
 					echo @$field['html'];
 					break;
@@ -708,6 +713,18 @@
 				$this->output('<OPTION VALUE="'.$tag.'"'.(($value==@$field['value']) ? ' SELECTED' : '').'>'.$value.'</OPTION>');
 			
 			$this->output('</SELECT>');
+		}
+		
+		function form_select_radio($field, $style)
+		{
+			$radios=0;
+			
+			foreach ($field['options'] as $tag => $value) {
+				if ($radios++)
+					$this->output('<BR/>');
+					
+				$this->output('<INPUT '.@$field['tags'].' TYPE="radio" VALUE="'.$tag.'"'.(($value==@$field['value']) ? ' CHECKED' : '').' CLASS="qa-form-'.$style.'-radio"/> '.$value);
+			}
 		}
 		
 		function form_text_single_row($field, $style)

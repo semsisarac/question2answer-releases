@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.0
-	Date: 2010-04-09 16:07:28 GMT
+	Version: 1.0.1-beta
+	Date: 2010-05-11 12:36:30 GMT
 	Description: Sets up Q2A environment, plus many globally useful functions
 
 
@@ -32,7 +32,7 @@
 
 //	Set the version to be used for internal reference and a suffix for .js and .css requests
 
-	define('QA_VERSION', '1.0');
+	define('QA_VERSION', '1.0.1-beta');
 
 //	Basic PHP configuration checks and unregister globals
 
@@ -62,7 +62,7 @@
 	define('QA_THEME_DIR', QA_BASE_DIR.'qa-theme/');
 
 	if (!file_exists(QA_BASE_DIR.'qa-config.php'))
-		qa_fatal_error('The config file could not be found. Please read the installation instructions.');
+		qa_fatal_error('The config file could not be found. Please read the instructions in qa-config-example.php.');
 	
 	require_once QA_BASE_DIR.'qa-config.php';
 
@@ -270,9 +270,17 @@
 	
 //	Path generation
 
+	define('QA_URL_FORMAT_INDEX', 0); // http://.../index.php/questions/123/why-is-the-sky-blue
+	define('QA_URL_FORMAT_NEAT', 1); // http://.../questions/123/why-is-the-sky-blue
+	define('QA_URL_FORMAT_QUERY', 2); // http://.../?questions/123/why-is-the-sky-blue
+	define('QA_URL_FORMAT_PARAM', 3); // http://.../?qa=questions/123/why-is-the-sky-blue
+	define('QA_URL_FORMAT_PARAMS', 4); // http://.../?qa=questions&qa_1=123&qa_2=why-is-the-sky-blue
+	define('QA_URL_FORMAT_SAFEST', 5); // http://.../index.php?qa=questions&qa_1=123&qa_2=why-is-the-sky-blue
+
 	function qa_path($request, $params=null, $rooturl=null, $neaturls=null, $anchor=null)
 /*
 	Return the relative URI path for $request, with optional parameters $params and $anchor.
+	Slashes in $request will not be urlencoded, but any other characters will.
 	If $neaturls is set, use that, otherwise retrieve the option. If $rooturl is set, take
 	that as the root of the QA site, otherwise use $qa_root_url_relative set elsewhere.
 */
@@ -284,17 +292,50 @@
 		
 		if (!isset($rooturl))
 			$rooturl=$qa_root_url_relative;
-			
+		
+		$url=$rooturl.( (empty($rooturl) || (substr($rooturl, -1)=='/') ) ? '' : '/');
 		$paramsextra='';
+		
+		$requestparts=explode('/', $request);
+		foreach ($requestparts as $index => $requestpart)
+			$requestparts[$index]=urlencode($requestpart);
+		$requestpath=implode('/', $requestparts);
+		
+		switch ($neaturls) {
+			case QA_URL_FORMAT_INDEX:
+				if (!empty($request))
+					$url.='index.php/'.$requestpath;
+				break;
+				
+			case QA_URL_FORMAT_NEAT:
+				$url.=$requestpath;
+				break;
+				
+			case QA_URL_FORMAT_QUERY:
+				if (!empty($request))
+					$paramsextra='?'.$requestpath;
+				break;
+				
+			case QA_URL_FORMAT_PARAM:
+				if (!empty($request))
+					$paramsextra='?qa='.$requestpath;
+				break;
+				
+			case QA_URL_FORMAT_SAFEST:
+				$url.='index.php';
+			
+			case QA_URL_FORMAT_PARAMS:
+				if (!empty($request))
+					foreach ($requestparts as $partindex => $requestpart)
+						$paramsextra.=(strlen($paramsextra) ? '&' : '?').'qa'.($partindex ? ('_'.$partindex) : '').'='.$requestpart;
+				break;
+		}
+		
 		if (isset($params))
 			foreach ($params as $key => $value)
 				$paramsextra.=(strlen($paramsextra) ? '&' : '?').urlencode($key).'='.urlencode($value);
 		
-		return $rooturl
-			.( (empty($rooturl) || (substr($rooturl, -1)=='/') ) ? '' : '/')
-			.( ($neaturls || empty($request)) ? $request : ('index.php/'.$request) )
-			.$paramsextra
-			.( empty($anchor) ? '' : '#'.urlencode($anchor) );
+		return $url.$paramsextra.( empty($anchor) ? '' : '#'.urlencode($anchor) );
 	}
 
 	
@@ -326,7 +367,7 @@
 			}
 		}
 		
-		return (int)$questionid.'/'.urlencode(implode('-', $words));
+		return (int)$questionid.'/'.implode('-', $words);
 	}
 
 	
@@ -338,6 +379,28 @@
 		return qa_html(qa_path($request, $params, $rooturl, $neaturls, $anchor));
 	}
 
+	
+	function qa_path_form_html($request, $params=null, $rooturl=null, $neaturls=null, $anchor=null)
+/*
+	Return HTML for hidden fields to insert into a <FORM METHOD="GET"...> on the page.
+	This is needed because any parameters on the URL will be lost when the form is submitted.
+*/
+	{
+		$path=qa_path($request, $params, $rooturl, $neaturls, $anchor);
+		$formhtml='';
+		
+		$questionpos=strpos($path, '?');
+		if (is_numeric($questionpos)) {
+			$params=explode('&', substr($path, $questionpos+1));
+			
+			foreach ($params as $param)
+				if (preg_match('/^([^\=]*)(\=(.*))?$/', $param, $matches))
+					$formhtml.='<INPUT TYPE="hidden" NAME="'.qa_html(urldecode($matches[1])).'" VALUE="'.qa_html(urldecode(@$matches[3])).'"/>';
+		}
+		
+		return $formhtml;		
+	}
+	
 	
 	function qa_redirect($request, $params=null, $rooturl=null, $neaturls=null)
 /*

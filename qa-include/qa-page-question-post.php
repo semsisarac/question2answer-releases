@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-question-post.php
-	Version: 1.0
-	Date: 2010-04-09 16:07:28 GMT
+	Version: 1.0.1-beta
+	Date: 2010-05-11 12:36:30 GMT
 	Description: More control for question page if it's submitted by HTTP POST
 
 
@@ -229,7 +229,10 @@
 				if (empty($aerrors)) {
 					$setnotify=$answer['isbyuser'] ? qa_combine_notify_email($answer['userid'], $innotify, $inemail) : $answer['notify'];
 					
-					if ($intocomment && ($incommenton!=$answerid) && (($incommenton==$questionid) || isset($answers[$incommenton]))) { // convert to a comment
+					if ($intocomment && (
+						(($incommenton==$questionid) && $question['commentable']) || 
+						(($incommenton!=$answerid) && @$answers[$incommenton]['commentable'])
+					)) { // convert to a comment
 						if (qa_limits_remaining($qa_db, $qa_login_userid, 'C')) { // potential back door to bypassing limits
 							qa_answer_to_comment($qa_db, $answer, $incommenton, $inacontent, $setnotify, $qa_login_userid, $question, $answers, $commentsfollows);
 							qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'a_to_c', $questionid, $answerid, null);
@@ -392,7 +395,7 @@
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 
-		global $questionid, $question, $answers, $inacontent, $aerrors, $qa_content, $qa_login_email, $innotify, $inemail, $jumptohash, $commentsfollows;
+		global $qa_db, $questionid, $question, $answers, $inacontent, $aerrors, $qa_content, $qa_login_email, $innotify, $inemail, $jumptohash, $commentsfollows;
 		
 		$answer=$answers[$answerid];
 		
@@ -413,21 +416,6 @@
 					'error' => qa_html(@$aerrors['content']),
 					'rows' => 12,
 				),
-				
-				'tocomment' => array(
-					'tags' => ' NAME="tocomment" ID="tocomment" ',
-					'label' => '<SPAN ID="tocomment_shown">'.qa_lang_html('question/a_convert_to_c_on').'</SPAN>'.
-									'<SPAN ID="tocomment_hidden" STYLE="display:none;">'.qa_lang_html('question/a_convert_to_c').'</SPAN>',
-					'type' => 'checkbox',
-					'tight' => true,
-				),
-				
-				'commenton' => array(
-					'tags' => ' NAME="commenton" ',
-					'id' => 'commenton',
-					'type' => 'select',
-					'note' => qa_lang_html($hascomments ? 'question/a_convert_warn_cs' : 'question/a_convert_warn'),
-				),
 			),
 			
 			'buttons' => array(
@@ -446,33 +434,54 @@
 			),
 		);
 		
-		$form['fields']['commenton']['options']=array(
-			$questionid => qa_lang_html('question/comment_on_q').qa_html(qa_shorten_string_line($question['title'], 80)),
-		);
+	//	Show option to convert this answer to a comment, if appropriate
 		
-		// find the last post (question or answer) that was created before this answer
-		// this is the used as default for the new comment's parent if converting answer to comment
-		$lastbeforeid=$questionid;
+		$commentonoptions=array();
+
+		$lastbeforeid=$questionid; // used to find last post created before this answer - this is default given
 		$lastbeforetime=$question['created'];
 		
+		if ($question['commentable'])
+			$commentonoptions[$questionid]=
+				qa_lang_html('question/comment_on_q').qa_html(qa_shorten_string_line($question['title'], 80));
+		
 		foreach ($answers as $otheranswer)
-			if ($otheranswer['postid']!=$answerid) {
-				$form['fields']['commenton']['options'][$otheranswer['postid']]=
+			if (($otheranswer['postid']!=$answerid) && ($otheranswer['created']<$answer['created']) && $otheranswer['commentable'] && !$otheranswer['hidden']) {
+				$commentonoptions[$otheranswer['postid']]=
 					qa_lang_html('question/comment_on_a').qa_html(qa_shorten_string_line($otheranswer['content'], 80));
 				
-				if (($otheranswer['created']<$answer['created']) && ($otheranswer['created']>$lastbeforetime)) {
+				if ($otheranswer['created']>$lastbeforetime) {
 					$lastbeforeid=$otheranswer['postid'];
 					$lastebeforetime=$otheranswer['created'];
 				}
 			}
+				
+		if (count($commentonoptions)) {
+			$form['fields']['tocomment']=array(
+				'tags' => ' NAME="tocomment" ID="tocomment" ',
+				'label' => '<SPAN ID="tocomment_shown">'.qa_lang_html('question/a_convert_to_c_on').'</SPAN>'.
+								'<SPAN ID="tocomment_hidden" STYLE="display:none;">'.qa_lang_html('question/a_convert_to_c').'</SPAN>',
+				'type' => 'checkbox',
+				'tight' => true,
+			);
 			
-		$form['fields']['commenton']['value']=@$form['fields']['commenton']['options'][$lastbeforeid];
+			$form['fields']['commenton']=array(
+				'tags' => ' NAME="commenton" ',
+				'id' => 'commenton',
+				'type' => 'select',
+				'note' => qa_lang_html($hascomments ? 'question/a_convert_warn_cs' : 'question/a_convert_warn'),
+				'options' => $commentonoptions,
+				'value' => @$commentonoptions[$lastbeforeid],
+			);
+			
+			qa_checkbox_to_display($qa_content, array(
+				'commenton' => 'tocomment',
+				'tocomment_shown' => 'tocomment',
+				'tocomment_hidden' => '!tocomment',
+			));
+		}
 		
-		qa_checkbox_to_display($qa_content, array(
-			'commenton' => 'tocomment',
-			'tocomment_shown' => 'tocomment',
-			'tocomment_hidden' => '!tocomment',
-		));
+	//	Show notification field if appropriate
 		
 		if ($answer['isbyuser'])
 			qa_set_up_notify_fields($qa_content, $form['fields'], 'A', $qa_login_email,
@@ -503,14 +512,15 @@
 			if ($checkcommentlogin) {
 				if (qa_limits_remaining($qa_db, $qa_login_userid, 'C')) {
 					$incomment=qa_post_text('comment');
-					$innotify=qa_post_text('notify') ? true : false;
-					$inemail=qa_post_text('email');
 		
 					if (!isset($incomment)) {
 						$formtype='c_add';
 						$formpostid=$parent['postid']; // show form first time
 					
 					} else {
+						$innotify=qa_post_text('notify') ? true : false;
+						$inemail=qa_post_text('email');
+
 						$errors=qa_comment_validate($qa_db, $incomment, $innotify, $inemail);
 						
 						if ($usecaptcha)

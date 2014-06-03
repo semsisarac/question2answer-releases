@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-selects.php
-	Version: 1.0
-	Date: 2010-04-09 16:07:28 GMT
+	Version: 1.0.1-beta
+	Date: 2010-05-11 12:36:30 GMT
 	Description: Builders of selectspec arrays (see qa-db.php) used to specify database SELECTs
 
 
@@ -117,7 +117,7 @@
 					$selectspec['source'].=' LEFT JOIN ^users AS lastusers ON ^posts.lastuserid=lastusers.userid';
 				}
 			}
-				
+			
 			$selectspec['source'].=' LEFT JOIN ^userpoints ON ^posts.userid=^userpoints.userid';
 		}
 		
@@ -402,10 +402,13 @@
 	with the corresponding vote on those questions made by $voteuserid (if not null).
 */
 	{
+		require_once QA_INCLUDE_DIR.'qa-util-string.php';
+		
 		$selectspec=qa_db_posts_basic_selectspec(true);
 		
-		$selectspec['source'].=" JOIN (SELECT postid FROM ^posttags WHERE wordid=(SELECT wordid FROM ^words WHERE word=$) ORDER BY postcreated DESC LIMIT #,#) y ON ^posts.postid=y.postid";
-		$selectspec['arguments']=array($voteuserid, $tag, $start, $count);
+		// use two tests here - one which can use the index, and the other which narrows it down exactly - then limit to 1 just in case
+		$selectspec['source'].=" JOIN (SELECT postid FROM ^posttags WHERE wordid=(SELECT wordid FROM ^words WHERE word=$ AND word=$ COLLATE utf8_bin LIMIT 1) ORDER BY postcreated DESC LIMIT #,#) y ON ^posts.postid=y.postid";
+		$selectspec['arguments']=array($voteuserid, $tag, qa_strtolower($tag), $start, $count);
 		$selectspec['sortdesc']='created';
 		
 		return $selectspec;
@@ -444,7 +447,7 @@
 	}
 
 	
-	function qa_db_user_recent_as_selectspec($identifier, $count=QA_DB_RETRIEVE_QS_AS)
+	function qa_db_user_recent_a_qs_selectspec($voteuserid, $identifier, $count=QA_DB_RETRIEVE_QS_AS)
 /*
 	For $count recent answers by the user identified by $identifier (see qa_db_user_recent_qs_selectspec() comment)
 	return the selectspec to retrieve the antecedent questions for those answers, with the corresponding
@@ -452,7 +455,7 @@
 	information about the answers themselves, in columns named with the prefix 'a'.
 */
 	{
-		$selectspec=qa_db_posts_basic_selectspec();
+		$selectspec=qa_db_posts_basic_selectspec(true);
 		
 		$selectspec['columns']['apostid']='aposts.postid';
 		$selectspec['columns']['acreated']='UNIX_TIMESTAMP(aposts.created)';
@@ -462,7 +465,7 @@
 			" WHERE aposts.userid=".(QA_EXTERNAL_USERS ? "$" : "(SELECT userid FROM ^users WHERE handle=$)")." AND aposts.type='A'".
 			" ORDER BY aposts.created DESC LIMIT #";
 			
-		$selectspec['arguments']=array($identifier, $count);
+		$selectspec['arguments']=array($voteuserid, $identifier, $count);
 		$selectspec['sortdesc']='acreated';
 		
 		return $selectspec;

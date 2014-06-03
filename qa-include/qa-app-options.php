@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-options.php
-	Version: 1.0
-	Date: 2010-04-09 16:07:28 GMT
+	Version: 1.0.1-beta
+	Date: 2010-05-11 12:36:30 GMT
 	Description: Getting and setting admin options (application level)
 
 
@@ -175,7 +175,7 @@
 			'captcha_on_feedback' => 1,
 			'captcha_on_reset_password' => 1,
 			'comment_needs_login' => 0,
-			'comment_on_qs' => 1,
+			'comment_on_qs' => 0,
 			'comment_on_as' => 1,
 			'columns_tags' => 3,
 			'columns_users' => 2,
@@ -201,7 +201,7 @@
 			'min_len_q_title' => 12,
 			'min_len_c_content' => 12,
 			'nav_unanswered' => 1,
-			'neat_urls' => 0,
+			'neat_urls' => QA_URL_FORMAT_SAFEST,
 			'page_size_ask_check_qs' => 5,
 			'page_size_home' => 20,
 			'page_size_qs' => 20,

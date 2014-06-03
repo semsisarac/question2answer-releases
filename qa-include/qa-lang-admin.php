@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-admin.php
-	Version: 1.0
-	Date: 2010-04-09 16:07:28 GMT
+	Version: 1.0.1-beta
+	Date: 2010-05-11 12:36:30 GMT
 	Description: Language phrases for admin center
 
 
@@ -41,6 +41,8 @@
 		'hidden_title' => 'Hidden',
 		'layout_title' => 'Layout',
 		'maximum_x' => ' (max ^)',
+		'neat_urls_note' => ' (requires ^1htaccess^2 file)',
+		'url_format_note' => 'Options with the ^ label are working for your site\'s configuration. For best search engine optimization (SEO), use the first ^ option available.',
 		'no_hidden_found' => 'No hidden questions, answers or comments found',
 		'no_multibyte' => 'The installed version of PHP was compiled without multibyte string support. Searching will be less effective for non-Roman characters.',
 		'no_privileges' => 'Only administrators may access this page.',

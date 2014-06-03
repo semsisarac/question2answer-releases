@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-index.php
-	Version: 1.0
-	Date: 2010-04-09 16:07:28 GMT
+	Version: 1.0.1-beta
+	Date: 2010-05-11 12:36:30 GMT
 	Description: The Grand Central of Q2A - all non-Ajax requests come through here
 
 
@@ -30,74 +30,108 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+//	Try our best to set base path here just in case it wasn't set in index.php (pre version 1.0.1)
+
+	if (!defined('QA_BASE_DIR'))
+		define('QA_BASE_DIR', dirname(empty($_SERVER['SCRIPT_FILENAME']) ? dirname(__FILE__) : $_SERVER['SCRIPT_FILENAME']).'/');
+
 //	Be ultra-strict about error checking for visible pages and load base include file
 
-	define('QA_BASE_DIR', dirname(empty($_SERVER['SCRIPT_FILENAME']) ? __FILE__ : $_SERVER['SCRIPT_FILENAME']).'/');
-	
 	error_reporting(E_ALL);
 	
 	require 'qa-base.php';
-
+	
 //	Determine the request and root of the installation, and the requested start position used by many pages
 	
+	$relativedepth=0;
+	$rootpath=dirname($_SERVER['PHP_SELF']);
+	
 	if (isset($_GET['qa-rewrite'])) { // URLs rewritten by .htaccess
-		$qa_rewritten=true;
-		$qa_request_parts=explode('/', qa_gpc_to_string($_GET['qa-rewrite']));
+		$qa_used_url_format=QA_URL_FORMAT_NEAT;
+		$requestparts=explode('/', qa_gpc_to_string($_GET['qa-rewrite']));
+		unset($_GET['qa-rewrite']);
+		$relativedepth=count($requestparts);
 		
-		// Workaround for fact that Apache unescapes characters while rewriting
-		// Based on assumption that $_GET['qa-rewrite'] has right path depth
+		// Workaround for fact that Apache unescapes characters while rewriting, based on assumption that $_GET['qa-rewrite'] has
+		// right path depth, which is true do long as there are only escaped characters in the last part of the path
 		if (!empty($_SERVER['REQUEST_URI'])) {
 			$origpath=$_SERVER['REQUEST_URI'];
 			
 			$questionpos=strpos($origpath, '?');
-			if (is_numeric($questionpos))
+			if (is_numeric($questionpos)) {
+				$params=explode('&', substr($origpath, $questionpos+1));
+				
+				foreach ($params as $param)
+					if (preg_match('/^([^\=]*)(\=(.*))?$/', $param, $matches))
+						$_GET[urldecode($matches[1])]=urldecode(@$matches[3]);
+
 				$origpath=substr($origpath, 0, $questionpos);
+			}
 			
-			$qa_request_parts=array_slice(explode('/', urldecode($origpath)), -count($qa_request_parts));
+			$requestparts=array_slice(explode('/', urldecode($origpath)), -count($requestparts));
 		}
 		
-	} else { // URLs not rewritten
-		$qa_rewritten=false;
-		$qa_request_parts=explode('/', urldecode($_SERVER['PHP_SELF']));
-	}
-	
-	$qa_url_depth=0;
-	$qa_root_path=dirname($_SERVER['PHP_SELF']);
-	
-	for ($part=count($qa_request_parts)-1; $part>=0; $part--) {
-		$qa_request_part=$qa_request_parts[$part];
-		$qa_url_depth++;
+	} elseif (isset($_GET['qa'])) {
+		if (strpos($_GET['qa'], '/')===false) {
+			$qa_used_url_format=( (empty($_SERVER['REQUEST_URI'])) || (strpos($_SERVER['REQUEST_URI'], '/index.php')!==false) )
+				? QA_URL_FORMAT_SAFEST : QA_URL_FORMAT_PARAMS;
+			$requestparts=array($_GET['qa']);
+			
+			for ($part=1; $part<10; $part++)
+				if (isset($_GET['qa_'.$part])) {
+					$requestparts[]=$_GET['qa_'.$part];
+					unset($_GET['qa_'.$part]);
+				}
 		
-		if ((!$qa_rewritten) && (strtolower($qa_request_part)=='index.php')) {
-			$qa_root_path=implode('/', array_slice($qa_request_parts, 0, $part));
-			$qa_request_parts=array_slice($qa_request_parts, $part+1);
-			break;
+		} else {
+			$qa_used_url_format=QA_URL_FORMAT_PARAM;
+			$requestparts=explode('/', $_GET['qa']);
 		}
 		
-		if (empty($qa_request_part))
-			unset($qa_request_parts[$part]);
+		unset($_GET['qa']);
+	
+	} else {
+		$indexpath='/index.php/';
+		$indexpos=strpos($_SERVER['PHP_SELF'], $indexpath);
+		
+		if (is_numeric($indexpos)) {
+			$qa_used_url_format=QA_URL_FORMAT_INDEX;	
+			$requestparts=explode('/', substr($_SERVER['PHP_SELF'], $indexpos+strlen($indexpath)));
+			$relativedepth=1+count($requestparts);
+			$rootpath=substr($_SERVER['PHP_SELF'], 0, $indexpos);
+	
+		} elseif (count($_GET) && !strlen(reset($_GET))) {
+			$qa_used_url_format=QA_URL_FORMAT_QUERY;
+			$requestparts=explode('/', key($_GET));
+			unset($_GET[key($_GET)]);	
+			
+		} else {
+			$qa_used_url_format=null; // at home page so can't identify path type
+			$requestparts=array();
+		}
 	}
 	
-	$qa_request=implode('/', $qa_request_parts);
+	foreach ($requestparts as $part => $requestpart) // remove any blank parts
+		if (empty($requestpart))
+			unset($requestparts[$part]);
+
+	$qa_request=implode('/', $requestparts);
 	$qa_request_lc=strtolower($qa_request);
 	
-	$qa_root_url_relative=($qa_url_depth>1) ? str_repeat('../', $qa_url_depth-1) : './';
-	$qa_root_url_inferred='http://'.@$_SERVER['HTTP_HOST'].$qa_root_path.'/';
-
+	$qa_root_url_relative=($relativedepth>1) ? str_repeat('../', $relativedepth-1) : './';
+	$qa_root_url_inferred='http://'.@$_SERVER['HTTP_HOST'].$rootpath.'/';
+	
 	$qa_start=min(max(0, (int)qa_get('start')), QA_MAX_LIMIT_START);
-
+	
 
 	function qa_self_html()
 /*
 	Return an HTML-ready relative URL for the current page, preserving GET parameters - this i useful for ACTION in FORMs
 */
 	{
-		global $qa_rewritten, $qa_request;
+		global $qa_used_url_format, $qa_request;
 		
-		$params=$_GET;
-		unset($params['qa-rewrite']);
-		
-		return qa_path_html($qa_request, $params, null, $qa_rewritten);
+		return qa_path_html($qa_request, $_GET, null, $qa_used_url_format);
 	}
 
 
@@ -311,14 +345,15 @@
 	
 			),
 			
-			'search' => array(
-				'form_tags' => ' METHOD="GET" ACTION="'.qa_path_html('search').'" ',
-				'title' => qa_lang_html('main/search_title'),
-				'field_tags' => ' NAME="q" ',
-				'button_label' => qa_lang_html('main/search_button')
-			),
-			
 			'sidebar' => qa_get_option($qa_db, 'custom_sidebar'),
+		);
+		
+		$qa_content['search']=array(
+			'form_tags' => ' METHOD="GET" ACTION="'.qa_path_html('search').'" ',
+			'form_extra' => qa_path_form_html('search'),
+			'title' => qa_lang_html('main/search_title'),
+			'field_tags' => ' NAME="q" ',
+			'button_label' => qa_lang_html('main/search_button'),
 		);
 		
 		if (!qa_get_option($qa_db, 'feedback_enabled'))
@@ -472,6 +507,7 @@
 		'install' => QA_INCLUDE_DIR.'qa-install.php',
 		'rewrite-test' => QA_INCLUDE_DIR.'qa-rewrite-test.php',
 		'rewrite-pass' => QA_INCLUDE_DIR.'qa-rewrite-test.php',
+		'url/test/$&-_#%@' => QA_INCLUDE_DIR.'qa-url-test.php',
 	);
 	
 	if (isset($qa_routing[$qa_request_lc])) {

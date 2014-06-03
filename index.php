@@ -1,15 +1,15 @@
 <?php
 
 /*
-	Question2Answer 1.0 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: index.php
-	Version: 1.0
-	Date: 2010-04-09 16:07:28 GMT
-	Description: A stub that only includes the Q2A index file
+	Version: 1.0.1-beta
+	Date: 2010-05-11 12:36:30 GMT
+	Description: A stub that only sets up the QA root and includes the Q2A index file
 
 
 	This software is licensed for use in websites which are connected to the
@@ -30,6 +30,10 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+//	Set base path here so this works with symbolic links for multiple installations
+
+	define('QA_BASE_DIR', dirname(empty($_SERVER['SCRIPT_FILENAME']) ? __FILE__ : $_SERVER['SCRIPT_FILENAME']).'/');
+	
 	require 'qa-include/qa-index.php';
 
 ?>

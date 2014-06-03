@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-options.php
-	Version: 1.0
-	Date: 2010-04-09 16:07:28 GMT
+	Version: 1.0.1-beta
+	Date: 2010-05-11 12:36:30 GMT
 	Description: Language phrases for all options, as shown in admin center
 
 
@@ -84,7 +84,7 @@
 		'min_len_q_content' => 'Minimum characters in question body:',
 		'min_len_q_title' => 'Minimum characters in question title:',
 		'nav_unanswered' => 'Show navigation link to unanswered questions',
-		'neat_urls' => 'Neat URLs without index.php',
+		'neat_urls' => 'URL structure for pages on your site:',
 		'notify_admin_q_post' => 'Email me when a new question is posted',
 		'page_size_ask_check_qs' => 'Maximum similar questions to show:',
 		'page_size_ask_tags' => 'Maximum tag hints to show:',

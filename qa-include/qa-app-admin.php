@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-admin.php
-	Version: 1.0
-	Date: 2010-04-09 16:07:28 GMT
+	Version: 1.0.1-beta
+	Date: 2010-05-11 12:36:30 GMT
 	Description: Functions used in the admin center pages
 
 
@@ -276,6 +276,14 @@
 			);
 		else
 			return null;
+	}
+	
+	function qa_admin_url_test_html()
+/*
+	Return the HTML to display for a URL test which has passed
+*/
+	{
+		return '; font-size:9px; color:#060; font-weight:bold; font-family:arial,sans-serif; border-color:#060;">OK<';
 	}
 
 ?>

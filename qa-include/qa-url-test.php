@@ -1,15 +1,15 @@
 <?php
-
+	
 /*
 	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
-	File: qa-external-example/qa-external-lang.php
+	File: qa-include/qa-url-test.php
 	Version: 1.0.1-beta
 	Date: 2010-05-11 12:36:30 GMT
-	Description: Example of how to use your own language translation layer
+	Description: Sits in an iframe and shows a green page with word 'OK'
 
 
 	This software is licensed for use in websites which are connected to the
@@ -30,34 +30,16 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/*
-	=======================================================================
-	THIS FILE ALLOWS YOU TO USE YOUR EXISTING LANGUAGE TRANSLATION SOLUTION
-	=======================================================================
-
-	It is used if QA_EXTERNAL_LANG is set to true in qa-config.php.
-*/
-
-	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
-		header('Location: ../');
-		exit;
-	}
-
-
-	function qa_lang($identifier)
-/*
-	Provide the appropriate translation for the phrase labelled $identifier.
-
-	If you cannot provide a translation, you can return qa_lang_base($identifier)
-	which will use the default translation code for the engine.
-*/
-	{
-		$gottranslation=false;
-		
-		if ($gottranslation)
-			return 'the translation';
-		else
-			return qa_lang_base($identifier);
-	}
+	if (@$_GET['param']=='$&-_#%@') {
+		require_once QA_INCLUDE_DIR.'qa-app-admin.php';
 	
+		echo '<HTML><BODY STYLE="margin:0; padding:0;">';
+		echo '<TABLE WIDTH="100%" HEIGHT="100%" CELLSPACING="0" CELLPADDING="0">';
+		echo '<TR VALIGN="middle"><TD ALIGN="center" STYLE="border-style:solid; border-width:1px; background-color:#fff; ';
+		echo qa_admin_url_test_html();
+		echo 'TD></TR></TABLE>';
+		echo '</BODY></HTML>';
+	}
+
+	exit;
 ?>

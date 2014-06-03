@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-install.php
-	Version: 1.0
-	Date: 2010-04-09 16:07:28 GMT
+	Version: 1.0.1-beta
+	Date: 2010-05-11 12:36:30 GMT
 	Description: User interface for installing, upgrading and fixing the database
 
 
@@ -59,11 +59,20 @@
 				break;
 				
 			case 'query':
-				$error.="Question2Answer query failed:\n\n".$pass_failure_query."\n\nError ".$pass_failure_errno.":\n\n".$pass_failure_error."\n\n";
+				global $qa_from_install_page;
+				
+				if (@$qa_from_install_page)
+					$error.="Question2Answer was unable to perform the query below. Please check the user in the config file has CREATE and ALTER permissions:\n\n";
+				else
+					$error.="Question2Answer query failed:\n\n";
+					
+				$error.=$pass_failure_query."\n\nError ".$pass_failure_errno.": ".$pass_failure_error."\n\n";
 				break;
 		}
 
 	} else { // this page was requested by user GET/POST, so handle any incoming clicks on buttons
+		$qa_from_install_page=true;
+		
 		if (qa_clicked('create')) {
 			qa_db_install_tables($qa_db);
 			
@@ -166,7 +175,7 @@
 		</STYLE>
 	</HEAD>
 	<BODY>
-		<FORM METHOD="POST" ACTION="<?php echo qa_path_html('install', null, null, false)?>">
+		<FORM METHOD="POST" ACTION="<?php echo qa_path_html('install', null, null, QA_URL_FORMAT_SAFEST)?>">
 <?php
 	if (strlen($success))
 		echo '<P><FONT COLOR="#006600">'.nl2br(qa_html(@$success)).'</FONT></P>'; // green
@@ -180,9 +189,9 @@
 		$qa_login_user=qa_get_logged_in_user($qa_db);
 		
 		if ($qa_login_user['level']>=QA_USER_LEVEL_ADMIN)
-			echo '<P><A HREF="'.qa_path_html('admin', null, null, false).'">Go to admin center</A></P>';
+			echo '<P><A HREF="'.qa_path_html('admin', null, null, QA_URL_FORMAT_SAFEST).'">Go to admin center</A></P>';
 		else
-			echo '<P><A HREF="'.qa_path_html('', null, null, false).'">Go to home page</A></P>';
+			echo '<P><A HREF="'.qa_path_html('', null, null, QA_URL_FORMAT_SAFEST).'">Go to home page</A></P>';
 	}
 
 //	Very simple general form display logic (we don't use theme since it depends on tons of DB options)

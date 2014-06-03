@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-user.php
-	Version: 1.0
-	Date: 2010-04-09 16:07:28 GMT
+	Version: 1.0.1-beta
+	Date: 2010-05-11 12:36:30 GMT
 	Description: Controller for user profile page
 
 
@@ -81,7 +81,7 @@
 		qa_db_user_points_selectspec($identifier),
 		qa_db_user_rank_selectspec($identifier),
 		qa_db_user_recent_qs_selectspec($qa_login_userid, $identifier),
-		qa_db_user_recent_as_selectspec($identifier)
+		qa_db_user_recent_a_qs_selectspec($qa_login_userid, $identifier)
 	);
 	
 	if (!QA_EXTERNAL_USERS) { // if we're using integrated user management, we can know and show more
