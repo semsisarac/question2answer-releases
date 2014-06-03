@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-captcha.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Wrapper functions and utilities for reCAPTCHA
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -120,7 +121,7 @@
 	}
 
 	
-	function qa_set_up_captcha_field($db, &$qa_content, &$fields, $errors)
+	function qa_set_up_captcha_field($db, &$qa_content, &$fields, $errors, $note=null)
 /*
 	Prepare $qa_content for showing a captcha, adding the element to $fields, and given previous $errors
 */
@@ -128,9 +129,10 @@
 		if (qa_captcha_possible($db)) {
 			$fields['captcha']=array(
 				'type' => 'custom',
-				'label' => qa_lang_html('main/captcha_label'),
+				'label' => qa_lang_html('misc/captcha_label'),
 				'html' => qa_captcha_html($db, @$errors['captcha']),
-				'error' => isset($errors['captcha']) ? qa_lang_html('main/captcha_error') : null,
+				'error' => isset($errors['captcha']) ? qa_lang_html('misc/captcha_error') : null,
+				'note' => $note,
 			);
 			
 			$language=qa_get_option($db, 'site_language');

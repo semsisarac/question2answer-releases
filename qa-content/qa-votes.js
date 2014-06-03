@@ -1,19 +1,20 @@
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-content/qa-votes.js
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: JS to handle Ajax voting
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -33,11 +34,10 @@ function qa_vote_click(elem, oldvote)
 	var ens=elem.name.split('_');
 	var postid=ens[1];
 	var vote=parseInt(ens[2]);
+	var anchor=ens[3];
 	
-	qa_ajax_post('qa-include/qa-ajax-vote.php', {postid:postid, vote:vote},
-		function(response) {
-			var lines=response.replace(/^\s+/, '').split("\n");
-			
+	qa_ajax_post('vote', {postid:postid, vote:vote},
+		function(lines) {
 			if (lines[0]=='1') {
 				document.getElementById('voting_'+postid).innerHTML=lines.slice(1).join("\n");
 
@@ -51,11 +51,11 @@ function qa_vote_click(elem, oldvote)
 					mess.innerHTML=lines[1];
 				}
 				
-				var postelem=document.getElementById(postid);
+				var postelem=document.getElementById(anchor);
 				postelem.parentNode.insertBefore(mess, postelem);
 			
 			} else {
-				alert('Failed to connect to site');
+				alert('Unexpected response from server - please try again.');
 			}
 
 		}
@@ -64,11 +64,20 @@ function qa_vote_click(elem, oldvote)
 	return false;
 }
 
-function qa_ajax_post(path, params, callback)
+function qa_ajax_post(operation, params, callback)
 {
-	var url=qa_root+path+'?qa_root='+encodeURIComponent(qa_root)+'&qa_request='+encodeURIComponent(qa_request);
+	var url=qa_root+'?qa=ajax&qa_operation='+operation+'&qa_root='+encodeURIComponent(qa_root)+'&qa_request='+encodeURIComponent(qa_request);
 	for (var key in params)
 		url+='&'+encodeURIComponent(key)+'='+encodeURIComponent(params[key]);
 	
-	jx.load(url, callback, 'text', 'POST', {onError:callback});
+	jx.load(url, function(response) {
+		var header='QA_AJAX_RESPONSE';
+		var headerpos=response.indexOf(header);
+		
+		if (headerpos>=0)
+			callback(response.substr(headerpos+header.length).replace(/^\s+/, '').split("\n"));
+		else
+			callback([]);
+
+	}, 'text', 'POST', {onError:callback});
 }

@@ -1,21 +1,22 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-selects.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Builders of selectspec arrays (see qa-db.php) used to specify database SELECTs
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -47,50 +48,69 @@
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
 		
+		global $qa_pages_pending, $qa_pages_cached, $qa_logged_in_pending;
+		
 		$selectspecs=array_slice(func_get_args(), 1);
+		$singleresult=(count($selectspecs)==1);
 		
 		foreach ($selectspecs as $key => $selectspec) // can pass null parameters
 			if (empty($selectspec))
 				unset($selectspecs[$key]);
 		
-		$singleresult=(count($selectspecs)==1);
-		
 		$optionselectspec=qa_options_pending_selectspec();
 		if (is_array($optionselectspec))
 			$selectspecs['_options']=$optionselectspec;
+			
+		if (@$qa_logged_in_pending && !QA_EXTERNAL_USERS) {
+			$loggedinselectspec=qa_logged_in_user_selectspec($db);
+			if (is_array($loggedinselectspec))
+				$selectspecs['_loggedin']=$loggedinselectspec;
+
+		} else
+			$loggedinselectspec=null;
+		
+		if (@$qa_pages_pending && !isset($qa_pages_cached))
+			$selectspecs['_pages']=qa_db_pages_selectspec();
 		
 		$outresults=qa_db_multi_select($db, $selectspecs);
 		
 		if (is_array($optionselectspec))
-			qa_options_load_options($db, $outresults['_options']);
+			qa_options_load_options($db, $optionselectspec, $outresults['_options']);
+			
+		if (is_array($loggedinselectspec))
+			qa_logged_in_user_load($db, $loggedinselectspec, $outresults['_loggedin']);
+			
+		if (@$qa_pages_pending && !isset($qa_pages_cached))
+			$qa_pages_cached=$outresults['_pages'];
 		
 		return $singleresult ? $outresults[0] : $outresults;
 	}
 
 	
-	function qa_db_posts_basic_selectspec($uservote=false, $full=false, $user=true)
+	function qa_db_posts_basic_selectspec($voteuserid=null, $full=false, $user=true)
 /*
 	Return the common selectspec used to build any selectspecs which retrieve posts from the database.
-	If $uservote is true, enable retrieving the vote made by a particular user on each post (if so, the
-	userid must be given as the first item in the 'arguments' element of the selectspec based on this).
+	If $voteuserid is set, retrieve the vote made by a particular that user on each post.
 	If $full is true, get full information on the posts, instead of just information for listing pages.
 	If $user is true, get information about the user who wrote the post (or cookie if anonymous).
 */
 	{
 		$selectspec=array(
 			'columns' => array(
-				'^posts.postid', '^posts.type', 'basetype' => 'LEFT(^posts.type,1)', 'hidden' => "INSTR(^posts.type, '_HIDDEN')>0",
-				'^posts.acount', '^posts.upvotes', '^posts.downvotes',
+				'^posts.postid', '^posts.categoryid', '^posts.type', 'basetype' => 'LEFT(^posts.type,1)',
+				'hidden' => "INSTR(^posts.type, '_HIDDEN')>0", '^posts.acount', '^posts.upvotes', '^posts.downvotes',
 				'title' => 'BINARY ^posts.title', 'tags' => 'BINARY ^posts.tags', 'created' => 'UNIX_TIMESTAMP(^posts.created)',
 			),
 			
 			'arraykey' => 'postid',
 			'source' => '^posts',
+			'arguments' => array(),
 		);
 		
-		if ($uservote) {
+		if (isset($voteuserid)) {
 			$selectspec['columns']['uservote']='^uservotes.vote';
 			$selectspec['source'].=' LEFT JOIN ^uservotes ON ^posts.postid=^uservotes.postid AND ^uservotes.userid=$';
+			$selectspec['arguments'][]=$voteuserid;
 		}
 		
 		if ($full) {
@@ -106,6 +126,7 @@
 		if ($user) {
 			$selectspec['columns'][]='^posts.userid';
 			$selectspec['columns'][]='^posts.cookieid';
+			$selectspec['columns']['createip']='INET_NTOA(^posts.createip)';
 			$selectspec['columns'][]='^userpoints.points';
 
 			if (!QA_EXTERNAL_USERS) {
@@ -125,39 +146,55 @@
 	}
 
 	
-	function qa_db_recent_qs_selectspec($voteuserid, $start, $hidden=false, $count=QA_DB_RETRIEVE_QS_AS)
+	function qa_db_recent_qs_selectspec($voteuserid, $start, $categoryslug=null, $createip=null, $hidden=false, $full=false, $count=QA_DB_RETRIEVE_QS_AS)
 /*
 	Return the selectspec to retrieve $count recent questions ($hidden or not),
 	starting from offset $start, with the corresponding vote made by $voteuserid (if not null)
 */
 	{
-		$selectspec=qa_db_posts_basic_selectspec(true);
+		$selectspec=qa_db_posts_basic_selectspec($voteuserid, $full);
 		
-		$selectspec['source'].=" JOIN (SELECT postid FROM ^posts WHERE type=$ ORDER BY ^posts.created DESC LIMIT #,#) y ON ^posts.postid=y.postid";
-		$selectspec['arguments']=array($voteuserid, $hidden ? 'Q_HIDDEN' : 'Q', $start, $count);
+		$selectspec['source'].=" JOIN (SELECT postid FROM ^posts WHERE ".
+			(isset($categoryslug) ? "categoryid=(SELECT categoryid FROM ^categories WHERE tags=$ LIMIT 1) AND " : "").
+			(isset($createip) ? "createip=INET_ATON($) AND " : "").
+			"type=$ ORDER BY ^posts.created DESC LIMIT #,#) y ON ^posts.postid=y.postid";
+
+		if (isset($categoryslug))
+			$selectspec['arguments'][]=$categoryslug;
+
+		if (isset($createip))
+			$selectspec['arguments'][]=$createip;
+		
+		array_push($selectspec['arguments'], $hidden ? 'Q_HIDDEN' : 'Q', $start, $count);
+
 		$selectspec['sortdesc']='created';
 		
 		return $selectspec;
 	}
 
 	
-	function qa_db_unanswered_qs_selectspec($voteuserid, $start, $hidden=false, $count=QA_DB_RETRIEVE_QS_AS)
+	function qa_db_unanswered_qs_selectspec($voteuserid, $start, $categoryslug=null, $hidden=false, $full=false, $count=QA_DB_RETRIEVE_QS_AS)
 /*
 	Return the selectspec to retrieve $count recent unanswered questions ($hidden or not),
 	starting from offset $start, with the corresponding vote made by $voteuserid (if not null)
 */
 	{
-		$selectspec=qa_db_posts_basic_selectspec(true);
+		$selectspec=qa_db_posts_basic_selectspec($voteuserid, $full);
 		
-		$selectspec['source'].=" JOIN (SELECT postid FROM ^posts WHERE type=$ AND acount=0 ORDER BY ^posts.created DESC LIMIT #,#) y ON ^posts.postid=y.postid";
-		$selectspec['arguments']=array($voteuserid, $hidden ? 'Q_HIDDEN' : 'Q', $start, $count);
+		$selectspec['source'].=" JOIN (SELECT postid FROM ^posts WHERE ".(isset($categoryslug) ? "categoryid=(SELECT categoryid FROM ^categories WHERE tags=$ LIMIT 1) AND " : "")."type=$ AND acount=0 ORDER BY ^posts.created DESC LIMIT #,#) y ON ^posts.postid=y.postid";
+		
+		if (isset($categoryslug))
+			$selectspec['arguments'][]=$categoryslug;
+
+		array_push($selectspec['arguments'], $hidden ? 'Q_HIDDEN' : 'Q', $start, $count);
+
 		$selectspec['sortdesc']='created';
 		
 		return $selectspec;
 	}
 
 
-	function qa_db_recent_a_qs_selectspec($voteuserid, $start, $hidden=false, $count=QA_DB_RETRIEVE_QS_AS)
+	function qa_db_recent_a_qs_selectspec($voteuserid, $start, $categoryslug=null, $createip=null, $hidden=false, $fullanswers=false, $count=QA_DB_RETRIEVE_QS_AS)
 /*
 	For $count most recent answers ($hidden or not), starting from offset $start,
 	return the selectspec to retrieve the antecedent questions for those answers, with the corresponding
@@ -165,15 +202,20 @@
 	information about the answers themselves, in columns named with the prefix 'a'.
 */
 	{
-		$selectspec=qa_db_posts_basic_selectspec(true);
+		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
 		
 		$selectspec['arraykey']='apostid';
 
 		$selectspec['columns']['apostid']='aposts.postid';
 		$selectspec['columns']['auserid']='aposts.userid';
 		$selectspec['columns']['acookieid']='aposts.cookieid';
+		$selectspec['columns']['acreateip']='INET_NTOA(aposts.createip)';
 		$selectspec['columns']['acreated']='UNIX_TIMESTAMP(aposts.created)';
-		$selectspec['columns']['apoints']='auserpoints.points';
+
+		if ($fullanswers)
+			$selectspec['columns']['acontent']='BINARY aposts.content';
+
+		$selectspec['columns']['apoints']='auserpoints.points';		
 		
 		if (!QA_EXTERNAL_USERS)
 			$selectspec['columns']['ahandle']='BINARY ausers.handle';
@@ -181,16 +223,26 @@
 		$selectspec['source'].=" JOIN ^posts AS aposts ON ^posts.postid=aposts.parentid".
 			(QA_EXTERNAL_USERS ? "" : " LEFT JOIN ^users AS ausers ON aposts.userid=ausers.userid").
 			" LEFT JOIN ^userpoints AS auserpoints ON aposts.userid=auserpoints.userid".
-			" JOIN (SELECT postid FROM ^posts WHERE type=$ ORDER BY ^posts.created DESC LIMIT #,#) y ON aposts.postid=y.postid WHERE ^posts.type!='Q_HIDDEN'";
+			" JOIN (SELECT postid FROM ^posts WHERE ".
+			(isset($createip) ? "createip=INET_ATON($) AND " : "").
+			(isset($categoryslug) ? "categoryid=(SELECT categoryid FROM ^categories WHERE tags=$ LIMIT 1) AND " : "").
+			"type=$ ORDER BY ^posts.created DESC LIMIT #,#) y ON aposts.postid=y.postid WHERE ^posts.type!='Q_HIDDEN'";
 			
-		$selectspec['arguments']=array($voteuserid, $hidden ? 'A_HIDDEN' : 'A', $start, $count);
+		if (isset($categoryslug))
+			$selectspec['arguments'][]=$categoryslug;
+
+		if (isset($createip))
+			$selectspec['arguments'][]=$createip;
+
+		array_push($selectspec['arguments'], $hidden ? 'A_HIDDEN' : 'A', $start, $count);
+
 		$selectspec['sortdesc']='acreated';
 		
 		return $selectspec;
 	}
 
 	
-	function qa_db_recent_c_qs_selectspec($voteuserid, $start, $hidden=false, $count=QA_DB_RETRIEVE_QS_AS)
+	function qa_db_recent_c_qs_selectspec($voteuserid, $start, $categoryslug=null, $createip=null, $hidden=false, $fullcomments=false, $count=QA_DB_RETRIEVE_QS_AS)
 /*
 	For $count most recent comments ($hidden or not), starting from offset $start,
 	return the selectspec to retrieve the antecedent questions for those comments, with the corresponding
@@ -198,14 +250,19 @@
 	information about the comments themselves, in columns named with the prefix 'c'.
 */
 	{
-		$selectspec=qa_db_posts_basic_selectspec(true);
+		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
 		
 		$selectspec['arraykey']='cpostid';
 
 		$selectspec['columns']['cpostid']='cposts.postid';
 		$selectspec['columns']['cuserid']='cposts.userid';
 		$selectspec['columns']['ccookieid']='cposts.cookieid';
+		$selectspec['columns']['ccreateip']='INET_NTOA(cposts.createip)';
 		$selectspec['columns']['ccreated']='UNIX_TIMESTAMP(cposts.created)';
+
+		if ($fullcomments)
+			$selectspec['columns']['ccontent']='BINARY cposts.content';
+
 		$selectspec['columns']['cpoints']='cuserpoints.points';
 		
 		if (!QA_EXTERNAL_USERS)
@@ -216,9 +273,19 @@
 			" JOIN ^posts AS cposts ON parentposts.postid=cposts.parentid".
 			(QA_EXTERNAL_USERS ? "" : " LEFT JOIN ^users AS cusers ON cposts.userid=cusers.userid").
 			" LEFT JOIN ^userpoints AS cuserpoints ON cposts.userid=cuserpoints.userid".
-			" JOIN (SELECT postid FROM ^posts WHERE type=$ ORDER BY ^posts.created DESC LIMIT #,#) y ON cposts.postid=y.postid WHERE (^posts.type!='Q_HIDDEN') AND (parentposts.type!='A_HIDDEN')";
+			" JOIN (SELECT postid FROM ^posts WHERE ".
+			(isset($createip) ? "createip=INET_ATON($) AND " : "").
+			(isset($categoryslug) ? "categoryid=(SELECT categoryid FROM ^categories WHERE tags=$ LIMIT 1) AND " : "").
+			"type=$ ORDER BY ^posts.created DESC LIMIT #,#) y ON cposts.postid=y.postid WHERE (^posts.type!='Q_HIDDEN') AND (parentposts.type!='A_HIDDEN')";
 			
-		$selectspec['arguments']=array($voteuserid, $hidden ? 'C_HIDDEN' : 'C', $start, $count);
+		if (isset($categoryslug))
+			$selectspec['arguments'][]=$categoryslug;
+
+		if (isset($createip))
+			$selectspec['arguments'][]=$createip;
+
+		array_push($selectspec['arguments'], $hidden ? 'C_HIDDEN' : 'C', $start, $count);
+
 		$selectspec['sortdesc']='ccreated';
 		
 		return $selectspec;
@@ -230,10 +297,10 @@
 	Return the selectspec to retrieve the full information for $postid, with the corresponding vote made by $voteuserid (if not null)
 */
 	{
-		$selectspec=qa_db_posts_basic_selectspec(true, true);
+		$selectspec=qa_db_posts_basic_selectspec($voteuserid, true);
 
 		$selectspec['source'].=" WHERE ^posts.postid=#";
-		$selectspec['arguments']=array($voteuserid, $postid);
+		$selectspec['arguments'][]=$postid;
 		$selectspec['single']=true;
 
 		return $selectspec;
@@ -246,10 +313,10 @@
 	with the corresponding vote made by $voteuserid (if not null)
 */
 	{
-		$selectspec=qa_db_posts_basic_selectspec(true, true);
+		$selectspec=qa_db_posts_basic_selectspec($voteuserid, true);
 		
 		$selectspec['source'].=" WHERE ^posts.parentid=#";
-		$selectspec['arguments']=array($voteuserid, $parentid);
+		$selectspec['arguments'][]=$parentid;
 		
 		return $selectspec;
 	}
@@ -261,10 +328,10 @@
 	has $questionid as its parent, with the corresponding vote made by $voteuserid (if not null)
 */
 	{
-		$selectspec=qa_db_posts_basic_selectspec(true, true);
+		$selectspec=qa_db_posts_basic_selectspec($voteuserid, true);
 		
 		$selectspec['source'].=" JOIN ^posts AS parents ON ^posts.parentid=parents.postid WHERE parents.parentid=# AND (parents.type='A' OR parents.type='A_HIDDEN')" ;
-		$selectspec['arguments']=array($voteuserid, $questionid);
+		$selectspec['arguments'][]=$questionid;
 		
 		return $selectspec;
 	}
@@ -276,7 +343,7 @@
 	i.e. the parent of $questionid's parent if $questionid's parent is an answer, otherwise $questionid's parent itself.
 */
 	{
-		$selectspec=qa_db_posts_basic_selectspec(false, false);
+		$selectspec=qa_db_posts_basic_selectspec();
 		
 		$selectspec['source'].=" WHERE ^posts.postid=(SELECT IF((parent.type='A') OR (parent.type='A_HIDDEN'), parent.parentid, parent.postid) FROM ^posts AS child LEFT JOIN ^posts AS parent ON parent.postid=child.parentid WHERE child.postid=#)";
 		$selectspec['arguments']=array($questionid);
@@ -293,7 +360,7 @@
 	questions which have title words or tag words in common.
 */
 	{
-		$selectspec=qa_db_posts_basic_selectspec(true);
+		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
 		
 		$selectspec['columns'][]='score';
 		
@@ -301,7 +368,7 @@
 		
 		$selectspec['source'].=" JOIN (SELECT postid, SUM(score)+LOG(postid)/1000000 AS score FROM ((SELECT ^titlewords.postid, LOG(#/titlecount) AS score FROM ^titlewords JOIN ^words ON ^titlewords.wordid=^words.wordid JOIN ^titlewords AS source ON ^titlewords.wordid=source.wordid WHERE source.postid=# AND titlecount<#) UNION ALL (SELECT ^posttags.postid, 2*LOG(#/tagcount) AS score FROM ^posttags JOIN ^words ON ^posttags.wordid=^words.wordid JOIN ^posttags AS source ON ^posttags.wordid=source.wordid WHERE source.postid=# AND tagcount<#)) x GROUP BY postid ORDER BY score DESC LIMIT #) y ON ^posts.postid=y.postid";
 		
-		$selectspec['arguments']=array($voteuserid, QA_IGNORED_WORDS_FREQ, $questionid, QA_IGNORED_WORDS_FREQ,
+		array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $questionid, QA_IGNORED_WORDS_FREQ,
 			QA_IGNORED_WORDS_FREQ, $questionid, QA_IGNORED_WORDS_FREQ, $count);
 			
 		$selectspec['sortdesc']='score';
@@ -310,7 +377,7 @@
 	}
 	
 
-	function qa_db_search_posts_selectspec($db, $voteuserid, $titlewords, $contentwords, $tagwords, $handlewords, $start, $count=QA_DB_RETRIEVE_QS_AS)
+	function qa_db_search_posts_selectspec($db, $voteuserid, $titlewords, $contentwords, $tagwords, $handlewords, $start, $full=false, $count=QA_DB_RETRIEVE_QS_AS)
 /*
 	Return the selectspec to retrieve the $count top question matches, starting from the offset $start,
 	with the corresponding vote made by $voteuserid (if not null). The search is performed for any of $titlewords in the title,
@@ -324,12 +391,11 @@
 	{
 		// add LOG(postid)/1000000 here to ensure ordering is deterministic even if several posts have same score
 
-		$selectspec=qa_db_posts_basic_selectspec(true);
+		$selectspec=qa_db_posts_basic_selectspec($voteuserid, $full);
 		
 		$selectspec['columns'][]='score';
 		$selectspec['columns'][]='matchparts';
-		$selectspec['arguments']=array($voteuserid);
-		$selectspec['source'].=" JOIN (SELECT questionid, SUM(score)+LOG(questionid)/1000000 AS score, GROUP_CONCAT(CONCAT_WS(':', matchpostid, ROUND(score,3))) AS matchparts FROM (";
+		$selectspec['source'].=" JOIN (SELECT questionid, SUM(score)+LOG(questionid)/1000000 AS score, GROUP_CONCAT(CONCAT_WS(':', matchposttype, matchpostid, ROUND(score,3))) AS matchparts FROM (";
 		$selectspec['sortdesc']='score';
 		
 		$selectparts=0;
@@ -338,7 +404,7 @@
 			// At the indexing stage, duplicate words in title are ignored, so this doesn't count multiple appearances.
 			
 			$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
-				"(SELECT postid AS questionid, LOG(#/titlecount) AS score, postid AS matchpostid FROM ^titlewords JOIN ^words ON ^titlewords.wordid=^words.wordid WHERE word IN ($) AND titlecount<#)";
+				"(SELECT postid AS questionid, LOG(#/titlecount) AS score, 'Q' AS matchposttype, postid AS matchpostid FROM ^titlewords JOIN ^words ON ^titlewords.wordid=^words.wordid WHERE word IN ($) AND titlecount<#)";
 
 			array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $titlewords, QA_IGNORED_WORDS_FREQ);
 		}
@@ -351,7 +417,7 @@
 			// On top of that, answer matches are worth half a question match, and comment matches half again.
 			
 			$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
-				"(SELECT questionid, (1-1/(1+count))*LOG(#/contentcount)*(CASE ^contentwords.type WHEN 'Q' THEN 1.0 WHEN 'A' THEN 0.5 ELSE 0.25 END) AS score, ^contentwords.postid AS matchpostid FROM ^contentwords JOIN ^words ON ^contentwords.wordid=^words.wordid WHERE word IN ($) AND contentcount<#)";
+				"(SELECT questionid, (1-1/(1+count))*LOG(#/contentcount)*(CASE ^contentwords.type WHEN 'Q' THEN 1.0 WHEN 'A' THEN 0.5 ELSE 0.25 END) AS score, ^contentwords.type AS matchposttype, ^contentwords.postid AS matchpostid FROM ^contentwords JOIN ^words ON ^contentwords.wordid=^words.wordid WHERE word IN ($) AND contentcount<#)";
 
 			array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $contentwords, QA_IGNORED_WORDS_FREQ);
 		}
@@ -361,7 +427,7 @@
 			// This is because tags express explicit semantic intent, whereas titles do not necessarily.
 			
 			$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
-				"(SELECT postid AS questionid, 2*LOG(#/tagcount) AS score, postid AS matchpostid FROM ^posttags JOIN ^words ON ^posttags.wordid=^words.wordid WHERE word IN ($) AND tagcount<#)";
+				"(SELECT postid AS questionid, 2*LOG(#/tagcount) AS score, 'Q' AS matchposttype, postid AS matchpostid FROM ^posttags JOIN ^words ON ^posttags.wordid=^words.wordid WHERE word IN ($) AND tagcount<#)";
 
 			array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $tagwords, QA_IGNORED_WORDS_FREQ);
 		}
@@ -372,21 +438,21 @@
 				
 				if (count($userids)) {
 					$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
-						"(SELECT postid AS questionid, LOG(#/qposts) AS score, postid AS matchpostid FROM ^posts JOIN ^userpoints ON ^posts.userid=^userpoints.userid WHERE ^posts.userid IN ($) AND type='Q')";
+						"(SELECT postid AS questionid, LOG(#/qposts) AS score, 'Q' AS matchposttype, postid AS matchpostid FROM ^posts JOIN ^userpoints ON ^posts.userid=^userpoints.userid WHERE ^posts.userid IN ($) AND type='Q')";
 					
 					array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $userids);
 				}
 
 			} else {
 				$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
-					"(SELECT postid AS questionid, LOG(#/qposts) AS score, postid AS matchpostid FROM ^posts JOIN ^users ON ^posts.userid=^users.userid JOIN ^userpoints ON ^userpoints.userid=^users.userid WHERE handle IN ($) AND type='Q')";
+					"(SELECT postid AS questionid, LOG(#/qposts) AS score, 'Q' AS matchposttype, postid AS matchpostid FROM ^posts JOIN ^users ON ^posts.userid=^users.userid JOIN ^userpoints ON ^userpoints.userid=^users.userid WHERE handle IN ($) AND type='Q')";
 
 				array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $handlewords);
 			}
 		}
 		
 		if ($selectparts==0)
-			$selectspec['source'].='(SELECT NULL as questionid, 0 AS score, NULL as matchpostid FROM ^posts WHERE postid=NULL)';
+			$selectspec['source'].='(SELECT NULL as questionid, 0 AS score, NULL AS matchposttype, NULL AS matchpostid FROM ^posts WHERE postid=NULL)';
 
 		$selectspec['source'].=") x GROUP BY questionid ORDER BY score DESC LIMIT #,#) y ON ^posts.postid=y.questionid";
 		
@@ -396,7 +462,87 @@
 	}
 
 	
-	function qa_db_tag_recent_qs_selectspec($voteuserid, $tag, $start, $count=QA_DB_RETRIEVE_QS_AS)
+	function qa_search_max_match_anchor($question)
+/*
+	Processes the matchparts column in $question which was returned from a search performed via qa_db_search_posts_selectspec()
+	Returns the id of the strongest matching answer or comment, or null if the question itself was the strongest match
+*/
+	{
+		$anchorscore=array();
+
+		$matchparts=explode(',', $question['matchparts']);
+		foreach ($matchparts as $matchpart)
+			if (sscanf($matchpart, '%1s:%f:%f', $matchposttype, $matchpostid, $matchscore)==3)
+				@$anchorscore[qa_anchor($matchposttype, $matchpostid)]+=$matchscore;
+		
+		if (count($anchorscore)) {
+			$anchor=array_search(max($anchorscore), $anchorscore);
+			if ($anchor != qa_anchor('Q', $question['postid']))
+				return $anchor;
+		}
+		
+		return null;
+	}
+	
+
+	function qa_db_categories_selectspec()
+/*
+	Return the selectspec to retrieve the list of categories, ordered for display
+*/
+	{
+		return array(
+			'columns' => array('categoryid', 'title' => 'BINARY title', 'tags' => 'BINARY tags', 'qcount', 'position'),
+			'source' => '^categories ORDER BY position',
+			'arraykey' => 'categoryid',
+			'sortasc' => 'position',
+		);
+	}
+	
+	
+	function qa_db_slug_to_category_id_selectspec($slug)
+/*
+	Return the selectspec to retrieve a single category as specified by its slug (tags column)
+*/
+	{
+		return array(
+			'columns' => array('categoryid'),
+			'source' => '^categories WHERE tags=$',
+			'arguments' => array($slug),
+			'arrayvalue' => 'categoryid',
+			'single' => true,
+		);
+	}
+	
+	
+	function qa_db_pages_selectspec()
+/*
+	Return the selectspec to retrieve the list of (static) pages, ordered for display
+*/
+	{
+		return array(
+			'columns' => array('pageid', 'title' => 'BINARY title', 'flags', 'nav', 'tags' => 'BINARY tags', 'position'),
+			'source' => '^pages ORDER BY position',
+			'arraykey' => 'pageid',
+			'sortasc' => 'position',
+		);
+	}
+	
+	
+	function qa_db_page_full_selectspec($slugorpageid, $ispageid)
+/*
+	Return the selectspec to retrieve the full information about a page
+*/
+	{
+		return array(
+			'columns' => array('pageid', 'title' => 'BINARY title', 'flags', 'nav', 'tags' => 'BINARY tags', 'position', 'heading' => 'BINARY heading', 'content' => 'BINARY content'),
+			'source' => '^pages WHERE '.($ispageid ? 'pageid' : 'tags').'=$',
+			'arguments' => array($slugorpageid),
+			'single' => true,
+		);
+	}
+	
+	
+	function qa_db_tag_recent_qs_selectspec($voteuserid, $tag, $start, $full=false, $count=QA_DB_RETRIEVE_QS_AS)
 /*
 	Return the selectspec to retrieve $count recent questions with $tag, starting from offset $start,
 	with the corresponding vote on those questions made by $voteuserid (if not null).
@@ -404,11 +550,11 @@
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 		
-		$selectspec=qa_db_posts_basic_selectspec(true);
+		$selectspec=qa_db_posts_basic_selectspec($voteuserid, $full);
 		
 		// use two tests here - one which can use the index, and the other which narrows it down exactly - then limit to 1 just in case
 		$selectspec['source'].=" JOIN (SELECT postid FROM ^posttags WHERE wordid=(SELECT wordid FROM ^words WHERE word=$ AND word=$ COLLATE utf8_bin LIMIT 1) ORDER BY postcreated DESC LIMIT #,#) y ON ^posts.postid=y.postid";
-		$selectspec['arguments']=array($voteuserid, $tag, qa_strtolower($tag), $start, $count);
+		array_push($selectspec['arguments'], $tag, qa_strtolower($tag), $start, $count);
 		$selectspec['sortdesc']='created';
 		
 		return $selectspec;
@@ -437,10 +583,10 @@
 	Also include the corresponding vote on those questions made by $voteuserid (if not null).
 */
 	{
-		$selectspec=qa_db_posts_basic_selectspec(true, false, false);
+		$selectspec=qa_db_posts_basic_selectspec($voteuserid, false, false);
 		
 		$selectspec['source'].=" WHERE ^posts.userid=".(QA_EXTERNAL_USERS ? "$" : "(SELECT userid FROM ^users WHERE handle=$)")." AND type='Q' ORDER BY ^posts.created DESC LIMIT #";
-		$selectspec['arguments']=array($voteuserid, $identifier, $count);
+		array_push($selectspec['arguments'], $identifier, $count);
 		$selectspec['sortdesc']='created';
 		
 		return $selectspec;
@@ -455,7 +601,7 @@
 	information about the answers themselves, in columns named with the prefix 'a'.
 */
 	{
-		$selectspec=qa_db_posts_basic_selectspec(true);
+		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
 		
 		$selectspec['columns']['apostid']='aposts.postid';
 		$selectspec['columns']['acreated']='UNIX_TIMESTAMP(aposts.created)';
@@ -465,7 +611,7 @@
 			" WHERE aposts.userid=".(QA_EXTERNAL_USERS ? "$" : "(SELECT userid FROM ^users WHERE handle=$)")." AND aposts.type='A'".
 			" ORDER BY aposts.created DESC LIMIT #";
 			
-		$selectspec['arguments']=array($voteuserid, $identifier, $count);
+		array_push($selectspec['arguments'], $identifier, $count);
 		$selectspec['sortdesc']='acreated';
 		
 		return $selectspec;
@@ -497,8 +643,8 @@
 	{
 		return array(
 			'columns' => array(
-				'userid', 'passsalt', 'passcheck' => 'HEX(passcheck)', 'email' => 'BINARY email', 'level', 'handle' => 'BINARY handle', 'resetcode',
-				'created' => 'UNIX_TIMESTAMP(created)', 'sessioncode',
+				'userid', 'passsalt', 'passcheck' => 'HEX(passcheck)', 'email' => 'BINARY email', 'level', 'handle' => 'BINARY handle', 'emailcode',
+				'created' => 'UNIX_TIMESTAMP(created)', 'sessioncode', 'flags', 'loggedin' => 'UNIX_TIMESTAMP(loggedin)', 'loginip' => 'INET_NTOA(loginip)', 'written' => 'UNIX_TIMESTAMP(written)', 'writeip' => 'INET_NTOA(writeip)',
 			),
 			
 			'source' => '^users WHERE '.($isuserid ? 'userid' : 'handle').'=$',
@@ -531,7 +677,7 @@
 */
 	{
 		return array(
-			'columns' => array('points', 'qposts', 'aposts', 'cposts', 'aselects', 'aselecteds', 'qvotes', 'avotes', 'qvoteds', 'avoteds', 'upvoteds', 'downvoteds'),
+			'columns' => array('points', 'qposts', 'aposts', 'cposts', 'aselects', 'aselecteds', 'qupvotes', 'qdownvotes', 'aupvotes', 'adownvotes', 'qvoteds', 'avoteds', 'upvoteds', 'downvoteds'),
 			'source' => '^userpoints WHERE userid='.(QA_EXTERNAL_USERS ? '$' : '(SELECT userid FROM ^users WHERE handle=$)'),
 			'arguments' => array($identifier),
 			'single' => true,
@@ -595,6 +741,19 @@
 	}
 
 	
+	function qa_db_users_with_flag_selectspec($flag)
+/*
+	Return the selectspec to get information about users at a certain privilege level or higher
+*/
+	{
+		return array(
+			'columns' => array('^users.userid', 'handle' => 'BINARY handle', 'flags', 'level'),
+			'source' => '^users WHERE (flags & #)',
+			'arguments' => array($flag),
+		);
+	}
+
+
 	function qa_db_options_cache_selectspec($title)
 /*
 	Return the selectspec to get a particular cached value out of the options table, as a single value

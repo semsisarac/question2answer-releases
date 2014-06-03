@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
-	Description: User management when single sign-on not used (application level)
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
+	Description: User management (application level) for basic user operations
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -35,141 +36,65 @@
 		exit;
 	}
 
+
 	define('QA_USER_LEVEL_BASIC', 0);
-	define('QA_USER_LEVEL_EDITOR', 50); // edit all posts
-	define('QA_USER_LEVEL_ADMIN', 100); // grant editor privileges, edit user details
-	define('QA_USER_LEVEL_SUPER', 120); // grant admin privileges
+	define('QA_USER_LEVEL_EXPERT', 20);
+	define('QA_USER_LEVEL_EDITOR', 50);
+	define('QA_USER_LEVEL_MODERATOR', 80);
+	define('QA_USER_LEVEL_ADMIN', 100);
+	define('QA_USER_LEVEL_SUPER', 120);
+	
+	define('QA_USER_FLAGS_EMAIL_CONFIRMED', 1);
+	define('QA_USER_FLAGS_USER_BLOCKED', 2);
+
 	
 	if (QA_EXTERNAL_USERS) {
 
-	//	If we're using single sign-on integration, load PHP file for that and ignore rest of this file
+	//	If we're using single sign-on integration, load PHP file for that
 
 		require_once QA_EXTERNAL_DIR.'qa-external-users.php';
 		
+
+	//	Access functions for user information
+	
+		function qa_get_logged_in_user_cache($db)
+	/*
+		Return array of information about the currently logged in user, cache to ensure only one call to external code
+	*/
+		{
+			global $qa_cached_logged_in_user;
+			
+			if (!isset($qa_cached_logged_in_user)) {
+				$user=qa_get_logged_in_user($db);
+				$qa_cached_logged_in_user=isset($user) ? $user : false; // to save trying again
+			}
+			
+			return @$qa_cached_logged_in_user;
+		}
+		
+		
+		function qa_get_logged_in_user_field($db, $field)
+	/*
+		Return $field of the currently logged in user, or null if not available
+	*/
+		{
+			$user=qa_get_logged_in_user_cache($db);
+			
+			return @$user[$field];
+		}
+
+
+		function qa_get_logged_in_userid($db)
+	/*
+		Return the userid of the currently logged in user, or null if none
+	*/
+		{
+			return qa_get_logged_in_user_field($db, 'userid');
+		}
+		
+		
+		
 	} else {
-		
-		define('QA_MIN_PASSWORD_LEN', 4);
-		define('QA_NEW_PASSWORD_LEN', 8);
-
-
-		function qa_handle_email_validate($db, $handle, $email, $allowuserid=null)
-	/*
-		Return $errors fields for any invalid aspect of user-entered $handle (username) and $email.
-		Also rejects existing values in database unless they belongs to $allowuserid (if set).
-	*/
-		{
-			require_once QA_INCLUDE_DIR.'qa-db-users.php';
-			require_once QA_INCLUDE_DIR.'qa-db-maxima.php';
-			require_once QA_INCLUDE_DIR.'qa-util-string.php';
-			
-			$errors=array();
-			
-			if (empty($handle))
-				$errors['handle']=qa_lang('users/handle_empty');
-	
-			elseif (preg_match('/[\\@\\+\\/]/', $handle))
-				$errors['handle']=qa_lang_sub('users/handle_has_bad', '@ + /');
-			
-			elseif (qa_strlen($handle)>QA_DB_MAX_HANDLE_LENGTH)
-				$errors['handle']=qa_lang_sub('main/max_length_x', QA_DB_MAX_HANDLE_LENGTH);
-			
-			else {
-				$handleusers=qa_db_user_find_by_handle($db, $handle);
-				if (count($handleusers) && ( (!isset($allowuserid)) || (count($handleusers)>1) || ($handleusers[0]!=$allowuserid) ) )
-					$errors['handle']=qa_lang('users/handle_exists');
-			}
-			
-			if (empty($email))
-				$errors['email']=qa_lang('users/email_required');
-			
-			elseif (!qa_email_validate($email))
-				$errors['email']=qa_lang('users/email_invalid');
-			
-			elseif (qa_strlen($email)>QA_DB_MAX_EMAIL_LENGTH)
-				$errors['email']=qa_lang_sub('main/max_length_x', QA_DB_MAX_EMAIL_LENGTH);
-				
-			else {
-				$emailusers=qa_db_user_find_by_email($db, $email);
-				if (count($emailusers) && ( (!isset($allowuserid)) || (count($emailusers)>1) || ($emailusers[0]!=$allowuserid) ) )
-					$errors['email']=qa_lang('users/email_exists');
-			}
-			
-			return $errors;
-		}
-
-
-		function qa_profile_fields_validate($db, $name, $location, $website, $about)
-	/*
-		Return $errors fields for any invalid aspect of user-entered profile information
-	*/
-		{
-			require_once QA_INCLUDE_DIR.'qa-db-maxima.php';
-			require_once QA_INCLUDE_DIR.'qa-util-string.php';
-			
-			$errors=array();
-			
-			if (qa_strlen($name)>QA_DB_MAX_PROFILE_CONTENT_LENGTH)
-				$errors['name']=qa_lang_sub('main/max_length_x', QA_DB_MAX_PROFILE_CONTENT_LENGTH);
-				
-			if (qa_strlen($location)>QA_DB_MAX_PROFILE_CONTENT_LENGTH)
-				$errors['location']=qa_lang_sub('main/max_length_x', QA_DB_MAX_PROFILE_CONTENT_LENGTH);
-
-			if (qa_strlen($website)>QA_DB_MAX_PROFILE_CONTENT_LENGTH)
-				$errors['website']=qa_lang_sub('main/max_length_x', QA_DB_MAX_PROFILE_CONTENT_LENGTH);
-				
-			if (qa_strlen($about)>QA_DB_MAX_PROFILE_CONTENT_LENGTH)
-				$errors['about']=qa_lang_sub('main/max_length_x', QA_DB_MAX_PROFILE_CONTENT_LENGTH);
-			
-			return $errors;
-		}
-
-
-		function qa_password_validate($password)
-	/*
-		Return $errors fields for any invalid aspect of user-entered password
-	*/
-		{
-			require_once QA_INCLUDE_DIR.'qa-util-string.php';
-	
-			$errors=array();
-	
-			$minpasslen=max(QA_MIN_PASSWORD_LEN, 1);
-			
-			if (qa_strlen($password)<$minpasslen)
-				$errors['password']=qa_lang_sub('users/password_min', $minpasslen);
-			
-			return $errors;
-		}
-
-		
-		function qa_create_new_user($db, $email, $password, $handle)
-	/*
-		Create a new user (application level) with $email, $password and $handle. Handles user points and notification.
-	*/
-		{
-			require_once QA_INCLUDE_DIR.'qa-db-users.php';
-			require_once QA_INCLUDE_DIR.'qa-db-points.php';
-			require_once QA_INCLUDE_DIR.'qa-app-options.php';
-			require_once QA_INCLUDE_DIR.'qa-app-emails.php';
-
-			$userid=qa_db_user_create($db, $email, $password, $handle, QA_USER_LEVEL_BASIC, @$_SERVER['REMOTE_ADDR']);
-			qa_db_points_update_ifuser($db, $userid, null);
-			
-			qa_notification_pending();
-			
-			$options=qa_get_options($db, array('custom_welcome', 'site_url'));
-			
-			$custom=trim($options['custom_welcome']);
-			
-			qa_send_notification($db, $userid, $email, $handle, qa_lang('emails/welcome_subject'), qa_lang('emails/welcome_body'), array(
-				'^password' => $password,
-				'^url' => $options['site_url'],
-				'^custom' => empty($custom) ? '' : ($custom."\n\n"),
-			));
-			
-			return $userid;
-		}
-
 		
 		function qa_start_session()
 	/*
@@ -177,6 +102,8 @@
 	*/
 		{
 			@ini_set('session.gc_maxlifetime', 86400); // worth a try, but won't help in shared hosting environment
+			@ini_set('session.use_trans_sid', false); // sessions need cookies to work, since we redirect after login
+
 			if (!isset($_SESSION))
 				session_start();
 		}
@@ -202,31 +129,25 @@
 		}
 
 		
-		function qa_set_logged_in_user($db, $userid, $remember=false)
+		function qa_set_logged_in_user($db, $userid, $handle='', $remember=false)
 	/*
-		Call for successful log in by $userid ($remember states if 'Remember me' was checked),
-		or successful log out with $userid=null.
+		Call for successful log in by $userid or successful log out with $userid=null.
+		Provide $handle and the user's $sessioncode, if it is known (otherwise a new one will be set).
+		$remember states if 'Remember me' was checked in the login form.
 	*/
 		{
 			qa_start_session();
 			
 			if (isset($userid)) {
-				require_once QA_INCLUDE_DIR.'qa-db-selects.php';
-				require_once QA_INCLUDE_DIR.'qa-db-users.php';
-		
-				$userinfo=qa_db_select_with_pending($db, qa_db_user_account_selectspec($userid, true));
-				
 				$_SESSION['qa_session_userid']=$userid;
-				$_SESSION['qa_session_level']=$userinfo['level'];
-				$_SESSION['qa_session_handle']=$userinfo['handle'];
-				$_SESSION['qa_session_email']=$userinfo['email'];
 				
 				// PHP sessions time out too quickly on the server side, so we also set a cookie as backup.
 				// Logging in from a second browser will make the previous browser's 'Remember me' no longer
 				// work - I'm not sure if this is the right behavior - could see it either way.
+
 				$sessioncode=qa_db_user_rand_sessioncode();
 				qa_db_user_set($db, $userid, 'sessioncode', $sessioncode);
-				qa_set_session_cookie($userinfo['handle'], $sessioncode, $remember);
+				qa_set_session_cookie($handle, $sessioncode, $remember);
 				
 			} else {
 				require_once QA_INCLUDE_DIR.'qa-db-users.php';
@@ -235,110 +156,96 @@
 				qa_clear_session_cookie();
 
 				unset($_SESSION['qa_session_userid']);
-				unset($_SESSION['qa_session_level']);
-				unset($_SESSION['qa_session_handle']);
-				unset($_SESSION['qa_session_email']);
 			}
 		}
 
 		
-		function qa_start_reset_user($db, $userid)
+		function qa_get_logged_in_userid($db)
 	/*
-		Start the 'I forgot my password' process for $userid, sending reset code
+		Return the userid of the currently logged in user, or null if none logged in
 	*/
 		{
-			require_once QA_INCLUDE_DIR.'qa-db-users.php';
-			require_once QA_INCLUDE_DIR.'qa-app-options.php';
-			require_once QA_INCLUDE_DIR.'qa-app-emails.php';
-			require_once QA_INCLUDE_DIR.'qa-db-selects.php';
+			global $qa_logged_in_userid_checked;
+			
+			if (!$qa_logged_in_userid_checked) { // only check once
+				qa_start_session(); // this will load logged in userid from the native PHP session, but that's not enough
+				
+				if (!empty($_COOKIE['qa_session'])) {
+					@list($handle, $sessioncode, $remember)=explode('/', $_COOKIE['qa_session']);
+					
+					if ($remember)
+						qa_set_session_cookie($handle, $sessioncode, $remember); // extend 'remember me' cookies each time
 	
-			qa_db_user_set($db, $userid, 'resetcode', qa_db_user_rand_resetcode());
-
-			qa_notification_pending();
-			qa_options_set_pending(array('site_url'));
-			
-			$userinfo=qa_db_select_with_pending($db, qa_db_user_account_selectspec($userid, true));
-
-			if (!qa_send_notification($db, $userid, $userinfo['email'], $userinfo['handle'], qa_lang('emails/reset_subject'), qa_lang('emails/reset_body'), array(
-				'^code' => $userinfo['resetcode'],
-				'^url' => qa_path('reset', array('c' => $userinfo['resetcode'], 'e' => $userinfo['email']), qa_get_option($db, 'site_url')),
-			)))
-				qa_fatal_error('Could not send reset password email');
-		}
-
-		
-		function qa_complete_reset_user($db, $userid)
-	/*
-		Successfully finish the 'I forgot my password' process for $userid, sending new password
-	*/
-		{
-			require_once QA_INCLUDE_DIR.'qa-util-string.php';
-			require_once QA_INCLUDE_DIR.'qa-app-options.php';
-			require_once QA_INCLUDE_DIR.'qa-app-emails.php';
-			require_once QA_INCLUDE_DIR.'qa-db-selects.php';
-		
-			$password=qa_random_alphanum(max(QA_MIN_PASSWORD_LEN, QA_NEW_PASSWORD_LEN));
-			
-			qa_notification_pending();
-			qa_options_set_pending(array('site_url'));
-			
-			$userinfo=qa_db_select_with_pending($db, qa_db_user_account_selectspec($userid, true));
-			
-			if (!qa_send_notification($db, $userid, $userinfo['email'], $userinfo['handle'], qa_lang('emails/new_password_subject'), qa_lang('emails/new_password_body'), array(
-				'^password' => $password,
-				'^url' => qa_get_option($db, 'site_url'),
-			)))
-				qa_fatal_error('Could not send new password - password not reset');
-			
-			qa_db_user_set_password($db, $userid, $password); // do this last, to be safe
-			qa_db_user_set($db, $userid, 'resetcode', ''); // so can't be reused
-		}
-
-		
-		function qa_get_logged_in_user($db)
-	/*
-		Return an array of information on currently logged in user, and also load up the $_SESSION
-		with this information. Get it from database if necessary too.
-	*/
-		{
-			qa_start_session();
-			
-			if (!empty($_COOKIE['qa_session'])) {
-				@list($handle, $sessioncode, $remember)=explode('/', $_COOKIE['qa_session']);
-				
-				if ($remember)
-					qa_set_session_cookie($handle, $sessioncode, $remember); // extend 'remember me' cookies each time
-
-				$sessioncode=trim($sessioncode); // to prevent passing in blank values to match uninitiated DB rows
-
-				// Try to recover session from the database if PHP session has timed out
-				if ( (!isset($_SESSION['qa_session_userid'])) && (!empty($handle)) && (!empty($sessioncode)) ) {
-					require_once QA_INCLUDE_DIR.'qa-db-selects.php';
-					
-					$userinfo=qa_db_select_with_pending($db, qa_db_user_account_selectspec($handle, false));
-					
-					if (strtolower($userinfo['sessioncode']) == strtolower($sessioncode)) {
-						$_SESSION['qa_session_userid']=$userinfo['userid'];
-						$_SESSION['qa_session_level']=$userinfo['level'];
-						$_SESSION['qa_session_handle']=$userinfo['handle'];
-						$_SESSION['qa_session_email']=$userinfo['email'];
-
-					} else
-						qa_clear_session_cookie(); // if not valid, remove it to save future checks
+					$sessioncode=trim($sessioncode); // to prevent passing in blank values to match uninitiated DB rows
+	
+					// Try to recover session from the database if PHP session has timed out
+					if ( (!isset($_SESSION['qa_session_userid'])) && (!empty($handle)) && (!empty($sessioncode)) ) {
+						require_once QA_INCLUDE_DIR.'qa-db-selects.php';
+						
+						$userinfo=qa_db_single_select($db, qa_db_user_account_selectspec($handle, false)); // don't get any pending
+						
+						if (strtolower($userinfo['sessioncode']) == strtolower($sessioncode))
+							$_SESSION['qa_session_userid']=$userinfo['userid'];
+						else
+							qa_clear_session_cookie(); // if cookie not valid, remove it to save future checks
+					}
 				}
+
+				$qa_logged_in_userid_checked=true;
 			}
 			
-			if (isset($_SESSION['qa_session_userid']))
-				return array(
-					'userid' => $_SESSION['qa_session_userid'],
-					'level' => $_SESSION['qa_session_level'],
-					'handle' => $_SESSION['qa_session_handle'],
-					'email' => $_SESSION['qa_session_email'],
-				);
-				
+			return @$_SESSION['qa_session_userid'];
+		}
+		
+		
+		function qa_logged_in_user_selectspec($db)
+	/*
+		Return selectspec array (see qa-db.php) to get information about currently logged in user
+	*/
+		{
+			global $qa_cached_logged_in_user;
+			
+			$userid=qa_get_logged_in_userid($db);
+
+			if (isset($userid) && !isset($qa_cached_logged_in_user)) {
+				require_once QA_INCLUDE_DIR.'qa-db-selects.php';
+				return qa_db_user_account_selectspec($userid, true);
+			}
+			
 			return null;
 		}
-
+		
+		
+		function qa_logged_in_user_load($db, $selectspec, $gotuser)
+	/*
+		Called after the information specified by qa_logged_in_user_selectspec() was retrieved
+		from the database using $selectspec which returned $gotuser
+	*/
+		{
+			global $qa_cached_logged_in_user;
+			
+			$qa_cached_logged_in_user=is_array($gotuser) ? $gotuser : false;
+		}
+		
+		
+		function qa_get_logged_in_user_field($db, $field)
+	/*
+		Return $field of the currently logged in user, cache to ensure only one call to external code
+	*/
+		{
+			global $qa_cached_logged_in_user, $qa_logged_in_pending;
+			
+			$userid=qa_get_logged_in_userid($db);
+			
+			if (isset($userid) && !isset($qa_cached_logged_in_user)) {
+				require_once QA_INCLUDE_DIR.'qa-db-selects.php';	
+				$qa_logged_in_pending=true;
+				qa_db_select_with_pending($db); // if not yet loaded, retrieve via standard mechanism
+			}
+			
+			return @$qa_cached_logged_in_user[$field];
+		}
+		
 		
 		function qa_get_mysql_user_column_type()
 	/*
@@ -356,15 +263,6 @@
 		{
 			return strlen($handle) ? ('<A HREF="'.qa_path_html('user/'.$handle).
 				'" CLASS="qa-user-link'.($microformats ? ' url nickname' : '').'">'.qa_html($handle).'</A>') : '';
-		}
-		
-
-		function qa_get_logged_in_user_html($db, $userinfo, $rooturl)
-	/*
-		Return HTML to display for logged in user with info in $userinfo (if not using single sign-on integration)
-	*/
-		{
-			return qa_get_one_user_html(@$userinfo['handle'], false);
 		}
 		
 
@@ -400,8 +298,12 @@
 				$string='users/level_super';
 			elseif ($level>=QA_USER_LEVEL_ADMIN)
 				$string='users/level_admin';
+			elseif ($level>=QA_USER_LEVEL_MODERATOR)
+				$string='users/level_moderator';
 			elseif ($level>=QA_USER_LEVEL_EDITOR)
 				$string='users/level_editor';
+			elseif ($level>=QA_USER_LEVEL_EXPERT)
+				$string='users/level_expert';
 			else
 				$string='users/registered_user';
 			
@@ -415,11 +317,149 @@
 	*/
 		{
 			return array(
-				'login' => qa_path('login', array('to' => $tourl), $rooturl),
-				'register' => qa_path('register', array('to' => $tourl), $rooturl),
+				'login' => qa_path('login', isset($tourl) ? array('to' => $tourl) : null, $rooturl),
+				'register' => qa_path('register', isset($tourl) ? array('to' => $tourl) : null, $rooturl),
+				'confirm' => qa_path('confirm', null, $rooturl),
 				'logout' => qa_path('logout', null, $rooturl),
 			);
 		}
+
+	} // end of: if (QA_EXTERNAL_USERS) else { }
+
+
+	function qa_get_logged_in_handle($db)
+/*
+	Return displayable handle/username of currently logged in user, or null if none
+*/
+	{
+		return qa_get_logged_in_user_field($db, QA_EXTERNAL_USERS ? 'publicusername' : 'handle');
+	}
+
+
+	function qa_get_logged_in_email($db)
+/*
+	Return email of currently logged in user, or null if none
+*/
+	{
+		return qa_get_logged_in_user_field($db, 'email');
+	}
+
+
+	function qa_get_logged_in_level($db)
+/*
+	Return level of currently logged in user, or null if none
+*/
+	{
+		return qa_get_logged_in_user_field($db, 'level');
+	}
+
+	
+	function qa_get_logged_in_flags($db)
+/*
+	Return flags (see QA_USER_FLAGS_*) of currently logged in user, or null if none
+*/
+	{
+		return QA_EXTERNAL_USERS ? 0 : qa_get_logged_in_user_field($db, 'flags');
+	}
+
+	
+	function qa_user_permit_error($db, $permitoption=null, $actioncode=null)
+/*
+	Check whether the logged in user has permission to perform $permitoption.
+	If $permitoption is null, this simply checks whether the user is blocked.
+	Optionally provide an $actioncode to also check against user or IP rate limits.
+
+	Possible results, in order of priority (i.e. if more than one reason, first given):
+	'level' => a special privilege level (e.g. expert) is required
+	'login' => the user should login or register
+	'userblock' => the user has been blocked
+	'ipblock' => the ip address has been blocked
+	'confirm' => the user should confirm their email address
+	'limit' => the user or IP address has reached a rate limit (if $actioncode specified)
+	false => the operation can go ahead
+*/
+	{
+		$permit=isset($permitoption) ? qa_get_option($db, $permitoption) : QA_PERMIT_ALL;
+
+		$userid=qa_get_logged_in_userid($db);
+		$userlevel=qa_get_logged_in_level($db);
+		$userflags=qa_get_logged_in_flags($db);
+		
+		
+		if ($permit>=QA_PERMIT_ALL)
+			$error=false;
+			
+		elseif ($permit>=QA_PERMIT_USERS)
+			$error=isset($userid) ? false : 'login';
+			
+		elseif ($permit>=QA_PERMIT_CONFIRMED) {
+			if (!isset($userid))
+				$error='login';
+			
+			elseif (
+				QA_EXTERNAL_USERS || // not currently supported by single sign-on integration
+				($userlevel>=QA_USER_LEVEL_EXPERT) || // if assigned to a higher level, no need
+				($userflags & QA_USER_FLAGS_EMAIL_CONFIRMED) || // actual confirmation
+				(!qa_get_option($db, 'confirm_user_emails')) // if this option off, we can't ask it of the user
+			)
+				$error=false;
+			
+			else
+				$error='confirm';
+
+		} elseif ($permit>=QA_PERMIT_EXPERTS)
+			$error=(isset($userid) && ($userlevel>=QA_USER_LEVEL_EXPERT)) ? false : 'level';
+			
+		elseif ($permit>=QA_PERMIT_EDITORS)
+			$error=(isset($userid) && ($userlevel>=QA_USER_LEVEL_EDITOR)) ? false : 'level';
+			
+		elseif ($permit>=QA_PERMIT_MODERATORS)
+			$error=(isset($userid) && ($userlevel>=QA_USER_LEVEL_MODERATOR)) ? false : 'level';
+			
+		elseif ($permit>=QA_PERMIT_ADMINS)
+			$error=(isset($userid) && ($userlevel>=QA_USER_LEVEL_ADMIN)) ? false : 'level';
+			
+		else
+			$error=(isset($userid) && ($userlevel>=QA_USER_LEVEL_SUPER)) ? false : 'level';
+		
+
+		if (isset($userid) && ($userflags & QA_USER_FLAGS_USER_BLOCKED) && ($error!='level'))
+			$error='userblock';
+		
+		require_once QA_INCLUDE_DIR.'qa-app-limits.php';
+
+		if ((!$error) && qa_is_ip_blocked($db))
+			$error='ipblock';
+		
+		if (isset($actioncode) && !$error)
+			if (qa_limits_remaining($db, $userid, $actioncode)<=0)
+				$error='limit';
+		
+		return $error;
+	}
+	
+	
+	function qa_user_use_captcha($db, $captchaoption)
+/*
+	Return whether a captcha should be presented for operation specified by $captchaoption
+*/
+	{
+		$usecaptcha=false;
+		
+		if (qa_get_option($db, $captchaoption)) {
+			$userid=qa_get_logged_in_userid($db);
+			
+			if ( (!isset($userid)) || !(
+				QA_EXTERNAL_USERS ||
+				(!qa_get_option($db, 'captcha_on_unconfirmed')) || // we might not care about unconfirmed users
+				(!qa_get_option($db, 'confirm_user_emails')) || // if this option off, we can't ask it of the user
+				(qa_get_logged_in_level($db)>=QA_USER_LEVEL_EXPERT) || // if assigned to a higher level, no need
+				(qa_get_logged_in_flags($db) & QA_USER_FLAGS_EMAIL_CONFIRMED) // actual confirmation
+			))
+				$usecaptcha=true;
+		}
+		
+		return $usecaptcha;
 	}
 	
 

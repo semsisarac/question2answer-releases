@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-login.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Controller for login page
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -45,50 +46,60 @@
 		qa_redirect('');
 		
 
-//	Process submitted form
+//	Process submitted form after checking we haven't reached rate limit
 	
-	if (qa_clicked('dologin')) {
-		require_once QA_INCLUDE_DIR.'qa-db-users.php';
-		require_once QA_INCLUDE_DIR.'qa-db-selects.php';
-	
-		$inemailhandle=qa_post_text('emailhandle');
-		$inpassword=qa_post_text('password');
-		$inremember=qa_post_text('remember');
-		
-		$errors=array();
-		
-		if (strpos($inemailhandle, '@')===false) // handles can't contain @ symbols
-			$matchusers=qa_db_user_find_by_handle($qa_db, $inemailhandle);
-		else
-			$matchusers=qa_db_user_find_by_email($qa_db, $inemailhandle);
+	require_once QA_INCLUDE_DIR.'qa-app-limits.php';
 
-		if (count($matchusers)==1) { // if matches more than one (should be impossible), don't log in
-			$inuserid=$matchusers[0];
-			$userinfo=qa_db_select_with_pending($qa_db, qa_db_user_account_selectspec($inuserid, true));
+	$passwordsent=qa_get('ps');
+
+	if (qa_limits_remaining($qa_db, null, 'L')) {
+		if (qa_clicked('dologin')) {
+			require_once QA_INCLUDE_DIR.'qa-db-users.php';
+			require_once QA_INCLUDE_DIR.'qa-db-selects.php';
+		
+			$inemailhandle=qa_post_text('emailhandle');
+			$inpassword=qa_post_text('password');
+			$inremember=qa_post_text('remember');
 			
-			if (strtolower(qa_db_calc_passcheck($inpassword, $userinfo['passsalt'])) == strtolower($userinfo['passcheck'])) { // login and redirect
-				require_once QA_INCLUDE_DIR.'qa-app-users.php';
-
-				qa_set_logged_in_user($qa_db, $inuserid, $inremember ? true : false);
-				qa_db_user_logged_in($qa_db, $inuserid, @$_SERVER['REMOTE_ADDR']);
+			$errors=array();
+			
+			if (strpos($inemailhandle, '@')===false) // handles can't contain @ symbols
+				$matchusers=qa_db_user_find_by_handle($qa_db, $inemailhandle);
+			else
+				$matchusers=qa_db_user_find_by_email($qa_db, $inemailhandle);
+	
+			if (count($matchusers)==1) { // if matches more than one (should be impossible), don't log in
+				$inuserid=$matchusers[0];
+				$userinfo=qa_db_select_with_pending($qa_db, qa_db_user_account_selectspec($inuserid, true));
 				
-				$topath=qa_get('to');
-				
-				if (isset($topath))
-					qa_redirect_raw($topath); // path already provided as URL fragment
-				else
-					qa_redirect('');
-
+				if (strtolower(qa_db_calc_passcheck($inpassword, $userinfo['passsalt'])) == strtolower($userinfo['passcheck'])) { // login and redirect
+					require_once QA_INCLUDE_DIR.'qa-app-users.php';
+	
+					qa_set_logged_in_user($qa_db, $inuserid, $userinfo['handle'], $inremember ? true : false);
+					qa_db_user_logged_in($qa_db, $inuserid, @$_SERVER['REMOTE_ADDR']);
+					
+					$topath=qa_get('to');
+					
+					if (isset($topath))
+						qa_redirect_raw($topath); // path already provided as URL fragment
+					elseif ($passwordsent)
+						qa_redirect('account');
+					else
+						qa_redirect('');
+	
+				} else
+					$errors['password']=qa_lang('users/password_wrong');
+	
 			} else
-				$errors['password']=qa_lang('users/password_wrong');
+				$errors['emailhandle']=qa_lang('users/user_not_found');
+				
+			qa_limits_increment($qa_db, null, 'L'); // only get here if we didn't log in successfully
 
 		} else
-			$errors['emailhandle']=qa_lang('users/user_not_found');
-
-	} else
-		$inemailhandle=qa_get('e');
+			$inemailhandle=qa_get('e');
 		
-	$passwordsent=qa_get('ps');
+	} else
+		$pageerror=qa_lang('users/login_limit');
 
 	
 //	Prepare content for theme
@@ -96,6 +107,8 @@
 	qa_content_prepare();
 
 	$qa_content['title']=qa_lang_html('users/login_title');
+	
+	$qa_content['error']=@$pageerror;
 
 	if (empty($inemailhandle) || isset($errors['emailhandle']))
 		$forgotpath=qa_path('forgot');

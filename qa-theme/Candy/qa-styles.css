@@ -1,19 +1,20 @@
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-theme/Candy/qa-styles.css
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: CSS file for included Candy theme
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -63,9 +64,12 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 /* Page sections */
 
 .qa-header {position:relative;}
-.qa-sidebar {float:right; width:150px; padding:12px; margin:18px 0px 12px 0; font-size:14px; background:#ebc5e2 url(sidebar-bg.png) repeat-y right top; border: 2px solid #6a1b56; border-right:none;}
+.qa-sidepanel {float:right; width:176px;}
+.qa-sidebar {padding:12px; font-size:14px; background:#ebc5e2 url(sidebar-bg.png) repeat-y right top; border: 2px solid #6a1b56; border-right:none; margin:18px 0;}
+.qa-feed {background:url(feed-icon-14x14.png) no-repeat left 1px; padding-left:20px; margin:18px 12px 18px 0;}
+.qa-feed-link {font-size:12px; color:#666;}
 .qa-main {padding-left:20px; float:left; width:750px; margin-bottom:24px;}
-.qa-main-hidden {background:url(hidden.png) repeat left top;}
+.qa-main-hidden h1 {color:#999;}
 .qa-footer {clear:both; background:#3b7c1f url(footer-bg.png) repeat-x left top; color:#FFF; font-size:10px; padding:10px;}
 * html .qa-footer {padding-top:6px;} /* IE6 */
 
@@ -86,11 +90,13 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 .qa-nav-user-link {color:#293d39;}
 .qa-logged-in {display:inline;}
 
-/* Main and sub navigation */
+/* Main, sub and category navigation */
 
 .qa-nav-main {clear:both; background:#efeb9c url(nav-main-bg.png) repeat-x left top;}
 .qa-nav-main-list {font-size:20px; list-style:none; padding:0; margin:0;}
-.qa-nav-main-item {float:left; padding-left:10px; background:#efeb9c url(nav-main-bg.png) repeat-x left top;}
+.qa-nav-main-item,.qa-nav-main-item-opp {background:#efeb9c url(nav-main-bg.png) repeat-x left top;}
+.qa-nav-main-item {float:left; padding-left:10px;}
+.qa-nav-main-item-opp {float:right; padding-right:10px;}
 .qa-nav-main-link {background:#efeb9c url(nav-main-bg.png) repeat-x left top; color:#597700; display:block; padding:14px 10px;}
 .qa-nav-main-link:hover,.qa-nav-main-selected {url(nav-main-sel-bg.png) repeat-x left top; border-left:1px solid #e9e697; border-right:1px solid #e9e697; color:#8d006a; padding:14px 9px; text-decoration:none;}
 
@@ -100,6 +106,11 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 .qa-nav-sub-item {float:left; padding:5px 0 11px 10px;}
 .qa-nav-sub-link {color:#7d7600; font-weight:normal; padding:5px 8px; display:block; text-transform:uppercase;}
 .qa-nav-sub-link:hover, .qa-nav-sub-selected {color:#000; text-decoration:none;}
+
+.qa-nav-cat-list {font-size:14px; list-style:none; padding:0; margin:0; margin:18px 12px 18px 0;}
+.qa-nav-cat-item {margin:0.5em 0;}
+.qa-nav-cat-link {font-weight:bold;}
+.qa-nav-cat-selected,.qa-nav-cat-selected:hover {text-decoration:none; color:#000;}
 
 /* Pagination */
 
@@ -164,6 +175,7 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 .qa-form-light-button-answer,.qa-form-light-hover-answer {background:url(answer-icon.png) no-repeat left center; padding-left:26px;}
 .qa-form-light-button-reshow,.qa-form-light-hover-reshow {background:url(reshow-icon.png) no-repeat left center; padding-left:24px;}
 .qa-form-light-button-claim,.qa-form-light-hover-claim {background:url(claim-icon.png) no-repeat left center; padding-left:22px;}
+.qa-form-light-button-delete,.qa-form-light-hover-delete {background:url(delete-icon.png) no-repeat left center; padding-left:24px;}
 
 /* Standard form (basic version - buttons only) */
 
@@ -267,6 +279,14 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 .qa-q-view-buttons {margin-top:16px;}
 .qa-q-view-c-list {clear:both; margin:24px 0 0 24px; border-top:1px solid #ccc;}
 
+.qa-q-view-hidden {}
+	.qa-q-view-hidden .qa-voting {color:#ccc;}
+	.qa-q-view-hidden .qa-q-view-content {color:#999;}
+	.qa-q-view-hidden .qa-q-view-meta {color:#ccc;}
+	.qa-q-view-hidden .qa-q-view-meta .qa-user-link {color:#999;}
+	.qa-q-view-hidden .qa-category-link {color:#999;}
+	.qa-q-view-hidden .qa-tag-link {color:#ccc; opacity:0.5;}
+
 /* Answer view  */
 
 .qa-a-list-item {background:#FFF url(post-bg.png) repeat-x left top; margin-bottom:40px; zoom:1; padding:15px 0 1px 10px; position:relative;} /* zoom for IE, padding for early FF */
@@ -275,6 +295,7 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 	.qa-a-list-item-hidden .qa-voting {color:#ccc;}
 	.qa-a-list-item-hidden .qa-a-item-content {color:#999;}
 	.qa-a-list-item-hidden .qa-a-item-meta {color:#ccc;}
+	.qa-a-list-item-hidden .qa-a-item-meta .qa-user-link {color:#999;}
 
 .qa-a-item-main {float:left; width:550px; display:inline-block; padding-left:10px;} /* inline-block for IE */
 .qa-a-item-content {font-size:16px; margin-bottom:16px;}
@@ -305,6 +326,7 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 .qa-c-item-hidden {}
 	.qa-c-item-hidden .qa-c-item-content {color:#bbb;}
 	.qa-c-item-hidden .qa-c-item-meta {color:#ccc;}
+	.qa-c-item-hidden .qa-c-item-meta .qa-user-link {color:#999;}
 
 .qa-c-item-link {display:block;}
 .qa-c-item-content {color:#333; display:block;}
@@ -317,6 +339,7 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 /* Footer parts */
 
 .qa-nav-footer-list {float:left; list-style-type:none; padding:0; margin:0;}
+.qa-nav-footer-item {float:left; margin-right:12px;}
 .qa-nav-footer-link {color:#FFF; text-decoration:underline !important;}
 	.qa-nav-footer-link:hover {color:#f5d495;}
 .qa-attribution {float:right;}
@@ -326,6 +349,7 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 /* Classes passed to theme */
 
 .qa-user-link {color:#206b00; font-weight:bold;}
+.qa-category-link {color:#1e5568; font-weight:bold;}
 .qa-tag-link {background:url(tag-icon.png) no-repeat left center; color:#206b00 !important; font-size:12px; height:16px; display:inline-block; display:-moz-inline-stack; margin-right:4px; margin-bottom:3px; padding-left:18px; vertical-align:middle; text-decoration:none !important;}
 	.qa-tag-link:hover {text-decoration:underline !important;}
 	
@@ -337,6 +361,7 @@ h2 {font-size:22px; color:#c659ab; padding-top:12px; clear:both;}
 * html .qa-form-light-button-answer,* html .qa-form-light-hover-answer {background:url(answer-icon-ie6.png) no-repeat left center;}
 * html .qa-form-light-button-reshow,* html .qa-form-light-hover-reshow {background:url(reshow-icon-ie6.png) no-repeat left center;}
 * html .qa-form-light-button-claim,* html .qa-form-light-hover-claim {background:url(claim-icon-ie6.png) no-repeat left center;}
+* html .qa-form-light-button-delete,* html .qa-form-light-hover-delete {background:url(delete-icon-ie6.png) no-repeat left center;}
 * html .qa-vote-up-button {background:url(vote-buttons-ie6.png) no-repeat 0 0;}
 * html .qa-vote-up-hover {background:url(vote-buttons-ie6.png) no-repeat 0 -29px;}
 * html .qa-vote-up-disabled {background:url(vote-buttons-ie6.png) no-repeat 0 -116px;}

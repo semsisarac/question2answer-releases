@@ -1,21 +1,22 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-recalc.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Managing database recalculations (clean-up operations) and status messages
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -49,6 +50,11 @@
 	===============================
 	^userpoints (all): points calculation for all users
 	^options (title=cache_userpointscount):
+	
+	Recalculated in dorecalccategories:
+	===================================
+	^posts (categoryid): assign to answers and comments based on their antecedent question
+	^categories (qcount): number of (visible) questions in each category
 */
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
@@ -59,8 +65,11 @@
 	require_once QA_INCLUDE_DIR.'qa-db-recalc.php';
 	require_once QA_INCLUDE_DIR.'qa-db-post-create.php';
 	require_once QA_INCLUDE_DIR.'qa-db-points.php';
+	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
+	require_once QA_INCLUDE_DIR.'qa-db-admin.php';
 	require_once QA_INCLUDE_DIR.'qa-app-options.php';
 	require_once QA_INCLUDE_DIR.'qa-app-post-create.php';
+	require_once QA_INCLUDE_DIR.'qa-app-post-update.php';
 
 
 	function qa_recalc_perform_step($db, &$state)
@@ -87,7 +96,7 @@
 				break;
 				
 			case 'doreindexposts_reindex':
-				$posts=qa_db_posts_get_for_reindexing($db, $next, 100);
+				$posts=qa_db_posts_get_for_reindexing($db, $next, 10);
 				
 				if (count($posts)) {
 					$lastpostid=max(array_keys($posts));
@@ -183,6 +192,95 @@
 				}
 				break;
 				
+			case 'dorecalccategories':
+				qa_recalc_transition($db, $state, 'dorecalccategories_postcount');
+				break;
+			
+			case 'dorecalccategories_postcount':
+				qa_db_acount_update($db);
+				qa_db_ccount_update($db);
+				
+				qa_recalc_transition($db, $state, 'dorecalccategories_postupdate');
+				break;
+				
+			case 'dorecalccategories_postupdate':
+				$postids=qa_db_posts_get_for_recategorizing($db, $next, 1000);
+				
+				if (count($postids)) {
+					$lastpostid=max($postids);
+					
+					qa_db_posts_recategorize($db, $next, $lastpostid);
+					
+					$next=1+$lastpostid;
+					$done+=count($postids);
+					$continue=true;
+				
+				} else {
+					qa_recalc_transition($db, $state, 'dorecalccategories_recount');
+				}
+				break;
+			
+			case 'dorecalccategories_recount':
+				qa_db_categories_recount($db);
+				qa_recalc_transition($db, $state, 'dorecalccategories_complete');
+				break;
+				
+			case 'dodeletehidden':
+				qa_recalc_transition($db, $state, 'dodeletehidden_comments');
+				break;
+				
+			case 'dodeletehidden_comments':
+				$posts=qa_db_posts_get_for_deleting($db, 'C', $next, 1);
+				
+				if (count($posts)) {
+					$postid=$posts[0];
+					
+					$oldcomment=qa_db_single_select($db, qa_db_full_post_selectspec(null, $postid));
+					qa_comment_delete($db, $oldcomment);
+					
+					$next=1+$postid;
+					$done++;
+					$continue=true;
+				
+				} else
+					qa_recalc_transition($db, $state, 'dodeletehidden_answers');
+				break;
+			
+			case 'dodeletehidden_answers':
+				$posts=qa_db_posts_get_for_deleting($db, 'A', $next, 1);
+				
+				if (count($posts)) {
+					$postid=$posts[0];
+					
+					$oldanswer=qa_db_single_select($db, qa_db_full_post_selectspec(null, $postid));
+					$question=qa_db_single_select($db, qa_db_full_post_selectspec(null, $oldanswer['parentid']));
+					qa_answer_delete($db, $oldanswer, $question);
+					
+					$next=1+$postid;
+					$done++;
+					$continue=true;
+				
+				} else
+					qa_recalc_transition($db, $state, 'dodeletehidden_questions');
+				break;
+
+			case 'dodeletehidden_questions':
+				$posts=qa_db_posts_get_for_deleting($db, 'Q', $next, 1);
+				
+				if (count($posts)) {
+					$postid=$posts[0];
+					
+					$oldquestion=qa_db_single_select($db, qa_db_full_post_selectspec(null, $postid));
+					qa_question_delete($db, $oldquestion);
+					
+					$next=1+$postid;
+					$done++;
+					$continue=true;
+				
+				} else
+					qa_recalc_transition($db, $state, 'dodeletehidden_complete');
+				break;
+
 			default:
 				$state='';
 				break;
@@ -191,7 +289,7 @@
 		if ($continue)
 			$state=$operation.','.$length.','.$next.','.$done;
 		
-		return $continue;
+		return $continue && ($done<$length);
 	}
 	
 
@@ -222,6 +320,23 @@
 			case 'dorecalcpoints_recalc':
 				$length=qa_get_option($db, 'cache_userpointscount');
 				break;
+				
+			case 'dorecalccategories_postupdate':
+				$length=qa_get_option($db, 'cache_acount')+qa_get_option($db, 'cache_ccount')+
+					qa_db_count_posts($db, 'A_HIDDEN')+qa_db_count_posts($db, 'C_HIDDEN');
+				break;
+				
+			case 'dodeletehidden_comments':
+				$length=count(qa_db_posts_get_for_deleting($db, 'C'));
+				break;
+				
+			case 'dodeletehidden_answers':
+				$length=count(qa_db_posts_get_for_deleting($db, 'A'));
+				break;
+				
+			case 'dodeletehidden_questions':
+				$length=count(qa_db_posts_get_for_deleting($db, 'Q'));
+				break;
 			
 			default:
 				$length=0;
@@ -242,6 +357,7 @@
 		switch ($operation) {
 			case 'doreindexposts_postcount':
 			case 'dorecountposts_postcount':
+			case 'dorecalccategories_postcount':
 				$message=qa_lang('admin/recalc_posts_count');
 				break;
 				
@@ -289,6 +405,46 @@
 				$message=qa_lang('admin/recalc_points_complete');
 				break;
 				
+			case 'dorecalccategories_postupdate':
+				$message=strtr(qa_lang('admin/recalc_categories_updated'), array(
+					'^1' => number_format($done),
+					'^2' => number_format($length)
+				));
+				break;
+				
+			case 'dorecalccategories_recount':
+				$message=qa_lang('admin/recalc_categories_recounting');
+				break;
+				
+			case 'dorecalccategories_complete':
+				$message=qa_lang('admin/recalc_categories_complete');
+				break;
+				
+			case 'dodeletehidden_comments':
+				$message=strtr(qa_lang('admin/hidden_comments_deleted'), array(
+					'^1' => number_format($done),
+					'^2' => number_format($length)
+				));
+				break;
+				
+			case 'dodeletehidden_answers':
+				$message=strtr(qa_lang('admin/hidden_answers_deleted'), array(
+					'^1' => number_format($done),
+					'^2' => number_format($length)
+				));
+				break;
+				
+			case 'dodeletehidden_questions':
+				$message=strtr(qa_lang('admin/hidden_questions_deleted'), array(
+					'^1' => number_format($done),
+					'^2' => number_format($length)
+				));
+				break;
+
+			case 'dodeletehidden_complete':
+				$message=qa_lang('admin/delete_hidden_complete');
+				break;
+			
 			default:
 				$message='';
 				break;

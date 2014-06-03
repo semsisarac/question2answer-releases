@@ -1,21 +1,22 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-tag.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Controller for page for specific tags
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -43,11 +44,12 @@
 
 //	Find the questions with this tag
 
-	qa_options_set_pending(array('page_size_tag_qs', 'voting_on_qs', 'votes_separated', 'show_user_points'));
+	qa_options_set_pending(array('page_size_tag_qs', 'voting_on_qs', 'votes_separated', 'show_when_created', 'show_user_points', 'feed_for_tag_qs', 'permit_anon_view_ips', 'block_bad_words'));
 	
-	list($questions, $qcount)=qa_db_select_with_pending($qa_db,
+	list($questions, $qcount, $categories)=qa_db_select_with_pending($qa_db,
 		qa_db_tag_recent_qs_selectspec($qa_login_userid, $tag, $qa_start),
-		qa_db_tag_count_qs_selectspec($tag)
+		qa_db_tag_count_qs_selectspec($tag),
+		qa_db_categories_selectspec()
 	);
 	
 	$pagesize=qa_get_option($qa_db, 'page_size_tag_qs');
@@ -59,7 +61,7 @@
 	
 	qa_content_prepare(true);
 
-	$qa_content['title']=qa_lang_sub_html('main/questions_tagged_x', qa_html($tag));
+	$qa_content['title']=qa_lang_html_sub('main/questions_tagged_x', qa_html($tag));
 	
 	if (!count($questions))
 		$qa_content['q_list']['title']=qa_lang_html('main/no_questions_found');
@@ -71,12 +73,20 @@
 	$qa_content['q_list']['qs']=array();
 	foreach ($questions as $postid => $question)
 		$qa_content['q_list']['qs'][]=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,
-			qa_get_vote_view($qa_db, 'Q'), qa_get_option($qa_db, 'show_user_points'));
+			true, qa_using_categories($qa_db) ? $categories : null, qa_get_vote_view($qa_db, 'Q'),
+			qa_get_option($qa_db, 'show_when_created'), !qa_user_permit_error($qa_db, 'permit_anon_view_ips'),
+			qa_get_option($qa_db, 'show_user_points'), qa_get_block_words_preg($qa_db));
 		
 	$qa_content['page_links']=qa_html_page_links($qa_request, $qa_start, $pagesize, $qcount, qa_get_option($qa_db, 'pages_prev_next'));
 
 	if (empty($qa_content['page_links']))
-		$qa_content['suggest_next']=qa_html_suggest_qs_tags();
+		$qa_content['suggest_next']=qa_html_suggest_qs_tags(true);
+
+	if (qa_get_option($qa_db, 'feed_for_tag_qs'))
+		$qa_content['feed']=array(
+			'url' => qa_path_html(qa_feed_request('tag/'.$tag)),
+			'label' => qa_lang_html_sub('main/questions_tagged_x', qa_html($tag)),
+		);
 
 
 /*

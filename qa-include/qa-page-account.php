@@ -1,21 +1,22 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-account.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Controller for user account page
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -37,29 +38,43 @@
 
 	require_once QA_INCLUDE_DIR.'qa-db-users.php';
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
+	require_once QA_INCLUDE_DIR.'qa-app-users.php';
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 	
 	
-//	Check we're not using single-sign on integration and that we're logged in
+//	Check we're not using single-sign on integration, that we're logged in, and we're not blocked
 	
 	if (QA_EXTERNAL_USERS)
 		qa_fatal_error('User accounts are handled by external code');
 		
 	if (!isset($qa_login_userid))
 		qa_redirect('login');
+		
+	if (qa_user_permit_error($qa_db)) {
+		qa_content_prepare();
+		$qa_content['error']=qa_lang_html('users/no_permission');
+		return;
+	}		
 
 	
 //	Get current information on user
+
+	qa_options_set_pending(array('confirm_user_emails'));
 
 	list($useraccount, $userprofile)=qa_db_select_with_pending($qa_db,
 		qa_db_user_account_selectspec($qa_login_userid, true),
 		qa_db_user_profile_selectspec($qa_login_userid, true)
 	);
+	
+	$doconfirms=qa_get_option($qa_db, 'confirm_user_emails') && ($useraccount['level']<QA_USER_LEVEL_EXPERT);
+	$isconfirmed=($useraccount['flags'] & QA_USER_FLAGS_EMAIL_CONFIRMED) ? true : false;
 
 	
 //	Process profile if saved
 
 	if (qa_clicked('dosaveprofile')) {
+		require_once QA_INCLUDE_DIR.'qa-app-users-edit.php';
+		
 		$inhandle=qa_post_text('handle');
 		$inemail=qa_post_text('email');
 		$inname=qa_post_text('name');
@@ -76,7 +91,14 @@
 			qa_db_user_set($qa_db, $qa_login_userid, 'handle', $inhandle);
 
 		if (!isset($errors['email']))
-			qa_db_user_set($qa_db, $qa_login_userid, 'email', $inemail);
+			if ($inemail != $useraccount['email']) {
+				qa_db_user_set($qa_db, $qa_login_userid, 'email', $inemail);
+				qa_db_user_set_flag($qa_db, $qa_login_userid, QA_USER_FLAGS_EMAIL_CONFIRMED, false);
+				$isconfirmed=false;
+				
+				if ($doconfirms)
+					qa_send_new_confirm($qa_db, $qa_login_userid);
+			}
 		
 		if (!isset($errors['name']))
 			qa_db_user_profile_set($qa_db, $qa_login_userid, 'name', $inname);
@@ -89,18 +111,21 @@
 
 		if (!isset($errors['about']))
 			qa_db_user_profile_set($qa_db, $qa_login_userid, 'about', $inabout);
+
+		list($useraccount, $userprofile)=qa_db_select_with_pending($qa_db,
+			qa_db_user_account_selectspec($qa_login_userid, true),
+			qa_db_user_profile_selectspec($qa_login_userid, true)
+		);
+
+		qa_logged_in_user_flush();
 	}
-
-
-//	Reset information in session and user's status (important e.g. if handle changed)
-	
-	qa_set_logged_in_user($qa_db, $qa_login_userid);
-	qa_check_login($qa_db);
 
 
 //	Process change password if clicked
 
 	if (qa_clicked('dochangepassword')) {
+		require_once QA_INCLUDE_DIR.'qa-app-users-edit.php';
+		
 		$inoldpassword=qa_post_text('oldpassword');
 		$innewpassword1=qa_post_text('newpassword1');
 		$innewpassword2=qa_post_text('newpassword2');
@@ -157,7 +182,8 @@
 				'label' => qa_lang_html('users/email_label'),
 				'tags' => ' NAME="email" ',
 				'value' => qa_html(isset($inemail) ? $inemail : $useraccount['email']),
-				'error' => qa_html(@$errors['email']),
+				'error' => isset($errors['email']) ? qa_html($errors['email']) :
+					(($doconfirms && !$isconfirmed) ? qa_insert_login_links(qa_lang_html('users/email_please_confirm')) : null),
 			),
 		
 			'name' => array(
@@ -248,7 +274,7 @@
 	);
 	
 	if (qa_clicked('dochangepassword') && empty($errors))
-		$qa_content['form_2']['ok']=qa_lang_html('users/password_changed');
+		$qa_content['form']['ok']=qa_lang_html('users/password_changed');
 	
 
 /*

@@ -1,21 +1,22 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-points.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Controller for admin page for user points
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -41,23 +42,28 @@
 	require_once QA_INCLUDE_DIR.'qa-app-admin.php';
 	
 	
-//	Standard pre-admin operations
+//	Queue requests for pending admin options
 
 	qa_admin_pending();
+
+	$optionnames=qa_db_points_option_names();
 	
+	qa_options_set_pending($optionnames);
+	
+
+//	Check admin privileges
+
 	if (!qa_admin_check_privileges())
 		return;
 
 
-//	Perform any actions requested
+//	Process user actions
 
-	$optionnames=qa_db_points_option_names();
-	
 	if (qa_clicked('doshowdefaults')) {
 		$options=array();
 		
 		foreach ($optionnames as $optionname)
-			$options[$optionname]=qa_default_option($optionname);
+			$options[$optionname]=qa_default_option($qa_db, $optionname);
 		
 	} else {
 		if (qa_clicked('docancel'))
@@ -107,7 +113,7 @@
 	
 		$qa_content['form']['buttons']['cancel']=array(
 			'tags' => ' NAME="docancel" ',
-			'label' => qa_lang_html('admin/cancel_button'),
+			'label' => qa_lang_html('main/cancel_button'),
 		);
 
 	} else {
@@ -143,26 +149,36 @@
 		
 		switch ($optionname) {
 			case 'points_multiple':
-				$optionfield['prefix']='&#215;';
+				$prefix='&#215;';
 				unset($optionfield['note']);
 				break;
 				
 			case 'points_per_q_voted':
 			case 'points_per_a_voted':
-				$optionfield['prefix']='&#177;';
+				$prefix='&#177;';
 				break;
 				
+			case 'points_q_voted_max_gain':
+			case 'points_a_voted_max_gain':
+				$prefix='+';
+				break;
+			
 			case 'points_q_voted_max_loss':
 			case 'points_a_voted_max_loss':
-				$optionfield['prefix']='&ndash;';
+				$prefix='&ndash;';
 				break;
 				
 			case 'points_base':
-				unset($optionfield['note']);
+				//unset($optionfield['note']);
+				$prefix='+';
+				break;
+				
 			default:
-				$optionfield['prefix']='+';
+				$prefix='&nbsp;';
 				break;
 		}
+		
+		$optionfield['prefix']='<SPAN STYLE="width:1em; display:inline-block; display:-moz-inline-stack;">'.$prefix.'</SPAN>';
 		
 		$qa_content['form']['fields'][$optionname]=$optionfield;
 	}

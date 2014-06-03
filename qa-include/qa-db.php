@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Common functions for connecting to and access database
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -93,12 +94,15 @@
 			$oldtime=array_sum(explode(' ', microtime()));
 			$result=mysql_query($query, $db);
 			$usedtime=array_sum(explode(' ', microtime()))-$oldtime;
-			$qa_database_usage['clock']+=$usedtime;
-	
-			if (strlen($qa_database_queries)<1048576) // don't keep track of big tests
-				$qa_database_queries.=$query."\n\n".sprintf('%.2f ms', $usedtime*1000)."\n\n";
+
+			if (is_array($qa_database_usage)) {
+				$qa_database_usage['clock']+=$usedtime;
 		
-			$qa_database_usage['queries']++;
+				if (strlen($qa_database_queries)<1048576) // don't keep track of big tests
+					$qa_database_queries.=$query."\n\n".sprintf('%.2f ms', $usedtime*1000)."\n\n";
+			
+				$qa_database_usage['queries']++;
+			}
 		
 		} else
 			$result=mysql_query($query, $db);
@@ -151,28 +155,30 @@
 	{
 		$query=strtr($query, array('^' => QA_MYSQL_TABLE_PREFIX));
 		
-		$countargs=count($arguments);
-		$offset=0;
-		
-		for ($argument=0; $argument<$countargs; $argument++) {
-			$stringpos=strpos($query, '$', $offset);
-			$numberpos=strpos($query, '#', $offset);
+		if (is_array($arguments)) {
+			$countargs=count($arguments);
+			$offset=0;
 			
-			if ( ($stringpos===false) || ( ($numberpos!==false) && ($numberpos<$stringpos) ) ) {
-				$alwaysquote=false;
-				$position=$numberpos;
-			
-			} else {
-				$alwaysquote=true;
-				$position=$stringpos;
+			for ($argument=0; $argument<$countargs; $argument++) {
+				$stringpos=strpos($query, '$', $offset);
+				$numberpos=strpos($query, '#', $offset);
+				
+				if ( ($stringpos===false) || ( ($numberpos!==false) && ($numberpos<$stringpos) ) ) {
+					$alwaysquote=false;
+					$position=$numberpos;
+				
+				} else {
+					$alwaysquote=true;
+					$position=$stringpos;
+				}
+				
+				if (!is_numeric($position))
+					qa_fatal_error('Insufficient parameters in query: '.$query);
+				
+				$value=qa_db_argument_to_mysql($db, $arguments[$argument], $alwaysquote);
+				$query=substr_replace($query, $value, $position, 1);
+				$offset=$position+strlen($value); // allows inserting strings which contain #/$ character
 			}
-			
-			if (!is_numeric($position))
-				qa_fatal_error('Insufficient parameters in query: '.$query);
-			
-			$value=qa_db_argument_to_mysql($db, $arguments[$argument], $alwaysquote);
-			$query=substr_replace($query, $value, $position, 1);
-			$offset=$position+strlen($value); // allows inserting strings which contain #/$ character
 		}
 		
 		return $query;
@@ -225,8 +231,8 @@
 	But this can be changed using the 'arraykey', 'arrayvalue' and 'single' in the selectspec.
 	
 	Note that even if you specify ORDER BY in 'source', the final results may not be ordered. This is because
-	the SELECT could be done within a UNION that (annoyingly) doesn't maintain order. Use 'sortdesc' to fix this.
-	You can however rely on the combination of ORDER BY and LIMIT retrieving the appropriate records.
+	the SELECT could be done within a UNION that (annoyingly) doesn't maintain order. Use 'sortasc' or 'sortdesc'
+	to fix this. You can however rely on the combination of ORDER BY and LIMIT retrieving the appropriate records.
 	
 
 	'columns' => Array of names of columns to be retrieved (required)
@@ -245,6 +251,8 @@
 	
 	'single' => If true, return the array for a single row and don't embed it within an outer-level array
 	
+	'sortasc' => Sort the output ascending by this column
+
 	'sortdesc' => Sort the output descending by this column
 
 
@@ -272,7 +280,7 @@
 			$query.=$columnfrom.(is_int($columnas) ? '' : (' AS '.$columnas)).', ';
 		
 		$results=qa_db_read_all_assoc(qa_db_query_raw($db, qa_db_apply_sub($db,
-			substr($query, 0, -2).' FROM '.$selectspec['source'], $selectspec['arguments'])
+			substr($query, 0, -2).' FROM '.$selectspec['source'], @$selectspec['arguments'])
 		), @$selectspec['arraykey']); // arrayvalue is applied in qa_db_post_select()
 		
 		qa_db_post_select($results, $selectspec); // post-processing
@@ -351,7 +359,7 @@
 			if (strlen($query))
 				$query.=' UNION ALL ';
 				
-			$query.=qa_db_apply_sub($db, $subquery, isset($selectspec['arguments']) ? $selectspec['arguments'] : array());
+			$query.=qa_db_apply_sub($db, $subquery, @$selectspec['arguments']);
 		}
 		
 	//	Perform query and extract results
@@ -389,19 +397,28 @@
 
 	function qa_db_post_select(&$outresult, $selectspec)
 /*
-	Post-process $outresults according to $selectspec, applying 'sortdesc', 'arrayvale' and 'single'
+	Post-process $outresults according to $selectspec, applying 'sortasc', 'sortdesc', 'arrayvale' and 'single'
 */
 	{
-		if (isset($selectspec['sortdesc'])) {
-			// PHP's sorting algorithm is not 'stable', so we use '_order_' element to keep stability.
-			// By contrast, MySQL's ORDER BY does seem to give the results in a reliable order.
+		// PHP's sorting algorithm is not 'stable', so we use '_order_' element to keep stability.
+		// By contrast, MySQL's ORDER BY does seem to give the results in a reliable order.
+
+		if (isset($selectspec['sortasc'])) {
+			require_once QA_INCLUDE_DIR.'qa-util-sort.php';
+		
+			$index=0;
+			foreach ($outresult as $key => $value)
+				$outresult[$key]['_order_']=$index++;
+				
+			qa_sort_by($outresult, $selectspec['sortasc'], '_order_');
+
+		} elseif (isset($selectspec['sortdesc'])) {
+			require_once QA_INCLUDE_DIR.'qa-util-sort.php';
 			
 			$index=count($outresult);
 			foreach ($outresult as $key => $value)
 				$outresult[$key]['_order_']=$index--;
 				
-			require_once QA_INCLUDE_DIR.'qa-util-sort.php';
-			
 			qa_sort_by($outresult, $selectspec['sortdesc'], '_order_');
 			$outresult=array_reverse($outresult, true);
 		}

@@ -1,21 +1,22 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Controller for most admin pages which just contain options
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -37,92 +38,205 @@
 
 	require_once QA_INCLUDE_DIR.'qa-db-admin.php';
 	require_once QA_INCLUDE_DIR.'qa-db-maxima.php';
+	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 	require_once QA_INCLUDE_DIR.'qa-app-options.php';
 	require_once QA_INCLUDE_DIR.'qa-app-admin.php';
 	
 
-//	Standard pre-admin operations
+//	Queue requests for pending admin options
 
 	qa_admin_pending();
 	
-	if (!qa_admin_check_privileges())
-		return;
-
 
 //	Define the options to show (and some other visual stuff) based on request
 	
 	$formstyle='tall';
+	$checkboxtodisplay=null;
 	
-	switch ($qa_template) {
-		case 'admin/layout':
-			$subtitle='admin/layout_title';
-			$showoptions=array('logo_show', 'logo_url', 'logo_width', 'logo_height', 'nav_unanswered', 'custom_sidebar', 'custom_header', 'custom_footer', 'custom_in_head');
-			break;
-			
-		case 'admin/viewing':
-			$subtitle='admin/viewing_title';
-			$showoptions=array(
-				'voting_on_qs', 'voting_on_as', 'votes_separated', '', 'page_size_home', 'page_size_qs', 'page_size_una_qs', '',
-				'page_size_tags', 'columns_tags', 'page_size_users', 'columns_users', '',
-				'page_size_tag_qs', 'page_size_user_qs', 'page_size_user_as', 'page_size_search', '',
-				'show_user_points', 'show_url_links', '', 'do_related_qs', 'match_related_qs', 'page_size_related_qs', '',
-				'pages_prev_next'
-			);
-			$formstyle='wide';
-			break;
-		
-		case 'admin/posting':
-			$subtitle='admin/posting_title';
-			$showoptions=array(
-				'comment_on_qs', 'comment_on_as', 'follow_on_as', '',
-				'ask_needs_login', 'answer_needs_login', 'comment_needs_login', '',
-				'min_len_q_title', 'min_len_q_content', 'min_len_a_content', 'min_len_c_content', '',
-				'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs', '',
-				'do_example_tags', 'match_example_tags', 'do_complete_tags', 'page_size_ask_tags'
-			);
-			$formstyle='wide';
-			break;
-			
-		case 'admin/emails':
+	switch (@$qa_request_lc_parts[1]) {
+		case 'emails':
 			$subtitle='admin/emails_title';
-			$showoptions=array('from_email', 'notify_admin_q_post', 'feedback_enabled', 'feedback_email', 'email_privacy');
+			$showoptions=array('from_email', 'feedback_email', 'notify_admin_q_post', 'feedback_enabled', 'email_privacy');
 			
 			if (!QA_EXTERNAL_USERS)
 				$showoptions[]='custom_welcome';
 			break;
 			
-		case 'admin/spam':
-			$subtitle='admin/spam_title';
+		case 'layout':
+			$subtitle='admin/layout_title';
+			$showoptions=array('logo_show', 'logo_url', 'logo_width', 'logo_height', 'show_custom_sidebar', 'custom_sidebar', 'show_custom_sidepanel', 'custom_sidepanel', 'show_custom_header', 'custom_header', 'show_custom_footer', 'custom_footer', 'show_custom_in_head', 'custom_in_head', 'show_custom_home', 'custom_home_heading', 'custom_home_content', 'show_home_description', 'home_description');
 			
-			$showoptions=array();
-			
-			$getoptions=qa_get_options($qa_db, array('ask_needs_login', 'answer_needs_login', 'comment_needs_login', 'feedback_enabled'));
-			
-			if (!($getoptions['ask_needs_login'] && $getoptions['answer_needs_login'] && $getoptions['comment_needs_login']))
-				$showoptions[]='captcha_on_anon_post';
-				
-			if (!QA_EXTERNAL_USERS) {
-				$showoptions[]='captcha_on_register';
-				$showoptions[]='captcha_on_reset_password';
-			}
-			
-			if ($getoptions['feedback_enabled'])
-				$showoptions[]='captcha_on_feedback';
-			
-			if (count($showoptions))
-				array_push($showoptions, 'recaptcha_public_key', 'recaptcha_private_key', '');
-			
-			array_push($showoptions,
-				'max_rate_ip_qs', 'max_rate_ip_as', 'max_rate_ip_cs', 'max_rate_ip_votes', '',
-				'max_rate_user_qs', 'max_rate_user_as', 'max_rate_user_cs', 'max_rate_user_votes'
+			$checkboxtodisplay=array(
+				'logo_url' => 'option_logo_show',
+				'logo_width' => 'option_logo_show',
+				'logo_height' => 'option_logo_show',
+				'custom_sidebar' => 'option_show_custom_sidebar',
+				'custom_sidepanel' => 'option_show_custom_sidepanel',
+				'custom_header' => 'option_show_custom_header',
+				'custom_footer' => 'option_show_custom_footer',
+				'custom_in_head' => 'option_show_custom_in_head',
+				'custom_home_heading' => 'option_show_custom_home',
+				'custom_home_content' => 'option_show_custom_home',
+				'home_description' => 'option_show_home_description',
 			);
+			break;
+			
+		case 'viewing':
+			$getoptions=qa_get_options($qa_db, array('tags_or_categories'));
+
+			$subtitle='admin/viewing_title';
+			$showoptions=array('voting_on_qs', 'voting_on_as', 'votes_separated', '', 'page_size_home', 'page_size_qs', 'page_size_una_qs', '');
+			
+			if (qa_using_tags($qa_db))
+				array_push($showoptions, 'page_size_tags', 'columns_tags');
+				
+			array_push($showoptions, 'page_size_users', 'columns_users', '');
+			
+			if (qa_using_tags($qa_db))
+				$showoptions[]='page_size_tag_qs';
+				
+			array_push($showoptions,
+				'page_size_user_qs', 'page_size_user_as', 'page_size_search', '',
+				'show_when_created', 'show_user_points', 'show_selected_first', 'show_url_links', '',
+				'do_related_qs', 'match_related_qs', 'page_size_related_qs', '', 'pages_prev_next'
+			);
+
+			$formstyle='wide';
+
+			$checkboxtodisplay=array(
+				'votes_separated' => 'option_voting_on_qs || option_voting_on_as',
+				'match_related_qs' => 'option_do_related_qs',
+				'page_size_related_qs' => 'option_do_related_qs',
+			);
+			break;
+		
+		case 'posting':
+			$getoptions=qa_get_options($qa_db, array('tags_or_categories'));
+			
+			$subtitle='admin/posting_title';
+
+			$showoptions=array('comment_on_qs', 'comment_on_as', 'follow_on_as', '', 'min_len_q_title', 'max_len_q_title');
+			
+			$showoptions[]='min_len_q_content';
+			
+			if (qa_using_tags($qa_db))
+				$showoptions[]='max_num_q_tags';
+			
+			array_push($showoptions, 'min_len_a_content', 'min_len_c_content', 'block_bad_words', '', 'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs', '');
+
+			if (qa_using_tags($qa_db))
+				array_push($showoptions, 'do_example_tags', 'match_example_tags', 'do_complete_tags', 'page_size_ask_tags');
+
+			$formstyle='wide';
+
+			$checkboxtodisplay=array(
+				'min_len_c_content' => 'option_comment_on_qs || option_comment_on_as',
+				'match_ask_check_qs' => 'option_do_ask_check_qs',
+				'page_size_ask_check_qs' => 'option_do_ask_check_qs',
+				'match_example_tags' => 'option_do_example_tags',
+				'page_size_ask_tags' => 'option_do_example_tags || option_do_complete_tags',
+			);
+			break;
+			
+		case 'permissions':
+			$subtitle='admin/permissions_title';
+			
+			$showoptions=array('permit_post_q', 'permit_post_a');
+			
+			$getoptions=qa_get_options($qa_db, array('comment_on_qs', 'comment_on_as', 'voting_on_qs', 'voting_on_as'));
+			
+			if ($getoptions['comment_on_qs'] || $getoptions['comment_on_as'])
+				$showoptions[]='permit_post_c';
+			
+			if ($getoptions['voting_on_qs'])
+				$showoptions[]='permit_vote_q';
+				
+			if ($getoptions['voting_on_as'])
+				$showoptions[]='permit_vote_a';
+				
+			array_push($showoptions, 'permit_edit_q', 'permit_edit_a');
+			
+			if ($getoptions['comment_on_qs'] || $getoptions['comment_on_as'])
+				$showoptions[]='permit_edit_c';
+				
+			array_push($showoptions, 'permit_select_a', 'permit_anon_view_ips', 'permit_hide_show', 'permit_delete_hidden');
 
 			$formstyle='wide';
 			break;
 		
+		case 'feeds':
+			$subtitle='admin/feeds_title';
+			
+			$showoptions=array('feed_for_qa', 'feed_for_questions', 'feed_for_unanswered', 'feed_for_activity');
+			
+			if (qa_using_categories($qa_db))
+				$showoptions[]='feed_per_category';
+			
+			if (qa_using_tags($qa_db))
+				$showoptions[]='feed_for_tag_qs';
+				
+			array_push($showoptions, 'feed_for_search', 'feed_number_items', 'feed_full_text');
+							
+			$formstyle='wide';
+
+			$checkboxtodisplay=array(
+				'feed_per_category' => 'option_feed_for_qa || option_feed_for_questions || option_feed_for_unanswered || option_feed_for_activity',
+			);
+			break;
+		
+		case 'spam':
+			$subtitle='admin/spam_title';
+			
+			$showoptions=array();
+			
+			$getoptions=qa_get_options($qa_db, array('feedback_enabled', 'permit_post_q', 'permit_post_a', 'permit_post_c'));
+			
+			if (!QA_EXTERNAL_USERS)
+				array_push($showoptions, 'confirm_user_emails', '');
+			
+			$maxpermitpost=max($getoptions['permit_post_q'], $getoptions['permit_post_a'], $getoptions['permit_post_c']);
+			
+			if ($maxpermitpost > QA_PERMIT_USERS)
+				$showoptions[]='captcha_on_anon_post';
+				
+			if ($maxpermitpost > QA_PERMIT_CONFIRMED)
+				$showoptions[]='captcha_on_unconfirmed';
+				
+			if (!QA_EXTERNAL_USERS)
+				array_push($showoptions, 'captcha_on_register', 'captcha_on_reset_password');
+			
+			if ($getoptions['feedback_enabled'])
+				$showoptions[]='captcha_on_feedback';
+				
+			if (count($showoptions))
+				array_push($showoptions, 'recaptcha_public_key', 'recaptcha_private_key', '');
+				
+			array_push($showoptions,
+				'max_rate_ip_qs', 'max_rate_ip_as', 'max_rate_ip_cs', 'max_rate_ip_votes', 'max_rate_ip_logins', 'block_ips_write', '',
+				'max_rate_user_qs', 'max_rate_user_as', 'max_rate_user_cs', 'max_rate_user_votes'
+			);
+
+			$formstyle='wide';
+
+			if ($maxpermitpost > QA_PERMIT_USERS)
+				$checkboxtodisplay=array(
+					'captcha_on_unconfirmed' => 'option_confirm_user_emails && option_captcha_on_anon_post',
+					'recaptcha_public_key' => 'option_captcha_on_register || option_captcha_on_anon_post || option_captcha_on_reset_password || option_captcha_on_feedback',
+					'recaptcha_private_key' => 'option_captcha_on_register || option_captcha_on_anon_post || option_captcha_on_reset_password || option_captcha_on_feedback',
+				);
+			else
+				$checkboxtodisplay=array(
+					'captcha_on_unconfirmed' => 'option_confirm_user_emails',
+					'recaptcha_public_key' => 'option_captcha_on_register || option_captcha_on_unconfirmed || option_captcha_on_reset_password || option_captcha_on_feedback',
+					'recaptcha_private_key' => 'option_captcha_on_register || option_captcha_on_unconfirmed || option_captcha_on_reset_password || option_captcha_on_feedback',
+				);
+			break;
+		
 		default:
 			$subtitle='admin/general_title';
-			$showoptions=array('site_title', 'site_url', 'neat_urls', 'site_language', 'site_theme');
+			$showoptions=array('site_title', 'site_url', 'neat_urls', 'site_language', 'site_theme', 'tags_or_categories');
+			
+			qa_options_set_pending(array('cache_tagcount'));
 			break;
 	}
 	
@@ -132,12 +246,14 @@
 	$optiontype=array(
 		'columns_tags' => 'number',
 		'columns_users' => 'number',
+		'feed_number_items' => 'number',
 		'logo_height' => 'number-blank',
 		'logo_width' => 'number-blank',
 		'max_rate_ip_as' => 'number',
 		'max_rate_ip_cs' => 'number',
 		'max_rate_ip_qs' => 'number',
 		'max_rate_ip_votes' => 'number',
+		'max_rate_ip_logins' => 'number',
 		'max_rate_user_as' => 'number',
 		'max_rate_user_cs' => 'number',
 		'max_rate_user_qs' => 'number',
@@ -146,6 +262,8 @@
 		'min_len_c_content' => 'number',
 		'min_len_q_content' => 'number',
 		'min_len_q_title' => 'number',
+		'max_len_q_title' => 'number',
+		'max_num_q_tags' => 'number',
 		'page_size_ask_check_qs' => 'number',
 		'page_size_ask_tags' => 'number',
 		'page_size_home' => 'number',
@@ -160,27 +278,42 @@
 		'page_size_users' => 'number',
 		'pages_prev_next' => 'number',
 		
-		'answer_needs_login' => 'checkbox',
-		'ask_needs_login' => 'checkbox',
 		'captcha_on_anon_post' => 'checkbox',
 		'captcha_on_feedback' => 'checkbox',
 		'captcha_on_register' => 'checkbox',
 		'captcha_on_reset_password' => 'checkbox',
-		'comment_needs_login' => 'checkbox',
+		'captcha_on_unconfirmed' => 'checkbox',
 		'comment_on_as' => 'checkbox',
 		'comment_on_qs' => 'checkbox',
+		'confirm_user_emails' => 'checkbox',
+		'feed_for_qa' => 'checkbox',
+		'feed_for_questions' => 'checkbox',
+		'feed_for_unanswered' => 'checkbox',
+		'feed_for_activity' => 'checkbox',
+		'feed_for_search' => 'checkbox',
+		'feed_per_category' => 'checkbox',
+		'feed_for_tag_qs' => 'checkbox',
+		'show_custom_sidebar' => 'checkbox',
+		'show_custom_sidepanel' => 'checkbox',
+		'show_custom_header' => 'checkbox',
+		'show_custom_footer' => 'checkbox',
+		'show_custom_in_head' => 'checkbox',
+		'show_custom_home' => 'checkbox',
+		'show_home_description' => 'checkbox',
 		'do_ask_check_qs' => 'checkbox',
 		'do_complete_tags' => 'checkbox',
 		'do_example_tags' => 'checkbox',
 		'do_related_qs' => 'checkbox',
 		'feedback_enabled' => 'checkbox',
+		'feed_full_text' => 'checkbox',
 		'follow_on_as' => 'checkbox',
 		'logo_show' => 'checkbox',
-		'nav_unanswered' => 'checkbox',
 		'neat_urls' => 'checkbox',
 		'notify_admin_q_post' => 'checkbox',
 		'show_url_links' => 'checkbox',
 		'show_user_points' => 'checkbox',
+		'show_selected_first' => 'checkbox',
+		'show_when_created' => 'checkbox',
 		'votes_separated' => 'checkbox',
 		'voting_on_as' => 'checkbox',
 		'voting_on_qs' => 'checkbox',
@@ -199,9 +332,12 @@
 		'page_size_user_as' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_user_qs' => QA_DB_RETRIEVE_QS_AS,
 		'page_size_users' => QA_DB_RETRIEVE_USERS,
+		'feed_number_items' => QA_DB_RETRIEVE_QS_AS,
+		'max_len_q_title' => QA_DB_MAX_TITLE_LENGTH,
 	);
 	
 	$optionminimum=array(
+		'max_num_q_tags' => 2,
 		'page_size_ask_check_qs' => 3,
 		'page_size_ask_tags' => 3,
 		'page_size_home' => 3,
@@ -213,13 +349,26 @@
 	);
 	
 
-//	Filter out blanks and get/set appropriate options
+//	Filter out blanks to get list of valid options
 	
 	$getoptions=array();
 	foreach ($showoptions as $optionname)
 		if (!empty($optionname)) // empties represent spacers in forms
 			$getoptions[]=$optionname;
 	
+	qa_options_set_pending($getoptions);
+	
+	$categories=qa_db_select_with_pending($qa_db, qa_db_categories_selectspec());
+	
+
+//	Check admin privileges (do late to allow one DB query)
+
+	if (!qa_admin_check_privileges())
+		return;
+
+
+//	Process user actions
+
 	if (qa_clicked('doresetoptions'))
 		qa_reset_options($qa_db, $getoptions);
 
@@ -239,6 +388,18 @@
 
 			if (isset($optionminimum[$optionname]))
 				$optionvalue=max($optionminimum[$optionname], $optionvalue);
+				
+			if ($optionname=='block_ips_write') {
+				require_once QA_INCLUDE_DIR.'qa-app-limits.php';
+				
+				$optionvalue=implode(' , ', qa_block_ips_explode($optionvalue));
+			}
+			
+			if ($optionname=='block_bad_words') {
+				require_once QA_INCLUDE_DIR.'qa-util-string.php';
+				
+				$optionvalue=implode(' , ', qa_block_words_explode($optionvalue));
+			}
 				
 			qa_set_option($qa_db, $optionname, $optionvalue);
 		}
@@ -294,14 +455,18 @@
 				$type='number';
 			
 			$optionfield=array(
+				'id' => $optionname,
 				'label' => qa_lang_html('options/'.$optionname),
-				'tags' => ' NAME="option_'.$optionname.'" ',
+				'tags' => ' NAME="option_'.$optionname.'" ID="option_'.$optionname.'" ',
 				'value' => qa_html($options[$optionname]),
 				'type' => $type,
 			);
 			
 			if (isset($optionmaximum[$optionname]))
-				$optionfield['note']=qa_lang_sub_html('admin/maximum_x', $optionmaximum[$optionname]);
+				$optionfield['note']=qa_lang_html_sub('admin/maximum_x', $optionmaximum[$optionname]);
+				
+			$feedrequest=null;
+			$feedisexample=false;
 			
 			switch ($optionname) { // special treatment for certain options
 				case 'site_language':
@@ -344,7 +509,7 @@
 					$optionfield['type']='select-radio';
 					$optionfield['options']=$neatoptions;
 					$optionfield['value']=$neatoptions[isset($neatoptions[$neatvalue]) ? $neatvalue : QA_URL_FORMAT_SAFEST];
-					$optionfield['note']=qa_lang_sub_html('admin/url_format_note', '<SPAN STYLE=" '.qa_admin_url_test_html().'/SPAN>');
+					$optionfield['note']=qa_lang_html_sub('admin/url_format_note', '<SPAN STYLE=" '.qa_admin_url_test_html().'/SPAN>');
 					break;
 					
 				case 'site_theme':
@@ -356,73 +521,42 @@
 					$optionfield['value']=$themeoptions[isset($themeoptions[$themevalue]) ? $themevalue : 'Default'];
 					break;
 				
-				case 'logo_show':
-					$optionfield['tags'].=' ID="logo_show" ';
+				case 'tags_or_categories':
+					$optionfield['options']=array(
+						'' => qa_lang_html('admin/no_classification'),
+						't' => qa_lang_html('admin/tags'),
+						'c' => qa_lang_html('admin/categories'),
+						'tc' => qa_lang_html('admin/tags_and_categories'),
+					);
+					$optionfield['type']='select';
+					$optionfield['value']=$optionfield['options'][$options[$optionname]];
+					$optionfield['error']='';
 					
-					qa_checkbox_to_display($qa_content, array(
-						'logo_url' => 'logo_show',
-						'logo_width' => 'logo_show',
-						'logo_height' => 'logo_show',
-					));
-					break;
+					if (qa_get_option($qa_db, 'cache_tagcount') && !qa_using_tags($qa_db))
+						$optionfield['error'].=qa_lang_html('admin/tags_not_shown').' ';
 					
-				case 'feedback_enabled':
-					$optionfield['tags'].=' ID="feedback_enabled" ';
-					
-					qa_checkbox_to_display($qa_content, array(
-						'feedback_email' => 'feedback_enabled || notify_admin_q_post',
-					));
-					break;
-					
-				case 'notify_admin_q_post':
-					$optionfield['tags'].=' ID="notify_admin_q_post" ';
-					break;
-					
-				case 'voting_on_qs':
-					$optionfield['tags'].=' ID="voting_on_qs" ';
-					
-					qa_checkbox_to_display($qa_content, array(
-						'votes_separated' => 'voting_on_qs || voting_on_as',
-					));
-					break;
-					
-				case 'voting_on_as':
-					$optionfield['tags'].=' ID="voting_on_as" ';
-					break;
-
-				case 'comment_on_qs':
-					$optionfield['tags'].=' ID="comment_on_qs" ';
-					
-					qa_checkbox_to_display($qa_content, array(
-						'comment_needs_login' => 'comment_on_qs || comment_on_as',
-						'min_len_c_content' => 'comment_on_qs || comment_on_as',
-					));
-					break;
-					
-				case 'comment_on_as':
-					$optionfield['tags'].=' ID="comment_on_as" ';
-					break;
-					
-				case 'logo_url':
-				case 'logo_width':
-				case 'logo_height':
-				case 'page_size_related_qs':
-				case 'page_size_ask_check_qs':
-				case 'page_size_ask_tags':
-				case 'comment_needs_login':
-				case 'min_len_c_content':
-				case 'votes_separated':
-				case 'feedback_email':
-					$optionfield['id']=$optionname; // this wraps ID around table rows instead of assigning it to input element
-					break;
-					
-				case 'custom_sidebar':
-					$optionfield['rows']=6;
+					if (!qa_using_categories($qa_db))
+						foreach ($categories as $category)
+							if ($category['qcount']) {
+								$optionfield['error'].=qa_lang_html('admin/categories_not_shown');
+								break;
+							}
 					break;
 				
+				case 'custom_sidebar':
+				case 'custom_sidepanel':
 				case 'custom_header':
 				case 'custom_footer':
 				case 'custom_in_head':
+				case 'home_description':
+					unset($optionfield['label']);
+					$optionfield['rows']=6;
+					break;
+					
+				case 'custom_home_content':
+					$optionfield['rows']=16;
+					break;
+					
 				case 'custom_welcome':
 					$optionfield['rows']=3;
 					break;
@@ -438,76 +572,189 @@
 					$optionfield['options']=array(1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5);
 					break;
 					
-				case 'do_related_qs':
-					$optionfield['tags'].=' ID="do_related_qs" ';
-					
-					qa_checkbox_to_display($qa_content, array(
-						'match_related_qs' => 'do_related_qs',
-						'page_size_related_qs' => 'do_related_qs',
-					));
-					break;
-					
-				case 'do_ask_check_qs':
-					$optionfield['tags'].=' ID="do_ask_check_qs" ';
-					
-					qa_checkbox_to_display($qa_content, array(
-						'match_ask_check_qs' => 'do_ask_check_qs',
-						'page_size_ask_check_qs' => 'do_ask_check_qs',
-					));
-					break;
-					
-				case 'do_example_tags':
-					$optionfield['tags'].=' ID="do_example_tags" ';
-					
-					qa_checkbox_to_display($qa_content, array(
-						'match_example_tags' => 'do_example_tags',
-						'page_size_ask_tags' => 'do_example_tags || do_complete_tags',
-					));
-					break;
-					
-				case 'do_complete_tags':
-					$optionfield['tags'].=' ID="do_complete_tags" ';
-					break;
-
 				case 'match_related_qs':
 				case 'match_ask_check_qs':
 				case 'match_example_tags':
 					$matchvalue=$options[$optionname];
 					$matchoptions=qa_admin_match_options();
 					
-					$optionfield['id']=$optionname;
 					$optionfield['type']='select';
 					$optionfield['options']=$matchoptions;
 					$optionfield['value']=$matchoptions[isset($matchoptions[$matchvalue]) ? $matchvalue : 3];
 					break;
 					
-				case 'captcha_on_register':
-				case 'captcha_on_anon_post':
-					$optionfield['tags'].=' ID="'.$optionname.'" ';
+				case 'block_bad_words':
+					$optionfield['style']='tall';
+					$optionfield['rows']=4;
+					$optionfield['note']=qa_lang_html('admin/block_words_note');
 					break;
-					
+				
 				case 'recaptcha_public_key':
 					$optionfield['style']='tall';
-					$optionfield['id']=$optionname;
-					
-					qa_checkbox_to_display($qa_content, array(
-						'recaptcha_public_key' => 'captcha_on_register || captcha_on_anon_post',
-						'recaptcha_private_key' => 'captcha_on_register || captcha_on_anon_post',
-					));
 					break;
 					
 				case 'recaptcha_private_key':
 					require_once QA_INCLUDE_DIR.'qa-app-captcha.php';
 
 					$optionfield['style']='tall';
-					$optionfield['id']=$optionname;
 					$optionfield['error']=qa_captcha_error($qa_db);
 					break;
+					
+				case 'block_ips_write':
+					$optionfield['style']='tall';
+					$optionfield['rows']=4;
+					$optionfield['note']=qa_lang_html('admin/block_ips_note');
+					break;
+					
+				case 'permit_post_q':
+				case 'permit_post_a':
+				case 'permit_post_c':
+				case 'permit_vote_q':
+				case 'permit_vote_a':
+				case 'permit_edit_q':
+				case 'permit_edit_a':
+				case 'permit_edit_c':
+				case 'permit_select_a':
+				case 'permit_hide_show':
+				case 'permit_delete_hidden':
+				case 'permit_anon_view_ips':
+					$permitvalue=$options[$optionname];
+					
+					if ( ($optionname=='permit_post_q') || ($optionname=='permit_post_a') || ($optionname=='permit_post_c') || ($optionname=='permit_anon_view_ips') )
+						$widest=QA_PERMIT_ALL;
+					elseif ( ($optionname=='permit_select_a') || ($optionname=='permit_hide_show') )
+						$widest=QA_PERMIT_EXPERTS;
+					elseif ($optionname=='permit_delete_hidden')
+						$widest=QA_PERMIT_EDITORS;
+					else
+						$widest=QA_PERMIT_USERS;
+						
+					if ( ($optionname=='permit_edit_c') || ($optionname=='permit_select_a') || ($optionname=='permit_hide_show') || ($optionname=='permit_anon_view_ips') )
+						$narrowest=QA_PERMIT_MODERATORS;
+					elseif ( ($optionname=='permit_post_c') || ($optionname=='permit_edit_q') || ($optionname=='permit_edit_a') )
+						$narrowest=QA_PERMIT_EDITORS;
+					elseif ( ($optionname=='permit_vote_q') || ($optionname=='permit_vote_a') )
+						$narrowest=QA_PERMIT_CONFIRMED;
+					elseif ($optionname=='permit_delete_hidden')
+						$narrowest=QA_PERMIT_ADMINS;
+					else
+						$narrowest=QA_PERMIT_EXPERTS;
+					
+					$permitoptions=qa_admin_permit_options($widest, $narrowest, (!QA_EXTERNAL_USERS) && qa_get_option($qa_db, 'confirm_user_emails'));
+					
+					$optionfield['type']='select';
+					$optionfield['options']=$permitoptions;
+					
+					if (isset($permitoptions[$permitvalue]))
+						$optionfield['value']=$permitoptions[$permitvalue];
+					elseif ($permitvalue==QA_PERMIT_CONFIRMED)
+						$optionfield['value']=QA_PERMIT_USERS;
+					else
+						$optionfield['value']=$permitoptions[min(array_keys($permitoptions))];
+					break;
+					
+				case 'feed_for_qa':
+					$feedrequest='qa';
+					break;
+
+				case 'feed_for_questions':
+					$feedrequest='questions';
+					break;
+
+				case 'feed_for_unanswered':
+					$feedrequest='unanswered';
+					break;
+
+				case 'feed_for_activity':
+					$feedrequest='activity';
+					break;
+					
+				case 'feed_per_category':
+					if (count($categories)) {
+						$category=reset($categories);
+						$categoryslug=$category['tags'];
+
+					} else
+						$categoryslug='example-category';
+						
+					if (qa_get_option($qa_db, 'feed_for_qa'))
+						$feedrequest='qa';
+					elseif (qa_get_option($qa_db, 'feed_for_questions'))
+						$feedrequest='questions';
+					elseif (qa_get_option($qa_db, 'feed_for_unanswered'))
+						$feedrequest='unanswered';
+					else
+						$feedrequest='activity';
+					
+					$feedrequest.='/'.$categoryslug;
+					$feedisexample=true;
+					break;
+					
+				case 'feed_for_tag_qs':
+					$populartags=qa_db_select_with_pending($qa_db, qa_db_popular_tags_selectspec(0, 1));
+					
+					if (count($populartags)) {
+						reset($populartags);
+						$feedrequest='tag/'.key($populartags);
+					} else
+						$feedrequest='tag/singing';
+						
+					$feedisexample=true;
+					break;
+
+				case 'feed_for_search':
+					$feedrequest='search/why do birds sing';
+					$feedisexample=true;
+					break;
 			}
+
+			if (isset($feedrequest) && $options[$optionname])
+				$optionfield['note']='<A HREF="'.qa_path_html(qa_feed_request($feedrequest)).'">'.qa_lang_html($feedisexample ? 'admin/feed_link_example' : 'admin/feed_link').'</A>';
 
 			$qa_content['form']['fields'][$optionname]=$optionfield;
 		}
 		
+
+	if ( (@$qa_request_lc_parts[1]=='permissions')) { // some static items added here
+
+		$qa_content['form']['fields']['permit_block']=array(
+			'type' => 'static',
+			'label' => qa_lang_html('options/permit_block'),
+			'value' => qa_lang_html('options/permit_moderators'),
+		);
+		
+		if (!QA_EXTERNAL_USERS) {
+			$qa_content['form']['fields']['permit_create_experts']=array(
+				'type' => 'static',
+				'label' => qa_lang_html('options/permit_create_experts'),
+				'value' => qa_lang_html('options/permit_moderators'),
+			);
+
+			$qa_content['form']['fields']['permit_see_emails']=array(
+				'type' => 'static',
+				'label' => qa_lang_html('options/permit_see_emails'),
+				'value' => qa_lang_html('options/permit_admins'),
+			);
+	
+			$qa_content['form']['fields']['permit_create_eds_mods']=array(
+				'type' => 'static',
+				'label' => qa_lang_html('options/permit_create_eds_mods'),
+				'value' => qa_lang_html('options/permit_admins'),
+			);
+	
+			$qa_content['form']['fields']['permit_create_admins']=array(
+				'type' => 'static',
+				'label' => qa_lang_html('options/permit_create_admins'),
+				'value' => qa_lang_html('options/permit_supers'),
+			);
+
+		}
+	}
+	
+	if (isset($checkboxtodisplay))
+		qa_checkbox_to_display($qa_content, $checkboxtodisplay);
+		
+
 	$qa_content['navigation']['sub']=qa_admin_sub_navigation();
 
 

@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-votes.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Handling incoming votes (application level)
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -42,57 +43,47 @@
 	Return an error to display if there was a problem, or false if all went smoothly.
 */
 	{
-		if (isset($userid)) {
-			require_once QA_INCLUDE_DIR.'qa-db.php';
-			require_once QA_INCLUDE_DIR.'qa-db-selects.php';
-			require_once QA_INCLUDE_DIR.'qa-app-limits.php';
-			require_once QA_INCLUDE_DIR.'qa-app-options.php';
-			
-			qa_options_set_pending(array('voting_on_qs', 'voting_on_as', 'max_rate_user_votes', 'max_rate_ip_votes'));
-	
-			$post=qa_db_select_with_pending($db,
-				qa_db_full_post_selectspec($userid, $postid)
-			);
-			
-			if (qa_limits_remaining($db, $userid, 'V')) {
-				require_once QA_INCLUDE_DIR.'qa-db-votes.php';
-				
-				if (is_array($post)) {
-					require_once QA_INCLUDE_DIR.'qa-app-options.php';
-					
-					switch ($post['basetype']) { // enforce voting options here
-						case 'Q':
-							$allow=qa_get_option($db, 'voting_on_qs');
-							break;
-							
-						case 'A':
-							$allow=qa_get_option($db, 'voting_on_as');
-							break;
-							
-						default:
-							$allow=true;
-							break;
-					}
-						
-					if ( (!$allow) || (isset($post['userid']) && ($post['userid']==$userid)) )
-						return qa_lang_html('main/vote_not_allowed'); // can't vote on own question
-
-					else {
-						qa_set_user_vote($db, $post, $userid, $vote);
-						return false;
-					}
-				
-				} else
-					return qa_lang_html('main/vote_not_allowed');
-
-			} else
-				return qa_lang_html('main/vote_limit');
+		require_once QA_INCLUDE_DIR.'qa-db.php';
+		require_once QA_INCLUDE_DIR.'qa-db-selects.php';
+		require_once QA_INCLUDE_DIR.'qa-app-options.php';
+		require_once QA_INCLUDE_DIR.'qa-app-users.php';
 		
-		} else {
-			require_once QA_INCLUDE_DIR.'qa-app-format.php';
+		qa_options_set_pending(array('voting_on_qs', 'voting_on_as', 'max_rate_user_votes', 'max_rate_ip_votes', 'permit_vote_q', 'permit_vote_a', 'block_ips_write'));
 
-			return qa_insert_login_links(qa_lang_html('main/vote_must_login'), $topage);
-		}
+		$post=qa_db_select_with_pending($db, qa_db_full_post_selectspec($userid, $postid));
+		
+		if (
+			is_array($post) &&
+			( ($post['basetype']=='Q') || ($post['basetype']=='A') ) &&
+			qa_get_option($db, ($post['basetype']=='Q') ? 'voting_on_qs' : 'voting_on_as') &&
+			( (!isset($post['userid'])) || (!isset($userid)) || ($post['userid']!=$userid) )
+		) {
+			
+			switch (qa_user_permit_error($db, ($post['basetype']=='Q') ? 'permit_vote_q' : 'permit_vote_a', 'V')) {
+				case 'login':
+					return qa_insert_login_links(qa_lang_html('main/vote_must_login'), $topage);
+					break;
+					
+				case 'confirm':
+					return qa_insert_login_links(qa_lang_html('main/vote_must_confirm'), $topage);
+					break;
+					
+				case 'limit':
+					return qa_lang_html('main/vote_limit');
+					break;
+					
+				default:
+					return qa_lang_html('users/no_permission');
+					break;
+					
+				case false:
+					require_once QA_INCLUDE_DIR.'qa-db-votes.php';
+					qa_set_user_vote($db, $post, $userid, $vote);
+					return false;
+			}
+		
+		} else
+			return qa_lang_html('main/vote_not_allowed'); // voting option should not have been presented (but could happen due to options change)
 	}
 
 	
@@ -107,13 +98,23 @@
 		require_once QA_INCLUDE_DIR.'qa-app-limits.php';
 		
 		$vote=(int)min(1, max(-1, $vote));
-		
+		$oldvote=(int)qa_db_uservote_get($db, $post['postid'], $userid);
+
 		qa_db_uservote_set($db, $post['postid'], $userid, $vote);
 		qa_db_post_recount_votes($db, $post['postid']);
 		
 		$postisanswer=($post['basetype']=='A');
 		
-		qa_db_points_update_ifuser($db, $userid, $postisanswer ? 'avotes' : 'qvotes');
+		$columns=array();
+		
+		if ( ($vote>0) || ($oldvote>0) )
+			$columns[]=$postisanswer ? 'aupvotes' : 'qupvotes';
+
+		if ( ($vote<0) || ($oldvote<0) )
+			$columns[]=$postisanswer ? 'adownvotes' : 'qdownvotes';
+			
+		qa_db_points_update_ifuser($db, $userid, $columns);
+		
 		qa_db_points_update_ifuser($db, $post['userid'], array($postisanswer ? 'avoteds' : 'qvoteds', 'upvoteds', 'downvoteds'));
 		
 		if ($vote<0)

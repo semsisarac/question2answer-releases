@@ -1,21 +1,22 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-post-update.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description:  Database functions for changing a question, answer or comment
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -92,6 +93,43 @@
 		qa_db_query_sub($db,
 			'UPDATE ^posts SET userid=$ WHERE postid=#',
 			$userid, $postid
+		);
+	}
+	
+	
+	function qa_db_post_set_category($db, $postid, $categoryid, $lastuserid)
+/*
+	Set the category in the database of $postid to $categoryid, and record that $lastuserid did it
+*/
+	{
+		qa_db_query_sub($db,
+			'UPDATE ^posts SET categoryid=#, updated=NOW(), lastuserid=$ WHERE postid=#',
+			$categoryid, $lastuserid, $postid
+		);
+	}
+	
+	
+	function qa_db_post_set_category_multi($db, $postids, $categoryid)
+/*
+	Set the category in the database of each of $postids to $categoryid, but don't record it as a change
+*/
+	{
+		if (count($postids))
+			qa_db_query_sub($db,
+				'UPDATE ^posts SET categoryid=# WHERE postid IN (#)',
+				$categoryid, $postids
+			);
+	}
+	
+	
+	function qa_db_post_delete($db, $postid)
+/*
+	Deletes post $postid from the database (will also delete any votes on the post due to cascading)
+*/
+	{
+		qa_db_query_sub($db,
+			'DELETE FROM ^posts WHERE postid=#',
+			$postid
 		);
 	}
 

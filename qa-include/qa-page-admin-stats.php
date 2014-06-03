@@ -1,21 +1,22 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-stats.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
-	Description: Controller for admin page showing usage statistics
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
+	Description: Controller for admin page showing usage statistics and clean-up buttons
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -40,17 +41,20 @@
 	require_once QA_INCLUDE_DIR.'qa-db-admin.php';
 
 	
-//	Standard pre-admin operations
+//	Queue requests for pending admin options
 
 	qa_admin_pending();
 	
+	qa_options_set_pending(array('cache_qcount', 'cache_acount', 'cache_ccount', 'cache_userpointscount'));
+
+
+//	Check admin privileges (do late to allow one DB query)
+
 	if (!qa_admin_check_privileges())
 		return;
 
 
 //	Get the information to display
-
-	qa_options_set_pending(array('cache_qcount', 'cache_acount', 'cache_ccount', 'cache_userpointscount'));
 
 	$qcount=qa_get_option($qa_db, 'cache_qcount');
 	$qcount_anon=qa_db_count_posts($qa_db, 'Q', false);
@@ -184,11 +188,26 @@
 			
 			'recalc_points' => array(
 				'label' => qa_lang_html('admin/recalc_points'),
-				'tags' => ' NAME="dorecalcpoints" onClick="return qa_recalc_click(this, '.qa_js(qa_lang('admin/recalc_points_stop')).', \'recalc_points_note\');" ',
+				'tags' => ' NAME="dorecalcpoints" onClick="return qa_recalc_click(this, '.qa_js(qa_lang('admin/recalc_stop')).', \'recalc_points_note\');" ',
 				'note' => '<SPAN ID="recalc_points_note">'.qa_lang_html('admin/recalc_points_note').'</SPAN>',
+			),
+			
+			'recalc_categories' => array(
+				'label' => qa_lang_html('admin/recalc_categories'),
+				'tags' => ' NAME="dorecalccategories" onClick="return qa_recalc_click(this, '.qa_js(qa_lang('admin/recalc_stop')).', \'recalc_categories_note\');" ',
+				'note' => '<SPAN ID="recalc_categories_note">'.qa_lang_html('admin/recalc_categories_note').'</SPAN>',
+			),
+			
+			'delete_hidden' => array(
+				'label' => qa_lang_html('admin/delete_hidden'),
+				'tags' => ' NAME="dodeletehidden" onClick="return qa_recalc_click(this, '.qa_js(qa_lang('admin/delete_stop')).', \'delete_hidden_note\');" ',
+				'note' => '<SPAN ID="delete_hidden_note">'.qa_lang_html('admin/delete_hidden_note').'</SPAN>',
 			),
 		),
 	);
+	
+	if (!qa_using_categories($qa_db))
+		unset($qa_content['form_2']['buttons']['recalc_categories']);
 	
 	$qa_content['script_src'][]='jxs_compressed.js';
 	$qa_content['script_src'][]='qa-admin.js?'.QA_VERSION;

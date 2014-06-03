@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Common functions for creating theme-ready structures from data
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -34,6 +35,10 @@
 		header('Location: ../');
 		exit;
 	}
+
+
+	define('QA_PAGE_FLAGS_EXTERNAL', 1);
+	define('QA_PAGE_FLAGS_NEW_WINDOW', 2);
 
 
 	function qa_time_to_string($seconds)
@@ -71,7 +76,7 @@
 
 	function qa_post_is_by_user($post, $userid, $cookieid)
 /*
-	Check if $post is by user $userid, or if post is anonymous and $userid not specified,
+	Check if $post is by user $userid, or if post is anonymous and $userid not specified, then
 	check if $post is by anonymous user identified by $cookieid
 */
 	{
@@ -140,7 +145,29 @@
 	}
 
 	
-	function qa_post_html_fields($post, $userid, $cookieid, $usershtml, $voteview=false, $pointsview=false, $showurllinks=false, $microformats=false, $isselected=false)
+	function qa_category_html($category)
+/*
+	Return HTML to use for $category (full row retrieved from database)
+*/
+	{
+		return '<A HREF="'.qa_path_html($category['tags']).'" CLASS="qa-category-link">'.qa_html($category['title']).'</A>';
+	}
+	
+	
+	function qa_ip_anchor_html($ip, $anchorhtml=null)
+/*
+	Return HTML to use for $ip address, which links to appropriate page with $anchorhtml
+*/
+	{
+		if (!strlen($anchorhtml))
+			$anchorhtml=qa_html($ip);
+		
+		return '<A HREF="'.qa_path_html('ip/'.$ip).'" TITLE="'.qa_lang_html_sub('main/ip_address_x', qa_html($ip)).'" CLASS="qa-ip-link">'.$anchorhtml.'</A>';
+	}
+
+	
+	function qa_post_html_fields($post, $userid, $cookieid, $usershtml, $tagsview=false, $categories=null, $voteview=false,
+		$whenview=false, $ipview=false, $pointsview=false, $blockwordspreg=null, $showurllinks=false, $microformats=false, $isselected=false)
 /*
 	Given $post retrieved from database, return array of mostly HTML to be passed to theme layer.
 	$userid and $cookieid refer to the user *viewing* the page.
@@ -149,6 +176,9 @@
 	If something is missing from $post (e.g. ['content']), correponding HTML also omitted.
 */
 	{
+		if (isset($blockwordspreg))
+			require_once QA_INCLUDE_DIR.'qa-util-string.php';
+		
 		$fields=array();
 		
 	//	Useful stuff used throughout function
@@ -157,19 +187,23 @@
 		$isquestion=($post['basetype']=='Q');
 		$isanswer=($post['basetype']=='A');
 		$isbyuser=qa_post_is_by_user($post, $userid, $cookieid);
+		$anchor=urlencode(qa_anchor($post['basetype'], $postid));
 		
 	//	High level information
 
 		$fields['hidden']=$post['hidden'];
-		$fields['tags']=' ID="'.qa_html($postid).'" ';
+		$fields['tags']=' ID="'.$anchor.'" ';
 		
 		if ($microformats)
 			$fields['classes']=' hentry '.($isquestion ? 'question' : ($isanswer ? ($isselected ? 'answer answer-selected' : 'answer') : 'comment'));
 	
-	//	Question-specific stuff (title, URL, tags, answer count)
+	//	Question-specific stuff (title, URL, tags, answer count, category)
 	
 		if ($isquestion) {
 			if (isset($post['title'])) {
+				if (isset($blockwordspreg))
+					$post['title']=qa_block_words_replace($post['title'], $blockwordspreg);
+				
 				$fields['title']=qa_html($post['title']);
 				if ($microformats)
 					$fields['title']='<SPAN CLASS="entry-title">'.$fields['title'].'</SPAN>';
@@ -180,17 +214,27 @@
 					$fields['title'].=' <SMALL>('.$post['score'].')</SMALL>';*/
 			}
 				
-			if (isset($post['tags'])) {
+			if ($tagsview && isset($post['tags'])) {
 				$fields['q_tags']=array();
 				
 				$tags=qa_tagstring_to_tags($post['tags']);
-				foreach ($tags as $tag)
+				foreach ($tags as $tag) {
+					if (isset($blockwordspreg) && count(qa_block_words_match_all($tag, $blockwordspreg))) // skip censored tags
+						continue;
+						
 					$fields['q_tags'][]=qa_tag_html($tag, $microformats);
+				}
 			}
 		
 			if (isset($post['acount']))
-				$fields['answers']=($post['acount']==1) ? qa_lang_sub_split_html('main/1_answer', '1', '1')
-					: qa_lang_sub_split_html('main/x_answers', number_format($post['acount']));
+				$fields['answers']=($post['acount']==1) ? qa_lang_html_sub_split('main/1_answer', '1', '1')
+					: qa_lang_html_sub_split('main/x_answers', number_format($post['acount']));
+
+			if (isset($post['categoryid'])) {
+				$category=@$categories[$post['categoryid']];
+				if (isset($category))
+					$fields['where']=qa_lang_html_sub_split('main/in_category_x', qa_category_html($category));
+			}
 		}
 		
 	//	Answer-specific stuff (selection)
@@ -205,6 +249,9 @@
 	//	Post content
 		
 		if (!empty($post['content'])) {
+			if (isset($blockwordspreg))
+				$post['content']=qa_block_words_replace($post['content'], $blockwordspreg);
+			
 			$fields['content']=qa_html($post['content'], true); // also used for rendering content when asking follow-on q
 			
 			if ($showurllinks)
@@ -212,6 +259,10 @@
 			
 			if ($microformats)
 				$fields['content']='<SPAN CLASS="entry-content">'.$fields['content'].'</SPAN>';
+			
+			$fields['content']='<A NAME="'.qa_html($postid).'"></A>'.$fields['content'];
+				// this is for backwards compatibility with any existing links using the old style of anchor
+				// that contained the post id only (changed to be valid under W3C specifications)
 		}
 		
 	//	Voting stuff
@@ -253,14 +304,14 @@
 				
 			$fields['vote_view']=$voteview;
 			
-			$fields['upvotes_view']=($upvotes==1) ? qa_lang_sub_split_html('main/1_liked', $upvoteshtml, '1')
-				: qa_lang_sub_split_html('main/x_liked', $upvoteshtml);
+			$fields['upvotes_view']=($upvotes==1) ? qa_lang_html_sub_split('main/1_liked', $upvoteshtml, '1')
+				: qa_lang_html_sub_split('main/x_liked', $upvoteshtml);
 	
-			$fields['downvotes_view']=($downvotes==1) ? qa_lang_sub_split_html('main/1_disliked', $downvoteshtml, '1')
-				: qa_lang_sub_split_html('main/x_disliked', $downvoteshtml);
+			$fields['downvotes_view']=($downvotes==1) ? qa_lang_html_sub_split('main/1_disliked', $downvoteshtml, '1')
+				: qa_lang_html_sub_split('main/x_disliked', $downvoteshtml);
 			
-			$fields['netvotes_view']=(abs($netvotes)==1) ? qa_lang_sub_split_html('main/1_vote', $netvoteshtml, '1')
-				: qa_lang_sub_split_html('main/x_votes', $netvoteshtml);
+			$fields['netvotes_view']=(abs($netvotes)==1) ? qa_lang_html_sub_split('main/1_vote', $netvoteshtml, '1')
+				: qa_lang_html_sub_split('main/x_votes', $netvoteshtml);
 		
 		//	Voting buttons
 		
@@ -279,36 +330,41 @@
 				
 			} elseif (@$post['uservote']>0) {
 				$fields['vote_state']='voted_up';
-				$fields['vote_up_tags']=' TITLE="'.qa_lang_html('main/voted_up_popup').'" NAME="vote_'.qa_html($postid).'_0" '.$onclick;
+				$fields['vote_up_tags']=' TITLE="'.qa_lang_html('main/voted_up_popup').'" NAME="'.qa_html('vote_'.$postid.'_0_'.$anchor).'" '.$onclick;
 				$fields['vote_down_tags']=' ';
 
 			} elseif (@$post['uservote']<0) {
 				$fields['vote_state']='voted_down';
 				$fields['vote_up_tags']=' ';
-				$fields['vote_down_tags']=' TITLE="'.qa_lang_html('main/voted_down_popup').'" NAME="vote_'.qa_html($postid).'_0" '.$onclick;
+				$fields['vote_down_tags']=' TITLE="'.qa_lang_html('main/voted_down_popup').'" NAME="'.qa_html('vote_'.$postid.'_0_'.$anchor).'" '.$onclick;
 				
 			} else {
 				$fields['vote_state']='enabled';
-				$fields['vote_up_tags']=' TITLE="'.qa_lang_html('main/vote_up_popup').'" NAME="vote_'.qa_html($postid).'_1" '.$onclick;
-				$fields['vote_down_tags']=' TITLE="'.qa_lang_html('main/vote_down_popup').'" NAME="vote_'.qa_html($postid).'_-1" '.$onclick;
+				$fields['vote_up_tags']=' TITLE="'.qa_lang_html('main/vote_up_popup').'" NAME="'.qa_html('vote_'.$postid.'_1_'.$anchor).'" '.$onclick;
+				$fields['vote_down_tags']=' TITLE="'.qa_lang_html('main/vote_down_popup').'" NAME="'.qa_html('vote_'.$postid.'_-1_'.$anchor).'" '.$onclick;
 			}
 		}
 		
 	//	Created when and by whom
 		
-		if (isset($post['created'])) {
+		$fields['meta_order']=qa_lang_html('main/meta_order'); // sets ordering of meta elements which can be language-specific
+		
+		if ($isquestion || $isanswer)
+			$fields['what']=qa_lang_html($isquestion ? 'main/asked' : 'main/answered');
+		
+		if (isset($post['created']) && $whenview) {
 			$whenhtml=qa_html(qa_time_to_string(time()-$post['created']));
 			if ($microformats)
 				$whenhtml='<SPAN CLASS="published"><SPAN CLASS="value-title" TITLE="'.gmdate('Y-m-d\TH:i:sO', $post['created']).'"></SPAN>'.$whenhtml.'</SPAN>';
 			
-			$fields['when']=qa_lang_sub_split_html($isquestion ? 'main/asked_x_ago' : ($isanswer ? 'main/answered_x_ago' : 'main/x_ago'), $whenhtml);
+			$fields['when']=qa_lang_html_sub_split('main/x_ago', $whenhtml);
 		}
 		
-		$fields['who']=qa_who_to_html($isbyuser, @$post['userid'], $usershtml, $microformats);
+		$fields['who']=qa_who_to_html($isbyuser, @$post['userid'], $usershtml, $ipview ? $post['createip'] : null, $microformats);
 		
 		if ($pointsview && isset($post['points']))
-			$fields['points']=($post['points']==1) ? qa_lang_sub_split_html('main/1_point', '1', '1')
-				: qa_lang_sub_split_html('main/x_points', qa_html(number_format($post['points'])));
+			$fields['points']=($post['points']==1) ? qa_lang_html_sub_split('main/1_point', '1', '1')
+				: qa_lang_html_sub_split('main/x_points', qa_html(number_format($post['points'])));
 
 	//	Updated when and by whom
 		
@@ -318,12 +374,17 @@
 			(abs($post['updated']-$post['created'])>300) || // ... or over 5 minutes passed between create and update times
 			($post['lastuserid']!=$post['userid']) // ... or it was updated by a different user
 		)) {
-			$whenhtml=qa_html(qa_time_to_string(time()-$post['updated']));
-			if ($microformats)
-				$whenhtml='<SPAN CLASS="updated"><SPAN CLASS="value-title" TITLE="'.gmdate('Y-m-d\TH:i:sO', $post['updated']).'"></SPAN>'.$whenhtml.'</SPAN>';
+			if ($whenview) {
+				$whenhtml=qa_html(qa_time_to_string(time()-$post['updated']));
+				if ($microformats)
+					$whenhtml='<SPAN CLASS="updated"><SPAN CLASS="value-title" TITLE="'.gmdate('Y-m-d\TH:i:sO', $post['updated']).'"></SPAN>'.$whenhtml.'</SPAN>';
+				
+				$fields['when_2']=qa_lang_html_sub_split($fields['hidden'] ? 'question/hidden_x_ago' : 'question/edited_x_ago', $whenhtml);
 			
-			$fields['when_2']=qa_lang_sub_split_html($fields['hidden'] ? 'question/hidden_x_ago' : 'question/edited_x_ago', $whenhtml);
-			$fields['who_2']=qa_who_to_html($post['lastuserid']==$userid, $post['lastuserid'], $usershtml, false);
+			} else
+				$fields['when_2']['prefix']=qa_lang_html($fields['hidden'] ? 'question/hidden' : 'question/edited');
+				
+			$fields['who_2']=qa_who_to_html($post['lastuserid']==$userid, $post['lastuserid'], $usershtml, null, false);
 		}
 		
 	//	That's it!
@@ -332,7 +393,7 @@
 	}
 	
 
-	function qa_who_to_html($isbyuser, $postuserid, $usershtml, $microformats)
+	function qa_who_to_html($isbyuser, $postuserid, $usershtml, $ip, $microformats)
 /*
 	Return array of split HTML (prefix, data, suffix) to represent author of post
 */
@@ -345,14 +406,18 @@
 			if ($microformats)
 				$whohtml='<SPAN CLASS="vcard author">'.$whohtml.'</SPAN>';
 
-		} else
+		} else {
 			$whohtml=qa_lang_html('main/anonymous');
 			
-		return qa_lang_sub_split_html('main/by_x', $whohtml);
+			if (isset($ip))
+				$whohtml=qa_ip_anchor_html($ip, $whohtml);
+		}
+			
+		return qa_lang_html_sub_split('main/by_x', $whohtml);
 	}
 	
 
-	function qa_a_or_c_to_q_html_fields($question, $userid, $cookieid, $usershtml, $voteview=false, $pointsview=false, $basetype, $acpostid, $accreated, $acuserid, $accookieid, $acpoints)
+	function qa_a_or_c_to_q_html_fields($question, $userid, $cookieid, $usershtml, $tagsview=false, $categories=null, $voteview=false, $whenview=false, $ipview=false, $pointsview=false, $blockwordspreg=null, $basetype, $acpostid, $accreated, $acuserid, $accookieid, $accreateip, $acpoints)
 /*
 	Return array of mostly HTML to be passed to theme layer, to *link* to an answer or comment
 	on $question retrieved from database. $basetype is 'A' for answer or 'C' for comment.
@@ -360,22 +425,23 @@
 	$acpostid, $accreated, $acuserid, $accookieid, $acpoints relate to the answer or comment and its author.
 */
 	{
-		$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $voteview, $pointsview);
+		$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $tagsview, $categories, $voteview, $whenview, $ipview, $pointsview, $blockwordspreg);
 		
-		$fields['url'].='#'.qa_html(urlencode($acpostid));
+		if ( ($basetype=='C') || ($basetype=='A') )
+			$fields['what']=qa_lang_html(($basetype=='A') ? 'main/answered' : 'main/commented');
+			
+		$fields['what_url']=$fields['url'].'#'.qa_html(urlencode(qa_anchor($basetype, $acpostid)));
 
-		$fields['when']=qa_lang_sub_split_html(
-			($basetype=='C') ? 'main/commented_x_ago' : ($basetype=='A' ? 'main/answered_x_ago' : 'main/x_ago'),
-			qa_html(qa_time_to_string(time()-$accreated))
-		);
+		if ($whenview)
+			$fields['when']=qa_lang_html_sub_split('main/x_ago', qa_html(qa_time_to_string(time()-$accreated)));
 		
 		$isbyuser=qa_post_is_by_user(array('userid' => $acuserid, 'cookieid' => $accookieid), $userid, $cookieid);
 		
-		$fields['who']=qa_who_to_html($isbyuser, $acuserid, $usershtml, false);
+		$fields['who']=qa_who_to_html($isbyuser, $acuserid, $usershtml, $ipview ? $accreateip : null, false);
 
 		if ($pointsview && isset($acpoints))
-			$fields['points']=($acpoints==1) ? qa_lang_sub_split_html('main/1_point', '1', '1')
-				: qa_lang_sub_split_html('main/x_points', qa_html(number_format($acpoints)));
+			$fields['points']=($acpoints==1) ? qa_lang_html_sub_split('main/1_point', '1', '1')
+				: qa_lang_html_sub_split('main/x_points', qa_html(number_format($acpoints)));
 		else
 			unset($fields['points']);
 		
@@ -383,22 +449,22 @@
 	}
 
 	
-	function qa_any_to_q_html_fields($question, $userid, $cookieid, $usershtml, $voteview=false, $pointsview=false)
+	function qa_any_to_q_html_fields($question, $userid, $cookieid, $usershtml, $tagsview=false, $categories=nul, $voteview=false, $whenview=false, $ipview=false, $pointsview=false, $blockwordspreg=null)
 /*
 	Based on the elements in $question, return HTML to be passed to theme layer to link
 	to the question, or to an answer or comment thereon.
 */
 	{
 		if (isset($question['cpostid']))
-			$fields=qa_a_or_c_to_q_html_fields($question, $userid, $cookieid, $usershtml, $voteview, $pointsview, 'C',
-				$question['cpostid'], @$question['ccreated'], @$question['cuserid'], @$question['ccookieid'], @$question['cpoints']);
+			$fields=qa_a_or_c_to_q_html_fields($question, $userid, $cookieid, $usershtml, $tagsview, $categories, $voteview, $whenview, $ipview, $pointsview, $blockwordspreg, 'C',
+				$question['cpostid'], @$question['ccreated'], @$question['cuserid'], @$question['ccookieid'], @$question['ccreateip'], @$question['cpoints']);
 
 		elseif (isset($question['apostid']))
-			$fields=qa_a_or_c_to_q_html_fields($question, $userid, $cookieid, $usershtml, $voteview, $pointsview, 'A',
-				$question['apostid'], @$question['acreated'], @$question['auserid'], @$question['acookieid'], @$question['apoints']);
+			$fields=qa_a_or_c_to_q_html_fields($question, $userid, $cookieid, $usershtml, $tagsview, $categories, $voteview, $whenview, $ipview, $pointsview, $blockwordspreg, 'A',
+				$question['apostid'], @$question['acreated'], @$question['auserid'], @$question['acookieid'], @$question['acreateip'], @$question['apoints']);
 
 		else
-			$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $voteview, $pointsview);
+			$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $tagsview, $categories, $voteview, $whenview, $ipview, $pointsview, $blockwordspreg);
 
 		return $fields;
 	}
@@ -495,7 +561,7 @@
 	}
 
 	
-	function qa_insert_login_links($htmlmessage, $topage)
+	function qa_insert_login_links($htmlmessage, $topage=null, $params=null)
 /*
 	Return $htmlmessage with ^1...^4 substituted for links to log in or register and come back to $topage
 */
@@ -504,7 +570,7 @@
 		
 		global $qa_root_url_relative;
 		
-		$userlinks=qa_get_login_links($qa_root_url_relative, qa_path($topage, null, ''));
+		$userlinks=qa_get_login_links($qa_root_url_relative, isset($topage) ? qa_path($topage, $params, '') : null);
 		
 		return strtr(
 			$htmlmessage,
@@ -514,6 +580,8 @@
 				'^2' => empty($userlinks['login']) ? '' : '</A>',
 				'^3' => empty($userlinks['register']) ? '' : '<A HREF="'.qa_html($userlinks['register']).'">',
 				'^4' => empty($userlinks['register']) ? '' : '</A>',
+				'^5' => empty($userlinks['confirm']) ? '' : '<A HREF="'.qa_html($userlinks['confirm']).'">',
+				'^6' => empty($userlinks['confirm']) ? '' : '</A>',
 			)
 		);
 	}
@@ -578,18 +646,19 @@
 	}
 
 	
-	function qa_html_suggest_qs_tags()
+	function qa_html_suggest_qs_tags($usingtags=false, $categoryslug=null)
 /*
-	Return HTML that suggests browsing all questions or popular tags.
+	Return HTML that suggests browsing all questions or popular tags, as appropriate
 */
 	{
-		$htmlmessage=qa_lang_html('main/suggest_qs_tags');
+		$htmlmessage=strlen($categoryslug) ? qa_lang_html('main/suggest_category_qs') :
+			($usingtags ? qa_lang_html('main/suggest_qs_tags') : qa_lang_html('main/suggest_qs'));
 		
 		return strtr(
 			$htmlmessage,
 			
 			array(
-				'^1' => '<A HREF="'.qa_path_html('questions').'">',
+				'^1' => '<A HREF="'.qa_path_html('questions'.(strlen($categoryslug) ? ('/'.$categoryslug) : '')).'">',
 				'^2' => '</A>',
 				'^3' => '<A HREF="'.qa_path_html('tags').'">',
 				'^4' => '</A>',
@@ -598,7 +667,7 @@
 	}
 
 	
-	function qa_html_suggest_ask()
+	function qa_html_suggest_ask($categoryid=null)
 /*
 	Return HTML that suggest getting things started by asking a question.
 */
@@ -609,9 +678,83 @@
 			$htmlmessage,
 			
 			array(
-				'^1' => '<A HREF="'.qa_path_html('ask').'">',
+				'^1' => '<A HREF="'.qa_path_html('ask', strlen($categoryid) ? array('cat' => $categoryid) : null).'">',
 				'^2' => '</A>',
 			)
+		);
+	}
+	
+	
+	function qa_category_navigation($categories, $categoryid=null, $pathprefix='', $showqcount=true)
+/*
+	Return the navigation structure for the category menu, with $categoryid selected,
+	and links beginning with $pathprefix, and showing question counts if $showqcount
+*/
+	{
+		$navigation=array(
+			'all' => array(
+				'url' => qa_path_html($pathprefix),
+				'label' => qa_lang_html('main/all_categories'),
+				'selected' => !isset($categoryid),
+			),
+		);
+		
+		foreach ($categories as $category)
+			$navigation[$category['tags']]=array(
+				'url' => qa_path_html((strlen($pathprefix) ? ($pathprefix.'/') : '').$category['tags']),
+				'label' => qa_html($category['title']),
+				'selected' => ($categoryid == $category['categoryid']),
+				'note' => $showqcount ? qa_html(number_format($category['qcount'])) : null,
+			);
+		
+		return $navigation;
+	}
+	
+	
+	function qa_users_sub_navigation($db)
+/*
+	Return the sub navigation structure for user pages
+*/
+	{
+		global $qa_login_userid;
+		
+		if ((!QA_EXTERNAL_USERS) && isset($qa_login_userid) && (qa_get_logged_in_level($db)>=QA_USER_LEVEL_MODERATOR)) {
+			return array(
+				'users$' => array(
+					'url' => qa_path_html('users'),
+					'label' => qa_lang_html('main/highest_users'),
+				),
+	
+				'users/special' => array(
+					'label' => qa_lang('users/special_users'),
+					'url' => qa_path_html('users/special'),
+				),
+	
+				'users/blocked' => array(
+					'label' => qa_lang('users/blocked_users'),
+					'url' => qa_path_html('users/blocked'),
+				),
+			);
+			
+		} else
+			return null;
+	}
+	
+	
+	function qa_navigation_add_page(&$navigation, $page)
+/*
+	Add an element to the $navigation array corresponding to $page retrieved from the database
+*/
+	{
+		global $qa_root_url_relative;
+		
+		$navigation[($page['flags'] & QA_PAGE_FLAGS_EXTERNAL) ? ('custom-'.$page['pageid']) : $page['tags']]=array(
+			'url' => ($page['flags'] & QA_PAGE_FLAGS_EXTERNAL)
+				? qa_html(is_numeric(strpos($page['tags'], '://')) ? $page['tags'] : $qa_root_url_relative.$page['tags'])
+				: qa_path_html($page['tags']),
+			'label' => qa_html($page['title']),
+			'opposite' => ($page['nav']=='O'),
+			'target' => ($page['flags'] & QA_PAGE_FLAGS_NEW_WINDOW) ? '_blank' : null,
 		);
 	}
 

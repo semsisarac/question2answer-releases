@@ -1,21 +1,22 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-limits.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Monitoring and rate-limiting user actions (application level)
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -73,6 +74,12 @@
 				$userlimit=$options['max_rate_user_votes'];
 				$iplimit=$options['max_rate_ip_votes'];
 				break;
+				
+			case 'L':
+				$options=qa_get_options($db, array('max_rate_ip_logins'));
+				$userlimit=1; // not really relevant
+				$iplimit=$options['max_rate_ip_logins'];
+				break;
 		}
 		
 		return max(0, min(
@@ -80,7 +87,57 @@
 			$iplimit-((@$dblimits['ip']['period']==$period) ? $dblimits['ip']['count'] : 0)
 		));
 	}
+	
+	
+	function qa_is_ip_blocked($db)
+/*
+	Return whether the requesting IP address has been blocked from write operations
+*/
+	{
+		$blockipclauses=qa_block_ips_explode(qa_get_option($db, 'block_ips_write'));
+		
+		foreach ($blockipclauses as $blockipclause)
+			if (qa_block_ip_match(@$_SERVER['REMOTE_ADDR'], $blockipclause))	
+				return true;
+				
+		return false;
+	}
 
+	
+	function qa_block_ips_explode($blockipstring)
+/*
+	Return an array of the clauses within $blockipstring, each of which can contain hyphens or asterisks
+*/
+	{
+		$blockipstring=preg_replace('/\s*\-\s*/', '-', $blockipstring); // special case for 'x.x.x.x - x.x.x.x'
+	
+		return preg_split('/[^0-9\.\-\*]/', $blockipstring, -1, PREG_SPLIT_NO_EMPTY);
+	}
+
+	
+	function qa_block_ip_match($ip, $blockipclause)
+/*
+	Returns whether the ip address $ip is matched by the clause $blockipclause, which can contain a hyphen or asterisk
+*/
+	{
+		if (long2ip(ip2long($ip))==$ip) {
+			if (preg_match('/^(.*)\-(.*)$/', $blockipclause, $matches)) {
+				if ( (long2ip(ip2long($matches[1]))==$matches[1]) && (long2ip(ip2long($matches[2]))==$matches[2]) ) {
+					$iplong=sprintf('%u', ip2long($ip));
+					$end1long=sprintf('%u', ip2long($matches[1]));
+					$end2long=sprintf('%u', ip2long($matches[2]));
+					
+					return (($iplong>=$end1long) && ($iplong<=$end2long)) || (($iplong>=$end2long) && ($iplong<=$end1long));
+				}
+	
+			} elseif (strlen($blockipclause))
+				return preg_match('/^'.str_replace('\\*', '[0-9]+', preg_quote($blockipclause, '/')).'$/', $ip) > 0;
+					// preg_quote misses hyphens but that is OK here
+		}
+			
+		return false;
+	}
+	
 	
 	function qa_report_write_action($db, $userid, $cookieid, $action, $questionid, $answerid, $commentid)
 /*

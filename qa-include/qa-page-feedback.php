@@ -1,21 +1,22 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-feedback.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Controller for feedback page
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -51,7 +52,7 @@
 			qa_db_user_profile_selectspec($qa_login_userid, true)
 		);
 
-	$usecaptcha=(!isset($qa_login_userid)) && qa_get_option($qa_db, 'captcha_on_feedback');
+	$usecaptcha=qa_user_use_captcha($qa_db, 'captcha_on_feedback');
 
 
 //	Check feedback is enabled
@@ -77,7 +78,7 @@
 		$inreferer=qa_post_text('referer');
 		
 		if (empty($inmessage))
-			$errors['message']=qa_lang('main/feedback_empty');
+			$errors['message']=qa_lang('misc/feedback_empty');
 		
 		if ($usecaptcha)
 			qa_captcha_validate($qa_db, $_POST, $errors);
@@ -88,7 +89,7 @@
 				'^name' => empty($inname) ? '-' : $inname,
 				'^email' => empty($inemail) ? '-' : $inemail,
 				'^previous' => empty($inreferer) ? '-' : $inreferer,
-				'^url' => isset($qa_login_userid) ? qa_path('user/'.(QA_EXTERNAL_USERS ? $qa_login_user['publicusername'] : @$useraccount['handle']), null, qa_get_option($qa_db, 'site_url')) : '-',
+				'^url' => isset($qa_login_userid) ? qa_path('user/'.qa_get_logged_in_handle($qa_db), null, qa_get_option($qa_db, 'site_url')) : '-',
 				'^ip' => @$_SERVER['REMOTE_ADDR'],
 				'^browser' => @$_SERVER['HTTP_USER_AGENT'],
 			);
@@ -113,7 +114,7 @@
 
 	qa_content_prepare();
 
-	$qa_content['title']=qa_lang_html('main/feedback_title');
+	$qa_content['title']=qa_lang_html('misc/feedback_title');
 	
 	$qa_content['error']=@$page_error;
 
@@ -125,7 +126,7 @@
 		'fields' => array(
 			'message' => array(
 				'type' => $feedbacksent ? 'static' : '',
-				'label' => qa_lang_sub_html('main/feedback_message', qa_get_option($qa_db, 'site_title')),
+				'label' => qa_lang_html_sub('misc/feedback_message', qa_get_option($qa_db, 'site_title')),
 				'tags' => ' NAME="message" ID="message" ',
 				'value' => qa_html(@$inmessage),
 				'rows' => 8,
@@ -134,16 +135,16 @@
 
 			'name' => array(
 				'type' => $feedbacksent ? 'static' : '',
-				'label' => qa_lang_html('main/feedback_name'),
+				'label' => qa_lang_html('misc/feedback_name'),
 				'tags' => ' NAME="name" ',
 				'value' => qa_html(isset($inname) ? $inname : @$userprofile['name']),
 			),
 
 			'email' => array(
 				'type' => $feedbacksent ? 'static' : '',
-				'label' => qa_lang_html('main/feedback_email'),
+				'label' => qa_lang_html('misc/feedback_email'),
 				'tags' => ' NAME="email" ',
-				'value' => qa_html(isset($inemail) ? $inemail : $qa_login_email),
+				'value' => qa_html(isset($inemail) ? $inemail : qa_get_logged_in_email($qa_db)),
 				'note' => $feedbacksent ? null : qa_get_option($qa_db, 'email_privacy'),
 			),
 		),
@@ -166,7 +167,7 @@
 	$qa_content['focusid']='message';
 	
 	if ($feedbacksent) {
-		$qa_content['form']['ok']=qa_lang_html('main/feedback_sent');
+		$qa_content['form']['ok']=qa_lang_html('misc/feedback_sent');
 		unset($qa_content['form']['buttons']);
 	}
 

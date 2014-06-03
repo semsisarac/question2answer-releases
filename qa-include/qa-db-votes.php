@@ -1,21 +1,22 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-votes.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Database-level access to votes tables
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -50,6 +51,18 @@
 	}
 
 	
+	function qa_db_uservote_get($db, $postid, $userid)
+/*
+	Get the vote for $userid on $postid from the database (or NULL if none)
+*/
+	{
+		return qa_db_read_one_value(qa_db_query_sub($db,
+			'SELECT vote FROM ^uservotes WHERE postid=# AND userid=#',
+			$postid, $userid
+		), true);
+	}
+	
+	
 	function qa_db_post_recount_votes($db, $postid)
 /*
 	Recalculate the cached count of upvotes and downvotes for $postid
@@ -59,6 +72,18 @@
 			'UPDATE ^posts AS x, (SELECT COALESCE(SUM(GREATEST(0,vote)),0) AS upvotes, -COALESCE(SUM(LEAST(0,vote)),0) AS downvotes FROM ^uservotes WHERE postid=#) AS a SET x.upvotes=a.upvotes, x.downvotes=a.downvotes WHERE x.postid=#',
 			$postid, $postid
 		);
+	}
+	
+	
+	function qa_db_uservote_post_get($db, $postid)
+/*
+	Returns all non-zero votes on post $postid, array of userid => vote
+*/
+	{
+		return qa_db_read_all_assoc(qa_db_query_sub($db,
+			'SELECT userid, vote FROM ^uservotes WHERE postid=# AND vote!=0',
+			$postid
+		), 'userid', 'vote');
 	}
 	
 

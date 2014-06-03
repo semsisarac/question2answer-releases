@@ -1,19 +1,20 @@
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-theme/Default/qa-styles.css
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
-	Description: CSS file for included Default theme
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
+	Description: CSS file for included Candy theme
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -62,10 +63,13 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 /* Page sections */
 
 .qa-header {padding:10px 20px 0 20px; border-bottom:2px solid #293d39;}
-.qa-sidebar {float:right; width:150px; padding:12px; margin:18px 18px 12px 0; font-size:14px; background:#f5e4c3; border: 1px solid #f3c772;}
-* html .qa-sidebar {margin-right:10px;} /* IE6 */
+.qa-sidepanel {float:right; width:176px; margin-right:18px;}
+* html .qa-sidepanel {margin-right:10px;} /* IE6 */
+.qa-sidebar {padding:12px; font-size:14px; background:#f5e4c3; border:1px solid #f3c772; margin:24px 0;}
+.qa-feed {background:url(feed-icon-14x14.png) no-repeat left top; padding-left:20px; height:16px; margin:24px 0;}
+.qa-feed-link {font-size:10px; color:#666;}
 .qa-main {padding-left:20px; float:left; margin-bottom:2em; width:750px;}
-.qa-main-hidden {background:url(hidden.png) repeat left top;}
+.qa-main-hidden h1 {color:#999;}
 .qa-footer {clear:both; background:#293D39; color:#FFF; font-size:10px; padding:12px;}
 * html .qa-footer {padding-top:6px;} /* IE6 */
 
@@ -83,20 +87,27 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-search {float:right; clear:right; margin-top:12px; white-space:nowrap;}
 .qa-search-field {width:12em; margin-right:2px;}
 
-/* Main and sub navigation */
+/* Main, sub and category navigation */
 
 .qa-nav-main {clear:both;}
 .qa-nav-main-list {font-size:16px; list-style:none; padding:0; margin:0;}
-.qa-nav-main-item {float:left; margin-right:4px; border-top:1px solid #1f2e2b; border-left:1px solid #1f2e2b; border-right:1px solid #1f2e2b;}
+.qa-nav-main-item,.qa-nav-main-item-opp {border-top:1px solid #1f2e2b; border-left:1px solid #1f2e2b; border-right:1px solid #1f2e2b;}
+.qa-nav-main-item {float:left; margin-right:4px;}
+.qa-nav-main-item-opp {float:right; margin-left:4px;}
 .qa-nav-main-link {color:#FFF; display:block; padding:6px 10px; background:#293d39;}
 .qa-nav-main-link:hover, .qa-nav-main-selected {background:#396e63; text-decoration:none;}
 
 .qa-nav-sub {clear:both; float:left; padding-top:3px;}
 .qa-nav-sub-list {font-size:12px; list-style:none; padding:0; margin:0;}
-.qa-nav-sub-item {float:left; margin-right:2px;}
+.qa-nav-sub-item {float:left; margin-right:2px;margin-bottom:2px;}
 .qa-nav-sub-link {background:#cfd1c4; color:#396e63; font-weight:bold; padding:5px 8px; display:block;}
 .qa-nav-sub-link:hover, .qa-nav-sub-selected {background:#9cdbce; text-decoration:none;}
 .qa-nav-sub-link.qa-nav-selected {background:#396e63;}
+
+.qa-nav-cat-list {font-size:14px; list-style:none; padding:0; margin:0; margin:24px 0;}
+.qa-nav-cat-item {margin:0.5em 0;}
+.qa-nav-cat-link {font-weight:bold;}
+.qa-nav-cat-selected,.qa-nav-cat-selected:hover {text-decoration:none; color:#000;}
 
 /* Pagination */
 
@@ -214,7 +225,7 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 /* Answer count */
 
 .qa-a-count {background:#f7cd7d; border:1px solid #d6ae64; text-align:center; width:60px; height:42px; overflow:hidden; float:left; padding:18px 0; margin-right:1.5em;}
-.qa-a-count-data {font-size:24px; font-weight:bold;}
+.qa-a-count-data {font-size:24px; font-weight:bold; display:block;}
 .qa-a-count-pad {font-size:11px;}
 
 /* Top tags and users tables */
@@ -241,8 +252,16 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-q-view-tags {margin-top:16px;}
 .qa-q-view-tag-list {list-style:none; margin:0; padding:0;}
 .qa-q-view-tag-item {display:inline;}
-.qa-q-view-buttons {float:right; margin-top:18px;}
+.qa-q-view-buttons {float:right; margin-top:18px; margin-bottom:6px;}
 .qa-q-view-c-list {clear:both; margin:24px 0 0 24px; border-top:1px dotted #666;}
+
+.qa-q-view-hidden {}
+	.qa-q-view-hidden .qa-voting {background:#fff; border:1px solid #ccc; color:#ccc;}
+	.qa-q-view-hidden .qa-q-view-content {color:#999;}
+	.qa-q-view-hidden .qa-q-view-meta {color:#ccc;}
+	.qa-q-view-hidden .qa-q-view-meta .qa-user-link {color:#999;}
+	.qa-q-view-hidden .qa-category-link {color:#999;}
+	.qa-q-view-hidden .qa-tag-link {background-color:#ccc;}
 
 /* Answer view  */
 
@@ -251,6 +270,7 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 	.qa-a-list-item-hidden .qa-voting {background:#FFF; border:1px solid #ccc; color:#ccc;}
 	.qa-a-list-item-hidden .qa-a-item-content {color:#999;}
 	.qa-a-list-item-hidden .qa-a-item-meta {color:#ccc;}
+	.qa-a-list-item-hidden .qa-a-item-meta .qa-user-link {color:#999;}
 
 .qa-a-item-main {float:left; width:600px; display:inline-block;} /* inline-block for IE */
 .qa-a-item-selected {background-color:#d7e3e1; border:1px dashed #486a63; padding:10px;}
@@ -282,6 +302,7 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 .qa-c-item-hidden {}
 	.qa-c-item-hidden .qa-c-item-content {color:#bbb;}
 	.qa-c-item-hidden .qa-c-item-meta {color:#ccc;}
+	.qa-c-item-hidden .qa-c-item-meta .qa-user-link {color:#999;}
 
 .qa-c-item-link {}
 .qa-c-item-content {color:#333; font-size:12px;}
@@ -292,14 +313,16 @@ h2 {font-size:16px; padding-top:12px; clear:both;}
 /* Footer parts */
 
 .qa-nav-footer-list {float:left; list-style-type:none; padding:0; margin:0;}
+.qa-nav-footer-item {float:left; margin-right:12px;}
 .qa-nav-footer-link {color:#FFF; text-decoration:underline !important;}
 	.qa-nav-footer-link:hover {color:#f5d495;}
 .qa-attribution {float:right;}
 	.qa-attribution a {color:#FFF; text-decoration:underline; !important;}
 	.qa-attribution a:hover {color:#f5d495;}
 
-/* Classes passed to theme */
+/* Classes in HTML passed to theme class */
 
 .qa-user-link {color:#079075; font-weight:bold;}
+.qa-category-link {color:#473A9F; font-weight:bold;}
 .qa-tag-link {font-size:11px; color:#FFF !important; font-weight:bold; padding:3px 5px; margin-bottom:3px; background-color:#658296; display:-moz-inline-stack; display:inline-block; vertical-align:middle; text-decoration:none !important;} /* inline-block for IE, -moz-inline-stack for early FF */
 	.qa-tag-link:hover {text-decoration:none; background-color:#235272;}

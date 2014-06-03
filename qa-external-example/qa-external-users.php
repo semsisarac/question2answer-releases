@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-external-example/qa-external-users.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Example of how to integrate with your own user database
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -605,9 +606,9 @@
 	QA, you can use this with PHP's MySQL functions such as mysql_query() to run queries.
 	
 	$action is one of:
-	q_post, q_edit, q_hide, q_reshow, q_claim, q_vote_up, q_vote_down, q_vote_nil
-	a_post, a_edit, a_hide, a_reshow, a_claim, a_vote_up, a_vote_down, a_vote_nil, a_select, a_unselect, a_to_c
-	c_post, c_edit, c_hide, c_reshow, c_claim
+	q_post, q_edit, q_hide, q_reshow, q_delete, q_claim, q_vote_up, q_vote_down, q_vote_nil
+	a_post, a_edit, a_hide, a_reshow, a_delete, a_claim, a_vote_up, a_vote_down, a_vote_nil, a_select, a_unselect, a_to_c
+	c_post, c_edit, c_hide, c_reshow, c_delete, c_claim
 	
 	$questionid and/or $answerid and/or $commentid contain the ID of the relevant question or answer
 	or comment affected, or null if this information is not appropriate for $action.

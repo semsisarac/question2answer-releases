@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-reset.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Controller for password reset page (comes after forgot page)
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -48,6 +49,7 @@
 //	Process incoming form
 
 	if (qa_clicked('doreset')) {
+		require_once QA_INCLUDE_DIR.'qa-app-users-edit.php';
 		require_once QA_INCLUDE_DIR.'qa-db-users.php';
 	
 		$inemailhandle=qa_post_text('emailhandle');
@@ -67,7 +69,7 @@
 			$userinfo=qa_db_select_with_pending($qa_db, qa_db_user_account_selectspec($inuserid, true));
 			
 			// strlen() check is vital otherwise we can reset code for most users by entering the empty string
-			if (strlen($incode) && (strtolower($userinfo['resetcode']) == strtolower($incode))) {
+			if (strlen($incode) && (strtolower($userinfo['emailcode']) == strtolower($incode))) {
 				qa_complete_reset_user($qa_db, $inuserid);
 				qa_redirect('login', array('e' => $inemailhandle, 'ps' => '1')); // redirect to login page
 	

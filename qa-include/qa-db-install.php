@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-install.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Database-level functions for installation and upgrading
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -35,7 +36,8 @@
 		exit;
 	}
 
-	define('QA_DB_VERSION_CURRENT', 8);
+
+	define('QA_DB_VERSION_CURRENT', 14);
 
 
 	function qa_db_user_column_type_verify()
@@ -86,12 +88,26 @@
 		It would therefore convert the character set of both incoming and outgoing text, which would be a disaster.
 		We prevent this by retrieving columns using BINARY (e.g. SELECT BINARY name AS name) since binary content is left as is.
 		And also we precede any text in our queries with the _utf8 introducer, so that MySQL understands it's already UTF-8.
-
-
-		Note: In MySQL versions prior to 5.0.3, VARCHAR(x) columns will be silently converted to TEXT where x>255
+	*/
+	
+	/*
+		Other notes on the definitions below
 		
+		* In MySQL versions prior to 5.0.3, VARCHAR(x) columns will be silently converted to TEXT where x>255
 		
-		See box at top of qa-app-recalc.php for a list of redundant (non-normal) information in the database
+		* See box at top of qa-app-recalc.php for a list of redundant (non-normal) information in the database
+		
+		* Starting in version 1.2, we explicitly name keys and foreign key constraints, instead of allowing MySQL
+		  to name these by default. Our chosen names match the default names that MySQL would have assigned, and
+		  indeed *did* assign for people who installed an earlier version of QA. By naming them explicitly, we're
+		  on more solid ground for possible future changes to indexes and foreign keys in the schema.
+		  
+		* There are other foreign key constraints that it would be valid to add, but that would not serve much
+		  purpose in terms of preventing inconsistent data being retrieved, and would just slow down some queries.
+		  
+		* We name some columns here in a not entirely intuitive way. The reason is to match the names of columns in
+		  other tables which are of a similar nature. This will save time and space when combining several SELECT
+		  queries together via a UNION in qa_db_multi_select() - see comments in qa-db.php for more information.
 	*/
 	
 		$useridcoltype=qa_db_user_column_type_verify();
@@ -110,19 +126,20 @@
 				'loginip' => 'INT UNSIGNED NOT NULL', // INET_ATON of IP address of last login
 				'written' => 'DATETIME', // time of last write action done by user
 				'writeip' => 'INT UNSIGNED', // INET_ATON of IP address of last write action done by user
-				'resetcode' => 'BINARY(8) NOT NULL', // for resetting passwords
+				'emailcode' => 'BINARY(8) NOT NULL', // for email confirmation or password reset
 				'sessioncode' => 'BINARY(8) NOT NULL', // for comparing against session cookie in browser
+				'flags' => 'TINYINT UNSIGNED NOT NULL', // email confirmed and/or blocked?
 				'PRIMARY KEY (userid)',
-				'KEY (email)',
-				'KEY (handle)',
-				'KEY (level)',
+				'KEY email (email)',
+				'KEY handle (handle)',
+				'KEY level (level)',
 			),
 			
 			'userprofile' => array(
 				'userid' => $useridcoltype.' NOT NULL',
 				'title' => 'VARCHAR('.QA_DB_MAX_PROFILE_TITLE_LENGTH.') NOT NULL', // profile field name
 				'content' => 'VARCHAR('.QA_DB_MAX_PROFILE_CONTENT_LENGTH.') NOT NULL', // profile field value
-				'UNIQUE(userid,title)',
+				'UNIQUE userid (userid,title)',
 			),
 
 			'cookies' => array(
@@ -134,18 +151,45 @@
 				'PRIMARY KEY (cookieid)',
 			),
 			
+			'categories' => array(
+				'categoryid' => 'SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT',
+				'title' => 'VARCHAR('.QA_DB_MAX_CAT_PAGE_TITLE_LENGTH.') NOT NULL', // category name
+				'tags' => 'VARCHAR('.QA_DB_MAX_CAT_PAGE_TAGS_LENGTH.') NOT NULL', // slug (url fragment) used to identify category
+				'qcount' => 'INT UNSIGNED NOT NULL',
+				'position' => 'SMALLINT UNSIGNED NOT NULL',
+				'PRIMARY KEY (categoryid)',
+				'UNIQUE tags (tags)',
+				'UNIQUE position (position)',
+			),
+			
+			'pages' => array(
+				'pageid' => 'SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT',
+				'title' => 'VARCHAR('.QA_DB_MAX_CAT_PAGE_TITLE_LENGTH.') NOT NULL', // title for navigation
+				'nav' => 'CHAR(1) CHARACTER SET ascii NOT NULL', // which navigation does it go in (M=main, F=footer, B=before main, O=opposite main, other=none)
+				'position' => 'SMALLINT UNSIGNED NOT NULL', // global ordering, which allows links to be ordered within each nav area
+				'flags' => 'TINYINT UNSIGNED NOT NULL', // local or external, open in new window?
+				'tags' => 'VARCHAR('.QA_DB_MAX_CAT_PAGE_TAGS_LENGTH.') NOT NULL', // slug (url fragment) for page, or url for external pages
+				'heading' => 'VARCHAR('.QA_DB_MAX_TITLE_LENGTH.')', // for display within <H1> tags
+				'content' => 'MEDIUMTEXT', // remainder of page HTML
+				'PRIMARY KEY (pageid)',
+				'UNIQUE tags (tags)',
+				'UNIQUE position (position)',
+			),
+			
 			'posts' => array(
 				'postid' => 'INT UNSIGNED NOT NULL AUTO_INCREMENT',
+				'categoryid' => 'SMALLINT UNSIGNED',
 				'type' => "ENUM('Q', 'A', 'C', 'Q_HIDDEN', 'A_HIDDEN', 'C_HIDDEN') NOT NULL",
 				'parentid' => 'INT UNSIGNED', // for follow on questions, all answers and comments
 				'acount' => 'SMALLINT UNSIGNED NOT NULL', // number of answers (for questions)
 				'selchildid' => 'INT UNSIGNED', // selected answer (for questions)
 				'userid' => $useridcoltype, // which user wrote it
 				'cookieid' => 'BIGINT UNSIGNED', // which cookie wrote it, if an anonymous post
+				'createip' => 'INT UNSIGNED', // INET_ATON of IP address used to create the post
 				'lastuserid' => $useridcoltype, // which user last modified it
 				'upvotes' => 'SMALLINT UNSIGNED NOT NULL',
 				'downvotes' => 'SMALLINT UNSIGNED NOT NULL',
-				'format' => "CHAR(1) CHARACTER SET ascii NOT NULL", // for future use, ignored for now
+				'format' => 'CHAR(1) CHARACTER SET ascii NOT NULL', // for future use, ignored for now
 				'created' => 'DATETIME NOT NULL',
 				'updated' => 'DATETIME', // time of last update
 				'title' => 'VARCHAR('.QA_DB_MAX_TITLE_LENGTH.')',
@@ -153,11 +197,15 @@
 				'tags' => 'VARCHAR('.QA_DB_MAX_TAGS_LENGTH.')', // string of tags separated by commas
 				'notify' => 'VARCHAR('.QA_DB_MAX_EMAIL_LENGTH.')', // email address, or @ to get from user, or NULL for none
 				'PRIMARY KEY (postid)',
-				'KEY (type, created)', // for getting recent questions, answers, comments
-				'KEY (parentid, type)', // for getting a question's answers, any post's comments and follow-on questions
-				'KEY (userid, type, created)', // for recent questions, answers or comments by a user
-				'KEY (selchildid)', // for counting how many of a user's answers have been selected
-				'KEY (type, acount, created)', // for getting unanswered questions
+				'KEY type (type, created)', // for getting recent questions, answers, comments
+				'KEY parentid (parentid, type)', // for getting a question's answers, any post's comments and follow-on questions
+				'KEY userid (userid, type, created)', // for recent questions, answers or comments by a user
+				'KEY selchildid (selchildid)', // for counting how many of a user's answers have been selected
+				'KEY type_2 (type, acount, created)', // for getting unanswered questions
+				'KEY categoryid (categoryid, type, created)', // for getting question, answers or comment in a specific category
+				'KEY createip (createip, created)', // for getting posts creating by a specific IP address
+				'CONSTRAINT ^posts_ibfk_2 FOREIGN KEY (parentid) REFERENCES ^posts(postid)', // ^posts_ibfk_1 is set later on userid
+				'CONSTRAINT ^posts_ibfk_3 FOREIGN KEY (categoryid) REFERENCES ^categories(categoryid) ON DELETE SET NULL',
 			),
 			
 			'words' => array(
@@ -167,17 +215,17 @@
 				'contentcount' => 'INT UNSIGNED NOT NULL', // only counts one per post
 				'tagcount' => 'INT UNSIGNED NOT NULL', // only counts one per post (though no duplicate tags anyway)
 				'PRIMARY KEY (wordid)',
-				'KEY (word)',
-				'KEY (tagcount)', // for sorting by most popular tags
+				'KEY word (word)',
+				'KEY tagcount (tagcount)', // for sorting by most popular tags
 			),
 			
 			'titlewords' => array(
 				'postid' => 'INT UNSIGNED NOT NULL',
 				'wordid' => 'INT UNSIGNED NOT NULL',
-				'KEY (postid)',
-				'KEY (wordid)',
-				'FOREIGN KEY (postid) REFERENCES ^posts(postid) ON DELETE CASCADE',
-				'FOREIGN KEY (wordid) REFERENCES ^words(wordid)',
+				'KEY postid (postid)',
+				'KEY wordid (wordid)',
+				'CONSTRAINT ^titlewords_ibfk_1 FOREIGN KEY (postid) REFERENCES ^posts(postid) ON DELETE CASCADE',
+				'CONSTRAINT ^titlewords_ibfk_2 FOREIGN KEY (wordid) REFERENCES ^words(wordid)',
 			),
 				
 			'contentwords' => array(
@@ -186,29 +234,29 @@
 				'count' => 'TINYINT UNSIGNED NOT NULL', // how many times word apperas in the post - anything over 255 can be ignored
 				'type' => "ENUM('Q', 'A', 'C') NOT NULL", // the post's type (copied here for quick searching)
 				'questionid' => 'INT UNSIGNED NOT NULL', // the id of the post's antecedent parent (here for quick searching)
-				'KEY (postid)',
-				'KEY (wordid)',
-				'FOREIGN KEY (postid) REFERENCES ^posts(postid) ON DELETE CASCADE',
-				'FOREIGN KEY (wordid) REFERENCES ^words(wordid)',
+				'KEY postid (postid)',
+				'KEY wordid (wordid)',
+				'CONSTRAINT ^contentwords_ibfk_1 FOREIGN KEY (postid) REFERENCES ^posts(postid) ON DELETE CASCADE',
+				'CONSTRAINT ^contentwords_ibfk_2 FOREIGN KEY (wordid) REFERENCES ^words(wordid)',
 			),
 				
 			'posttags' => array(
 				'postid' => 'INT UNSIGNED NOT NULL',
 				'wordid' => 'INT UNSIGNED NOT NULL',
 				'postcreated' => 'DATETIME NOT NULL', // created time of post (copied here for tag page's list of recent questions)
-				'KEY (postid)',
-				'KEY (wordid,postcreated)',
-				'FOREIGN KEY (postid) REFERENCES ^posts(postid) ON DELETE CASCADE',
-				'FOREIGN KEY (wordid) REFERENCES ^words(wordid)',
+				'KEY postid (postid)',
+				'KEY wordid (wordid,postcreated)',
+				'CONSTRAINT ^posttags_ibfk_1 FOREIGN KEY (postid) REFERENCES ^posts(postid) ON DELETE CASCADE',
+				'CONSTRAINT ^posttags_ibfk_2 FOREIGN KEY (wordid) REFERENCES ^words(wordid)',
 			),
 			
 			'uservotes' => array(
 				'postid' => 'INT UNSIGNED NOT NULL',
 				'userid' => $useridcoltype.' NOT NULL',
 				'vote' => 'TINYINT NOT NULL', // -1, 0 or 1
-				'UNIQUE (userid, postid)',
-				'KEY (postid)',
-				'FOREIGN KEY (postid) REFERENCES ^posts(postid) ON DELETE CASCADE',
+				'UNIQUE userid (userid, postid)',
+				'KEY postid (postid)',
+				'CONSTRAINT ^uservotes_ibfk_1 FOREIGN KEY (postid) REFERENCES ^posts(postid) ON DELETE CASCADE',
 			),
 			
 			// many userpoints columns could be unsigned but MySQL appears to mess up points calculations that go negative as a result
@@ -221,22 +269,24 @@
 				'cposts' => 'MEDIUMINT NOT NULL', // number of comments by user (excluding hidden)
 				'aselects' => 'MEDIUMINT NOT NULL', // number of questions by user where they've selected an answer
 				'aselecteds' => 'MEDIUMINT NOT NULL', // number of answers by user that have been selected as the best
-				'qvotes' => 'MEDIUMINT NOT NULL', // number of questions the user has voted on
-				'avotes' => 'MEDIUMINT NOT NULL', // number of answers the user has voted on
+				'qupvotes' => 'MEDIUMINT NOT NULL', // number of questions the user has voted up
+				'qdownvotes' => 'MEDIUMINT NOT NULL', // number of questions the user has voted down
+				'aupvotes' => 'MEDIUMINT NOT NULL', // number of answers the user has voted up
+				'adownvotes' => 'MEDIUMINT NOT NULL', // number of answers the user has voted down
 				'qvoteds' => 'INT NOT NULL', // points from votes on this user's questions (applying per-question limits), before final multiple
 				'avoteds' => 'INT NOT NULL', // points from votes on this user's answers (applying per-answer limits), before final multiple
-				'upvoteds' => 'INT NOT NULL', // number of up votes received on questions or answers
-				'downvoteds' => 'INT NOT NULL', // number of down votes received on questions or answers
+				'upvoteds' => 'INT NOT NULL', // number of up votes received on this user's questions or answers
+				'downvoteds' => 'INT NOT NULL', // number of down votes received on this user's questions or answers
 				'PRIMARY KEY (userid)',
-				'KEY(points)',
+				'KEY points (points)',
 			),
 				
 			'userlimits' => array(
 				'userid' => $useridcoltype.' NOT NULL',
-				'action' => "CHAR(1) CHARACTER SET ascii NOT NULL", // Q/A/C = post question/answer/comment, V=vote
+				'action' => "CHAR(1) CHARACTER SET ascii NOT NULL", // Q/A/C = post question/answer/comment, V=vote, L=login
 				'period' => 'INT UNSIGNED NOT NULL', // integer representing hour of last action
 				'count' => 'SMALLINT UNSIGNED NOT NULL', // how many of this action has been performed within that hour
-				'UNIQUE (userid, action)',
+				'UNIQUE userid (userid, action)',
 			),
 			
 			// most columns in iplimits have the same meaning as those in userlimits
@@ -246,7 +296,7 @@
 				'action' => "CHAR(1) CHARACTER SET ascii NOT NULL",
 				'period' => 'INT UNSIGNED NOT NULL',
 				'count' => 'SMALLINT UNSIGNED NOT NULL',
-				'UNIQUE (ip, action)',
+				'UNIQUE ip (ip, action)',
 			),
 				
 			'options' => array(
@@ -262,14 +312,11 @@
 
 		} else {
 			$userforeignkey='FOREIGN KEY (userid) REFERENCES ^users(userid)';
-			$userforeignsetnull=$userforeigncascade=' ON DELETE ';
-			$userforeignsetnull.='SET NULL';
-			$userforeigncascade.='CASCADE';
 			
-			$tables['userprofile'][]=$userforeignkey.' ON DELETE CASCADE';
-			$tables['posts'][]=$userforeignkey.' ON DELETE SET NULL';
-			$tables['uservotes'][]=$userforeignkey.' ON DELETE CASCADE';
-			$tables['userlimits'][]=$userforeignkey.' ON DELETE CASCADE';
+			$tables['userprofile'][]='CONSTRAINT ^userprofile_ibfk_1 '.$userforeignkey.' ON DELETE CASCADE';
+			$tables['posts'][]='CONSTRAINT ^posts_ibfk_1 '.$userforeignkey.' ON DELETE SET NULL';
+			$tables['uservotes'][]='CONSTRAINT ^uservotes_ibfk_2 '.$userforeignkey.' ON DELETE CASCADE';
+			$tables['userlimits'][]='CONSTRAINT ^userlimits_ibfk_1 '.$userforeignkey.' ON DELETE CASCADE';
 		}
 
 		return $tables;
@@ -356,6 +403,8 @@
 	Return a string describing what is wrong with the database, or false if everything is just fine
 */
 	{
+		qa_db_query_raw($db, 'UNLOCK TABLES'); // we could be inside a lock tables block
+		
 		$version=qa_db_read_one_value(qa_db_query_raw($db, 'SELECT VERSION()'));
 		
 		if (((float)$version)<4.1)
@@ -398,13 +447,8 @@
 		
 		$missingtables=qa_db_missing_tables($db, $definitions);
 		
-		foreach ($missingtables as $rawname => $definition) {
-			$querycols='';
-			foreach ($definition as $colname => $coldef)
-				$querycols.=(strlen($querycols) ? ', ' : '').(is_int($colname) ? $coldef : ($colname.' '.$coldef));
-				
-			qa_db_query_sub($db, 'CREATE TABLE ^'.$rawname.' ('.$querycols.') ENGINE=InnoDB CHARSET=utf8');
-		}
+		foreach ($missingtables as $rawname => $definition)
+			qa_db_query_sub($db, qa_db_create_table_sql($rawname, $definition));
 		
 		foreach ($definitions as $table => $definition) {
 			$missingcolumns=qa_db_missing_columns($db, $table, $definition);
@@ -416,6 +460,19 @@
 		qa_db_set_db_version($db, QA_DB_VERSION_CURRENT);
 	}
 
+	
+	function qa_db_create_table_sql($rawname, $definition)
+/*
+	Return the SQL command to create a table with $rawname and $definition obtained from qa_db_table_definitions()
+*/
+	{
+		$querycols='';
+		foreach ($definition as $colname => $coldef)
+			$querycols.=(strlen($querycols) ? ', ' : '').(is_int($colname) ? $coldef : ($colname.' '.$coldef));
+			
+		return 'CREATE TABLE ^'.$rawname.' ('.$querycols.') ENGINE=InnoDB CHARSET=utf8';
+	}
+	
 	
 	function qa_db_upgrade_tables($db)
 /*
@@ -435,10 +492,12 @@
 		foreach ($tables as $table)
 			if (strpos($table, QA_MYSQL_TABLE_PREFIX)===0) // could have other tables not belonging to QA
 				$locks[]=$table.' WRITE';
+				
+		$locktablesquery='LOCK TABLES '.implode(', ', $locks);
 			
-		qa_db_upgrade_query($db, 'LOCK TABLES '.implode(', ', $locks));
+		qa_db_upgrade_query($db, $locktablesquery);
 		
-	//	Upgrade it step-by-step until it's up to date
+	//	Upgrade it step-by-step until it's up to date (do LOCK TABLES after ALTER TABLE because the lock can sometimes be lost)
 
 		while (1) {
 			$version=qa_db_get_db_version($db);
@@ -455,26 +514,28 @@
 			//	Up to here: Version 1.0 beta 1
 				
 				case 2:
-					qa_db_upgrade_query($db, 'ALTER TABLE ^posts DROP COLUMN votes');
-					qa_db_upgrade_query($db, 'ALTER TABLE ^posts ADD COLUMN (upvotes '.$definitions['posts']['upvotes'].
+					qa_db_upgrade_query($db, 'ALTER TABLE ^posts DROP COLUMN votes, ADD COLUMN (upvotes '.$definitions['posts']['upvotes'].
 						', downvotes '.$definitions['posts']['downvotes'].')');
+					qa_db_upgrade_query($db, $locktablesquery);
 					$keyrecalc['dorecountposts']=true;
 					break;
 					
 				case 3:
 					qa_db_upgrade_query($db, 'ALTER TABLE ^userpoints ADD COLUMN (upvoteds '.$definitions['userpoints']['upvoteds'].
 						', downvoteds '.$definitions['userpoints']['downvoteds'].')');
+					qa_db_upgrade_query($db, $locktablesquery);
 					$keyrecalc['dorecalcpoints']=true;
 					break;
 					
 				case 4:
-					qa_db_upgrade_query($db, 'ALTER TABLE ^posts ADD COLUMN lastuserid '.$definitions['posts']['lastuserid']);
-					qa_db_upgrade_query($db, 'ALTER TABLE ^posts CHANGE COLUMN updated updated '.$definitions['posts']['updated']);
+					qa_db_upgrade_query($db, 'ALTER TABLE ^posts ADD COLUMN lastuserid '.$definitions['posts']['lastuserid'].', CHANGE COLUMN updated updated '.$definitions['posts']['updated']);
+					qa_db_upgrade_query($db, $locktablesquery);
 					qa_db_upgrade_query($db, 'UPDATE ^posts SET updated=NULL WHERE updated=0 OR updated=created');
 					break;
 					
 				case 5:
 					qa_db_upgrade_query($db, 'ALTER TABLE ^contentwords ADD COLUMN (type '.$definitions['contentwords']['type'].', questionid '.$definitions['contentwords']['questionid'].')');
+					qa_db_upgrade_query($db, $locktablesquery);
 					$keyrecalc['doreindexposts']=true;
 					break;
 					
@@ -482,20 +543,85 @@
 				
 				case 6:
 					qa_db_upgrade_query($db, 'ALTER TABLE ^userpoints ADD COLUMN cposts '.$definitions['userpoints']['cposts']);
+					qa_db_upgrade_query($db, $locktablesquery);
 					$keyrecalc['dorecalcpoints']=true;
 					break;
 					
 				case 7:
-					if (!QA_EXTERNAL_USERS)
+					if (!QA_EXTERNAL_USERS) {
 						qa_db_upgrade_query($db, 'ALTER TABLE ^users ADD COLUMN sessioncode '.$definitions['users']['sessioncode']);
+						qa_db_upgrade_query($db, $locktablesquery);
+					}
 					break;
 					
 				case 8:
 					qa_db_upgrade_query($db, 'ALTER TABLE ^posts ADD KEY (type, acount, created)');
+					qa_db_upgrade_query($db, $locktablesquery);
 					$keyrecalc['dorecountposts']=true; // for unanswered question count
 					break;
 
-			//	Up to here: Version 1.0 beta 3
+			//	Up to here: Version 1.0 beta 3, 1.0, 1.0.1 beta, 1.0.1
+			
+				case 9:
+					if (!QA_EXTERNAL_USERS) {
+						qa_db_upgrade_query($db, 'ALTER TABLE ^users CHANGE COLUMN resetcode emailcode '.$definitions['users']['emailcode'].', ADD COLUMN flags '.$definitions['users']['flags']);
+						qa_db_upgrade_query($db, $locktablesquery);
+						qa_db_upgrade_query($db, 'UPDATE ^users SET flags=1');
+					}
+					break;
+				
+				case 10:
+					qa_db_upgrade_query($db, qa_db_create_table_sql('categories', array(
+						'categoryid' => $definitions['categories']['categoryid'],
+						'title' => $definitions['categories']['title'],
+						'tags' => $definitions['categories']['tags'],
+						'qcount' => $definitions['categories']['qcount'],
+						'position' => $definitions['categories']['position'],
+						'PRIMARY KEY (categoryid)',
+						'UNIQUE tags (tags)',
+						'UNIQUE position (position)',
+					))); // hard-code list of columns and indexes to ensure we ignore any added at a later stage
+
+					$locktablesquery.=', ^categories WRITE';
+					qa_db_upgrade_query($db, $locktablesquery);
+					break;
+				
+				case 11:
+					qa_db_upgrade_query($db, 'ALTER TABLE ^posts ADD CONSTRAINT ^posts_ibfk_2 FOREIGN KEY (parentid) REFERENCES ^posts(postid), ADD COLUMN categoryid '.$definitions['posts']['categoryid'].', ADD KEY categoryid (categoryid, type, created), ADD CONSTRAINT ^posts_ibfk_3 FOREIGN KEY (categoryid) REFERENCES ^categories(categoryid) ON DELETE SET NULL');
+						// foreign key on parentid important now that deletion is possible
+					qa_db_upgrade_query($db, $locktablesquery);
+					break;
+					
+				case 12:
+					qa_db_upgrade_query($db, qa_db_create_table_sql('pages', array(
+						'pageid' => $definitions['pages']['pageid'],
+						'title' => $definitions['pages']['title'],
+						'nav' => $definitions['pages']['nav'],
+						'position' => $definitions['pages']['position'],
+						'flags' => $definitions['pages']['flags'],
+						'tags' => $definitions['pages']['tags'],
+						'heading' => $definitions['pages']['heading'],
+						'content' => $definitions['pages']['content'],
+						'PRIMARY KEY (pageid)',
+						'UNIQUE tags (tags)',
+						'UNIQUE position (position)',
+					))); // hard-code list of columns and indexes to ensure we ignore any added at a later stage
+					$locktablesquery.=', ^pages WRITE';
+					qa_db_upgrade_query($db, $locktablesquery);
+					break;
+					
+				case 13:
+					qa_db_upgrade_query($db, 'ALTER TABLE ^posts ADD COLUMN createip '.$definitions['posts']['createip'].', ADD KEY createip (createip, created)');
+					qa_db_upgrade_query($db, $locktablesquery);
+					break;
+					
+				case 14:
+					qa_db_upgrade_query($db, 'ALTER TABLE ^userpoints DROP COLUMN qvotes, DROP COLUMN avotes, ADD COLUMN (qupvotes '.$definitions['userpoints']['qupvotes'].', qdownvotes '.$definitions['userpoints']['qdownvotes'].', aupvotes '.$definitions['userpoints']['aupvotes'].', adownvotes '.$definitions['userpoints']['adownvotes'].')');
+					qa_db_upgrade_query($db, $locktablesquery);
+					$keyrecalc['dorecalcpoints']=true;
+					break;
+					
+			//	Up to here: Version 1.2 beta 1
 
 			}
 			
@@ -538,9 +664,8 @@
 	Output $text to the browser (after converting to HTML) and do all we can to get it displayed
 */
 	{
-		echo qa_html($text).str_repeat('    ', 1024)."<BR>\n";
+		echo qa_html($text).str_repeat('    ', 1024)."<BR><BR>\n";
 		flush();
-		sleep(1);
 	}
 
 

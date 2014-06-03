@@ -1,21 +1,22 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-recalc.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Database functions for recalculations (clean-up operations)
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -36,6 +37,7 @@
 	}
 
 	require_once QA_INCLUDE_DIR.'qa-db-post-create.php';
+
 	
 //	For reindexing posts...
 	
@@ -145,7 +147,7 @@
 	}
 
 
-//	For recalculating numbers of votes and answers for questions
+//	For recalculating numbers of votes and answers for questions...
 
 	function qa_db_posts_get_for_recounting($db, $startpostid, $count)
 /*
@@ -176,7 +178,7 @@
 	}
 
 	
-//	For recalculating user points
+//	For recalculating user points...
 
 	function qa_db_users_get_for_recalc_points($db, $startuserid, $count)
 /*
@@ -249,6 +251,62 @@
 			'DELETE FROM ^userpoints WHERE userid>=#',
 			$firstuserid
 		);
+	}
+	
+	
+//	For recalculating categories...
+	
+	function qa_db_posts_get_for_recategorizing($db, $startpostid, $count)
+/*
+	Return the ids of up to $count answer or comments (including hidden) in the database starting from $startpostid
+*/
+	{
+		return qa_db_read_all_values(qa_db_query_sub($db,
+			"SELECT postid FROM ^posts WHERE postid>=# AND type IN ('A', 'C', 'A_HIDDEN', 'C_HIDDEN') ORDER BY postid LIMIT #",
+			$startpostid, $count
+		));
+	}
+	
+	
+	function qa_db_posts_recategorize($db, $firstpostid, $lastpostid)
+/*
+	Recalculate the categories for answer or comments (including hidden) between $firstpostid and $lastpostid
+	in the database, based on the category of the antecedent question
+*/
+	{
+		qa_db_query_sub($db,
+			"UPDATE ^posts AS x, (SELECT ^posts.postid, IF((parent.type='Q') OR (parent.type='Q_HIDDEN'), parent.categoryid, grandparent.categoryid) AS categoryid FROM ^posts LEFT JOIN ^posts AS parent ON ^posts.parentid=parent.postid LEFT JOIN ^posts AS grandparent ON parent.parentid=grandparent.postid WHERE ^posts.postid BETWEEN # AND # AND ^posts.type IN ('A', 'C', 'A_HIDDEN', 'C_HIDDEN')) AS a SET x.categoryid=a.categoryid WHERE x.postid=a.postid",
+			$firstpostid, $lastpostid
+		);
+	}
+	
+
+	function qa_db_categories_recount($db)
+/*
+	Recalculate the total number of visible questions in all categories
+*/
+	{
+		qa_db_query_sub($db, "UPDATE ^categories SET qcount=0");
+
+		qa_db_query_sub($db,
+			"UPDATE ^categories AS x, (SELECT ^categories.categoryid, COUNT(*) AS qcount FROM ^categories LEFT JOIN ^posts ON ^posts.categoryid=^categories.categoryid WHERE ^posts.type='Q' GROUP BY categoryid) AS a SET x.qcount=a.qcount WHERE x.categoryid=a.categoryid"
+		);
+	}
+
+
+//	For deleting hidden posts...
+
+	function qa_db_posts_get_for_deleting($db, $type, $startpostid=0, $limit=null)
+/*
+	Return the ids of up to $limit posts of $type that can be deleting from the database (i.e. have no dependents)
+*/
+	{
+		$limitsql=isset($limit) ? (' LIMIT '.(int)$limit) : '';
+		
+		return qa_db_read_all_values(qa_db_query_sub($db,
+			"SELECT ^posts.postid FROM ^posts LEFT JOIN ^posts AS child ON child.parentid=^posts.postid WHERE ^posts.type=$ AND ^posts.postid>=# AND child.postid IS NULL".$limitsql,
+			$type.'_HIDDEN', $startpostid
+		));
 	}
 
 

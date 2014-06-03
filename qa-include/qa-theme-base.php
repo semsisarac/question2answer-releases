@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-theme-base.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Default theme class, broken into lots of little functions for easy overriding
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -122,7 +123,7 @@
 			$this->output(
 				'<'.$outertag.' CLASS="'.$class.'">',
 				(strlen(@$parts['prefix']) ? ('<'.$innertag.' CLASS="'.$class.'-pad">'.$parts['prefix'].'</'.$innertag.'>') : '').
-				'<'.$innertag.' CLASS="'.$class.'-data">'.@$parts['data'].'</'.$innertag.'>'.
+				(strlen(@$parts['data']) ? ('<'.$innertag.' CLASS="'.$class.'-data">'.$parts['data'].'</'.$innertag.'>') : '').
 				(strlen(@$parts['suffix']) ? ('<'.$innertag.' CLASS="'.$class.'-pad">'.$parts['suffix'].'</'.$innertag.'>') : ''),
 				'</'.$outertag.'>'
 			);
@@ -173,7 +174,7 @@
 			$this->output('<DIV CLASS="qa-body-wrapper">', '');
 
 			$this->header();
-			$this->sidebar();
+			$this->sidepanel();
 			$this->main();
 			$this->footer();
 			
@@ -263,6 +264,13 @@
 				if ($navtype=='user')
 					$this->logged_in();
 					
+				// reverse order of 'opposite' items since they float right
+				foreach (array_reverse($navigation, true) as $key => $navlink)
+					if (@$navlink['opposite']) {
+						unset($navigation[$key]);
+						$navigation[$key]=$navlink;
+					}
+					
 				$this->nav_list($navigation, $navtype);
 				$this->nav_clear($navtype);
 	
@@ -290,15 +298,19 @@
 		
 		function nav_item($key, $navlink, $navtype)
 		{
-			$this->output('<LI CLASS="qa-nav-'.$navtype.'-item qa-nav-'.$navtype.'-'.$key.'">');
+			$this->output('<LI CLASS="qa-nav-'.$navtype.'-item'.(@$navlink['opposite'] ? '-opp' : '').' qa-nav-'.$navtype.'-'.$key.'">');
 			$this->nav_link($navlink, $navtype);
 			$this->output('</LI>');
 		}
 		
 		function nav_link($navlink, $navtype)
 		{
-			$this->output('<A HREF="'.$navlink['url'].'" CLASS="qa-nav-'.$navtype.'-link'.
-				(@$navlink['selected'] ? (' qa-nav-'.$navtype.'-selected') : '').'">'.$navlink['label'].'</A>');
+			$this->output(
+				'<A HREF="'.$navlink['url'].'" CLASS="qa-nav-'.$navtype.'-link'.
+				(@$navlink['selected'] ? (' qa-nav-'.$navtype.'-selected') : '').'"'.
+				(isset($navlink['target']) ? (' TARGET="'.$navlink['target'].'"') : '').'>'.$navlink['label'].'</A>'.
+				(strlen(@$navlink['note']) ? (' ('.$navlink['note'].')') : '')
+			);
 		}
 		
 		function logged_in()
@@ -314,6 +326,16 @@
 			);
 		}
 		
+		function sidepanel()
+		{
+			$this->output('<DIV CLASS="qa-sidepanel">');
+			$this->sidebar();
+			$this->nav('cat');
+			$this->output_raw(@$this->content['sidepanel']);
+			$this->feed();
+			$this->output('</DIV>', '');
+		}
+		
 		function sidebar()
 		{
 			$sidebar=@$this->content['sidebar'];
@@ -322,6 +344,17 @@
 				$this->output('<DIV CLASS="qa-sidebar">');
 				$this->output_raw($sidebar);
 				$this->output('</DIV>', '');
+			}
+		}
+		
+		function feed()
+		{
+			$feed=@$this->content['feed'];
+			
+			if (!empty($feed)) {
+				$this->output('<DIV CLASS="qa-feed">');
+				$this->output('<A HREF="'.$feed['url'].'" CLASS="qa-feed-link">'.@$feed['label'].'</A>');
+				$this->output('</DIV>');
 			}
 		}
 		
@@ -345,8 +378,11 @@
 					break;
 					
 				case 'users':
-				case 'admin/users';
 					$this->top_users();
+					break;
+					
+				case 'custom':
+					$this->output_raw(@$content['custom']);
 					break;
 
 				default:
@@ -520,7 +556,7 @@
 			
 			$prefixed=((@$field['type']=='checkbox') && ($columns==1) && !empty($field['label']));
 			$suffixed=((@$field['type']=='select') && ($columns==1) && !empty($field['label']));
-			$skipdata=($prefixed || $suffixed) && @$field['tight'];
+			$skipdata=@$field['tight'];
 			$tworows=($columns==1) && (!empty($field['label'])) && (!$skipdata);
 			
 			if (($columns==1) && isset($field['id']))
@@ -530,7 +566,7 @@
 			else
 				$this->output('<TR>');
 			
-			if (!empty($field['label']))
+			if (($columns>1) || !empty($field['label']))
 				$this->form_label($field, $style, $columns, $prefixed, $suffixed, $colspan);
 			
 			if ($tworows)
@@ -758,7 +794,7 @@
 		
 		function top_users()
 		{
-			$this->ranking($this->content['ranking'], 'qa-top-users');
+			$this->ranking(@$this->content['ranking'], 'qa-top-users');
 		}
 		
 		function ranking($ranking, $class)
@@ -1033,17 +1069,54 @@
 			if (isset($prefix))
 				$this->output($prefix);
 			
-			$this->output_split(@$post['when'], $class.'-when');
-			$this->output_split(@$post['who'], $class.'-who');
-			$this->post_meta_points($post, $class);
+			$order=explode('^', @$post['meta_order']);
+			
+			foreach ($order as $element)
+				switch ($element) {
+					case 'what':
+						$this->post_meta_what($post, $class);
+						break;
+						
+					case 'when':
+						$this->output_split(@$post['when'], $class.'-when');
+						break;
+						
+					case 'where':
+						$this->output_split(@$post['where'], $class.'-where');
+						break;
+						
+					case 'who':
+						$this->output_split(@$post['who'], $class.'-who');
+						$this->post_meta_points($post, $class);
+						break;
+				}			
 			
 			if (!empty($post['when_2'])) {
 				$this->output('&ndash;');
-				$this->output_split($post['when_2'], $class.'-when');
-				$this->output_split(@$post['who_2'], $class.'-who');
+				
+				foreach ($order as $element)
+					switch ($element) {
+						case 'when':
+							$this->output_split($post['when_2'], $class.'-when');
+							break;
+						
+						case 'who':
+							$this->output_split(@$post['who_2'], $class.'-who');
+							break;
+					}
 			}
 			
 			$this->output('</DIV>');
+		}
+		
+		function post_meta_what($post, $class)
+		{
+			if (isset($post['what'])) {
+				if (isset($post['what_url']))
+					$this->output('<A HREF="'.$post['what_url'].'" CLASS="'.$class.'-what">'.$post['what'].'</A>');
+				else
+					$this->output('<SPAN CLASS="'.$class.'-what">'.$post['what'].'</SPAN>');
+			}
 		}
 		
 		function post_meta_points($post, $class)
@@ -1175,7 +1248,7 @@
 			$q_view=@$this->content['q_view'];
 			
 			if (!empty($q_view)) {
-				$this->output('<DIV CLASS="qa-q-view '.@$q_view['classes'].' " '.@$q_view['tags'].' >');
+				$this->output('<DIV CLASS="qa-q-view'.(@$q_view['hidden'] ? ' qa-q-view-hidden' : '').@$q_view['classes'].' " '.@$q_view['tags'].' >');
 	
 				$this->voting($q_view);
 				$this->a_count($q_view);

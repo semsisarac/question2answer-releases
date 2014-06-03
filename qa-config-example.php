@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-config-example.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: After renaming, use this to set up database details and other stuff
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -80,6 +81,10 @@
 /*
 	Some settings to help optimize your QA site's performance.
 	
+	If QA_HTML_COMPRESSION is true, HTML web pages will be output using Gzip compression, if
+	the user's browser indicates this is supported. This will increase the performance of your
+	site, but will make debugging harder if PHP does not complete execution.
+	
 	QA_MAX_LIMIT_START is the maximum start parameter that can be requested. As this gets
 	higher, queries tend to get slower, since MySQL must examine more information. Very high
 	start numbers will usually only requested by search engine robots anyway.
@@ -99,6 +104,7 @@
 	Set QA_DEBUG_PERFORMANCE to true to show detailed performance profiling information.
 */
 
+	define('QA_HTML_COMPRESSION', true);
 	define('QA_MAX_LIMIT_START', 19999);
 	define('QA_IGNORED_WORDS_FREQ', 10000);
 	define('QA_OPTIMIZE_LOCAL_DB', false);

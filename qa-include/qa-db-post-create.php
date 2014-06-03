@@ -1,21 +1,22 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-post-create.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Database functions for creating a question, answer or comment
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -36,14 +37,14 @@
 	}
 
 
-	function qa_db_post_create($db, $type, $parentid, $userid, $cookieid, $title, $content, $tagstring, $notify)
+	function qa_db_post_create($db, $type, $parentid, $userid, $cookieid, $ip, $title, $content, $tagstring, $notify, $categoryid=null)
 /*
 	Create a new post in the database and return its ID (based on auto-incrementing)
 */
 	{
 		qa_db_query_sub($db,
-			'INSERT INTO ^posts (type, parentid, userid, cookieid, title, content, tags, notify, created) VALUES ($, #, $, #, $, $, $, $, NOW())',
-			$type, $parentid, $userid, $cookieid, $title, $content, $tagstring, $notify
+			'INSERT INTO ^posts (categoryid, type, parentid, userid, cookieid, createip, title, content, tags, notify, created) VALUES (#, $, #, $, #, INET_ATON($), $, $, $, $, NOW())',
+			$categoryid, $type, $parentid, $userid, $cookieid, $ip, $title, $content, $tagstring, $notify
 		);
 		
 		return qa_db_last_insert_id($db);
@@ -57,7 +58,22 @@
 	{
 		qa_db_query_sub($db,
 			'UPDATE ^posts AS x, (SELECT COUNT(*) AS acount FROM ^posts WHERE parentid=# AND type=\'A\') AS a SET x.acount=a.acount WHERE x.postid=#',
-			$questionid, $questionid);
+			$questionid, $questionid
+		);
+	}
+	
+	
+	function qa_db_ifcategory_qcount_update($db, $categoryid)
+/*
+	Update the cached number of questions for category $categoryid in the database
+*/
+	{
+		if (isset($categoryid)) {
+			qa_db_query_sub($db,
+				'UPDATE ^categories SET qcount=(SELECT COUNT(*) FROM ^posts WHERE categoryid=# AND type=\'Q\') WHERE ^categories.categoryid=#',
+				$categoryid, $categoryid
+			);
+		}
 	}
 
 	

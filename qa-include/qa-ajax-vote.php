@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-ajax-vote.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Server-side response to Ajax voting requests
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -30,17 +31,6 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-//	Base loading stuff - use double dirname() so this works with symbolic links for multiple installations
-
-	define('QA_BASE_DIR', dirname(dirname(empty($_SERVER['SCRIPT_FILENAME']) ? __FILE__ : $_SERVER['SCRIPT_FILENAME'])).'/');
-
-	error_reporting(0);
-
-	require 'qa-base.php';
-
-
-//	Main code
-
 	require_once QA_INCLUDE_DIR.'qa-app-users.php';
 	require_once QA_INCLUDE_DIR.'qa-app-cookies.php';
 	require_once QA_INCLUDE_DIR.'qa-app-votes.php';
@@ -48,26 +38,21 @@
 	require_once QA_INCLUDE_DIR.'qa-app-options.php';
 	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 	
-	$qa_root_url_relative=qa_post_text('qa_root');
-	$qa_request=qa_post_text('qa_request');
-	$postid=qa_post_text('postid');
-	
-	function qa_db_fail_handler()
+
+	function qa_ajax_vote_db_fail_handler()
 	{
-		echo "0\nA database error occurred.";
+		echo "QA_AJAX_RESPONSE\n0\nA database error occurred.";
 		exit;
 	}
 
-	qa_base_db_connect('qa_db_fail_handler');
+	qa_base_db_connect('qa_ajax_vote_db_fail_handler');
 
-	$qa_login_user=qa_get_logged_in_user($qa_db);
-	$qa_login_userid=@$qa_login_user['userid'];
+	$postid=qa_post_text('postid');
+	$qa_login_userid=qa_get_logged_in_userid($qa_db);
 	$qa_cookieid=qa_cookie_get();
 
 	$voteerror=qa_user_vote_error($qa_db, $qa_login_userid, $postid, qa_post_text('vote'), $qa_request);
 
-	header("Content-Type: text/plain");
-	
 	if ($voteerror===false) {
 		qa_options_set_pending(array('site_theme', 'site_language', 'votes_separated'));
 	
@@ -75,15 +60,15 @@
 			qa_db_full_post_selectspec($qa_login_userid, $postid)
 		);
 		
-		$fields=qa_post_html_fields($post, $qa_login_userid, $qa_cookieid, array(), qa_get_option($db, 'votes_separated') ? 'updown' : 'net');
+		$fields=qa_post_html_fields($post, $qa_login_userid, $qa_cookieid, array(), false, null, qa_get_option($qa_db, 'votes_separated') ? 'updown' : 'net');
 		
-		$themeclass=qa_load_theme_class(qa_get_option($qa_db, 'site_theme'), 'voting', null);
+		$themeclass=qa_load_theme_class(qa_get_option($qa_db, 'site_theme'), 'voting', null, null);
 
-		echo "1\n";
+		echo "QA_AJAX_RESPONSE\n1\n";
 		$themeclass->voting_inner_html($fields);
 
 	} else
-		echo "0\n".$voteerror;
+		echo "QA_AJAX_RESPONSE\n0\n".$voteerror;
 
 	qa_base_db_disconnect();
 	

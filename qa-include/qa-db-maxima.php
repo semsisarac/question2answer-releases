@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-maxima.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Definitions that determine database column size and rows retrieved
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -45,6 +46,8 @@
 	@define('QA_DB_MAX_CONTENT_LENGTH', 8000);
 	@define('QA_DB_MAX_TAGS_LENGTH', 800);
 	@define('QA_DB_MAX_WORD_LENGTH', 80);
+	@define('QA_DB_MAX_CAT_PAGE_TITLE_LENGTH', 80);
+	@define('QA_DB_MAX_CAT_PAGE_TAGS_LENGTH', 200);
 	@define('QA_DB_MAX_OPTION_TITLE_LENGTH', 40);
 	@define('QA_DB_MAX_PROFILE_TITLE_LENGTH', 40);
 	@define('QA_DB_MAX_PROFILE_CONTENT_LENGTH', 8000);

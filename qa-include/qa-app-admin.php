@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-admin.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Functions used in the admin center pages
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -42,7 +43,7 @@
 	and set up global $qa_content with the appropriate title and error message
 */
 	{
-		global $qa_content, $qa_login_userid, $qa_login_level, $qa_request;
+		global $qa_db, $qa_content, $qa_login_userid, $qa_request;
 		
 		if (!isset($qa_login_userid)) {
 			require_once QA_INCLUDE_DIR.'qa-app-format.php';
@@ -54,7 +55,7 @@
 			
 			return false;
 
-		} elseif ($qa_login_level<QA_USER_LEVEL_ADMIN) {
+		} elseif (qa_get_logged_in_level($qa_db)<QA_USER_LEVEL_ADMIN) {
 			qa_content_prepare();
 			
 			$qa_content['title']=qa_lang_html('admin/admin_title');
@@ -185,11 +186,43 @@
 	}
 
 	
+	function qa_admin_permit_options($widest, $narrowest, $doconfirms)
+/*
+	Return an array of options representing permission restrictions, [value] => [label]
+	ranging from $lowest to $highest. Set $doconfirms to whether email confirmations are on
+*/
+	{
+		require_once QA_INCLUDE_DIR.'qa-app-options.php';
+		
+		$options=array(
+			QA_PERMIT_ALL => qa_lang_html('options/permit_all'),
+			QA_PERMIT_USERS => qa_lang_html('options/permit_users'),
+			QA_PERMIT_CONFIRMED => qa_lang_html('options/permit_confirmed'),
+			QA_PERMIT_EXPERTS => qa_lang_html('options/permit_experts'),
+			QA_PERMIT_EDITORS => qa_lang_html('options/permit_editors'),
+			QA_PERMIT_MODERATORS => qa_lang_html('options/permit_moderators'),
+			QA_PERMIT_ADMINS => qa_lang_html('options/permit_admins'),
+			QA_PERMIT_SUPERS => qa_lang_html('options/permit_supers'),
+		);
+		
+		foreach ($options as $key => $label)
+			if (($key<$narrowest) || ($key>$widest))
+				unset($options[$key]);
+		
+		if (!$doconfirms)
+			unset($options[QA_PERMIT_CONFIRMED]);
+			
+		return $options;
+	}
+
+	
 	function qa_admin_sub_navigation()
 /*
 	Return the sub navigation structure common to admin pages
 */
 	{
+		global $qa_db;
+		
 		$navigation=array(
 			'admin$' => array(
 				'label' => qa_lang('admin/general_title'),
@@ -216,6 +249,26 @@
 				'url' => qa_path_html('admin/posting'),
 			),
 			
+			'admin/categories' => array(
+				'label' => qa_lang('admin/categories_title'),
+				'url' => qa_path_html('admin/categories'),
+			),
+			
+			'admin/permissions' => array(
+				'label' => qa_lang('admin/permissions_title'),
+				'url' => qa_path_html('admin/permissions'),
+			),
+			
+			'admin/pages' => array(
+				'label' => qa_lang('admin/pages_title'),
+				'url' => qa_path_html('admin/pages'),
+			),
+			
+			'admin/feeds' => array(
+				'label' => qa_lang('admin/feeds_title'),
+				'url' => qa_path_html('admin/feeds'),
+			),
+			
 			'admin/points' => array(
 				'label' => qa_lang('admin/points_title'),
 				'url' => qa_path_html('admin/points'),
@@ -226,11 +279,6 @@
 				'url' => qa_path_html('admin/spam'),
 			),
 
-			'admin/users' => array(
-				'label' => qa_lang('admin/users_title'),
-				'url' => qa_path_html('admin/users'),
-			),
-			
 			'admin/hidden' => array(
 				'label' => qa_lang('admin/hidden_title'),
 				'url' => qa_path_html('admin/hidden'),
@@ -242,19 +290,19 @@
 			),
 		);
 		
-		if (QA_EXTERNAL_USERS)
-			unset($navigation['admin/users']);
+		if (!qa_using_categories($qa_db))
+			unset($navigation['admin/categories']);
 		
 		return $navigation;
 	}
-
+	
 	
 	function qa_admin_pending()
 /*
 	Queue any option requests needed by qa_admin_page_error()
 */
 	{
-		qa_options_set_pending(array('db_version'));
+		qa_options_set_pending(array('db_version', 'tags_or_categories'));
 	}
 
 	
@@ -277,7 +325,8 @@
 		else
 			return null;
 	}
-	
+
+
 	function qa_admin_url_test_html()
 /*
 	Return the HTML to display for a URL test which has passed

@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Sets up Q2A environment, plus many globally useful functions
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -30,9 +31,13 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+//	Be ultra-strict about error checking
+
+	error_reporting(E_ALL);
+	
 //	Set the version to be used for internal reference and a suffix for .js and .css requests
 
-	define('QA_VERSION', '1.0.1');
+	define('QA_VERSION', '1.2-beta-1');
 
 //	Basic PHP configuration checks and unregister globals
 
@@ -249,7 +254,7 @@
 	}
 
 	
-	function qa_lang_sub_html($identifier, $htmlparam, $symbol='^')
+	function qa_lang_html_sub($identifier, $htmlparam, $symbol='^')
 /*
 	Return the translated string for $identifier converted to HTML, with $symbol *then* substituted for $htmlparam
 */
@@ -258,7 +263,7 @@
 	}
 	
 
-	function qa_lang_sub_split_html($identifier, $htmlparam, $symbol='^')
+	function qa_lang_html_sub_split($identifier, $htmlparam, $symbol='^')
 /*
 	Return an array containing the translated string for $identifier converted to HTML, then split into three,
 	with $symbol substituted for $htmlparam in the 'data' element, and obvious 'prefix' and 'suffix' elements
@@ -375,6 +380,24 @@
 		return (int)$questionid.'/'.implode('-', $words);
 	}
 
+	
+	function qa_feed_request($feed)
+/*
+	Return the request for the specified $feed
+*/
+	{
+		return 'feed/'.$feed.'.rss';
+	}
+	
+	
+	function qa_anchor($basetype, $postid)
+/*
+	Return the HTML anchor that should be used for post $postid with $basetype (Q/A/C)
+*/
+	{
+		return strtolower($basetype).$postid; // used to be $postid only but this violated HTML spec
+	}
+	
 	
 	function qa_path_html($request, $params=null, $rooturl=null, $neaturls=null, $anchor=null)
 /*

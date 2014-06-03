@@ -1,21 +1,22 @@
 <?php
 
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-install.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: User interface for installing, upgrading and fixing the database
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -38,12 +39,37 @@
 	require_once QA_INCLUDE_DIR.'qa-db.php';
 	require_once QA_INCLUDE_DIR.'qa-db-install.php';
 	
-	global $qa_db; // this file could be included from inside qa_db_fail_handler() function, so ensure we can access this
+
+	if (!function_exists('qa_install_db_fail_handler')) {
+
+		function qa_install_db_fail_handler($type, $errno=null, $error=null, $query=null)
+	/*
+		Handler function for database failures during the installation process
+	*/
+		{
+			global $pass_failure_from_install;
+			
+			$pass_failure_type=$type;
+			$pass_failure_errno=$errno;
+			$pass_failure_error=$error;
+			$pass_failure_query=$query;
+			$pass_failure_from_install=true;
+			
+			require QA_INCLUDE_DIR.'qa-install.php';
+			
+			exit;
+		}
+		
+	}
 	
+
+	global $qa_db; // this file could be included from inside qa_db_fail_handler() function, so ensure we can access this
+
 	header('Content-type: text/html; charset=utf-8');
 
 	$success='';
 	$error='';
+	$suggest='';
 	$buttons=array();
 	$fields=array();
 	$fielderrors=array();
@@ -59,10 +85,10 @@
 				break;
 				
 			case 'query':
-				global $qa_from_install_page;
+				global $pass_failure_from_install;
 				
-				if (@$qa_from_install_page)
-					$error.="Question2Answer was unable to perform the query below. Please check the user in the config file has CREATE and ALTER permissions:\n\n";
+				if (@$pass_failure_from_install)
+					$error.="Question2Answer was unable to perform the installation query below. Please check the user in the config file has CREATE and ALTER permissions:\n\n";
 				else
 					$error.="Question2Answer query failed:\n\n";
 					
@@ -71,7 +97,7 @@
 		}
 
 	} else { // this page was requested by user GET/POST, so handle any incoming clicks on buttons
-		$qa_from_install_page=true;
+		qa_base_db_connect('qa_install_db_fail_handler');
 		
 		if (qa_clicked('create')) {
 			qa_db_install_tables($qa_db);
@@ -94,6 +120,7 @@
 
 		if (qa_clicked('super')) {
 			require_once QA_INCLUDE_DIR.'qa-db-users.php';
+			require_once QA_INCLUDE_DIR.'qa-app-users-edit.php';
 	
 			$inemail=qa_post_text('email');
 			$inpassword=qa_post_text('password');
@@ -109,7 +136,7 @@
 				
 				$userid=qa_create_new_user($qa_db, $inemail, $inpassword, $inhandle);
 				qa_db_user_set($qa_db, $userid, 'level', QA_USER_LEVEL_SUPER);
-				qa_set_logged_in_user($qa_db, $userid);
+				qa_set_logged_in_user($qa_db, $userid, $inhandle);
 				
 				qa_set_option($qa_db, 'feedback_email', $inemail);
 				
@@ -118,7 +145,7 @@
 		}
 	}
 	
-	if (isset($qa_db)) {
+	if (isset($qa_db) && !@$pass_failure_from_install) {
 		$check=qa_db_check_tables($qa_db); // see where the database is at
 		
 		switch ($check) {
@@ -138,7 +165,10 @@
 				break;
 				
 			case 'old-version':
-				$error='Your Question2Answer database needs to be upgraded for this version of the software.'; // don't show error before this
+				if (!@$pass_failure_from_install)
+					$error=''; // don't show error if we need to upgrade
+					
+				$error.='Your Question2Answer database needs to be upgraded for this version of the software.'; // don't show error before this
 				$buttons=array('upgrade' => 'Upgrade Database');
 				break;
 				
@@ -164,6 +194,13 @@
 		}
 	}
 	
+	if (empty($error)) {
+		if (empty($success))
+			$success='Your Question2Answer database has been checked with no problems.';
+		
+		$suggest='<A HREF="'.qa_path_html('admin', null, null, QA_URL_FORMAT_SAFEST).'">Go to admin center</A>';
+	}
+
 ?>
 <HTML>
 	<HEAD>
@@ -178,21 +215,14 @@
 		<FORM METHOD="POST" ACTION="<?php echo qa_path_html('install', null, null, QA_URL_FORMAT_SAFEST)?>">
 <?php
 	if (strlen($success))
-		echo '<P><FONT COLOR="#006600">'.nl2br(qa_html(@$success)).'</FONT></P>'; // green
+		echo '<P><FONT COLOR="#006600">'.nl2br(qa_html($success)).'</FONT></P>'; // green
 		
-	if (strlen($error)) {
-		echo '<P><FONT COLOR="#990000">'.nl2br(qa_html(@$error)).'</FONT></P>'; // red
+	if (strlen($error))
+		echo '<P><FONT COLOR="#990000">'.nl2br(qa_html($error)).'</FONT></P>'; // red
+		
+	if (strlen($suggest))
+		echo '<P>'.$suggest.'</P>';
 
-	} else { // send people away from the install pageif no problems remain
-		require_once QA_INCLUDE_DIR.'qa-app-users.php';
-		
-		$qa_login_user=qa_get_logged_in_user($qa_db);
-		
-		if ($qa_login_user['level']>=QA_USER_LEVEL_ADMIN)
-			echo '<P><A HREF="'.qa_path_html('admin', null, null, QA_URL_FORMAT_SAFEST).'">Go to admin center</A></P>';
-		else
-			echo '<P><A HREF="'.qa_path_html('', null, null, QA_URL_FORMAT_SAFEST).'">Go to home page</A></P>';
-	}
 
 //	Very simple general form display logic (we don't use theme since it depends on tons of DB options)
 
@@ -216,8 +246,8 @@
 	</BODY>
 </HTML>
 <?php
-
-	exit;
+	
+	qa_base_db_disconnect();
 
 
 /*

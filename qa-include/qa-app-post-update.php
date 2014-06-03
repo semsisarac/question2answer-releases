@@ -1,21 +1,22 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.2-beta-1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-update.php
-	Version: 1.0.1
-	Date: 2010-05-21 10:07:28 GMT
+	Version: 1.2-beta-1
+	Date: 2010-06-27 11:15:58 GMT
 	Description: Changing questions, answer and comments (application level)
 
 
-	This software is licensed for use in websites which are connected to the
-	public world wide web and which offer unrestricted access worldwide. It
-	may also be freely modified for use on such websites, so long as a
-	link to http://www.question2answer.org/ is displayed on each page.
+	This software is free to use and modify for public websites, so long as a
+	link to http://www.question2answer.org/ is displayed on each page. It may
+	not be redistributed or resold, nor may any works derived from it.
+	
+	More about this license: http://www.question2answer.org/license.php
 
 
 	THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -80,14 +81,19 @@
 			if (isset($answer['notify']) && !qa_post_is_by_user($answer, $userid, $cookieid)) {
 				require_once QA_INCLUDE_DIR.'qa-app-emails.php';
 				require_once QA_INCLUDE_DIR.'qa-app-options.php';
+				require_once QA_INCLUDE_DIR.'qa-util-string.php';
 				
 				qa_notification_pending();
-				qa_options_set_pending(array('site_url'));
+				qa_options_set_pending(array('site_url', 'block_bad_words'));
+				
+				$blockwordspreg=qa_get_block_words_preg($db);
+				$sendtitle=qa_block_words_replace($oldquestion['title'], $blockwordspreg);
+				$sendcontent=qa_block_words_replace($answer['content'], $blockwordspreg);
 				
 				qa_send_notification($db, $answer['userid'], $answer['notify'], @$answer['handle'], qa_lang('emails/a_selected_subject'), qa_lang('emails/a_selected_body'), array(
-					'^q_title' => $oldquestion['title'],
-					'^a_content' => $answer['content'],
-					'^url' => qa_path(qa_q_request($oldquestion['postid'], $oldquestion['title']), null, qa_get_option($db, 'site_url'), null, $selchildid),
+					'^q_title' => $sendtitle,
+					'^a_content' => $sendcontent,
+					'^url' => qa_path(qa_q_request($oldquestion['postid'], $sendtitle), null, qa_get_option($db, 'site_url'), null, qa_anchor('A', $selchildid)),
 				));
 			}
 		}
@@ -112,6 +118,7 @@
 				qa_post_unindex($db, $comment['postid']);
 			
 		qa_db_post_set_type($db, $oldquestion['postid'], $hidden ? 'Q_HIDDEN' : 'Q', $lastuserid);
+		qa_db_ifcategory_qcount_update($db, $oldquestion['categoryid']);	
 		qa_db_points_update_ifuser($db, $oldquestion['userid'], array('qposts', 'aselects'));
 		qa_db_qcount_update($db);
 		qa_db_unaqcount_update($db);
@@ -131,6 +138,59 @@
 	}
 
 	
+	function qa_question_set_category($db, $oldquestion, $categoryid, $lastuserid, $answers, $commentsfollows)
+/*
+	Sets the category (application level) of $oldquestion to $categoryid. Pass the user doing this in $lastuserid,
+	the database records for all answers to the question in $answers, and the database records for all comments on
+	the question or the question's answers in $commentsfollows ($commentsfollows can also contain records for
+	follow-on questions which are ignored). Handles cached counts and will reset categories for all As and Cs.
+*/
+	{
+		qa_db_post_set_category($db, $oldquestion['postid'], $categoryid, $lastuserid);
+		
+		qa_db_ifcategory_qcount_update($db, $oldquestion['categoryid']);
+		qa_db_ifcategory_qcount_update($db, $categoryid);
+		
+		$otherpostids=array();
+		foreach ($answers as $answer)
+			$otherpostids[]=$answer['postid'];
+			
+		foreach ($commentsfollows as $comment)
+			if ($comment['basetype']=='C')
+				$otherpostids[]=$comment['postid'];
+				
+		qa_db_post_set_category_multi($db, $otherpostids, $categoryid);
+	}
+	
+	
+	function qa_question_delete($db, $oldquestion)
+/*
+	Permanently delete a question (application level) from the database. The question must not have any
+	answers or comments on it. Handles unindexing, votes, points and cached counts.
+*/
+	{
+		require_once QA_INCLUDE_DIR.'qa-db-votes.php';
+		
+		if (!$oldquestion['hidden'])
+			qa_fatal_error('Tried to delete a non-hidden question');
+		
+		$useridvotes=qa_db_uservote_post_get($db, $oldquestion['postid']);
+		
+		qa_post_unindex($db, $oldquestion['postid']);
+		qa_db_post_delete($db, $oldquestion['postid']); // also deletes any related voteds due to cascading
+		
+		qa_db_ifcategory_qcount_update($db, $oldquestion['categoryid']);
+		qa_db_points_update_ifuser($db, $oldquestion['userid'], array('qposts', 'aselects', 'qvoteds', 'upvoteds', 'downvoteds'));
+		
+		foreach ($useridvotes as $userid => $vote)
+			qa_db_points_update_ifuser($db, $userid, ($vote>0) ? 'qupvotes' : 'qdownvotes');
+				// could do this in one query like in qa_db_users_recalc_points() but this will do for now - unlikely to be many votes
+		
+		qa_db_qcount_update($db);
+		qa_db_unaqcount_update($db);
+	}
+
+
 	function qa_question_set_userid($db, $oldquestion, $userid)
 /*
 	Set the author (application level) of $oldquestion to $userid. Updates points as appropriate.
@@ -207,6 +267,40 @@
 		}
 	}
 
+	
+	function qa_answer_delete($db, $oldanswer, $question)
+/*
+	Permanently delete an answer (application level) from the database. The answer must not have any
+	comments or follow-on questions. Pass the database record for the question in $question.
+	Handles unindexing, votes, points and cached counts.
+*/
+	{
+		require_once QA_INCLUDE_DIR.'qa-db-votes.php';
+		
+		if (!$oldanswer['hidden'])
+			qa_fatal_error('Tried to delete a non-hidden question');
+		
+		$useridvotes=qa_db_uservote_post_get($db, $oldanswer['postid']);
+		
+		qa_post_unindex($db, $oldanswer['postid']);
+		qa_db_post_delete($db, $oldanswer['postid']); // also deletes any related voteds due to cascading
+		
+		if ($question['selchildid']==$oldanswer['postid']) {
+			qa_db_post_set_selchildid($db, $question['postid'], null);
+			qa_db_points_update_ifuser($db, $question['userid'], 'aselects');
+		}
+		
+		qa_db_points_update_ifuser($db, $oldanswer['userid'], array('aposts', 'aselecteds', 'avoteds', 'upvoteds', 'downvoteds'));
+		
+		foreach ($useridvotes as $userid => $vote)
+			qa_db_points_update_ifuser($db, $userid, ($vote>0) ? 'aupvotes' : 'adownvotes');
+				// could do this in one query like in qa_db_users_recalc_points() but this will do for now - unlikely to be many votes
+		
+		qa_db_post_acount_update($db, $question['postid']);
+		qa_db_acount_update($db);
+		qa_db_unaqcount_update($db);
+	}
+	
 	
 	function qa_answer_set_userid($db, $oldanswer, $userid)
 /*
@@ -285,6 +379,22 @@
 		
 		if (!($hidden || $question['hidden'] || @$answer['hidden'])) // only index if none of the things it depends on are hidden
 			qa_post_index($db, $oldcomment['postid'], 'C', $question['postid'], null, $oldcomment['content'], null);
+	}
+
+	
+	function qa_comment_delete($db, $oldcomment)
+/*
+	Permanently delete a comment (application level) from the database.
+	Handles unindexing, points and cached counts.
+*/
+	{
+		if (!$oldcomment['hidden'])
+			qa_fatal_error('Tried to delete a non-hidden comment');
+		
+		qa_post_unindex($db, $oldcomment['postid']);
+		qa_db_post_delete($db, $oldcomment['postid']);
+		qa_db_points_update_ifuser($db, $oldcomment['userid'], array('cposts'));
+		qa_db_ccount_update($db);
 	}
 
 	
