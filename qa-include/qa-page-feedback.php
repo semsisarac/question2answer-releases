@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-feedback.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Controller for feedback page
 
 
@@ -77,7 +77,7 @@
 				'^email' => empty($inemail) ? '-' : $inemail,
 				'^previous' => empty($inreferer) ? '-' : $inreferer,
 				'^url' => isset($qa_login_userid) ? qa_path('user/'.qa_get_logged_in_handle(), null, qa_opt('site_url')) : '-',
-				'^ip' => @$_SERVER['REMOTE_ADDR'],
+				'^ip' => qa_remote_ip_address(),
 				'^browser' => @$_SERVER['HTTP_USER_AGENT'],
 			);
 			

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Sets up Q2A environment, plus many globally useful functions
 
 
@@ -32,7 +32,7 @@
 
 //	Set the version to be used for internal reference and a suffix for .js and .css requests, and other constants
 
-	define('QA_VERSION', '1.4');
+	define('QA_VERSION', '1.4.1');
 	define('QA_CATEGORY_DEPTH', 4); // you can't change this number!
 	
 
@@ -199,6 +199,7 @@
 		else
 			return "'".strtr($value, array(
 				"'" => "\\'",
+				'/' => '\\/',
 				'\\' => '\\\\',
 				"\n" => "\\n",
 				"\r" => "\\n",
@@ -251,6 +252,15 @@
 		return isset($_POST[$name]) || isset($_POST[$name.'_x']);
 	}
 
+	
+	function qa_remote_ip_address()
+/*
+	Return the remote IP (v4) address of the user accessing the site, if it's available, or null otherwise
+*/
+	{
+		return @$_SERVER['REMOTE_ADDR'];
+	}
+	
 	
 	function qa_is_http_post()
 /*

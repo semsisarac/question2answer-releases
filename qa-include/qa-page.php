@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Routing and utility functions for page requests
 
 
@@ -162,30 +162,29 @@
 		'users/special' => QA_INCLUDE_DIR.'qa-page-users-special.php',
 	);
 
-	if (!isset($qa_content)) {
-		if (isset($QA_CONST_ROUTING[$qa_request_lc])) {
-			if ($qa_request_lc_parts[0]=='admin') {
-				$_COOKIE['qa_admin_last']=$qa_request_lc; // for navigation tab now...
-				setcookie('qa_admin_last', $_COOKIE['qa_admin_last'], 0, '/', QA_COOKIE_DOMAIN); // ...and in future
-			}
-			
-			$qa_template=$qa_request_lc_parts[0];
-			$qa_content=require $QA_CONST_ROUTING[$qa_request_lc];
-	
-		} elseif (isset($QA_CONST_ROUTING[$qa_request_lc_parts[0].'/'])) {
-			$pass_subrequests=array_slice($qa_request_parts, 1); // effectively a parameter that is passed to file
-			$qa_template=$qa_request_lc_parts[0];
-			$qa_content=require $QA_CONST_ROUTING[$qa_request_lc_parts[0].'/'];
-			
-		} elseif (is_numeric($qa_request_parts[0])) {
-			$pass_questionid=$qa_request_parts[0]; // effectively a parameter that is passed to file
-			$qa_template='question';
-			$qa_content=require QA_INCLUDE_DIR.'qa-page-question.php';
-	
-		} else {
-			$qa_template=strlen($qa_request_lc_parts[0]) ? $qa_request_lc_parts[0] : 'qa';
-			$qa_content=require QA_INCLUDE_DIR.'qa-page-default.php'; // handles many other pages, including custom pages and page modules
+
+	if (isset($QA_CONST_ROUTING[$qa_request_lc])) {
+		if ($qa_request_lc_parts[0]=='admin') {
+			$_COOKIE['qa_admin_last']=$qa_request_lc; // for navigation tab now...
+			setcookie('qa_admin_last', $_COOKIE['qa_admin_last'], 0, '/', QA_COOKIE_DOMAIN); // ...and in future
 		}
+		
+		$qa_template=$qa_request_lc_parts[0];
+		$qa_content=require $QA_CONST_ROUTING[$qa_request_lc];
+
+	} elseif (isset($QA_CONST_ROUTING[$qa_request_lc_parts[0].'/'])) {
+		$pass_subrequests=array_slice($qa_request_parts, 1); // effectively a parameter that is passed to file
+		$qa_template=$qa_request_lc_parts[0];
+		$qa_content=require $QA_CONST_ROUTING[$qa_request_lc_parts[0].'/'];
+		
+	} elseif (is_numeric($qa_request_parts[0])) {
+		$pass_questionid=$qa_request_parts[0]; // effectively a parameter that is passed to file
+		$qa_template='question';
+		$qa_content=require QA_INCLUDE_DIR.'qa-page-question.php';
+
+	} else {
+		$qa_template=strlen($qa_request_lc_parts[0]) ? $qa_request_lc_parts[0] : 'qa';
+		$qa_content=require QA_INCLUDE_DIR.'qa-page-default.php'; // handles many other pages, including custom pages and page modules
 	}
 	
 	
@@ -267,7 +266,7 @@
 			$script[]='}';
 		}
 		
-		$script[]='--></SCRIPT>';
+		$script[]='//--></SCRIPT>';
 		
 		if (isset($qa_content['script_rel'])) {
 			$uniquerel=array_unique($qa_content['script_rel']); // remove any duplicates

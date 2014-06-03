@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-check-lang.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Development tool to see which language phrases are missing or unused
 
 
@@ -124,11 +124,6 @@
 	$languages=qa_admin_language_options();
 	unset($languages['']);
 	
-	$optionalprefixes=array(
-		'admin' => true,
-		'options' => true,
-	);
-	
 	foreach ($languages as $code => $language) {
 		echo '<H1>Checking '.$language.' files in <code>qa-lang/'.$code.'</code>...</H1>';
 		
@@ -166,19 +161,22 @@
 							output_lang_issue($key, $value, 'has fewer of the substitution '.$substitution);
 			}
 					
-		foreach ($defined as $key => $valuecount)
+		foreach ($defined as $key => $valuecount) {
+			$showaserror=!(($key=='admin') || ($key=='options') || ($code=='en-GB'));
+			
 			if (@$langdefined[$key]) {
 				if (count($langdefined[$key]) < (count($valuecount)/2)) { // only a few phrases defined
-					output_lang_issue($key, null, 'few translations provided so will use US English defaults', !@$optionalprefixes[$key]);
+					output_lang_issue($key, null, 'few translations provided so will use US English defaults', $showaserror);
 
 				} else
 					foreach ($valuecount as $value => $count)
 						if (!@$langdefined[$key][$value]) {
-							output_lang_issue($key, $value, 'undefined so will use US English defaults', !@$optionalprefixes[$key]);
+							output_lang_issue($key, $value, 'undefined so will use US English defaults', $showaserror);
 							$langnewphrases[$key][$value]=$english[$key][$value];
 						}
 			} else
-				output_lang_issue($key, null, 'no translations provided so will use US English defaults', !@$optionalprefixes[$key]);
+				output_lang_issue($key, null, 'no translations provided so will use US English defaults', $showaserror);
+		}
 		
 		foreach ($langnewphrases as $prefix => $phrases) {
 			echo '<H2>'.$language.' phrases to add to <code>qa-lang/'.$code.'/qa-lang-'.$prefix.'.php</code>:</H2>';

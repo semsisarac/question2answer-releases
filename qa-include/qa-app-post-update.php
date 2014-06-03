@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-update.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Changing questions, answer and comments (application level)
 
 
@@ -50,7 +50,7 @@
 		$setupdated=strcmp($oldquestion['title'], $title) || strcmp($oldquestion['content'], $content) || strcmp($oldquestion['format'], $format);
 		
 		qa_db_post_set_content($oldquestion['postid'], $title, $content, $format, $tagstring, $notify,
-			$setupdated ? $userid : null, $setupdated ? @$_SERVER['REMOTE_ADDR'] : null);
+			$setupdated ? $userid : null, $setupdated ? qa_remote_ip_address() : null);
 		
 		if (!$oldquestion['hidden'])
 			qa_post_index($oldquestion['postid'], 'Q', $oldquestion['postid'], $title, $text, $tagstring);
@@ -143,7 +143,7 @@
 			if ($comment['basetype']=='C')
 				qa_post_unindex($comment['postid']);
 			
-		qa_db_post_set_type($oldquestion['postid'], $hidden ? 'Q_HIDDEN' : 'Q', $userid, @$_SERVER['REMOTE_ADDR']);
+		qa_db_post_set_type($oldquestion['postid'], $hidden ? 'Q_HIDDEN' : 'Q', $userid, qa_remote_ip_address());
 		qa_db_category_path_qcount_update(qa_db_post_get_category_path($oldquestion['postid']));
 		qa_db_points_update_ifuser($oldquestion['userid'], array('qposts', 'aselects'));
 		qa_db_qcount_update();
@@ -304,7 +304,7 @@
 		$setupdated=strcmp($oldanswer['content'], $content) || strcmp($oldanswer['format'], $format);
 		
 		qa_db_post_set_content($oldanswer['postid'], $oldanswer['title'], $content, $format, $oldanswer['tags'], $notify,
-			$setupdated ? $userid : null, $setupdated ? @$_SERVER['REMOTE_ADDR'] : null);
+			$setupdated ? $userid : null, $setupdated ? qa_remote_ip_address() : null);
 		
 		if (!($oldanswer['hidden'] || $question['hidden'])) // don't index if answer or its question is hidden
 			qa_post_index($oldanswer['postid'], 'A', $question['postid'], null, $text, null);
@@ -336,7 +336,7 @@
 			if ( ($comment['basetype']=='C') && ($comment['parentid']==$oldanswer['postid']) )
 				qa_post_unindex($comment['postid']);
 		
-		qa_db_post_set_type($oldanswer['postid'], $hidden ? 'A_HIDDEN' : 'A', $userid, @$_SERVER['REMOTE_ADDR']);
+		qa_db_post_set_type($oldanswer['postid'], $hidden ? 'A_HIDDEN' : 'A', $userid, qa_remote_ip_address());
 		qa_db_points_update_ifuser($oldanswer['userid'], array('aposts', 'aselecteds'));
 		qa_db_post_acount_update($question['postid']);
 		qa_db_hotness_update($question['postid']);
@@ -436,7 +436,7 @@
 		$setupdated=strcmp($oldcomment['content'], $content) || strcmp($oldcomment['format'], $format);
 		
 		qa_db_post_set_content($oldcomment['postid'], $oldcomment['title'], $content, $format, $oldcomment['tags'], $notify,
-			$setupdated ? $userid : null, $setupdated ? @$_SERVER['REMOTE_ADDR'] : null);
+			$setupdated ? $userid : null, $setupdated ? qa_remote_ip_address() : null);
 
 		if (!($oldcomment['hidden'] || $question['hidden'] || @$answer['hidden']))
 			qa_post_index($oldcomment['postid'], 'C', $question['postid'], null, $text, null);
@@ -469,9 +469,13 @@
 			
 		qa_post_unindex($oldanswer['postid']);
 		
-		qa_db_post_set_type($oldanswer['postid'], $oldanswer['hidden'] ? 'C_HIDDEN' : 'C', $userid, @$_SERVER['REMOTE_ADDR']);
-		qa_db_post_set_parent($oldanswer['postid'], $parentid, $userid, @$_SERVER['REMOTE_ADDR']);
-		qa_db_post_set_content($oldanswer['postid'], $oldanswer['title'], $content, $format, $oldanswer['tags'], $notify, $userid, @$_SERVER['REMOTE_ADDR']);
+		$setupdated=strcmp($oldanswer['content'], $content) || strcmp($oldanswer['format'], $format);
+		$setuserid=$setupdated ? $userid : null;
+		$setip=$setupdated ? qa_remote_ip_address() : null;
+		
+		qa_db_post_set_type($oldanswer['postid'], $oldanswer['hidden'] ? 'C_HIDDEN' : 'C', $setuserid, $setip);
+		qa_db_post_set_parent($oldanswer['postid'], $parentid, $setuserid, $setip);
+		qa_db_post_set_content($oldanswer['postid'], $oldanswer['title'], $content, $format, $oldanswer['tags'], $notify, $setuserid, $setip);
 		
 		foreach ($commentsfollows as $commentfollow)
 			if ($commentfollow['parentid']==$oldanswer['postid']) // do same thing for comments and follows
@@ -514,7 +518,7 @@
 	{
 		qa_post_unindex($oldcomment['postid']);
 		
-		qa_db_post_set_type($oldcomment['postid'], $hidden ? 'C_HIDDEN' : 'C', $userid, @$_SERVER['REMOTE_ADDR']);
+		qa_db_post_set_type($oldcomment['postid'], $hidden ? 'C_HIDDEN' : 'C', $userid, qa_remote_ip_address());
 		qa_db_points_update_ifuser($oldcomment['userid'], array('cposts'));
 		qa_db_ccount_update();
 		

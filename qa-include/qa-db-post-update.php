@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-post-update.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description:  Database functions for changing a question, answer or comment
 
 
@@ -48,10 +48,16 @@
 	Set the type in the database of $postid to $type, and record that $lastuserid did it
 */
 	{
-		qa_db_query_sub(
-			'UPDATE ^posts SET type=$, updated=NOW(), lastuserid=$, lastip=INET_ATON($) WHERE postid=#',
-			$type, $lastuserid, $lastip, $postid
-		);
+		if (isset($lastuserid) || isset($lastip))
+			qa_db_query_sub(
+				'UPDATE ^posts SET type=$, updated=NOW(), lastuserid=$, lastip=INET_ATON($) WHERE postid=#',
+				$type, $lastuserid, $lastip, $postid
+			);
+		else
+			qa_db_query_sub(
+				'UPDATE ^posts SET type=$ WHERE postid=#',
+				$type, $postid
+			);
 	}
 
 	

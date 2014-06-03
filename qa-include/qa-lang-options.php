@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-options.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Language phrases for all options, as shown in admin center
 
 
@@ -70,6 +70,7 @@
 		'editor_for_qs' => 'Default editor for questions:',
 		'email_privacy' => 'Privacy note for email on all forms (HTML allowed):',
 		'feed_for_activity' => 'Feed for recent activity:',
+		'feed_for_hot' => 'Feed for hot questions:',
 		'feed_for_qa' => 'Feed for recent questions and answers:',
 		'feed_for_questions' => 'Feed for recent questions:',
 		'feed_for_search' => 'Feeds for search results:',
@@ -208,11 +209,11 @@
 		'show_user_titles' => 'Display titles next to usernames:',
 		'show_view_counts' => 'Show the number of question views:',
 		'show_when_created' => 'Display age of user content:',
-		'site_language' => 'The language for your site interface:',
+		'site_language' => 'Language for your site (^1check^2):',
 		'site_maintenance' => 'Take site down for maintenance',
-		'site_theme' => 'The visual theme for your site:',
-		'site_title' => 'The name of your website for page titles:',
-		'site_url' => 'The URL to use when referring to your site:',
+		'site_theme' => 'Visual theme for your site:',
+		'site_title' => 'Name of your site for page titles:',
+		'site_url' => 'URL to use when referring to your site:',
 		'sort_answers_by' => 'Sort answers by:',
 		'sort_time' => 'Time',
 		'sort_votes' => 'Votes',

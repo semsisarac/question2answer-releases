@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Controller for most admin pages which just contain options
 
 
@@ -130,6 +130,7 @@
 		'do_example_tags' => 'checkbox',
 		'do_related_qs' => 'checkbox',
 		'feed_for_activity' => 'checkbox',
+		'feed_for_hot' => 'checkbox',
 		'feed_for_qa' => 'checkbox',
 		'feed_for_questions' => 'checkbox',
 		'feed_for_search' => 'checkbox',
@@ -373,12 +374,12 @@
 		case 'feeds':
 			$subtitle='admin/feeds_title';
 			
-			$showoptions=array('feed_for_qa', 'feed_for_questions', 'feed_for_activity');
+			$showoptions=array('feed_for_questions', 'feed_for_qa', 'feed_for_activity');
 			
 			if (qa_using_categories())
 				$showoptions[]='feed_per_category';
 			
-			$showoptions[]='feed_for_unanswered';
+			array_push($showoptions, 'feed_for_hot', 'feed_for_unanswered');
 			
 			if (qa_using_tags())
 				$showoptions[]='feed_for_tag_qs';
@@ -657,6 +658,11 @@
 					
 					qa_optionfield_make_select($optionfield, qa_admin_language_options(), $value, '');
 					
+					$optionfield['label']=strtr($optionfield['label'], array(
+						'^1' => '<A HREF="'.qa_html($qa_root_url_relative.'qa-include/qa-check-lang.php').'">',
+						'^2' => '</A>',
+					));
+				
 					if (!qa_has_multibyte())
 						$optionfield['error']=qa_lang_html('admin/no_multibyte');
 					break;
@@ -903,6 +909,10 @@
 					$feedrequest='questions';
 					break;
 
+				case 'feed_for_hot':
+					$feedrequest='hot';
+					break;
+
 				case 'feed_for_unanswered':
 					$feedrequest='unanswered';
 					break;
@@ -923,8 +933,6 @@
 						$feedrequest='qa';
 					elseif (qa_opt('feed_for_questions'))
 						$feedrequest='questions';
-					elseif (qa_opt('feed_for_unanswered'))
-						$feedrequest='unanswered';
 					else
 						$feedrequest='activity';
 					

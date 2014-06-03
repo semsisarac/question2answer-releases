@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-questions.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Controller for page listing recent questions
 
 
@@ -86,6 +86,7 @@
 	switch ($sort) {
 		case 'hot':
 			$sometitle=qa_lang_html('main/hot_qs_title');
+			$feedpathprefix=qa_opt('feed_for_hot') ? 'hot' : null;
 			break;
 			
 		case 'votes':
@@ -112,9 +113,19 @@
 //	Prepare and return content for theme
 
 	$qa_content=qa_q_list_page_content(
-		$questions, qa_opt('page_size_qs'), $qa_start, $countslugs ? $categories[$categoryid]['qcount'] : qa_opt('cache_qcount'), $sometitle, $nonetitle,
-		$categories, $categoryid, true, $categorypathprefix, $feedpathprefix,
-		$countslugs ? qa_html_suggest_qs_tags(qa_using_tags()) : qa_html_suggest_ask($categoryid), $pagelinkparams
+		$questions, // questions
+		qa_opt('page_size_qs'), // questions per page
+		$qa_start, // start offset
+		$countslugs ? $categories[$categoryid]['qcount'] : qa_opt('cache_qcount'), // total count
+		$sometitle, // title if some questions
+		$nonetitle, // title if no questions
+		$categories, // categories for navigation
+		$categoryid, // selected category id
+		true, // show question counts in category navigation
+		$categorypathprefix, // prefix for links in category navigation
+		$feedpathprefix, // prefix for RSS feed paths
+		$countslugs ? qa_html_suggest_qs_tags(qa_using_tags()) : qa_html_suggest_ask($categoryid), // suggest what to do next
+		$pagelinkparams // extra parameters for page links
 	);
 	
 	if (!$countslugs)

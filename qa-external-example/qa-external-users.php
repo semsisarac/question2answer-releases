@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-external-example/qa-external-users.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Example of how to integrate with your own user database
 
 
@@ -615,7 +615,7 @@
 	$questionid and/or $answerid and/or $commentid contain the ID of the relevant question or answer
 	or comment affected, or null if this information is not appropriate for $action.
 	
-	FYI, you can get the IP address of the user from $_SERVER['REMOTE_ADDR'].
+	FYI, you can get the IP address of the user from qa_remote_ip_address()
 */
 	{
 		// do nothing by default

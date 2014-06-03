@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-hotness.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Functions for dealing with question hotness in the database
 
 
@@ -63,7 +63,7 @@
 			);
 			
 			if ($viewincrement)
-				$arguments[]=@$_SERVER['REMOTE_ADDR'];
+				$arguments[]=qa_remote_ip_address();
 	
 			 qa_db_query_raw(qa_db_apply_sub($query, $arguments));
 		}

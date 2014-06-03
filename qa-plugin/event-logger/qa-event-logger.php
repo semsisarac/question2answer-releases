@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/event-logger/qa-event-logger.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Event module class for event logger plugin
 
 
@@ -157,7 +157,7 @@
 				qa_db_query_sub(
 					'INSERT INTO ^eventlog (datetime, ipaddress, userid, handle, cookieid, event, params) '.
 					'VALUES (NOW(), $, $, $, #, $, $)',
-					@$_SERVER['REMOTE_ADDR'], $userid, $handle, $cookieid, $event, $paramstring
+					qa_remote_ip_address(), $userid, $handle, $cookieid, $event, $paramstring
 				);			
 			}
 			
@@ -174,7 +174,7 @@
 				if (!strlen($cookieid))
 					$cookieid='no_cookieid';
 					
-				$ip=@$_SERVER['REMOTE_ADDR'];
+				$ip=qa_remote_ip_address();
 				if (!strlen($ip))
 					$ip='no_ipaddress';
 					

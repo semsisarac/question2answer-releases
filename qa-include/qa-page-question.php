@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-question.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Controller for question page (only viewing functionality here)
 
 
@@ -774,8 +774,8 @@
 		(!qa_is_http_post()) &&
 		qa_is_human_probably() &&
 		( (!$question['views']) || ( // if it has more than zero views
-			( ($question['lastviewip']!=@$_SERVER['REMOTE_ADDR']) || (!isset($question['lastviewip'])) ) && // then it must be different IP from last view
-			( ($question['createip']!=@$_SERVER['REMOTE_ADDR']) || (!isset($question['createip'])) ) && // and different IP from the creator
+			( ($question['lastviewip']!=qa_remote_ip_address()) || (!isset($question['lastviewip'])) ) && // then it must be different IP from last view
+			( ($question['createip']!=qa_remote_ip_address()) || (!isset($question['createip'])) ) && // and different IP from the creator
 			( ($question['userid']!=$qa_login_userid) || (!isset($question['userid'])) ) && // and different user from the creator
 			( ($question['cookieid']!=$qa_cookieid) || (!isset($question['cookieid'])) ) // and different cookieid from the creator
 		) )

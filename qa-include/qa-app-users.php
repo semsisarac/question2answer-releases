@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: User management (application level) for basic user operations
 
 
@@ -200,7 +200,7 @@
 				} else
 					$sessioncode=$userinfo['sessioncode'];
 				
-				qa_db_user_logged_in($userid, @$_SERVER['REMOTE_ADDR']);
+				qa_db_user_logged_in($userid, qa_remote_ip_address());
 				qa_set_session_cookie($handle, $sessioncode, $remember);
 				
 				qa_report_event('u_login', $userid, $userinfo['handle'], qa_cookie_get());
@@ -442,7 +442,7 @@
 		{
 			require_once QA_INCLUDE_DIR.'qa-db-users.php';
 			
-			qa_db_user_written($userid, @$_SERVER['REMOTE_ADDR']);
+			qa_db_user_written($userid, qa_remote_ip_address());
 		}
 
 		

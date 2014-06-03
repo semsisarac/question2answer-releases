@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/mouseover-layer/qa-mouseover-layer.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Theme layer class for mouseover layer plugin
 
 
@@ -53,7 +53,7 @@
 					$thispost=$postinfo[$question['raw']['postid']];
 					$text=qa_viewer_text($thispost['content'], $thispost['format'], array('blockwordspreg' => $blockwordspreg));
 					$text=qa_shorten_string_line($text, $maxlength);
-					$q_list['qs'][$index]['title']='<SPAN TITLE="'.qa_html($text).'">'.$question['title'].'</SPAN>';
+					$q_list['qs'][$index]['title']='<SPAN TITLE="'.qa_html($text).'">'.@$question['title'].'</SPAN>';
 				}
 			}
 			

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-captcha.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Wrapper functions and utilities for reCAPTCHA
 
 
@@ -92,7 +92,7 @@
 			if ( (!empty($form['recaptcha_challenge_field'])) && (!empty($form['recaptcha_response_field'])) ) {
 				$answer=recaptcha_check_answer(
 					qa_opt('recaptcha_private_key'),
-					@$_SERVER['REMOTE_ADDR'],
+					qa_remote_ip_address(),
 					@$form['recaptcha_challenge_field'],
 					@$form['recaptcha_response_field']
 				);

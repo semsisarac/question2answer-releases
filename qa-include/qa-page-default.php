@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-default.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Controller for home page, Q&A listing page, custom pages and plugin pages
 
 
@@ -140,9 +140,18 @@
 //	Prepare and return content for theme for Q&A listing page
 
 	$qa_content=qa_q_list_page_content(
-		$questions, $pagesize, 0, null, $sometitle, $nonetitle,
-		$categories, $categoryid, true, $explicitqa ? 'qa/' : '', qa_opt('feed_for_qa') ? 'qa' : null,
-		(count($questions)<$pagesize)
+		$questions, // questions
+		$pagesize, // questions per page
+		0, // start offset
+		null, // total count (null to hide page links)
+		$sometitle, // title if some questions
+		$nonetitle, // title if no questions
+		$categories, // categories for navigation
+		$categoryid, // selected category id
+		true, // show question counts in category navigation
+		$explicitqa ? 'qa/' : '', // prefix for links in category navigation
+		qa_opt('feed_for_qa') ? 'qa' : null, // prefix for RSS feed paths (null to hide)
+		(count($questions)<$pagesize) // suggest what to do next
 			? qa_html_suggest_ask($categoryid)
 			: qa_html_suggest_qs_tags(qa_using_tags(), qa_category_path_request($categories, $categoryid))
 	);

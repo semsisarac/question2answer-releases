@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-post-create.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Creating questions, answers and comments (application level)
 
 
@@ -128,7 +128,7 @@
 		require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 
 		$postid=qa_db_post_create('Q', @$followanswer['postid'], $userid, isset($userid) ? null : $cookieid,
-			@$_SERVER['REMOTE_ADDR'], $title, $content, $format, $tagstring, qa_combine_notify_email($userid, $notify, $email), $categoryid);
+			qa_remote_ip_address(), $title, $content, $format, $tagstring, qa_combine_notify_email($userid, $notify, $email), $categoryid);
 		
 		qa_db_posts_calc_category_path($postid);
 		qa_db_category_path_qcount_update(qa_db_post_get_category_path($postid));
@@ -291,7 +291,7 @@
 */
 	{
 		$postid=qa_db_post_create('A', $question['postid'], $userid, isset($userid) ? null : $cookieid,
-			@$_SERVER['REMOTE_ADDR'], null, $content, $format, null, qa_combine_notify_email($userid, $notify, $email), $question['categoryid']);
+			qa_remote_ip_address(), null, $content, $format, null, qa_combine_notify_email($userid, $notify, $email), $question['categoryid']);
 		
 		qa_db_posts_calc_category_path($postid);
 		
@@ -371,7 +371,7 @@
 		$parent=isset($answer) ? $answer : $question;
 		
 		$postid=qa_db_post_create('C', $parent['postid'], $userid, isset($userid) ? null : $cookieid,
-			@$_SERVER['REMOTE_ADDR'], null, $content, $format, null, qa_combine_notify_email($userid, $notify, $email), $question['categoryid']);
+			qa_remote_ip_address(), null, $content, $format, null, qa_combine_notify_email($userid, $notify, $email), $question['categoryid']);
 		
 		qa_db_posts_calc_category_path($postid);
 		

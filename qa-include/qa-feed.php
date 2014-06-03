@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-feed.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Handles all requests to RSS feeds, first checking if they should be available
 
 
@@ -120,6 +120,11 @@
 			$feedoption='feed_for_questions';
 			break;
 			
+		case 'hot':
+			$feedoption='feed_for_hot';
+			$categoryslugs=null;
+			break;
+		
 		case 'unanswered':
 			$feedoption='feed_for_unanswered';
 			$categoryslugs=null;
@@ -185,6 +190,12 @@
 			);
 			break;
 			
+		case 'hot':
+			qa_feed_load_ifcategory('main/hot_qs_title', 'main/hot_qs_title',
+				qa_db_qs_selectspec(null, 'hotness', 0, null, null, false, $full, $count)
+			);
+			break;
+		
 		case 'unanswered':
 			qa_feed_load_ifcategory('main/unanswered_qs_title', 'main/unanswered_qs_in_x',
 				qa_db_unanswered_qs_selectspec(null, 0, null, false, $full, $count)
@@ -253,7 +264,7 @@
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 	require_once QA_INCLUDE_DIR.'qa-util-string.php';
 
-	if ($feedtype!='search') // leave search results sorted by relevance
+	if ( ($feedtype!='search') && ($feedtype!='hot') ) // leave search results and hot questions sorted by relevance
 		$questions=qa_any_sort_and_dedupe($questions);
 	
 	$questions=array_slice($questions, 0, $count);

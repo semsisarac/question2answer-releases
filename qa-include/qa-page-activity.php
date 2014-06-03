@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-activity.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Controller for page listing recent activity
 
 
@@ -66,10 +66,18 @@
 //	Prepare and return content for theme
 
 	return qa_q_list_page_content(
-		qa_any_sort_and_dedupe(array_merge($questions1, $questions2, $questions3, $questions4)),
-		qa_opt('page_size_activity'), 0, null, $sometitle, $nonetitle,
-		$categories, $categoryid, true, 'activity/', qa_opt('feed_for_activity') ? 'activity' : null,
-		qa_html_suggest_qs_tags(qa_using_tags(), qa_category_path_request($categories, $categoryid))
+		qa_any_sort_and_dedupe(array_merge($questions1, $questions2, $questions3, $questions4)), // questions
+		qa_opt('page_size_activity'), // questions per page
+		0, // start offset
+		null, // total count (null to hide page links)
+		$sometitle, // title if some questions
+		$nonetitle, // title if no questions
+		$categories, // categories for navigation
+		$categoryid, // selected category id
+		true, // show question counts in category navigation
+		'activity/', // prefix for links in category navigation
+		qa_opt('feed_for_activity') ? 'activity' : null, // prefix for RSS feed paths (null to hide)
+		qa_html_suggest_qs_tags(qa_using_tags(), qa_category_path_request($categories, $categoryid)) // suggest what to do next
 	);
 
 

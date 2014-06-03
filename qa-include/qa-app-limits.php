@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-limits.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Monitoring and rate-limiting user actions (application level)
 
 
@@ -42,7 +42,7 @@
 		require_once QA_INCLUDE_DIR.'qa-db-limits.php';
 
 		$period=(int)(qa_opt('db_time')/3600);
-		$dblimits=qa_db_limits_get($userid, @$_SERVER['REMOTE_ADDR'], $actioncode);
+		$dblimits=qa_db_limits_get($userid, qa_remote_ip_address(), $actioncode);
 		
 		switch ($actioncode) {
 			case 'Q':
@@ -101,7 +101,7 @@
 		$blockipclauses=qa_block_ips_explode(qa_opt('block_ips_write'));
 		
 		foreach ($blockipclauses as $blockipclause)
-			if (qa_block_ip_match(@$_SERVER['REMOTE_ADDR'], $blockipclause))
+			if (qa_block_ip_match(qa_remote_ip_address(), $blockipclause))
 				return true;
 				
 		return false;
@@ -208,7 +208,7 @@
 		if (isset($userid))
 			qa_db_limits_user_add($userid, $actioncode, $period, 1);
 		
-		qa_db_limits_ip_add(@$_SERVER['REMOTE_ADDR'], $actioncode, $period, 1);
+		qa_db_limits_ip_add(qa_remote_ip_address(), $actioncode, $period, 1);
 	}
 
 

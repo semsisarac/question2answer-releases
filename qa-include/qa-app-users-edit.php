@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users-edit.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: User management (application level) for creating/modifying users
 
 
@@ -151,7 +151,7 @@
 		require_once QA_INCLUDE_DIR.'qa-app-emails.php';
 		require_once QA_INCLUDE_DIR.'qa-app-cookies.php';
 
-		$userid=qa_db_user_create($email, $password, $handle, $level, @$_SERVER['REMOTE_ADDR']);
+		$userid=qa_db_user_create($email, $password, $handle, $level, qa_remote_ip_address());
 		qa_db_points_update_ifuser($userid, null);
 		
 		if ($confirmed)
@@ -308,7 +308,7 @@
 		if (isset($imagedata)) {
 			require_once QA_INCLUDE_DIR.'qa-db-blobs.php';
 
-			$newblobid=qa_db_blob_create($imagedata, 'jpeg', null, $userid, null, @$_SERVER['REMOTE_ADDR']);
+			$newblobid=qa_db_blob_create($imagedata, 'jpeg', null, $userid, null, qa_remote_ip_address());
 			
 			if (isset($newblobid)) {
 				qa_db_user_set($userid, 'avatarblobid', $newblobid);

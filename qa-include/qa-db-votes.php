@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-votes.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Database-level access to votes tables
 
 
@@ -39,7 +39,7 @@
 		$vote=max(min(($vote), 1), -1);
 		
 		qa_db_query_sub(
-			'INSERT INTO ^uservotes (postid, userid, vote) VALUES (#, #, #) ON DUPLICATE KEY UPDATE vote=#',
+			'INSERT INTO ^uservotes (postid, userid, vote, flag) VALUES (#, #, #, 0) ON DUPLICATE KEY UPDATE vote=#',
 			$postid, $userid, $vote, $vote
 		);
 	}
@@ -65,7 +65,7 @@
 		$flag=$flag ? 1 : 0;
 
 		qa_db_query_sub(
-			'INSERT INTO ^uservotes (postid, userid, flag) VALUES (#, #, #) ON DUPLICATE KEY UPDATE flag=#',
+			'INSERT INTO ^uservotes (postid, userid, vote, flag) VALUES (#, #, 0, #) ON DUPLICATE KEY UPDATE flag=#',
 			$postid, $userid, $flag, $flag
 		);
 	}

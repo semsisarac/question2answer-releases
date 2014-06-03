@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-unanswered.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Controller for page listing recent questions without answers
 
 
@@ -45,9 +45,18 @@
 //	Prepare and return content for theme
 
 	return qa_q_list_page_content(
-		$questions, qa_opt('page_size_una_qs'), $qa_start, qa_opt('cache_unaqcount'),
-		qa_lang_html('main/unanswered_qs_title'), qa_lang_html('main/no_una_questions_found'),
-		null, null, false, null, qa_opt('feed_for_unanswered') ? 'unanswered' : null, qa_html_suggest_qs_tags(qa_using_tags())
+		$questions, // questions
+		qa_opt('page_size_una_qs'), // questions per page
+		$qa_start, // start offset
+		qa_opt('cache_unaqcount'), // total count
+		qa_lang_html('main/unanswered_qs_title'), // title if some questions
+		qa_lang_html('main/no_una_questions_found'), // title if no questions
+		null, // categories for navigation (null since not shown on this page)
+		null, // selected category id (null since not relevant)
+		null, // show question counts in category navigation (null since not relevant)
+		null, // prefix for links in category navigation (null since no navigation)
+		qa_opt('feed_for_unanswered') ? 'unanswered' : null, // prefix for RSS feed paths (null to hide)
+		qa_html_suggest_qs_tags(qa_using_tags()) // suggest what to do next
 	);
 
 

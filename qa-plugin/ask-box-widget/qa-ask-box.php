@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/ask-box-widget/qa-ask-box.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Widget module class for ask a question box
 
 
@@ -76,7 +76,7 @@
 <FORM METHOD="POST" ACTION="<?php echo qa_path_html('ask', $params); ?>">
 	<TABLE CLASS="qa-form-tall-table" STYLE="width:100%">
 		<TR STYLE="vertical-align:middle;">
-			<TD CLASS="qa-form-tall-label" STYLE="padding:8px; <?php echo ($region=='side') ? 'padding-bottom:0;' : 'text-align:right;'?>" WIDTH="1">
+			<TD CLASS="qa-form-tall-label" STYLE="padding:8px; white-space:nowrap; <?php echo ($region=='side') ? 'padding-bottom:0;' : 'text-align:right;'?>" WIDTH="1">
 				<?php echo strtr(qa_lang_html('question/ask_title'), array(' ' => '&nbsp;'))?>:
 			</TD>
 <?php

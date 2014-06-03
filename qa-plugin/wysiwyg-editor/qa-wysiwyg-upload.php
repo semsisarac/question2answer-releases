@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4.1 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/wysiwyg-editor/qa-wysiwyg-upload.php
-	Version: 1.4
-	Date: 2011-06-13 06:42:43 GMT
+	Version: 1.4.1
+	Date: 2011-07-10 06:58:57 GMT
 	Description: Page module class for WYSIWYG editor (CKEditor) file upload receiver
 
 
@@ -107,7 +107,7 @@
 					$userid=qa_get_logged_in_userid();
 					$cookieid=isset($userid) ? qa_cookie_get() : qa_cookie_get_create();
 					
-					$blobid=qa_db_blob_create(file_get_contents($file['tmp_name']), $extension, @$file['name'], $userid, $cookieid, @$_SERVER['REMOTE_ADDR']);
+					$blobid=qa_db_blob_create(file_get_contents($file['tmp_name']), $extension, @$file['name'], $userid, $cookieid, qa_remote_ip_address());
 					
 					if (isset($blobid))
 						$url=qa_get_blob_url($blobid, true);
