@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin.php
-	Version: 1.0.1-beta
-	Date: 2010-05-11 12:36:30 GMT
+	Version: 1.0.1
+	Date: 2010-05-21 10:07:28 GMT
 	Description: Controller for most admin pages which just contain options
 
 
@@ -325,7 +325,6 @@
 					$rawoptions=array(
 						QA_URL_FORMAT_NEAT,
 						QA_URL_FORMAT_INDEX,
-						QA_URL_FORMAT_QUERY,
 						QA_URL_FORMAT_PARAM,
 						QA_URL_FORMAT_PARAMS,
 						QA_URL_FORMAT_SAFEST,
@@ -333,7 +332,7 @@
 					
 					foreach ($rawoptions as $rawoption)
 						$neatoptions[$rawoption]=
-							'<IFRAME SRC="'.qa_path_html('url/test/$&-_#%@', array('dummy' => '', 'param' => '$&-_#%@'), null, $rawoption).'" WIDTH="20" HEIGHT="16" STYLE="vertical-align:middle; border:0" SCROLLING="no" FRAMEBORDER="0"></IFRAME>&nbsp;'.
+							'<IFRAME SRC="'.qa_path_html('url/test/'.QA_URL_TEST_STRING, array('dummy' => '', 'param' => QA_URL_TEST_STRING), null, $rawoption).'" WIDTH="20" HEIGHT="16" STYLE="vertical-align:middle; border:0" SCROLLING="no" FRAMEBORDER="0"></IFRAME>&nbsp;'.
 							'<SMALL>'.
 							qa_path_html('questions/123/why-do-birds-sing', null, '/', $rawoption).
 							(($rawoption==QA_URL_FORMAT_NEAT) ? strtr(qa_lang_html('admin/neat_urls_note'), array(
@@ -344,7 +343,7 @@
 							
 					$optionfield['type']='select-radio';
 					$optionfield['options']=$neatoptions;
-					$optionfield['value']=$neatoptions[isset($neatoptions[$neatvalue]) ? $neatvalue : QA_URL_FORMAT_SAFE];
+					$optionfield['value']=$neatoptions[isset($neatoptions[$neatvalue]) ? $neatvalue : QA_URL_FORMAT_SAFEST];
 					$optionfield['note']=qa_lang_sub_html('admin/url_format_note', '<SPAN STYLE=" '.qa_admin_url_test_html().'/SPAN>');
 					break;
 					
@@ -511,4 +510,7 @@
 		
 	$qa_content['navigation']['sub']=qa_admin_sub_navigation();
 
-?>
+
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/

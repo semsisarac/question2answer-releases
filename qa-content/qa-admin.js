@@ -1,12 +1,12 @@
 /*
-	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-content/qa-admin.js
-	Version: 1.0.1-beta
-	Date: 2010-05-11 12:36:30 GMT
+	Version: 1.0.1
+	Date: 2010-05-21 10:07:28 GMT
 	Description: JS for admin pages to handle Ajax-triggered recalculations
 
 
@@ -100,9 +100,9 @@ function qa_recalc_cleanup(elem)
 
 function qa_ajax_post(path, params, callback)
 {
-	var url=qa_root+path+'?qa_root='+escape(qa_root)+'&qa_request='+escape(qa_request);
+	var url=qa_root+path+'?qa_root='+encodeURIComponent(qa_root)+'&qa_request='+encodeURIComponent(qa_request);
 	for (var key in params)
-		url+='&'+escape(key)+'='+escape(params[key]);
+		url+='&'+encodeURIComponent(key)+'='+encodeURIComponent(params[key]);
 	
 	jx.load(url, callback, 'text', 'POST', {onError:callback});
 }

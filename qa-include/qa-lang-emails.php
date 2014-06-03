@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-emails.php
-	Version: 1.0.1-beta
-	Date: 2010-05-11 12:36:30 GMT
+	Version: 1.0.1
+	Date: 2010-05-21 10:07:28 GMT
 	Description: Language phrases for email notifications
 
 
@@ -55,4 +55,7 @@
 		'welcome_subject' => 'Welcome to ^site_title!',
 	);
 	
-?>
+
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/

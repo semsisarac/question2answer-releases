@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-config-example.php
-	Version: 1.0.1-beta
-	Date: 2010-05-11 12:36:30 GMT
+	Version: 1.0.1
+	Date: 2010-05-21 10:07:28 GMT
 	Description: After renaming, use this to set up database details and other stuff
 
 
@@ -36,7 +36,7 @@
 	======================================================================
 */
 
-	define('QA_MYSQL_HOSTNAME', '127.0.0.1');
+	define('QA_MYSQL_HOSTNAME', '127.0.0.1'); // try '127.0.0.1' or 'localhost' if MySQL on same server
 	define('QA_MYSQL_USERNAME', 'your-mysql-username');
 	define('QA_MYSQL_PASSWORD', 'your-mysql-password');
 	define('QA_MYSQL_DATABASE', 'your-mysql-db-name');
@@ -110,4 +110,7 @@
 	file to override the default setting. Just make sure you know what you're doing!
 */
 	
-?>
+
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/

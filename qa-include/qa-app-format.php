@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.0.1-beta
-	Date: 2010-05-11 12:36:30 GMT
+	Version: 1.0.1
+	Date: 2010-05-21 10:07:28 GMT
 	Description: Common functions for creating theme-ready structures from data
 
 
@@ -96,6 +96,8 @@
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-users.php';
+		
+		global $qa_root_url_relative;
 			
 		if (QA_EXTERNAL_USERS) {
 			$keyuserids=array();
@@ -109,7 +111,7 @@
 			}
 	
 			if (count($keyuserids))
-				return qa_get_users_html($db, array_keys($keyuserids), true, qa_path(''), $microformats);
+				return qa_get_users_html($db, array_keys($keyuserids), true, $qa_root_url_relative, $microformats);
 			else
 				return array();
 		
@@ -500,7 +502,9 @@
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-users.php';
 		
-		$userlinks=qa_get_login_links(qa_path(''), qa_path($topage, null, ''));
+		global $qa_root_url_relative;
+		
+		$userlinks=qa_get_login_links($qa_root_url_relative, qa_path($topage, null, ''));
 		
 		return strtr(
 			$htmlmessage,
@@ -508,7 +512,7 @@
 			array(
 				'^1' => empty($userlinks['login']) ? '' : '<A HREF="'.qa_html($userlinks['login']).'">',
 				'^2' => empty($userlinks['login']) ? '' : '</A>',
-				'^3' => empty($userlinks['register']) ? '' : '<A HREF="'.qa_html(@$userlinks['register']).'">',
+				'^3' => empty($userlinks['register']) ? '' : '<A HREF="'.qa_html($userlinks['register']).'">',
 				'^4' => empty($userlinks['register']) ? '' : '</A>',
 			)
 		);
@@ -788,4 +792,7 @@
 		return $themeclass;
 	}
 	
-?>
+
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/

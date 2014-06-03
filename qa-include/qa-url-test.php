@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-url-test.php
-	Version: 1.0.1-beta
-	Date: 2010-05-11 12:36:30 GMT
+	Version: 1.0.1
+	Date: 2010-05-21 10:07:28 GMT
 	Description: Sits in an iframe and shows a green page with word 'OK'
 
 
@@ -30,7 +30,7 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-	if (@$_GET['param']=='$&-_#%@') {
+	if (qa_gpc_to_string(@$_GET['param'])==QA_URL_TEST_STRING) {
 		require_once QA_INCLUDE_DIR.'qa-app-admin.php';
 	
 		echo '<HTML><BODY STYLE="margin:0; padding:0;">';
@@ -42,4 +42,8 @@
 	}
 
 	exit;
-?>
+
+
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.0.1-beta
-	Date: 2010-05-11 12:36:30 GMT
+	Version: 1.0.1
+	Date: 2010-05-21 10:07:28 GMT
 	Description: Sets up Q2A environment, plus many globally useful functions
 
 
@@ -32,7 +32,7 @@
 
 //	Set the version to be used for internal reference and a suffix for .js and .css requests
 
-	define('QA_VERSION', '1.0.1-beta');
+	define('QA_VERSION', '1.0.1');
 
 //	Basic PHP configuration checks and unregister globals
 
@@ -97,6 +97,7 @@
 		else
 			return "'".strtr($value, array(
 				"'" => "\\'",
+				'\\' => '\\\\',
 				"\n" => "\\n",
 				"\r" => "\\n",
 			))."'";
@@ -109,6 +110,15 @@
 */
 	{
 		return get_magic_quotes_gpc() ? stripslashes($string) : $string;
+	}
+	
+
+	function qa_string_to_gpc($string)
+/*
+	Return string with slashes added, if appropriate for later removal by qa_gpc_to_string()
+*/
+	{
+		return get_magic_quotes_gpc() ? addslashes($string) : $string;
 	}
 
 
@@ -272,10 +282,10 @@
 
 	define('QA_URL_FORMAT_INDEX', 0); // http://.../index.php/questions/123/why-is-the-sky-blue
 	define('QA_URL_FORMAT_NEAT', 1); // http://.../questions/123/why-is-the-sky-blue
-	define('QA_URL_FORMAT_QUERY', 2); // http://.../?questions/123/why-is-the-sky-blue
 	define('QA_URL_FORMAT_PARAM', 3); // http://.../?qa=questions/123/why-is-the-sky-blue
 	define('QA_URL_FORMAT_PARAMS', 4); // http://.../?qa=questions&qa_1=123&qa_2=why-is-the-sky-blue
 	define('QA_URL_FORMAT_SAFEST', 5); // http://.../index.php?qa=questions&qa_1=123&qa_2=why-is-the-sky-blue
+	define('QA_URL_TEST_STRING', '$&-_~#%\\@^*()=!()][`\\\';:|\\".{},<>?# π§½Жש'); // tests escaping, spaces, quote slashing and unicode - but not + and /
 
 	function qa_path($request, $params=null, $rooturl=null, $neaturls=null, $anchor=null)
 /*
@@ -311,17 +321,12 @@
 				$url.=$requestpath;
 				break;
 				
-			case QA_URL_FORMAT_QUERY:
-				if (!empty($request))
-					$paramsextra='?'.$requestpath;
-				break;
-				
 			case QA_URL_FORMAT_PARAM:
 				if (!empty($request))
 					$paramsextra='?qa='.$requestpath;
 				break;
 				
-			case QA_URL_FORMAT_SAFEST:
+			default:
 				$url.='index.php';
 			
 			case QA_URL_FORMAT_PARAMS:
@@ -410,6 +415,18 @@
 		header('Location: '.qa_path($request, $params, $rooturl, $neaturls));
 		exit;
 	}
+	
+	
+	function qa_redirect_raw($path)
+/*
+	Redirect the user's web browser to page $path which is already a URL fragment
+*/
+	{
+		global $qa_root_url_relative;
+		
+		header('Location: '.$qa_root_url_relative.$path);
+		exit;
+	}
 
 
 //	Database connection
@@ -449,4 +466,7 @@
 		exit;
 	}
 	
-?>
+
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/

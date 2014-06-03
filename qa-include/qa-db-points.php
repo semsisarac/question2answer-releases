@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-points.php
-	Version: 1.0.1-beta
-	Date: 2010-05-11 12:36:30 GMT
+	Version: 1.0.1
+	Date: 2010-05-21 10:07:28 GMT
 	Description: Database-level access to user points and statistics
 
 
@@ -191,4 +191,7 @@
 		qa_db_query_sub($db, "REPLACE ^options (title, content) SELECT 'cache_userpointscount', COUNT(*) FROM ^userpoints");
 	}
 
-?>
+
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/

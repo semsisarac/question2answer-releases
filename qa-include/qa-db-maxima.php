@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-maxima.php
-	Version: 1.0.1-beta
-	Date: 2010-05-11 12:36:30 GMT
+	Version: 1.0.1
+	Date: 2010-05-21 10:07:28 GMT
 	Description: Definitions that determine database column size and rows retrieved
 
 
@@ -58,4 +58,7 @@
 	@define('QA_DB_RETRIEVE_ASK_TAG_QS', 500);
 	@define('QA_DB_RETRIEVE_COMPLETE_TAGS', 10000);
 
-?>
+
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/

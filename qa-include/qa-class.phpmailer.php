@@ -1906,4 +1906,7 @@ class PHPMailer {
 
 }
 
-?>
+
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/

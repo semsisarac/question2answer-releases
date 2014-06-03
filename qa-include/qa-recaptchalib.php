@@ -274,4 +274,7 @@ function recaptcha_mailhide_html($pubkey, $privkey, $email) {
 }
 
 
-?>
+
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/

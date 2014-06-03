@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-votes.php
-	Version: 1.0.1-beta
-	Date: 2010-05-11 12:36:30 GMT
+	Version: 1.0.1
+	Date: 2010-05-21 10:07:28 GMT
 	Description: Database-level access to votes tables
 
 
@@ -61,4 +61,7 @@
 		);
 	}
 	
-?>
+
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/

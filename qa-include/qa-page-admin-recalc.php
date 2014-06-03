@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-recalc.php
-	Version: 1.0.1-beta
-	Date: 2010-05-11 12:36:30 GMT
+	Version: 1.0.1
+	Date: 2010-05-21 10:07:28 GMT
 	Description: Handles admin-triggered recalculations if JavaScript disabled
 
 
@@ -67,7 +67,7 @@
 	<BODY>
 		<TT>
 
-<?
+<?php
 
 		while ($state) {
 			set_time_limit(60);
@@ -86,11 +86,11 @@
 ?>
 		</TT>
 		
-		<A HREF="<?=qa_path_html('admin/stats')?>"><?=qa_lang_html('admin/admin_title').' - '.qa_lang_html('admin/stats_title')?></A>
+		<A HREF="<?php echo qa_path_html('admin/stats')?>"><?php echo qa_lang_html('admin/admin_title').' - '.qa_lang_html('admin/stats_title')?></A>
 	</BODY>
 </HTML>
 
-<?
+<?php
 		exit;
 	
 	} else {
@@ -102,4 +102,7 @@
 		$qa_content['error']=qa_lang_html('main/page_not_found');
 	}
 			
-?>
+
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/

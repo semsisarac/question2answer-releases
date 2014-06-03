@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-user.php
-	Version: 1.0.1-beta
-	Date: 2010-05-11 12:36:30 GMT
+	Version: 1.0.1
+	Date: 2010-05-21 10:07:28 GMT
 	Description: Controller for user profile page
 
 
@@ -59,7 +59,7 @@
 		if (!isset($userid))
 			return qa_page_user_not_found();
 		
-		$usershtml=qa_get_users_html($qa_db, array($userid), false, qa_path(''), true);
+		$usershtml=qa_get_users_html($qa_db, array($userid), false, $qa_root_url_relative, true);
 		$userhtml=@$usershtml[$userid];
 
 	} else {
@@ -420,4 +420,7 @@
 				qa_get_vote_view($qa_db, 'Q'), false, 'A', $answerquestion['apostid'], $answerquestion['acreated'], $userid, null, null);
 	}
 
-?>
+
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/

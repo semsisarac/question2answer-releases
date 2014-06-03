@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-index.php
-	Version: 1.0.1-beta
-	Date: 2010-05-11 12:36:30 GMT
+	Version: 1.0.1
+	Date: 2010-05-21 10:07:28 GMT
 	Description: The Grand Central of Q2A - all non-Ajax requests come through here
 
 
@@ -56,6 +56,7 @@
 		// right path depth, which is true do long as there are only escaped characters in the last part of the path
 		if (!empty($_SERVER['REQUEST_URI'])) {
 			$origpath=$_SERVER['REQUEST_URI'];
+			$_GET=array();
 			
 			$questionpos=strpos($origpath, '?');
 			if (is_numeric($questionpos)) {
@@ -63,7 +64,7 @@
 				
 				foreach ($params as $param)
 					if (preg_match('/^([^\=]*)(\=(.*))?$/', $param, $matches))
-						$_GET[urldecode($matches[1])]=urldecode(@$matches[3]);
+						$_GET[urldecode($matches[1])]=qa_string_to_gpc(urldecode(@$matches[3]));
 
 				$origpath=substr($origpath, 0, $questionpos);
 			}
@@ -75,36 +76,32 @@
 		if (strpos($_GET['qa'], '/')===false) {
 			$qa_used_url_format=( (empty($_SERVER['REQUEST_URI'])) || (strpos($_SERVER['REQUEST_URI'], '/index.php')!==false) )
 				? QA_URL_FORMAT_SAFEST : QA_URL_FORMAT_PARAMS;
-			$requestparts=array($_GET['qa']);
+			$requestparts=array(qa_gpc_to_string($_GET['qa']));
 			
 			for ($part=1; $part<10; $part++)
 				if (isset($_GET['qa_'.$part])) {
-					$requestparts[]=$_GET['qa_'.$part];
+					$requestparts[]=qa_gpc_to_string($_GET['qa_'.$part]);
 					unset($_GET['qa_'.$part]);
 				}
 		
 		} else {
 			$qa_used_url_format=QA_URL_FORMAT_PARAM;
-			$requestparts=explode('/', $_GET['qa']);
+			$requestparts=explode('/', qa_gpc_to_string($_GET['qa']));
 		}
 		
 		unset($_GET['qa']);
 	
 	} else {
+		$phpselfunescaped=strtr($_SERVER['PHP_SELF'], '+', ' '); // seems necessary, and plus does not work with this scheme
 		$indexpath='/index.php/';
-		$indexpos=strpos($_SERVER['PHP_SELF'], $indexpath);
+		$indexpos=strpos($phpselfunescaped, $indexpath);
 		
 		if (is_numeric($indexpos)) {
 			$qa_used_url_format=QA_URL_FORMAT_INDEX;	
-			$requestparts=explode('/', substr($_SERVER['PHP_SELF'], $indexpos+strlen($indexpath)));
+			$requestparts=explode('/', substr($phpselfunescaped, $indexpos+strlen($indexpath)));
 			$relativedepth=1+count($requestparts);
-			$rootpath=substr($_SERVER['PHP_SELF'], 0, $indexpos);
+			$rootpath=substr($phpselfunescaped, 0, $indexpos);
 	
-		} elseif (count($_GET) && !strlen(reset($_GET))) {
-			$qa_used_url_format=QA_URL_FORMAT_QUERY;
-			$requestparts=explode('/', key($_GET));
-			unset($_GET[key($_GET)]);	
-			
 		} else {
 			$qa_used_url_format=null; // at home page so can't identify path type
 			$requestparts=array();
@@ -122,7 +119,7 @@
 	$qa_root_url_inferred='http://'.@$_SERVER['HTTP_HOST'].$rootpath.'/';
 	
 	$qa_start=min(max(0, (int)qa_get('start')), QA_MAX_LIMIT_START);
-	
+
 
 	function qa_self_html()
 /*
@@ -375,7 +372,9 @@
 		else
 			$qa_content['logo']='<A HREF="'.qa_path_html('').'" CLASS="qa-logo-link">'.qa_html(qa_get_option($qa_db, 'site_title')).'</A>';
 
-		$userlinks=qa_get_login_links($qa_root_url_relative, qa_path($qa_request, null, ''));
+		$topath=qa_get('to'); // lets user switch between login and register without losing destination page
+
+		$userlinks=qa_get_login_links($qa_root_url_relative, isset($topath) ? $topath : qa_path($qa_request, null, ''));
 		
 		$qa_content['navigation']['user']=array();
 			
@@ -505,9 +504,7 @@
 		'feedback' => QA_INCLUDE_DIR.'qa-page-feedback.php',
 
 		'install' => QA_INCLUDE_DIR.'qa-install.php',
-		'rewrite-test' => QA_INCLUDE_DIR.'qa-rewrite-test.php',
-		'rewrite-pass' => QA_INCLUDE_DIR.'qa-rewrite-test.php',
-		'url/test/$&-_#%@' => QA_INCLUDE_DIR.'qa-url-test.php',
+		'url/test/'.QA_URL_TEST_STRING => QA_INCLUDE_DIR.'qa-url-test.php',
 	);
 	
 	if (isset($qa_routing[$qa_request_lc])) {
@@ -667,4 +664,7 @@
 
 	qa_base_db_disconnect();
 
-?>
+
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-check-lang.php
-	Version: 1.0.1-beta
-	Date: 2010-05-11 12:36:30 GMT
+	Version: 1.0.1
+	Date: 2010-05-21 10:07:28 GMT
 	Description: Development tool to see which language phrases are missing or unused
 
 
@@ -42,7 +42,7 @@
 		<TITLE>Question2Answer Language Check</TITLE>
 	</HEAD>
 	<BODY>
-<?
+<?php
 
 	function get_phrase_substitutions($phrase)
 	{
@@ -147,8 +147,10 @@
 				
 				else
 					foreach ($substitutions[$key][$value] as $substitution => $subcount)
-						if ($subcount > @$langsubstitutions[$key][$value][$substitution])
+						if (!@$langsubstitutions[$key][$value][$substitution])
 							echo '<FONT COLOR="red">'.htmlspecialchars($key.'/'.$value.' omitted the substitution '.$substitution).'</FONT><BR>';
+						elseif ($subcount > @$langsubstitutions[$key][$value][$substitution])
+							echo '<FONT COLOR="red">'.htmlspecialchars($key.'/'.$value.' has fewer of the substitution '.$substitution).'</FONT><BR>';
 			}
 					
 		foreach ($defined as $key => $valuecount)
@@ -165,6 +167,8 @@
 	}
 	
 	echo '<H2>Finished scanning for problems!</H2>';
+
 ?>
+
 	</BODY>
 </HTML>

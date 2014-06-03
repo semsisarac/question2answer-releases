@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0.1-beta (c) 2010, Gideon Greenspan
+	Question2Answer 1.0.1 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-options.php
-	Version: 1.0.1-beta
-	Date: 2010-05-11 12:36:30 GMT
+	Version: 1.0.1
+	Date: 2010-05-21 10:07:28 GMT
 	Description: Getting and setting admin options (application level)
 
 
@@ -316,4 +316,7 @@
 		return $enabled ? (qa_get_option($db, 'votes_separated') ? 'updown' : 'net') : false;
 	}
 	
-?>
+
+/*
+	Omit PHP closing tag to help avoid accidental output
+*/
