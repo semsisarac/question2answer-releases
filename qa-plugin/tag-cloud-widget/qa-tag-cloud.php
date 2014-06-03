@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/tag-cloud-widget/qa-tag-cloud.php
-	Version: 1.4-beta-2
-	Date: 2011-06-02 08:27:10 GMT
+	Version: 1.4
+	Date: 2011-06-13 06:42:43 GMT
 	Description: Widget module class for tag cloud plugin
 
 
@@ -138,7 +138,7 @@
 			foreach ($populartags as $tag => $count) {
 				$size=number_format(($scale ? ($maxsize*$count/$maxcount) : $maxsize), 1);
 				
-				if (($size>=4) || !$scale)
+				if (($size>=5) || !$scale)
 					$themeobject->output('<A HREF="'.qa_path_html('tag/'.$tag).'" STYLE="font-size:'.$size.'px; vertical-align:baseline;">'.qa_html($tag).'</A>');
 			}
 			

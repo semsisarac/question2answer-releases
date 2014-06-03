@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.4-beta-2
-	Date: 2011-06-02 08:27:10 GMT
+	Version: 1.4
+	Date: 2011-06-13 06:42:43 GMT
 	Description: Common functions for creating theme-ready structures from data
 
 
@@ -306,6 +306,7 @@
 			$fields['content']=$viewer->get_html($post['content'], $post['format'], array(
 				'blockwordspreg' => @$options['blockwordspreg'],
 				'showurllinks' => @$options['showurllinks'],
+				'linksnewwindow' => @$options['linksnewwindow'],
 			));
 			
 			if ($microformats)

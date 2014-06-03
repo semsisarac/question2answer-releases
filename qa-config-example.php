@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-config-example.php
-	Version: 1.4-beta-2
-	Date: 2011-06-02 08:27:10 GMT
+	Version: 1.4
+	Date: 2011-06-13 06:42:43 GMT
 	Description: After renaming, use this to set up database details and other stuff
 
 
@@ -79,7 +79,7 @@
 */
 
 /*
-	If you wish, you can define an array QA_CONST_PATH_MAP to modify the URLs used in your Q2A site.
+	If you wish, you can define an array $QA_CONST_PATH_MAP to modify the URLs used in your Q2A site.
 	The key of each array element should be the standard part of the path, e.g. 'questions',
 	and the value should be the replacement for that standard part, e.g. 'topics'. If you edit this
 	file in UTF-8 encoding you can also use non-ASCII characters in these URLs.
@@ -122,10 +122,10 @@
 	
 	QA_MAX_LIMIT_START is the maximum start parameter that can be requested. As this gets
 	higher, queries tend to get slower, since MySQL must examine more information. Very high
-	start numbers will usually only requested by search engine robots anyway.
+	start numbers are usually only requested by search engine robots anyway.
 	
-	If a title word or tag is used QA_IGNORED_WORDS_FREQ times or more, it is ignored when
-	searching or finding related questions. This saves time by ignoring words which are so
+	If a word is used QA_IGNORED_WORDS_FREQ times or more in a particular way, it is ignored
+	when searching or finding related questions. This saves time by ignoring words which are so
 	common that they are probably not worth matching on.
 
 	Set QA_OPTIMIZE_LOCAL_DB to true if your web server and MySQL are running on the same box.

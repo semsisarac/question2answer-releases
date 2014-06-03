@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.4-beta-2
-	Date: 2011-06-02 08:27:10 GMT
+	Version: 1.4
+	Date: 2011-06-13 06:42:43 GMT
 	Description: Sets up Q2A environment, plus many globally useful functions
 
 
@@ -32,7 +32,7 @@
 
 //	Set the version to be used for internal reference and a suffix for .js and .css requests, and other constants
 
-	define('QA_VERSION', '1.4-beta-2');
+	define('QA_VERSION', '1.4');
 	define('QA_CATEGORY_DEPTH', 4); // you can't change this number!
 	
 
@@ -140,12 +140,17 @@
 	}
 
 	
-	function qa_sanitize_html($html)
+	function qa_sanitize_html($html, $linksnewwindow=false)
 /*
 	Return $html after ensuring it is safe, i.e. removing Javascripts and the like - uses htmLawed library
+	Links open in a new window if $linksnewwindow is true
 */
 	{
 		require_once 'qa-htmLawed.php';
+		
+		global $qa_sanitize_html_newwindow;
+		
+		$qa_sanitize_html_newwindow=$linksnewwindow;
 		
 		$safe=htmLawed($html, array(
 			'safe' => 1,
@@ -165,13 +170,15 @@
 	htmLawed hook function used to process tags in qa_sanitize_html(...)
 */
 	{
+		global $qa_sanitize_html_newwindow;
+
 		if ( ($element=='param') && (trim(strtolower(@$attributes['name']))=='allowscriptaccess') )
 			$attributes['name']='allowscriptaccess_denied';
 			
 		if ($element=='embed')
 			unset($attributes['allowscriptaccess']);
 			
-		if (($element=='a') && isset($attributes['href']) && qa_opt('links_in_new_window'))
+		if (($element=='a') && isset($attributes['href']) && $qa_sanitize_html_newwindow)
 			$attributes['target']='_blank';
 		
 		$html='<'.$element;

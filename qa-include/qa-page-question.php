@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-question.php
-	Version: 1.4-beta-2
-	Date: 2011-06-02 08:27:10 GMT
+	Version: 1.4
+	Date: 2011-06-13 06:42:43 GMT
 	Description: Controller for question page (only viewing functionality here)
 
 
@@ -376,6 +376,7 @@
 	if ($formtype=='q_edit') { // ...in edit mode
 		$qa_content['title']=qa_lang_html('question/edit_q_title');
 		$qa_content['form_q_edit']=qa_page_q_edit_q_form();
+		$qa_content['q_view']['raw']=$question;
 
 	} else { // ...in view mode
 		$htmloptions=qa_post_html_defaults('Q', true);

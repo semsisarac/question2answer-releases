@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-options.php
-	Version: 1.4-beta-2
-	Date: 2011-06-02 08:27:10 GMT
+	Version: 1.4
+	Date: 2011-06-13 06:42:43 GMT
 	Description: Getting and setting admin options (application level)
 
 
@@ -450,6 +450,7 @@
 			'pointstitle' => qa_opt('show_user_titles') ? qa_get_points_to_titles() : array(),
 			'blockwordspreg' => qa_get_block_words_preg(),
 			'showurllinks' => qa_opt('show_url_links'),
+			'linksnewwindow' => qa_opt('links_in_new_window'),
 			'microformats' => $full,
 		);
 	}

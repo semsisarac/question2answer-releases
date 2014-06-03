@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.4-beta-2 (c) 2011, Gideon Greenspan
+	Question2Answer 1.4 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-viewer-basic.php
-	Version: 1.4-beta-2
-	Date: 2011-06-02 08:27:10 GMT
+	Version: 1.4
+	Date: 2011-06-13 06:42:43 GMT
 	Description: Basic viewer module for displaying HTML or plain text
 
 
@@ -54,7 +54,7 @@
 		function get_html($content, $format, $options)
 		{
 			if ($format=='html') {
-				$html=$content;
+				$html=qa_sanitize_html($content, @$options['linksnewwindow']); // sanitize again for display, for extra safety, and due to new window setting
 
 				if (isset($options['blockwordspreg'])) { // filtering out blocked words inline within HTML is pretty complex, e.g. p<B>oo</B>p must be caught
 					require_once QA_INCLUDE_DIR.'qa-util-string.php';
