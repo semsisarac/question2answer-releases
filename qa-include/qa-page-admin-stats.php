@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-stats.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Controller for admin page showing usage statistics and clean-up buttons
 
 
@@ -70,6 +70,12 @@
 			'q2a_version' => array(
 				'label' => qa_lang_html('admin/q2a_version'),
 				'value' => qa_html(QA_VERSION),
+			),
+			
+			'q2a_latest' => array(
+				'label' => qa_lang_html('admin/q2a_latest_version'),
+				'type' => 'custom',
+				'html' => '<IFRAME SRC="http://www.question2answer.org/question2answer-latest.html" WIDTH="100" HEIGHT="16" STYLE="vertical-align:middle; border:0; background:transparent;" allowTransparency="true" SCROLLING="no" FRAMEBORDER="0"></IFRAME>',
 			),
 			
 			'db_version' => array(

@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-account.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Controller for user account page
 
 
@@ -92,8 +92,9 @@
 		qa_db_user_set_flag($qa_login_userid, QA_USER_FLAGS_SHOW_AVATAR, ($inavatar=='uploaded'));
 		qa_db_user_set_flag($qa_login_userid, QA_USER_FLAGS_SHOW_GRAVATAR, ($inavatar=='gravatar'));
 
-		if (is_array($_FILES['file']) && $_FILES['file']['size'])
-			qa_set_user_avatar($qa_login_userid, file_get_contents($_FILES['file']['tmp_name']), $useraccount['avatarblobid']);
+		if (is_array(@$_FILES['file']) && $_FILES['file']['size'])
+			if (!qa_set_user_avatar($qa_login_userid, file_get_contents($_FILES['file']['tmp_name']), $useraccount['avatarblobid']))
+				$errors['avatar']=qa_lang_sub('users/avatar_not_read', implode(', ', qa_gd_image_formats()));
 
 		$infield=array();
 		foreach ($userfields as $userfield) {
@@ -161,7 +162,7 @@
 			'duration' => array(
 				'type' => 'static',
 				'label' => qa_lang_html('users/member_for'),
-				'value' => qa_time_to_string(time()-$useraccount['created']),
+				'value' => qa_time_to_string(qa_opt('db_time')-$useraccount['created']),
 			),
 			
 			'type' => array(
@@ -206,7 +207,15 @@
 //	Avatar upload stuff
 
 	if (qa_opt('avatar_allow_gravatar') || qa_opt('avatar_allow_upload')) {
-		$avataroptions=array('' => qa_lang_html('users/avatar_none'));
+		$avataroptions=array();
+		
+		if (qa_opt('avatar_default_show') && strlen(qa_opt('avatar_default_blobid'))) {
+			$avataroptions['']='<SPAN STYLE="margin:2px 0; display:inline-block;">'.
+				qa_get_avatar_blob_html(qa_opt('avatar_default_blobid'), qa_opt('avatar_default_width'), qa_opt('avatar_default_height'), 32).
+				'</SPAN> '.qa_lang_html('users/avatar_default');
+		} else
+			$avataroptions['']=qa_lang_html('users/avatar_none');
+
 		$avatarvalue=$avataroptions[''];
 	
 		if (qa_opt('avatar_allow_gravatar')) {
@@ -238,6 +247,7 @@
 			'tags' => ' NAME="avatar" ',
 			'options' => $avataroptions,
 			'value' => $avatarvalue,
+			'error' => qa_html(@$errors['avatar']),
 		);
 		
 	} else

@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-options.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Language phrases for all options, as shown in admin center
 
 
@@ -30,9 +30,11 @@
 		'allow_no_category' => 'Allow questions with no category',
 		'avatar_allow_gravatar' => 'Allow ^1Gravatar^2 avatars:',
 		'avatar_allow_upload' => 'Allow users to upload avatars:',
+		'avatar_default_show' => 'Show default avatar:',
 		'avatar_q_page_q_size' => 'Size of avatars on questions (pixels):',
 		'avatar_q_page_a_size' => 'Size of avatars on answers (pixels):',
 		'avatar_q_page_c_size' => 'Size of avatars on comments (pixels):',
+		'avatar_q_list_size' => 'Size of avatars on question lists (pixels):',
 		'avatar_store_size' => 'Maximum size of stored avatars (pixels):',
 		'avatar_profile_size' => 'Size of avatar on user profile page (pixels):',
 		'avatar_users_size' => 'Size of avatars on top users page (pixels):',

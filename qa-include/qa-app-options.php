@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-options.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Getting and setting admin options (application level)
 
 
@@ -72,6 +72,7 @@
 					case 'answer_needs_login':
 					case 'ask_needs_login':
 					case 'comment_needs_login':
+					case 'db_time':
 						$todatabase=false;
 						break;
 				}
@@ -95,7 +96,7 @@
 	}
 
 	
-	function qa_options_pending_selectspec()
+	function qa_options_pending_selectspecs()
 /*
 	Return selectspec array (see qa-db.php) to get queued options from database
 */
@@ -103,13 +104,21 @@
 		global $qa_options_loaded;
 		
 		if (@$qa_options_loaded)
-			return null;
+			return array();
 		else
 			return array(
-				'columns' => array('title', 'content' => 'BINARY content'),
-				'source' => '^options',
-				'arraykey' => 'title',
-				'arrayvalue' => 'content',
+				'_options' => array(
+					'columns' => array('title', 'content' => 'BINARY content'),
+					'source' => '^options',
+					'arraykey' => 'title',
+					'arrayvalue' => 'content',
+				),
+				
+				'_time' => array(
+					'columns' => array('content' => 'UNIX_TIMESTAMP(NOW())'),
+					'single' => 1,
+					'arrayvalue' => 'content',
+				),
 			);
 	}
 
@@ -121,9 +130,14 @@
 	{
 		global $qa_options_cache, $qa_options_loaded;
 		
-		if (is_array($selectspec))
-			foreach ($gotoptions as $name => $value)
+		if (is_array(@$gotoptions['_options']))
+			foreach ($gotoptions['_options'] as $name => $value)
 				$qa_options_cache[$name]=$value;
+				
+		if (is_numeric(@$gotoptions['_time']))
+			$qa_options_cache['db_time']=$gotoptions['_time'];
+		else
+			$qa_options_cache['db_time']=time(); // fall back to PHP's time
 				
 		$qa_options_loaded=true;
 	}
@@ -170,6 +184,7 @@
 			'avatar_q_page_q_size' => 50,
 			'avatar_q_page_a_size' => 40,
 			'avatar_q_page_c_size' => 20,
+			'avatar_q_list_size' => 0,
 			'avatar_users_size' => 30,
 			'captcha_on_anon_post' => 1,
 			'captcha_on_feedback' => 1,
@@ -386,6 +401,7 @@
 			'whenview' => qa_opt('show_when_created'),
 			'ipview' => !qa_user_permit_error('permit_anon_view_ips'),
 			'whoview' => true,
+			'avatarsize' => qa_opt('avatar_q_list_size'),
 			'pointsview' => qa_opt('show_user_points'),
 			'pointstitle' => qa_opt('show_user_titles') ? qa_get_points_to_titles() : array(),
 			'blockwordspreg' => qa_get_block_words_preg(),

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: User management (application level) for basic user operations
 
 
@@ -146,12 +146,14 @@
 
 				$sessioncode=qa_db_user_rand_sessioncode();
 				qa_db_user_set($userid, 'sessioncode', $sessioncode);
+				qa_db_user_set($userid, 'sessionsource', $source);
 				qa_set_session_cookie($handle, $sessioncode, $remember);
 				
 			} else {
 				require_once QA_INCLUDE_DIR.'qa-db-users.php';
 
 				qa_db_user_set($_SESSION['qa_session_userid'], 'sessioncode', '');
+				qa_db_user_set($_SESSION['qa_session_userid'], 'sessionsource', '');
 				qa_clear_session_cookie();
 
 				unset($_SESSION['qa_session_userid']);
@@ -226,9 +228,10 @@
 						
 						$userinfo=qa_db_single_select(qa_db_user_account_selectspec($handle, false)); // don't get any pending
 						
-						if (strtolower(trim($userinfo['sessioncode'])) == strtolower($sessioncode))
+						if (strtolower(trim($userinfo['sessioncode'])) == strtolower($sessioncode)) {
 							$_SESSION['qa_session_userid']=$userinfo['userid'];
-						else
+							$_SESSION['qa_session_source']=$userinfo['sessionsource'];
+						} else
 							qa_clear_session_cookie(); // if cookie not valid, remove it to save future checks
 					}
 				}
@@ -317,18 +320,20 @@
 		}
 		
 		
-		function qa_get_user_avatar_html($userfields, $size, $padding=false)
+		function qa_get_user_avatar_html($flags, $email, $handle, $blobid, $width, $height, $size, $padding=false)
 		{
 			require_once QA_INCLUDE_DIR.'qa-app-format.php';
 			
-			if (qa_opt('avatar_allow_gravatar') && ($userfields['flags'] & QA_USER_FLAGS_SHOW_GRAVATAR))
-				$html=qa_get_gravatar_html($userfields['email'], $size);
-			elseif (qa_opt('avatar_allow_upload') && (($userfields['flags'] & QA_USER_FLAGS_SHOW_AVATAR)) && isset($userfields['avatarblobid']))
-				$html=qa_get_avatar_blob_html($userfields['avatarblobid'], $userfields['avatarwidth'], $userfields['avatarheight'], $size, $padding);
+			if (qa_opt('avatar_allow_gravatar') && ($flags & QA_USER_FLAGS_SHOW_GRAVATAR))
+				$html=qa_get_gravatar_html($email, $size);
+			elseif (qa_opt('avatar_allow_upload') && (($flags & QA_USER_FLAGS_SHOW_AVATAR)) && isset($blobid))
+				$html=qa_get_avatar_blob_html($blobid, $width, $height, $size, $padding);
+			elseif ( (qa_opt('avatar_allow_gravatar')||qa_opt('avatar_allow_upload')) && qa_opt('avatar_default_show') && strlen(qa_opt('avatar_default_blobid')) )
+				$html=qa_get_avatar_blob_html(qa_opt('avatar_default_blobid'), qa_opt('avatar_default_width'), qa_opt('avatar_default_height'), $size, $padding);
 			else
 				$html=null;
 				
-			return (isset($html) && strlen($userfields['handle'])) ? ('<A HREF="'.qa_path_html('user/'.$userfields['handle']).'" CLASS="qa-avatar-link">'.$html.'</A>') : $html;
+			return (isset($html) && strlen($handle)) ? ('<A HREF="'.qa_path_html('user/'.$handle).'" CLASS="qa-avatar-link">'.$html.'</A>') : $html;
 		}
 		
 

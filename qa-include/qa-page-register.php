@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-register.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Controller for register page
 
 
@@ -130,6 +130,21 @@
 	if (qa_opt('captcha_on_register'))
 		qa_set_up_captcha_field($qa_content, $qa_content['form']['fields'], @$errors);
 	
+	$modulenames=qa_list_modules('login');
+	
+	foreach ($modulenames as $tryname) {
+		$module=qa_load_module('login', $tryname);
+		
+		if (method_exists($module, 'login_html')) {
+			ob_start();
+			$module->login_html($qa_root_url_relative.qa_get('to'), 'register');
+			$html=ob_get_clean();
+			
+			if (strlen($html))
+				@$qa_content['custom'].='<BR>'.$html.'<BR>';
+		}
+	}
+
 	$qa_content['focusid']=isset($errors['handle']) ? 'handle'
 		: (isset($errors['password']) ? 'password'
 			: (isset($errors['email']) ? 'email' : 'handle'));

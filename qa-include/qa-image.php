@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-image.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Retrieve image for a specific blob at a specific size
 
 
@@ -58,21 +58,11 @@
 		$blob=qa_db_blob_read($blobid);
 		
 		if (isset($blob)) {
-			$image=imagecreatefromstring($blob['content']);
+			$content=qa_image_constrain_data($blob['content'], $width, $height, $size);
 			
-			if (is_resource($image)) {
-				$width=imagesx($image);
-				$height=imagesy($image);
-				
-				if (qa_image_constrain($width, $height, $size))
-					qa_gd_image_resize($image, $width, $height);
-			}
-			
-			if (is_resource($image)) {
+			if (isset($content)) {
 				header('Content-Type: image/jpeg');
-
-				$content=qa_gd_image_jpeg($image, true);
-				imagedestroy($image);
+				echo $content;
 
 				$cachesizes=qa_get_options(array('avatar_profile_size', 'avatar_users_size', 'avatar_q_page_q_size', 'avatar_q_page_a_size', 'avatar_q_page_c_size'));
 					// to prevent cache being filled with inappropriate sizes

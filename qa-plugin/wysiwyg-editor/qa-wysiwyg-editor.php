@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/wysiwyg-editor/qa-wysiwyg-editor.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description:
 
 
@@ -46,12 +46,9 @@
 		
 		function get_field(&$qa_content, $content, $format, $fieldname, $rows, $autofocus)
 		{
-			if ($autofocus)
-				$qa_content['focusid']=$fieldname;
-			
 			$qa_content['script_src'][]=$this->urltoroot.'ckeditor.js';
 			$qa_content['script_onloads'][]="CKEDITOR.replace(".qa_js($fieldname).", {toolbar:[".
-				"['Bold','Italic','Underline','Strike','-','Subscript','Superscript'],".
+				"['Bold','Italic','Underline','Strike'],".
 				"['Font','FontSize'],".
 				"['TextColor','BGColor'],".
 				"['Link','Unlink'],".

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-users.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Controller for top scoring users page
 
 
@@ -37,11 +37,9 @@
 
 //	Get list of all users
 	
-	list($users, $usercount)=qa_db_select_with_pending(
-		qa_db_top_users_selectspec($qa_start),
-		qa_db_options_cache_selectspec('cache_userpointscount')
-	);
+	$users=qa_db_select_with_pending(qa_db_top_users_selectspec($qa_start));
 	
+	$usercount=qa_opt('cache_userpointscount');
 	$pagesize=qa_opt('page_size_users');
 	$users=array_slice($users, 0, $pagesize);
 	$usershtml=qa_userids_handles_html($users);
@@ -58,7 +56,8 @@
 	if (count($users)) {
 		foreach ($users as $userid => $user)
 			$qa_content['ranking']['items'][]=array(
-				'label' => (QA_EXTERNAL_USERS ? '' : (qa_get_user_avatar_html($user, qa_opt('avatar_users_size'), true).' ')).$usershtml[$user['userid']],
+				'label' => (QA_EXTERNAL_USERS ? '' : (qa_get_user_avatar_html($user['flags'], $user['email'], $user['handle'],
+						$user['avatarblobid'], $user['avatarwidth'], $user['avatarheight'], qa_opt('avatar_users_size'), true).' ')).$usershtml[$user['userid']],
 				'score' => qa_html(number_format($user['points'])),
 			);
 	

@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-admin.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Language phrases for admin center
 
 
@@ -124,6 +124,7 @@
 		'basic_editor' => 'Basic Editor',
 		'q2a_version' => 'Question2Answer version:',
 		'q2a_db_version' => 'Q2A database version:',
+		'q2a_latest_version' => 'Q2A latest version:',
 		'php_version' => 'PHP version:',
 		'mysql_version' => 'MySQL version:',
 		'points_defaults_shown' => 'Defaults shown below but NOT YET APPLIED:',

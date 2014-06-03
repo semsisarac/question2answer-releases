@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Routing and utility functions for page requests
 
 
@@ -413,15 +413,17 @@
 			if (!QA_EXTERNAL_USERS) {
 				$source=qa_get_logged_in_source();
 				
-				$modulenames=qa_list_modules('login');
-				
-				foreach ($modulenames as $tryname) {
-					$module=qa_load_module('login', $tryname);
+				if (strlen($source)) {
+					$modulenames=qa_list_modules('login');
 					
-					if (method_exists($module, 'match_source') && $module->match_source($source) && method_exists($module, 'logout_html')) {
-						ob_start();
-						$module->logout_html(qa_path('logout'));
-						$qa_content['navigation']['user']['logout']=array('label' => ob_get_clean());
+					foreach ($modulenames as $tryname) {
+						$module=qa_load_module('login', $tryname);
+						
+						if (method_exists($module, 'match_source') && $module->match_source($source) && method_exists($module, 'logout_html')) {
+							ob_start();
+							$module->logout_html(qa_path('logout'));
+							$qa_content['navigation']['user']['logout']=array('label' => ob_get_clean());
+						}
 					}
 				}
 			}
@@ -434,7 +436,7 @@
 				
 				if (method_exists($module, 'login_html')) {
 					ob_start();
-					$module->login_html(isset($topath) ? ($qa_root_url_relative.$topath) : qa_path($qa_request, $_GET));
+					$module->login_html(isset($topath) ? ($qa_root_url_relative.$topath) : qa_path($qa_request, $_GET), 'menu');
 					$qa_content['navigation']['user'][$tryname]=array('label' => ob_get_clean());
 				}
 			}

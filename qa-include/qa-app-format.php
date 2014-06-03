@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Common functions for creating theme-ready structures from data
 
 
@@ -362,7 +362,7 @@
 			$fields['what_url']='#'.qa_html(urlencode($anchor));
 		
 		if (isset($post['created']) && @$options['whenview']) {
-			$whenhtml=qa_html(qa_time_to_string(time()-$post['created']));
+			$whenhtml=qa_html(qa_time_to_string(qa_opt('db_time')-$post['created']));
 			if ($microformats)
 				$whenhtml='<SPAN CLASS="published"><SPAN CLASS="value-title" TITLE="'.gmdate('Y-m-d\TH:i:sO', $post['created']).'"></SPAN>'.$whenhtml.'</SPAN>';
 			
@@ -382,8 +382,9 @@
 			}
 		}
 
-		if ((!QA_EXTERNAL_USERS) && isset($options['avatarsize']) && isset($post['flags']))
-			$fields['avatar']=qa_get_user_avatar_html($post, $options['avatarsize']);
+		if ((!QA_EXTERNAL_USERS) && (@$options['avatarsize']>0))
+			$fields['avatar']=qa_get_user_avatar_html($post['flags'], $post['email'], $post['handle'],
+				$post['avatarblobid'], $post['avatarwidth'], $post['avatarheight'], $options['avatarsize']);
 
 	//	Updated when and by whom
 		
@@ -394,7 +395,7 @@
 			($post['lastuserid']!=$post['userid']) // ... or it was updated by a different user
 		)) {
 			if (@$options['whenview']) {
-				$whenhtml=qa_html(qa_time_to_string(time()-$post['updated']));
+				$whenhtml=qa_html(qa_time_to_string(qa_opt('db_time')-$post['updated']));
 				if ($microformats)
 					$whenhtml='<SPAN CLASS="updated"><SPAN CLASS="value-title" TITLE="'.gmdate('Y-m-d\TH:i:sO', $post['updated']).'"></SPAN>'.$whenhtml.'</SPAN>';
 				
@@ -436,8 +437,7 @@
 	}
 	
 
-	function qa_other_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options,
-		$basetype, $edited, $opostid, $otime, $ouserid, $ocookieid, $oip, $opoints)
+	function qa_other_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options)
 /*
 	Return array of mostly HTML to be passed to theme layer, to *link* to an answer or comment
 	on $question retrieved from database. $basetype is 'A' for answer or 'C' for comment.
@@ -447,44 +447,45 @@
 	{
 		$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options);
 		
-		if ($edited) {
-			switch ($basetype) {
-				case 'Q':
-					$fields['what']=qa_lang_html('main/edited');
-					break;
-					
-				case 'A':
-					$fields['what']=qa_lang_html('main/answer_edited');
-					break;
-					
-				case 'C':
-					$fields['what']=qa_lang_html('main/comment_edited');
-					break;
-			}
-	
-		} elseif ( ($basetype=='C') || ($basetype=='A') )
-			$fields['what']=qa_lang_html(($basetype=='A') ? 'main/answered' : 'main/commented');
+		switch ($question['obasetype']) {
+			case 'Q':
+				$fields['what']=@$question['oedited'] ? qa_lang_html('main/edited') : null;
+				break;
+				
+			case 'A':
+				$fields['what']=@$question['oedited'] ? qa_lang_html('main/answer_edited') : qa_lang_html('main/answered');
+				break;
+				
+			case 'C':
+				$fields['what']=@$question['oedited'] ? qa_lang_html('main/comment_edited') : qa_lang_html('main/commented');
+				break;
+		}
 			
-		if ($basetype!='Q')
-			$fields['what_url']=$fields['url'].'#'.qa_html(urlencode(qa_anchor($basetype, $opostid)));
+		if ($question['obasetype']!='Q')
+			$fields['what_url']=$fields['url'].'#'.qa_html(urlencode(qa_anchor($question['obasetype'], $question['opostid'])));
 
 		if (@$options['whenview'])
-			$fields['when']=qa_lang_html_sub_split('main/x_ago', qa_html(qa_time_to_string(time()-$otime)));
-		
-		$isbyuser=qa_post_is_by_user(array('userid' => $ouserid, 'cookieid' => $ocookieid), $userid, $cookieid);
+			$fields['when']=qa_lang_html_sub_split('main/x_ago', qa_html(qa_time_to_string(qa_opt('db_time')-$question['otime'])));
 		
 		if (@$options['whoview']) {
-			$fields['who']=qa_who_to_html($isbyuser, $ouserid, $usershtml, @$options['ipview'] ? $oip : null, false);
+			$isbyuser=qa_post_is_by_user(array('userid' => $question['ouserid'], 'cookieid' => $question['ocookieid']), $userid, $cookieid);
+		
+			$fields['who']=qa_who_to_html($isbyuser, $question['ouserid'], $usershtml, @$options['ipview'] ? $question['oip'] : null, false);
 	
-			if (isset($opoints)) {
+			if (isset($question['opoints'])) {
 				if (@$options['pointsview'])
-					$fields['who']['points']=($opoints==1) ? qa_lang_html_sub_split('main/1_point', '1', '1')
-						: qa_lang_html_sub_split('main/x_points', qa_html(number_format($opoints)));
+					$fields['who']['points']=($question['opoints']==1) ? qa_lang_html_sub_split('main/1_point', '1', '1')
+						: qa_lang_html_sub_split('main/x_points', qa_html(number_format($question['opoints'])));
 						
 				if (isset($options['pointstitle']))
-					$fields['who']['title']=qa_get_points_title_html($opoints, $options['pointstitle']);
+					$fields['who']['title']=qa_get_points_title_html($question['opoints'], $options['pointstitle']);
 			}
 		}
+		
+		unset($fields['avatar']);
+		if ((!QA_EXTERNAL_USERS) && (@$options['avatarsize']>0))
+			$fields['avatar']=qa_get_user_avatar_html($question['oflags'], $question['oemail'], $question['ohandle'],
+				$question['oavatarblobid'], $question['oavatarwidth'], $question['oavatarheight'], $options['avatarsize']);
 		
 		return $fields;
 	}
@@ -496,18 +497,8 @@
 	to the question, or to an answer or comment thereon.
 */
 	{
-		if (isset($question['cpostid']))
-			$fields=qa_other_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options,
-				'C', false, $question['cpostid'], @$question['ccreated'], @$question['cuserid'], @$question['ccookieid'], @$question['ccreateip'], @$question['cpoints']);
-
-		elseif (isset($question['apostid']))
-			$fields=qa_other_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options,
-				'A', false, $question['apostid'], @$question['acreated'], @$question['auserid'], @$question['acookieid'], @$question['acreateip'], @$question['apoints']);
-
-		elseif (isset($question['editpostid']))
-			$fields=qa_other_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options,
-				$question['editbasetype'], true, $question['editpostid'], @$question['editupdated'], @$question['editlastuserid'], @$question['editcookieid'], @$question['editlastip'], @$question['editpoints']);
-
+		if (isset($question['opostid']))
+			$fields=qa_other_to_q_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options);
 		else
 			$fields=qa_post_html_fields($question, $userid, $cookieid, $usershtml, $categories, $options);
 
@@ -519,18 +510,8 @@
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-sort.php';
 		
-		foreach ($questions as $key => $question) { // collect information about action referenced by each $question
-			if (isset($question['editpostid']))
-				$otime=$question['editupdated'];
-			elseif (isset($question['cpostid']))
-				$otime=$question['ccreated'];
-			elseif (isset($question['apostid']))
-				$otime=$question['acreated'];
-			else
-				$otime=$question['created'];
-				
-			$questions[$key]['sort']=-$otime;
-		}
+		foreach ($questions as $key => $question) // collect information about action referenced by each $question
+			$questions[$key]['sort']=-(isset($question['opostid']) ? $question['otime'] : $question['created']);
 		
 		qa_sort_by($questions, 'sort');
 		
@@ -547,32 +528,17 @@
 		require_once QA_INCLUDE_DIR.'qa-util-sort.php';
 		
 		foreach ($questions as $key => $question) { // collect information about action referenced by each $question
-			if (isset($question['editpostid'])) {
-				$otime=$question['editupdated'];
-				$otype=$question['editbasetype'];
-				$ouserid=$question['editlastuserid'];
-
-			} elseif (isset($question['cpostid'])) {
-				$otime=$question['ccreated'];
-				$otype='C';
-				$ouserid=$question['cuserid'];
-
-			} elseif (isset($question['apostid'])) {
-				$otime=$question['acreated'];
-				$otype='A';
-				$ouserid=$question['auserid'];
-
+			if (isset($question['opostid'])) {
+				$questions[$key]['_time']=$question['otime'];
+				$questions[$key]['_type']=$question['obasetype'];
+				$questions[$key]['_userid']=$question['ouserid'];
 			} else {
-				$otime=$question['created'];
-				$otype='Q';
-				$ouserid=$question['userid'];
+				$questions[$key]['_time']=$question['created'];
+				$questions[$key]['_type']='Q';
+				$questions[$key]['_userid']=$question['userid'];
 			}
-				
-			$questions[$key]['otype']=-$otype;
-			$questions[$key]['otime']=$otime;
-			$questions[$key]['ouserid']=$ouserid;
 
-			$questions[$key]['sort']=-$otime;
+			$questions[$key]['sort']=-$questions[$key]['_time'];
 		}
 		
 		qa_sort_by($questions, 'sort');
@@ -583,11 +549,11 @@
 			
 			if ((!isset($laterquestion)) || // keep this reference if there is no more recent one, or...
 				(
-					(isset($laterquestion['editupdated'])) && // the more recent reference was an edit
-					(!isset($question['editupdated'])) && // this is not an edit
-					($laterquestion['otype']==$question['otype']) && // the same part (Q/A/C) is referenced here 
-					($laterquestion['ouserid']==$question['ouserid']) && // the same user made the later edit
-					(abs($laterquestion['otime']-$question['otime'])<300) // the edit was within 5 minutes of creation
+					(@$laterquestion['oedited']) && // the more recent reference was an edit
+					(!@$question['oedited']) && // this is not an edit
+					($laterquestion['_type']==$question['_type']) && // the same part (Q/A/C) is referenced here 
+					($laterquestion['_userid']==$question['_userid']) && // the same user made the later edit
+					(abs($laterquestion['_time']-$question['_time'])<300) // the edit was within 5 minutes of creation
 				)
 			)
 				$keepquestions[$question['postid']]=$question;
@@ -606,22 +572,10 @@
 		$userids_handles=array();
 		
 		foreach ($questions as $question)
-			if (isset($question['cpostid']))
+			if (isset($question['opostid']))
 				$userids_handles[]=array(
-					'userid' => @$question['cuserid'],
-					'handle' => @$question['chandle'],
-				);
-			
-			elseif (isset($question['apostid']))
-				$userids_handles[]=array(
-					'userid' => @$question['auserid'],
-					'handle' => @$question['ahandle'],
-				);
-			
-			elseif (isset($question['editpostid']))
-				$userids_handles[]=array(
-					'userid' => @$question['editlastuserid'],
-					'handle' => @$question['edithandle'],
+					'userid' => @$question['ouserid'],
+					'handle' => @$question['ohandle'],
 				);
 			
 			else
@@ -1128,7 +1082,7 @@
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-image.php';
 		
-		if ($size>0) {
+		if (strlen($blobid) && ($size>0)) {
 			qa_image_constrain($width, $height, $size);
 			
 			$html='<IMG SRC="'.qa_path('image/'.$blobid, array('s' => $size)).

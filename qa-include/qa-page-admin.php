@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Controller for most admin pages which just contain options
 
 
@@ -90,17 +90,19 @@
 				$showoptions=array('avatar_allow_gravatar');
 				
 				if (qa_has_gd_image())
-					array_push($showoptions, 'avatar_allow_upload', 'avatar_store_size');
+					array_push($showoptions, 'avatar_allow_upload', 'avatar_store_size', 'avatar_default_show');
 					
-				array_push($showoptions, '', 'avatar_profile_size', 'avatar_users_size', 'avatar_q_page_q_size', 'avatar_q_page_a_size', 'avatar_q_page_c_size', '');
+				array_push($showoptions, '', 'avatar_profile_size', 'avatar_users_size', 'avatar_q_page_q_size', 'avatar_q_page_a_size', 'avatar_q_page_c_size', 'avatar_q_list_size', '');
 	
 				$checkboxtodisplay=array(
 					'avatar_store_size' => 'option_avatar_allow_upload',
+					'avatar_default_show' => 'option_avatar_allow_gravatar || option_avatar_allow_upload',
 					'avatar_profile_size' => 'option_avatar_allow_gravatar || option_avatar_allow_upload',
 					'avatar_users_size' => 'option_avatar_allow_gravatar || option_avatar_allow_upload',
 					'avatar_q_page_q_size' => 'option_avatar_allow_gravatar || option_avatar_allow_upload',
 					'avatar_q_page_a_size' => 'option_avatar_allow_gravatar || option_avatar_allow_upload',
 					'avatar_q_page_c_size' => 'option_avatar_allow_gravatar || option_avatar_allow_upload',
+					'avatar_q_list_size' => 'option_avatar_allow_gravatar || option_avatar_allow_upload',
 				);
 			} else
 				$showoptions=array();
@@ -282,6 +284,7 @@
 		'avatar_q_page_q_size' => 'number',
 		'avatar_q_page_a_size' => 'number',
 		'avatar_q_page_c_size' => 'number',
+		'avatar_q_list_size' => 'number',
 		'columns_tags' => 'number',
 		'columns_users' => 'number',
 		'feed_number_items' => 'number',
@@ -318,6 +321,7 @@
 		
 		'avatar_allow_gravatar' => 'checkbox',
 		'avatar_allow_upload' => 'checkbox',
+		'avatar_default_show' => 'checkbox',
 		'captcha_on_anon_post' => 'checkbox',
 		'captcha_on_feedback' => 'checkbox',
 		'captcha_on_register' => 'checkbox',
@@ -402,11 +406,13 @@
 
 
 //	Process user actions
-
+	
+	$errors=array();
+	
 	if (qa_clicked('doresetoptions'))
 		qa_reset_options($getoptions);
 
-	elseif (qa_clicked('dosaveoptions'))
+	elseif (qa_clicked('dosaveoptions')) {
 		foreach ($getoptions as $optionname) {
 			$optionvalue=qa_post_text('option_'.$optionname);
 			
@@ -441,6 +447,35 @@
 				
 			qa_set_option($optionname, $optionvalue);
 		}
+
+	//	Uploading default avatar
+
+		if (is_array(@$_FILES['avatar_default_file']) && $_FILES['avatar_default_file']['size']) {
+			require_once QA_INCLUDE_DIR.'qa-util-image.php';
+			
+			$oldblobid=qa_opt('avatar_default_blobid');
+			
+			$imagedata=qa_image_constrain_data(file_get_contents($_FILES['avatar_default_file']['tmp_name']), $width, $height, qa_opt('avatar_store_size'));
+			
+			if (isset($imagedata)) {
+				require_once QA_INCLUDE_DIR.'qa-db-blobs.php';
+				
+				$newblobid=qa_db_blob_create($imagedata, 'jpeg');
+				
+				if (isset($newblobid)) {
+					qa_set_option('avatar_default_blobid', $newblobid);
+					qa_set_option('avatar_default_width', $width);
+					qa_set_option('avatar_default_height', $height);
+					qa_set_option('avatar_default_show', 1);
+				}
+					
+				if (strlen($oldblobid))
+					qa_db_blob_delete($oldblobid);
+
+			} else
+				$errors['avatar_default_show']=qa_lang_sub('users/avatar_not_read', implode(', ', qa_gd_image_formats()));
+		}
+	}
 
 	$options=qa_get_options($getoptions);
 
@@ -509,6 +544,7 @@
 				'tags' => ' NAME="option_'.$optionname.'" ID="option_'.$optionname.'" ',
 				'value' => qa_html($value),
 				'type' => $type,
+				'error' => @$errors[$optionname],
 			);
 			
 			if (isset($optionmaximum[$optionname]))
@@ -608,6 +644,13 @@
 						$optionfield['style']='tall';
 						$optionfield['error']=qa_lang_html('admin/no_image_gd');
 					}
+					break;
+					
+				case 'avatar_default_show';
+					$qa_content['form']['tags'].=' ENCTYPE="multipart/form-data" ';
+					$optionfield['label'].=' <SPAN STYLE="margin:2px 0; display:inline-block;">'.
+						qa_get_avatar_blob_html(qa_opt('avatar_default_blobid'), qa_opt('avatar_default_width'), qa_opt('avatar_default_height'), 32).
+						'</SPAN> <INPUT NAME="avatar_default_file" TYPE="file" STYLE="width:16em;">';
 					break;
 				
 				case 'pages_prev_next':

@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-plugin/facebook-login/qa-facebook-login.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description:
 
 
@@ -47,7 +47,7 @@
 				if (substr($key, 0, 4)=='fbs_')
 					$testfacebook=true;
 					
-			if (!$testfacebook) // to save making a database query at this point
+			if (!$testfacebook) // to save making a database query for qa_opt() if there's no point
 				return;
 			
 			$app_id=qa_opt('facebook_app_id');
@@ -67,7 +67,16 @@
 						$payload.=$key.'='.$value;
 						
 				if (md5($payload.qa_opt('facebook_app_secret'))==$args['sig']) {
-					$rawuser=file_get_contents('https://graph.facebook.com/me?access_token='.$args['access_token'].'&fields=picture');
+					$url='https://graph.facebook.com/me?access_token='.$args['access_token'].'&fields=picture';
+					$rawuser=''; //file_get_contents($url);
+					
+					if ((!strlen($rawuser)) && function_exists('curl_exec')) { // try curl as a backup (if allow_url_fopen not set)
+						$curl=curl_init($url);
+						curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+						curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+						$rawuser=curl_exec($curl);
+						curl_close($curl);
+					}
 					
 					if (strlen($rawuser)) {
 						require_once $this->directory.'JSON.php';
@@ -84,7 +93,7 @@
 								'location' => @$user['location']['name'],
 								'website' => @$user['website'],
 								'about' => @$user['about'],
-								'avatar' => strlen($user['picture']) ? file_get_contents($user['picture']) : null,
+								'avatar' => strlen(@$user['picture']) ? file_get_contents($user['picture']) : null,
 							));
 
 					}
@@ -97,7 +106,7 @@
 			return $source=='facebook';
 		}
 		
-		function login_html($tourl, $showlogout=false)
+		function login_html($tourl, $context)
 		{
 			$app_id=qa_opt('facebook_app_id');
 
@@ -108,13 +117,13 @@
 <div id="fb-root"></div>
 <script src="http://connect.facebook.net/en_US/all.js"></script>
 <script>
-	FB.init({appId: <?=qa_js($app_id)?>, status: true, cookie: true, xfbml: true});
+	FB.init({appId: <?php echo qa_js($app_id)?>, status: true, cookie: true, xfbml: true});
 	FB.Event.subscribe('auth.sessionChange', function(response) {
-		window.location=<?=qa_js($tourl)?>;
+		window.location=<?php echo qa_js($tourl)?>;
 	});
 </script>
 <fb:login-button perms="email,user_about_me,user_website"></fb:login-button>
-<?
+<?php
 
 		}
 		
@@ -129,13 +138,13 @@
 <span id="fb-root"></span>
 <script src="http://connect.facebook.net/en_US/all.js"></script>
 <script>
-	FB.init({appId: <?=qa_js($app_id)?>, status: true, cookie: true, xfbml: true});
+	FB.init({appId: <?php echo qa_js($app_id)?>, status: true, cookie: true, xfbml: true});
 	FB.Event.subscribe('auth.sessionChange', function(response) {
-		window.location=<?=qa_js($tourl)?>;
+		window.location=<?php echo qa_js($tourl)?>;
 	});
 </script>
 <fb:login-button autologoutlink="true"></fb:login-button>
-<?
+<?php
 
 		}
 		

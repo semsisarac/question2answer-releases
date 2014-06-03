@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-selects.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Builders of selectspec arrays (see qa-db.php) used to specify database SELECTs
 
 
@@ -52,9 +52,9 @@
 			if (empty($selectspec))
 				unset($selectspecs[$key]);
 		
-		$optionselectspec=qa_options_pending_selectspec();
-		if (is_array($optionselectspec))
-			$selectspecs['_options']=$optionselectspec;
+		$optionselectspecs=qa_options_pending_selectspecs();
+		foreach ($optionselectspecs as $key => $selectspec)
+			$selectspecs[$key]=$selectspec;
 			
 		if (@$qa_logged_in_pending && !QA_EXTERNAL_USERS) {
 			$loggedinselectspec=qa_logged_in_user_selectspec();
@@ -69,15 +69,14 @@
 		
 		$outresults=qa_db_multi_select($selectspecs);
 		
-		if (is_array($optionselectspec))
-			qa_options_load_options($optionselectspec, $outresults['_options']);
+		qa_options_load_options($optionselectspecs, $outresults);
 			
 		if (is_array($loggedinselectspec))
 			qa_logged_in_user_load($loggedinselectspec, $outresults['_loggedin']);
 			
 		if (@$qa_nav_pages_pending && !isset($qa_nav_pages_cached))
 			$qa_nav_pages_cached=$outresults['_navpages'];
-		
+			
 		return $singleresult ? $outresults[0] : $outresults;
 	}
 
@@ -93,7 +92,7 @@
 		$selectspec=array(
 			'columns' => array(
 				'^posts.postid', '^posts.categoryid', '^posts.type', 'basetype' => 'LEFT(^posts.type,1)',
-				'hidden' => "INSTR(^posts.type, '_HIDDEN')>0", '^posts.acount', '^posts.upvotes', '^posts.downvotes',
+				'hidden' => "INSTR(^posts.type, '_HIDDEN')>0", '^posts.acount', '^posts.selchildid', '^posts.upvotes', '^posts.downvotes',
 				'title' => 'BINARY ^posts.title', 'tags' => 'BINARY ^posts.tags', 'created' => 'UNIX_TIMESTAMP(^posts.created)',
 			),
 			
@@ -116,7 +115,6 @@
 			$selectspec['columns'][]='^posts.lastuserid';
 			$selectspec['columns']['lastip']='INET_NTOA(^posts.lastip)';
 			$selectspec['columns'][]='^posts.parentid';
-			$selectspec['columns'][]='^posts.selchildid';
 		};
 				
 		if ($user) {
@@ -209,23 +207,30 @@
 	{
 		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
 		
-		$selectspec['arraykey']='apostid';
+		$selectspec['arraykey']='opostid';
 
-		$selectspec['columns']['apostid']='aposts.postid';
-		$selectspec['columns']['auserid']='aposts.userid';
-		$selectspec['columns']['acookieid']='aposts.cookieid';
-		$selectspec['columns']['acreateip']='INET_NTOA(aposts.createip)';
-		$selectspec['columns']['acreated']='UNIX_TIMESTAMP(aposts.created)';
+		$selectspec['columns']['obasetype']="'A'";
+		$selectspec['columns']['opostid']='aposts.postid';
+		$selectspec['columns']['ouserid']='aposts.userid';
+		$selectspec['columns']['ocookieid']='aposts.cookieid';
+		$selectspec['columns']['oip']='INET_NTOA(aposts.createip)';
+		$selectspec['columns']['otime']='UNIX_TIMESTAMP(aposts.created)';
 
 		if ($fullanswers) {
-			$selectspec['columns']['acontent']='BINARY aposts.content';
-			$selectspec['columns']['aformat']='aposts.format';
+			$selectspec['columns']['ocontent']='BINARY aposts.content';
+			$selectspec['columns']['oformat']='aposts.format';
 		}
 
-		$selectspec['columns']['apoints']='auserpoints.points';
+		$selectspec['columns']['opoints']='auserpoints.points';
 		
-		if (!QA_EXTERNAL_USERS)
-			$selectspec['columns']['ahandle']='BINARY ausers.handle';
+		if (!QA_EXTERNAL_USERS) {
+			$selectspec['columns']['oflags']='ausers.flags';
+			$selectspec['columns']['oemail']='BINARY ausers.email';
+			$selectspec['columns']['ohandle']='BINARY ausers.handle';
+			$selectspec['columns']['oavatarblobid']='BINARY ausers.avatarblobid'; // cast to BINARY due to MySQL bug which renders it signed in a union
+			$selectspec['columns']['oavatarwidth']='ausers.avatarwidth';
+			$selectspec['columns']['oavatarheight']='ausers.avatarheight';
+		}
 		
 		$selectspec['source'].=" JOIN ^posts AS aposts ON ^posts.postid=aposts.parentid".
 			(QA_EXTERNAL_USERS ? "" : " LEFT JOIN ^users AS ausers ON aposts.userid=ausers.userid").
@@ -243,7 +248,7 @@
 
 		array_push($selectspec['arguments'], $hidden ? 'A_HIDDEN' : 'A', $start, $count);
 
-		$selectspec['sortdesc']='acreated';
+		$selectspec['sortdesc']='otime';
 		
 		return $selectspec;
 	}
@@ -261,23 +266,30 @@
 	{
 		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
 		
-		$selectspec['arraykey']='cpostid';
+		$selectspec['arraykey']='opostid';
 
-		$selectspec['columns']['cpostid']='cposts.postid';
-		$selectspec['columns']['cuserid']='cposts.userid';
-		$selectspec['columns']['ccookieid']='cposts.cookieid';
-		$selectspec['columns']['ccreateip']='INET_NTOA(cposts.createip)';
-		$selectspec['columns']['ccreated']='UNIX_TIMESTAMP(cposts.created)';
+		$selectspec['columns']['obasetype']="'C'";
+		$selectspec['columns']['opostid']='cposts.postid';
+		$selectspec['columns']['ouserid']='cposts.userid';
+		$selectspec['columns']['ocookieid']='cposts.cookieid';
+		$selectspec['columns']['oip']='INET_NTOA(cposts.createip)';
+		$selectspec['columns']['otime']='UNIX_TIMESTAMP(cposts.created)';
 
 		if ($fullcomments) {
-			$selectspec['columns']['ccontent']='BINARY cposts.content';
-			$selectspec['columns']['cformat']='cposts.format';
+			$selectspec['columns']['ocontent']='BINARY cposts.content';
+			$selectspec['columns']['oformat']='cposts.format';
 		}
 
-		$selectspec['columns']['cpoints']='cuserpoints.points';
+		$selectspec['columns']['opoints']='cuserpoints.points';
 		
-		if (!QA_EXTERNAL_USERS)
-			$selectspec['columns']['chandle']='BINARY cusers.handle';
+		if (!QA_EXTERNAL_USERS) {
+			$selectspec['columns']['oflags']='cusers.flags';
+			$selectspec['columns']['oemail']='BINARY cusers.email';
+			$selectspec['columns']['ohandle']='BINARY cusers.handle';
+			$selectspec['columns']['oavatarblobid']='BINARY cusers.avatarblobid'; // cast to BINARY due to MySQL bug which renders it signed in a union
+			$selectspec['columns']['oavatarwidth']='cusers.avatarwidth';
+			$selectspec['columns']['oavatarheight']='cusers.avatarheight';
+		}
 		
 		$selectspec['source'].=" JOIN ^posts AS parentposts ON".
 			" ^posts.postid=(CASE parentposts.type WHEN 'A' THEN parentposts.parentid ELSE parentposts.postid END)".
@@ -297,7 +309,7 @@
 
 		array_push($selectspec['arguments'], $hidden ? 'C_HIDDEN' : 'C', $start, $count);
 
-		$selectspec['sortdesc']='ccreated';
+		$selectspec['sortdesc']='otime';
 		
 		return $selectspec;
 	}
@@ -307,25 +319,31 @@
 	{
 		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
 		
-		$selectspec['arraykey']='editpostid';
+		$selectspec['arraykey']='opostid';
 
-		$selectspec['columns']['edittype']='editposts.type';
-		$selectspec['columns']['editbasetype']='LEFT(editposts.type, 1)';
-		$selectspec['columns']['editpostid']='editposts.postid';
-		$selectspec['columns']['editlastuserid']='editposts.lastuserid';
-		$selectspec['columns']['editcookieid']='editposts.cookieid';
-		$selectspec['columns']['editlastip']='INET_NTOA(editposts.lastip)';
-		$selectspec['columns']['editupdated']='UNIX_TIMESTAMP(editposts.updated)';
-		$selectspec['columns']['editpoints']='edituserpoints.points';
+		$selectspec['columns']['obasetype']='LEFT(editposts.type, 1)';
+		$selectspec['columns']['oedited']='1';
+		$selectspec['columns']['opostid']='editposts.postid';
+		$selectspec['columns']['ouserid']='editposts.lastuserid';
+		$selectspec['columns']['ocookieid']='editposts.cookieid';
+		$selectspec['columns']['oip']='INET_NTOA(editposts.lastip)';
+		$selectspec['columns']['otime']='UNIX_TIMESTAMP(editposts.updated)';
+		$selectspec['columns']['opoints']='edituserpoints.points';
 		
 		if ($full) {
-			$selectspec['columns']['editcontent']='BINARY editposts.content';
-			$selectspec['columns']['editformat']='editposts.format';
+			$selectspec['columns']['ocontent']='BINARY editposts.content';
+			$selectspec['columns']['oformat']='editposts.format';
 		}
 		
-		if (!QA_EXTERNAL_USERS)
-			$selectspec['columns']['edithandle']='BINARY editusers.handle';
-			
+		if (!QA_EXTERNAL_USERS) {
+			$selectspec['columns']['oflags']='editusers.flags';
+			$selectspec['columns']['oemail']='BINARY editusers.email';
+			$selectspec['columns']['ohandle']='BINARY editusers.handle';
+			$selectspec['columns']['oavatarblobid']='BINARY editusers.avatarblobid'; // // cast to BINARY due to MySQL bug which renders it signed in a union
+			$selectspec['columns']['oavatarwidth']='editusers.avatarwidth';
+			$selectspec['columns']['oavatarheight']='editusers.avatarheight';
+		}
+
 		$selectspec['source'].=" JOIN ^posts AS parentposts ON".
 			" ^posts.postid=IF(parentposts.type IN ('Q', 'Q_HIDDEN'), parentposts.postid, parentposts.parentid)".
 			" JOIN ^posts AS editposts ON parentposts.postid=IF(editposts.type IN ('Q', 'Q_HIDDEN'), editposts.postid, editposts.parentid)".
@@ -346,7 +364,7 @@
 			
 		array_push($selectspec['arguments'], $start, $count);
 
-		$selectspec['sortdesc']='editupdated';
+		$selectspec['sortdesc']='otime';
 		
 		return $selectspec;		
 	}
@@ -672,16 +690,19 @@
 	{
 		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
 		
-		$selectspec['arraykey']='apostid';
-		$selectspec['columns']['apostid']='aposts.postid';
-		$selectspec['columns']['acreated']='UNIX_TIMESTAMP(aposts.created)';
+		$selectspec['arraykey']='opostid';
+
+		$selectspec['columns']['obasetype']="'A'";
+		$selectspec['columns']['opostid']='aposts.postid';
+		$selectspec['columns']['otime']='UNIX_TIMESTAMP(aposts.created)';
 		
 		$selectspec['source'].=" JOIN ^posts AS aposts ON ^posts.postid=aposts.parentid".
-			" WHERE aposts.userid=".(QA_EXTERNAL_USERS ? "$" : "(SELECT userid FROM ^users WHERE handle=$ LIMIT 1)")." AND aposts.type='A'".
-			" ORDER BY aposts.created DESC LIMIT #";
+			" JOIN (SELECT postid FROM ^posts WHERE ".
+			" userid=".(QA_EXTERNAL_USERS ? "$" : "(SELECT userid FROM ^users WHERE handle=$ LIMIT 1)").
+			" AND type='A' ORDER BY created DESC LIMIT #) y ON aposts.postid=y.postid WHERE ^posts.type!='Q_HIDDEN'";
 			
 		array_push($selectspec['arguments'], $identifier, $count);
-		$selectspec['sortdesc']='acreated';
+		$selectspec['sortdesc']='otime';
 		
 		return $selectspec;
 	}
@@ -691,18 +712,21 @@
 	{
 		$selectspec=qa_db_posts_basic_selectspec($voteuserid);
 		
-		$selectspec['arraykey']='cpostid';
-		$selectspec['columns']['cpostid']='cposts.postid';
-		$selectspec['columns']['ccreated']='UNIX_TIMESTAMP(cposts.created)';
+		$selectspec['arraykey']='opostid';
+
+		$selectspec['columns']['obasetype']="'C'";
+		$selectspec['columns']['opostid']='cposts.postid';
+		$selectspec['columns']['otime']='UNIX_TIMESTAMP(cposts.created)';
 		
 		$selectspec['source'].=" JOIN ^posts AS parentposts ON".
 			" ^posts.postid=(CASE parentposts.type WHEN 'A' THEN parentposts.parentid ELSE parentposts.postid END)".
 			" JOIN ^posts AS cposts ON parentposts.postid=cposts.parentid".
-			" WHERE cposts.userid=".(QA_EXTERNAL_USERS ? "$" : "(SELECT userid FROM ^users WHERE handle=$ LIMIT 1)")." AND cposts.type='C'".
-			" ORDER BY cposts.created DESC LIMIT #";
+			" JOIN (SELECT postid FROM ^posts WHERE ".
+			" userid=".(QA_EXTERNAL_USERS ? "$" : "(SELECT userid FROM ^users WHERE handle=$ LIMIT 1)").
+			" AND type='C' ORDER BY created DESC LIMIT #) y ON cposts.postid=y.postid WHERE (^posts.type!='Q_HIDDEN') AND (parentposts.type!='A_HIDDEN')";
 			
 		array_push($selectspec['arguments'], $identifier, $count);
-		$selectspec['sortdesc']='ccreated';
+		$selectspec['sortdesc']='otime';
 		
 		return $selectspec;
 	}
@@ -745,7 +769,9 @@
 		return array(
 			'columns' => array(
 				'userid', 'passsalt', 'passcheck' => 'HEX(passcheck)', 'email' => 'BINARY email', 'level', 'handle' => 'BINARY handle', 'emailcode',
-				'created' => 'UNIX_TIMESTAMP(created)', 'sessioncode', 'flags', 'loggedin' => 'UNIX_TIMESTAMP(loggedin)', 'loginip' => 'INET_NTOA(loginip)', 'written' => 'UNIX_TIMESTAMP(written)', 'writeip' => 'INET_NTOA(writeip)', 'avatarblobid', 'avatarwidth', 'avatarheight'
+				'created' => 'UNIX_TIMESTAMP(created)', 'sessioncode', 'sessionsource', 'flags', 'loggedin' => 'UNIX_TIMESTAMP(loggedin)',
+				'loginip' => 'INET_NTOA(loginip)', 'written' => 'UNIX_TIMESTAMP(written)', 'writeip' => 'INET_NTOA(writeip)',
+				'avatarblobid', 'avatarwidth', 'avatarheight'
 			),
 			
 			'source' => '^users WHERE '.($isuserid ? 'userid' : 'handle').'=$',

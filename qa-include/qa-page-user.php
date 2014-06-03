@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-user.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Controller for user profile page
 
 
@@ -227,13 +227,14 @@
 					'type' => 'image',
 					'style' => 'tall',
 					'label' => '',
-					'html' => qa_get_user_avatar_html($useraccount, qa_opt('avatar_profile_size')),
+					'html' => qa_get_user_avatar_html($useraccount['flags'], $useraccount['email'], $useraccount['handle'],
+						$useraccount['avatarblobid'], $useraccount['avatarwidth'], $useraccount['avatarheight'], qa_opt('avatar_profile_size')),
 				),
 				
 				'duration' => array(
 					'type' => 'static',
 					'label' => qa_lang_html('users/member_for'),
-					'value' => qa_time_to_string(time()-$useraccount['created']),
+					'value' => qa_time_to_string(qa_opt('db_time')-$useraccount['created']),
 				),
 				
 				'level' => array(
@@ -277,7 +278,7 @@
 				'label' => qa_lang_html('users/last_login_label'),
 				'value' =>
 					strtr(qa_lang_html('users/x_ago_from_y'), array(
-						'^1' => qa_time_to_string(time()-$useraccount['loggedin']),
+						'^1' => qa_time_to_string(qa_opt('db_time')-$useraccount['loggedin']),
 						'^2' => qa_ip_anchor_html($useraccount['loginip']),
 					)),
 				'note' => qa_lang_html('users/only_shown_moderators'),
@@ -289,7 +290,7 @@
 					'label' => qa_lang_html('users/last_write_label'),
 					'value' =>
 						strtr(qa_lang_html('users/x_ago_from_y'), array(
-							'^1' => qa_time_to_string(time()-$useraccount['written']),
+							'^1' => qa_time_to_string(qa_opt('db_time')-$useraccount['written']),
 							'^2' => qa_ip_anchor_html($useraccount['writeip']),
 						)),
 					'note' => qa_lang_html('users/only_shown_moderators'),
@@ -526,6 +527,7 @@
 		
 		$htmloptions=qa_post_html_defaults('Q');
 		$htmloptions['whoview']=false;
+		$htmloptions['avatarsize']=0;
 		
 		foreach ($questions as $question)
 			$qa_content['q_list']['qs'][]=qa_any_to_q_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml,

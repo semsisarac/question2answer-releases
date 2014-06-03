@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-install.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Database-level functions for installation and upgrading
 
 
@@ -31,7 +31,7 @@
 	}
 
 
-	define('QA_DB_VERSION_CURRENT', 21);
+	define('QA_DB_VERSION_CURRENT', 22);
 
 
 	function qa_db_user_column_type_verify()
@@ -125,6 +125,7 @@
 				'writeip' => 'INT UNSIGNED', // INET_ATON of IP address of last write action done by user
 				'emailcode' => 'CHAR(8) CHARACTER SET ascii NOT NULL DEFAULT \'\'', // for email confirmation or password reset
 				'sessioncode' => 'CHAR(8) CHARACTER SET ascii NOT NULL DEFAULT \'\'', // for comparing against session cookie in browser
+				'sessionsource' => 'VARCHAR (16) CHARACTER SET ascii DEFAULT \'\'', // e.g. facebook, openid, etc...
 				'flags' => 'TINYINT UNSIGNED NOT NULL DEFAULT 0', // email confirmed, user blocked, show gravatar?
 				'PRIMARY KEY (userid)',
 				'KEY email (email)',
@@ -779,6 +780,15 @@
 					break;
 					
 			//	Up to here: Version 1.3 beta 1
+			
+				case 22:
+					if (!QA_EXTERNAL_USERS) {
+						qa_db_upgrade_query('ALTER TABLE ^users ADD COLUMN sessionsource '.$definitions['users']['sessionsource']);
+						qa_db_upgrade_query($locktablesquery);
+					}
+					break;
+			
+			//	Up to here: Version 1.3 beta 2
 			
 					
 			}

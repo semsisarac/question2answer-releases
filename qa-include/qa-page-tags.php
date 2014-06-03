@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-tags.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Controller for popular tags page
 
 
@@ -36,11 +36,9 @@
 
 //	Get popular tags
 	
-	list($populartags, $tagcount)=qa_db_select_with_pending(
-		qa_db_popular_tags_selectspec($qa_start),
-		qa_db_options_cache_selectspec('cache_tagcount')
-	);
-	
+	$populartags=qa_db_select_with_pending(qa_db_popular_tags_selectspec($qa_start));
+
+	$tagcount=qa_opt('cache_tagcount');
 	$pagesize=qa_opt('page_size_tags');
 	
 	

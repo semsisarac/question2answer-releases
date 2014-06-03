@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-limits.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Monitoring and rate-limiting user actions (application level)
 
 
@@ -30,9 +30,6 @@
 		exit;
 	}
 
-	require_once QA_INCLUDE_DIR.'qa-db-limits.php';
-
-	
 	function qa_limits_remaining($userid, $actioncode)
 /*
 	Return how many more times user $userid and/or the requesting IP can perform $actioncode this hour,
@@ -40,8 +37,9 @@
 */
 	{
 		require_once QA_INCLUDE_DIR.'qa-app-options.php';
+		require_once QA_INCLUDE_DIR.'qa-db-limits.php';
 
-		$period=(int)(time()/3600);
+		$period=(int)(qa_opt('db_time')/3600);
 		$dblimits=qa_db_limits_get($userid, @$_SERVER['REMOTE_ADDR'], $actioncode);
 		
 		switch ($actioncode) {
@@ -185,7 +183,9 @@
 	Take note for rate limits that user $userid and/or the requesting IP just performed $actioncode
 */
 	{
-		$period=(int)(time()/3600);
+		require_once QA_INCLUDE_DIR.'qa-db-limits.php';
+
+		$period=(int)(qa_opt('db_time')/3600);
 		
 		if (isset($userid))
 			qa_db_limits_user_add($userid, $actioncode, $period, 1);

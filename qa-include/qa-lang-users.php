@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-users.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Language phrases for user management
 
 
@@ -27,9 +27,11 @@
 
 	return array(
 		'about' => 'About',
+		'avatar_default' => 'Default',
 		'avatar_label' => 'Avatar:',
 		'avatar_none' => 'None',
 		'avatar_gravatar' => 'Show my ^1Gravatar^2',
+		'avatar_not_read' => 'The image could not be read. Please upload one of: ^',
 		'block_user_button' => 'Block User',
 		'blocked_users' => 'Blocked users',
 		'change_password' => 'Change Password',

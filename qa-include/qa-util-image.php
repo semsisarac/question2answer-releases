@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-util-image.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Some useful image-related stuff
 
 
@@ -34,6 +34,27 @@
 	function qa_has_gd_image()
 	{
 		return extension_loaded('gd') && function_exists('imagecreatefromstring') && function_exists('imagejpeg');
+	}
+	
+	function qa_image_constrain_data($imagedata, &$width, &$height, $size)
+	{
+		$inimage=@imagecreatefromstring($imagedata);
+		
+		if (is_resource($inimage)) {
+			$width=imagesx($inimage);
+			$height=imagesy($inimage);
+			
+			if (qa_image_constrain($width, $height, $size))
+				qa_gd_image_resize($inimage, $width, $height);
+		}
+		
+		if (is_resource($inimage)) {
+			$imagedata=qa_gd_image_jpeg($inimage);
+			imagedestroy($inimage);
+			return $imagedata;
+		}
+		
+		return null;	
 	}
 	
 	function qa_image_constrain(&$width, &$height, $size)
@@ -81,6 +102,24 @@
 		ob_start();
 		imagejpeg($image, null, 90);
 		return $output ? ob_get_flush() : ob_get_clean();
+	}
+	
+	
+	function qa_gd_image_formats()
+	{
+		$imagetypebits=imagetypes();
+		
+		$bitstrings=array(
+			IMG_GIF => 'GIF',
+			IMG_JPG => 'JPG',
+			IMG_PNG => 'PNG',
+		);
+		
+		foreach (array_keys($bitstrings) as $bit)
+			if (!($imagetypebits&$bit))
+				unset($bitstrings[$bit]);
+				
+		return $bitstrings;
 	}
 
 

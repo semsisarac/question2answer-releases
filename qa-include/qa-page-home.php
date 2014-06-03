@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-home.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Controller for most question listing pages and custom pages
 
 
@@ -42,12 +42,11 @@
 		global $categoryslug, $questions, $count, $categories, $categoryid,
 			$pagesize, $showcategoryonposts, $sometitle, $nonetitle, $qa_template, $qa_content, $suggest, $showfeed, $qa_request;
 		
-		@list($questions1, $questions2, $questions3, $questions4, $count, $categories, $categoryid, $custompage)=qa_db_select_with_pending(
+		@list($questions1, $questions2, $questions3, $questions4, $categories, $categoryid, $custompage)=qa_db_select_with_pending(
 			$questionselectspec1,
 			$questionselectspec2,
 			$questionselectspec3,
 			$questionselectspec4,
-			(isset($cachecountoption) && !isset($categoryslug)) ? qa_db_options_cache_selectspec($cachecountoption) : null,
 			qa_db_categories_selectspec(),
 			isset($categoryslug) ? qa_db_slug_to_category_id_selectspec($categoryslug) : null,
 			$pageselectspec
@@ -113,6 +112,9 @@
 			$showfeed=qa_opt($feedoption) && qa_opt('feed_per_category');
 
 		} else {
+			if (isset($cachecountoption))
+				$count=qa_opt($cachecountoption);
+			
 			$sometitle=qa_lang_html($allsomekey);
 			$nonetitle=qa_lang_html($allnonekey);
 			$showcategoryonposts=qa_using_categories();

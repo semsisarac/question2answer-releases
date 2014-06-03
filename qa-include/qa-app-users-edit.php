@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users-edit.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: User management (application level) for creating/modify users
 
 
@@ -273,23 +273,15 @@
 	
 	
 	function qa_set_user_avatar($userid, $imagedata, $oldblobid=null)
+/*
+
+*/
 	{
 		require_once QA_INCLUDE_DIR.'qa-util-image.php';
 		
-		$inimage=imagecreatefromstring($imagedata);
+		$imagedata=qa_image_constrain_data($imagedata, $width, $height, qa_opt('avatar_store_size'));
 		
-		if (is_resource($inimage)) {
-			$width=imagesx($inimage);
-			$height=imagesy($inimage);
-			
-			if (qa_image_constrain($width, $height, qa_opt('avatar_store_size')))
-				qa_gd_image_resize($inimage, $width, $height);
-		}
-			
-		if (is_resource($inimage)) {
-			$imagedata=qa_gd_image_jpeg($inimage);
-			imagedestroy($inimage);
-				
+		if (isset($imagedata)) {
 			require_once QA_INCLUDE_DIR.'qa-db-blobs.php';
 			
 			$newblobid=qa_db_blob_create($imagedata, 'jpeg');
@@ -300,11 +292,15 @@
 				qa_db_user_set($userid, 'avatarheight', $height);
 				qa_db_user_set_flag($userid, QA_USER_FLAGS_SHOW_AVATAR, true);
 				qa_db_user_set_flag($userid, QA_USER_FLAGS_SHOW_GRAVATAR, false);
+
+				if (isset($oldblobid))
+					qa_db_blob_delete($oldblobid);
+
+				return true;
 			}
-				
-			if (isset($oldblobid))
-				qa_db_blob_delete($oldblobid);
 		}
+		
+		return false;
 	}
 
 

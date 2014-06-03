@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Common functions for connecting to and access database
 
 
@@ -303,7 +303,8 @@
 			$query.=$columnfrom.(is_int($columnas) ? '' : (' AS '.$columnas)).', ';
 		
 		$results=qa_db_read_all_assoc(qa_db_query_raw(qa_db_apply_sub(
-			substr($query, 0, -2).' FROM '.$selectspec['source'], @$selectspec['arguments'])
+			substr($query, 0, -2).(strlen(@$selectspec['source']) ? (' FROM '.$selectspec['source']) : ''),
+			@$selectspec['arguments'])
 		), @$selectspec['arraykey']); // arrayvalue is applied in qa_db_post_select()
 		
 		qa_db_post_select($results, $selectspec); // post-processing
@@ -377,7 +378,10 @@
 					$subquery.=' AS '.$columnas;
 			}
 			
-			$subquery.=' FROM '.$selectspec['source'].')';
+			if (strlen(@$selectspec['source']))
+				$subquery.=' FROM '.$selectspec['source'];
+			
+			$subquery.=')';
 			
 			if (strlen($query))
 				$query.=' UNION ALL ';

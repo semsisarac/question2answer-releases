@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.3-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-feed.php
-	Version: 1.3-beta-1
-	Date: 2010-11-04 12:12:11 GMT
+	Version: 1.3-beta-2
+	Date: 2010-11-11 10:26:02 GMT
 	Description: Handles all requests to RSS feeds, first checking if they should be available
 
 
@@ -274,54 +274,39 @@
 	//	Determine whether this is a question, answer or comment, and act accordingly
 	
 		$options=array('blockwordspreg' => @$blockwordspreg, 'showurllinks' => $showurllinks);
-	
-		if (isset($question['editpostid'])) {
-			$anchor=qa_anchor($question['editbasetype'], $question['editpostid']);
-			
-			switch ($question['editbasetype']) {
-				case 'A':
-					$titleprefix=qa_lang('misc/feed_a_edited_prefix');
-					break;
-					
-				case 'C':
-					$titleprefix=qa_lang('misc/feed_c_edited_prefix');
-					break;
-					
-				default:
-					$titleprefix=qa_lang('misc/feed_edited_prefix');
-					break;
-			}
-				
-			$time=$question['editupdated'];
-			
-			if ($full)
-				$htmlcontent=qa_viewer_html($question['editcontent'], $question['editformat'], $options);			
 		
-		} elseif (isset($question['cpostid'])) {
-			$anchor=qa_anchor('C', $question['cpostid']);
-			$titleprefix=qa_lang('misc/feed_c_prefix');
-			$time=$question['ccreated'];
+		$anchor=null;
 
+		if (isset($question['opostid'])) {
+			if ($question['obasetype']!='Q')
+				$anchor=qa_anchor($question['obasetype'], $question['opostid']);
+				
+			$time=$question['otime'];
+				
 			if ($full)
-				$htmlcontent=qa_viewer_html($question['ccontent'], $question['cformat'], $options);
-			
-		} elseif (isset($question['apostid'])) {
-			$anchor=qa_anchor('A', $question['apostid']);
-			$titleprefix=qa_lang('misc/feed_a_prefix');
-			$time=$question['acreated'];
-
-			if ($full)
-				$htmlcontent=qa_viewer_html($question['acontent'], $question['aformat'], $options);
-
+				$htmlcontent=qa_viewer_html($question['ocontent'], $question['oformat'], $options);
+		
 		} else {
-			$anchor=null;
-			$titleprefix='';
 			$time=$question['created'];
-
+			
 			if ($full)
 				$htmlcontent=qa_viewer_html($question['content'], $question['format'], $options);
 		}
-		
+			
+		switch (@$question['obasetype']) {
+			case 'A':
+				$titleprefix=@$question['oedited'] ? qa_lang('misc/feed_a_edited_prefix') : qa_lang('misc/feed_a_prefix');
+				break;
+				
+			case 'C':
+				$titleprefix=@$question['oedited'] ? qa_lang('misc/feed_c_edited_prefix') : qa_lang('misc/feed_c_prefix');
+				break;
+				
+			default:
+				$titleprefix=@$question['oedited'] ? qa_lang('misc/feed_edited_prefix') : '';
+				break;
+		}
+						
 		if (isset($blockwordspreg))
 			$question['title']=qa_block_words_replace($question['title'], $blockwordspreg);
 		
