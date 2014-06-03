@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-theme-base.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -105,22 +105,23 @@
 			$this->output('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">');
 		}
 		
-		function head_custom()
+		function head_css()
 		{
 			$this->output('<LINK REL="stylesheet" TYPE="text/css" HREF="'.$this->rooturl.$this->css_name().'"/>');
 		}
+		
+		function head_custom()
+		{} // abstract method
 		
 		function css_name()
 		{
 			return 'qa-styles.css?'.QA_VERSION;
 		}
 		
-		function body_tags()
-		{
-		}
-		
 		function body_content()
 		{
+			$this->body_prefix();
+			
 			$this->output('<DIV CLASS="qa-body-wrapper">', '');
 
 			$this->header();
@@ -129,20 +130,41 @@
 			$this->footer();
 			
 			$this->output('</DIV> <!-- END body-wrapper -->');
+			
+			$this->body_suffix();
 		}
+		
+		function body_tags()
+		{} // abstract method
+		
+		function body_prefix()
+		{} // abstract method
+		
+		function body_suffix()
+		{} // abstract method
 		
 		function header()
 		{
 			$this->output('<DIV CLASS="qa-header">');
 			
 			$this->logo();
-			$this->nav('user');
-			$this->search();
-			$this->nav('main');
-			$this->nav('sub');
+			$this->nav_user_search();
+			$this->nav_main_sub();
 			$this->header_clear();
 			
 			$this->output('</DIV> <!-- END qa-header -->', '');
+		}
+		
+		function nav_user_search()
+		{
+			$this->nav('user');
+			$this->search();
+		}
+		
+		function nav_main_sub()
+		{
+			$this->nav('main');
+			$this->nav('sub');
 		}
 		
 		function logo()
@@ -260,10 +282,7 @@
 
 			$this->output('<DIV CLASS="qa-main'.(@$this->content['hidden'] ? ' qa-main-hidden' : '').'">');
 			
-			if (($this->template=='question') && !empty($this->content['q_view']))
-				; // <H1> output later in markup for question pages because we want it inside hentry microformat
-			else
-				$this->page_title();
+			$this->page_title($this->content['title']);
 			
 			$this->page_error();
 				
@@ -295,9 +314,10 @@
 			$this->output('</DIV> <!-- END qa-main -->', '');
 		}
 		
-		function page_title()
+		function page_title($title)
 		{
-			$this->output('<H1>'.$this->content['title'].'</H1>');
+			if (isset($title))
+				$this->output('<H1>'.$title.'</H1>');
 		}
 		
 		function page_error()
@@ -346,11 +366,9 @@
 			
 			$this->output('<FORM '.@$content['form_tags'].' >');
 			
-			$this->q_view();
 			$this->form(@$content['q_edit_form']);
-			$this->form(@$content['a_edit_form']);
+			$this->q_view();
 			$this->a_list();
-			$this->form(@$content['a_add_form']);
 			$this->q_list_and_form(@$content['related_q_list']);
 			
 			$this->output('</FORM>');
@@ -547,8 +565,8 @@
 						'<TD COLSPAN="'.$columns.'" CLASS="qa-form-'.$style.'-buttons">'
 					);
 
-				foreach ($form['buttons'] as $button) {
-					$this->form_button_data($button, $style);
+				foreach ($form['buttons'] as $key => $button) {
+					$this->form_button_data($button, $key, $style);
 					$this->form_button_note($button, $style);
 				}
 	
@@ -560,9 +578,12 @@
 			}
 		}
 		
-		function form_button_data($button, $style)
+		function form_button_data($button, $key, $style)
 		{
-			$this->output('<INPUT '.@$button['tags'].' VALUE="'.@$button['label'].'" TYPE="submit" CLASS="qa-form-'.$style.'-button"/>');
+			$baseclass='qa-form-'.$style.'-button qa-form-'.$style.'-button-'.$key;
+			$hoverclass='qa-form-'.$style.'-hover qa-form-'.$style.'-hover-'.$key;
+			
+			$this->output('<INPUT '.@$button['tags'].' VALUE="'.@$button['label'].'" TITLE="'.@$button['popup'].'" TYPE="submit" CLASS="'.$baseclass.'" onmouseover="this.className=\''.$hoverclass.'\';" onmouseout="this.className=\''.$baseclass.'\';"/>');
 		}
 		
 		function form_button_note($button, $style)
@@ -799,38 +820,71 @@
 		
 		function voting($post)
 		{
-			$this->output('<DIV CLASS="qa-voting">');
-			$this->vote_buttons($post);
-			$this->vote_count($post);
-			$this->vote_clear();
-			$this->output('</DIV>');
-		}
-		
-		function vote_buttons($post)
-		{
-			if (
-				isset($post['voted_up_tags']) || isset($post['vote_up_tags']) ||
-				isset($post['vote_down_tags']) || isset($post['voted_down_tags'])
-			) {
-				$this->output('<DIV CLASS="qa-vote-buttons">');
-	
-				//$oldlines=$this->lines;
-				
-				$this->post_hover_button($post, 'voted_up_tags', '+', 'qa-voted-up');
-				$this->post_hover_button($post, 'vote_up_tags', '+', 'qa-vote-up');
-				$this->post_hover_button($post, 'vote_down_tags', '&ndash;', 'qa-vote-down');
-				$this->post_hover_button($post, 'voted_down_tags', '&ndash;', 'qa-voted-down');
-				
-				//if ($this->lines==$oldlines)
-				//	$this->output('&nbsp;');
-	
+			if (isset($post['vote_view'])) {
+				$this->output('<DIV CLASS="qa-voting" '.@$post['vote_tags'].' >');
+				$this->voting_inner_html($post);
 				$this->output('</DIV>');
 			}
 		}
 		
+		function voting_inner_html($post)
+		{
+			$this->vote_buttons($post);
+			$this->vote_count($post);
+			$this->vote_clear();
+		}
+		
+		function vote_buttons($post)
+		{
+			$this->output('<DIV CLASS="qa-vote-buttons">');
+
+			switch (@$post['vote_state'])
+			{
+				case 'voted_up':
+					if ($post['vote_view']=='updown') {
+						$this->post_hover_button($post, 'vote_up_tags', '+', 'qa-voted-up');
+						$this->post_disabled_button($post, 'vote_down_tags', '', 'qa-vote-second-button qa-vote-down');
+					} else
+						$this->post_hover_button($post, 'vote_up_tags', '+', 'qa-vote-one-button qa-voted-up');
+					break;
+					
+				case 'voted_down':
+					if ($post['vote_view']=='updown') {
+						$this->post_disabled_button($post, 'vote_up_tags', '', 'qa-vote-up');
+						$this->post_hover_button($post, 'vote_down_tags', '&ndash;', 'qa-vote-second-button qa-voted-down');
+					} else
+						$this->post_hover_button($post, 'vote_down_tags', '&ndash;', 'qa-vote-one-button qa-voted-down');
+					break;
+					
+				case 'enabled':
+					$this->post_hover_button($post, 'vote_up_tags', '+', 'qa-vote-up');
+					$this->post_hover_button($post, 'vote_down_tags', '&ndash;', 'qa-vote-second-button qa-vote-down');
+					break;
+
+				default:
+					$this->post_disabled_button($post, 'vote_up_tags', '', 'qa-vote-up');
+					$this->post_disabled_button($post, 'vote_down_tags', '', 'qa-vote-second-button qa-vote-down');
+					break;
+			}
+
+			$this->output('</DIV>');
+		}
+		
 		function vote_count($post)
 		{
-			$this->output_split(@$post['votes'], 'qa-vote-count', 'DIV', 'DIV');
+			// You can also use $post['upvotes_raw'], $post['downvotes_raw'], $post['netvotes_raw'] to get
+			// raw integer vote counts, for graphing or showing in other non-textual ways
+			
+			$this->output('<DIV CLASS="qa-vote-count">');
+
+			if ($post['vote_view']=='updown') {
+				$this->output_split($post['upvotes_view'], 'qa-updownvote-count', 'DIV', 'DIV');
+				$this->output_split($post['downvotes_view'], 'qa-updownvote-count', 'DIV', 'DIV');
+			
+			} else
+				$this->output_split($post['netvotes_view'], 'qa-netvote-count', 'DIV', 'DIV');
+
+			$this->output('</DIV>');
 		}
 		
 		function vote_clear()
@@ -846,16 +900,19 @@
 			$this->output_split(@$post['answers'], 'qa-a-count', 'DIV', 'DIV');				
 		}
 		
-		function selection($post)
+		function a_selection($post)
 		{
-			$this->output('<DIV CLASS="qa-selection">');
+			$this->output('<DIV CLASS="qa-a-selection">');
 			
-			if (isset($post['select_tags']) || isset($post['unselect_tags'])) {
+			if (isset($post['select_tags']))
 				$this->post_hover_button($post, 'select_tags', '', 'qa-a-select');
+			elseif (isset($post['unselect_tags']))
 				$this->post_hover_button($post, 'unselect_tags', '', 'qa-a-unselect');
+			elseif ($post['selected'])
+				$this->output('<DIV CLASS="qa-a-selected">&nbsp;</DIV>');
 			
-			} elseif (@$post['selected'])
-				$this->output('<SPAN CLASS="qa-a-selected">&nbsp;</SPAN>');
+			if (isset($post['select_text']))
+				$this->output('<DIV CLASS="qa-a-selected-text">'.@$post['select_text'].'</DIV>');
 			
 			$this->output('</DIV>');
 		}
@@ -867,13 +924,28 @@
 					'-button" onmouseover="this.className=\''.$class.'-hover\';" onmouseout="this.className=\''.$class.'-button\';"/> ');
 		}
 		
-		function post_meta($post, $class)
+		function post_disabled_button($post, $element, $value, $class)
+		{
+			if (isset($post[$element]))
+				$this->output('<INPUT '.$post[$element].' TYPE="submit" VALUE="'.$value.'" CLASS="'.$class.'-disabled" DISABLED="disabled"/> ');
+		}
+		
+		function post_meta($post, $class, $prefix=null)
 		{
 			$this->output('<DIV CLASS="'.$class.'-meta">');
-
+			
+			if (isset($prefix))
+				$this->output($prefix);
+			
 			$this->output_split(@$post['when'], $class.'-when');
 			$this->output_split(@$post['who'], $class.'-who');
 			$this->post_meta_points($post, $class);
+			
+			if (!empty($post['when_2'])) {
+				$this->output('&ndash;');
+				$this->output_split($post['when_2'], $class.'-when');
+				$this->output_split(@$post['who_2'], $class.'-who');
+			}
 			
 			$this->output('</DIV>');
 		}
@@ -920,6 +992,7 @@
 				
 				$this->page_links_label(@$page_links['label']);			
 				$this->page_links_list(@$page_links['items']);
+				$this->page_links_clear();
 				
 				$this->output('</DIV>');
 			}
@@ -982,6 +1055,14 @@
 			}
 		}
 		
+		function page_links_clear()
+		{
+			$this->output(
+				'<DIV CLASS="qa-page-links-clear">',
+				'</DIV>'
+			);
+		}
+
 		function suggest_next()
 		{
 			$suggest=@$this->content['suggest_next'];
@@ -1000,10 +1081,10 @@
 			if (!empty($q_view)) {
 				$this->output('<DIV CLASS="qa-q-view '.@$q_view['classes'].' " '.@$q_view['tags'].' >');
 	
-				$this->page_title();
 				$this->voting($q_view);
 				$this->a_count($q_view);
 				$this->q_view_main($q_view);
+				$this->q_view_clear();
 				
 				$this->output('</DIV> <!-- END qa-q-view -->', '');
 			}
@@ -1015,8 +1096,12 @@
 
 			$this->q_view_content($q_view);			
 			$this->post_meta($q_view, 'qa-q-view');
-			$this->post_tags($q_view, 'qa-q-view');
+			$this->q_view_follows($q_view);
 			$this->q_view_buttons($q_view);
+			$this->post_tags($q_view, 'qa-q-view');
+			$this->c_list(@$q_view['c_list'], 'qa-q-view');
+			$this->form(@$q_view['a_form']);
+			$this->form(@$q_view['c_form']);
 			
 			$this->output('</DIV> <!-- END qa-q-view-main -->');
 		}
@@ -1031,6 +1116,17 @@
 				);			
 		}
 		
+		function q_view_follows($q_view)
+		{
+			if (!empty($q_view['follows']))
+				$this->output(
+					'<DIV CLASS="qa-q-view-follows">',
+					$q_view['follows']['label'],
+					'<A HREF="'.$q_view['follows']['url'].'" CLASS="qa-q-view-follows-link">'.$q_view['follows']['title'].'</A>',
+					'</DIV>'
+				);
+		}
+		
 		function q_view_buttons($q_view) 
 		{
 			if (!empty($q_view['form'])) {
@@ -1038,6 +1134,14 @@
 				$this->form($q_view['form']);
 				$this->output('</DIV>');
 			}
+		}
+		
+		function q_view_clear()
+		{
+			$this->output(
+				'<DIV CLASS="qa-q-view-clear">',
+				'</DIV>'
+			);
 		}
 		
 		function a_list()
@@ -1058,13 +1162,14 @@
 		
 		function a_list_item($a_item)
 		{
-			$extraclass=$a_item['selected'] ? ' qa-a-item-selected' : ($a_item['hidden'] ? ' qa-a-item-hidden' : '');
+			$extraclass=@$a_item['classes'].($a_item['hidden'] ? ' qa-a-item-hidden' : '');
 			
-			$this->output('<DIV CLASS="qa-a-list-item'.$extraclass.' '.@$a_item['classes'].' " '.@$a_item['tags'].' >');
+			$this->output('<DIV CLASS="qa-a-list-item '.$extraclass.' " '.@$a_item['tags'].' >');
+			
 			$this->voting($a_item);
 			$this->a_item_main($a_item);
-			$this->selection($a_item);
 			$this->a_item_clear();
+
 			$this->output('</DIV> <!-- END qa-a-list-item -->', '');
 		}
 		
@@ -1072,9 +1177,20 @@
 		{
 			$this->output('<DIV CLASS="qa-a-item-main">');
 			
+			if ($a_item['selected'])
+				$this->output('<DIV CLASS="qa-a-item-selected">');
+
+			$this->a_selection($a_item);
 			$this->a_item_content($a_item);
 			$this->post_meta($a_item, 'qa-a-item');
+			$this->a_item_clear();
+			
+			if ($a_item['selected'])
+				$this->output('</DIV>');
+			
 			$this->a_item_buttons($a_item);
+			$this->c_list(@$a_item['c_list'], 'qa-a-item');
+			$this->form(@$a_item['c_form']);
 
 			$this->output('</DIV> <!-- END qa-a-item-main -->');
 		}
@@ -1100,9 +1216,75 @@
 		{
 			if (!empty($a_item['form'])) {
 				$this->output('<DIV CLASS="qa-a-item-buttons">');
-				$this->form(@$a_item['form']);
+				$this->form($a_item['form']);
 				$this->output('</DIV>');
 			}
+		}
+		
+		function c_list($c_list, $class)
+		{
+			if (!empty($c_list)) {
+				$this->output('', '<DIV CLASS="'.$class.'-c-list">');
+					
+				foreach ($c_list as $c_item)
+					$this->c_list_item($c_item);
+				
+				$this->output('</DIV> <!-- END qa-c-list -->', '');
+			}
+		}
+		
+		function c_list_item($c_item)
+		{
+			$extraclass=@$c_item['classes'].($c_item['hidden'] ? ' qa-c-item-hidden' : '');
+			
+			$this->output('<DIV CLASS="qa-c-list-item '.$extraclass.' " '.@$c_item['tags'].' >');
+			$this->c_item_main($c_item);
+			$this->c_item_clear();
+			$this->output('</DIV> <!-- END qa-c-item -->');
+		}
+		
+		function c_item_main($c_item)
+		{
+			if (isset($c_item['url']))
+				$this->c_item_link($c_item);
+			else
+				$this->c_item_content($c_item);
+
+			$this->post_meta($c_item, 'qa-c-item', '&mdash;');
+			$this->c_item_buttons($c_item);
+		}
+		
+		function c_item_link($c_item)
+		{
+			$this->output(
+				'<A HREF="'.$c_item['url'].'" CLASS="qa-c-item-link">'.$c_item['title'].'</A>'
+			);
+		}
+		
+		function c_item_content($c_item)
+		{
+			$this->output(
+				'<SPAN CLASS="qa-c-item-content">',
+				$c_item['content'],
+				'</SPAN>'
+			);
+		}
+		
+		function c_item_buttons($c_item)
+		{
+			if (!empty($c_item['form'])) {
+				$this->output('<DIV CLASS="qa-c-item-buttons">');
+				$this->form($c_item['form']);
+				$this->output('</DIV>');
+			}
+		}
+		
+		function c_item_clear()
+		{
+			$this->output(
+				'<DIV CLASS="qa-c-item-clear">',
+				'</DIV>'
+			);
 		}
 
 	}

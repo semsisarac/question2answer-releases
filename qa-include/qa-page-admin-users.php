@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-users.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -67,5 +67,15 @@
 	}
 
 	$qa_content['navigation']['sub']=qa_admin_sub_navigation();
+
+	if (empty($qa_content['page_links']))
+		$qa_content['suggest_next']=strtr(
+			qa_lang_html('admin/suggest_editors'),
+			
+			array(
+				'^1' => '<A HREF="'.qa_path_html('users').'">',
+				'^2' => '</A>',
+			)
+		);
 
 ?>

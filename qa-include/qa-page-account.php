@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-account.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -54,11 +54,12 @@
 		$inemail=qa_post_text('email');
 		$inname=qa_post_text('name');
 		$inlocation=qa_post_text('location');
+		$inwebsite=qa_post_text('website');
 		$inabout=qa_post_text('about');
 		
 		$errors=array_merge(
 			qa_handle_email_validate($qa_db, $inhandle, $inemail, $qa_login_userid),
-			qa_name_loc_about_validate($qa_db, $inname, $inlocation, $inabout)
+			qa_profile_fields_validate($qa_db, $inname, $inlocation, $inwebsite, $inabout)
 		);
 
 		if (!isset($errors['handle']))
@@ -72,6 +73,9 @@
 
 		if (!isset($errors['location']))
 			qa_db_user_profile_set($qa_db, $qa_login_userid, 'location', $inlocation);
+
+		if (!isset($errors['website']))
+			qa_db_user_profile_set($qa_db, $qa_login_userid, 'website', $inwebsite);
 
 		if (!isset($errors['about']))
 			qa_db_user_profile_set($qa_db, $qa_login_userid, 'about', $inabout);
@@ -155,6 +159,13 @@
 				'tags' => ' NAME="location" ',
 				'value' => qa_html(isset($inlocation) ? $inlocation : @$userprofile['location']),
 				'error' => qa_html(@$errors['location']),
+			),
+
+			'website' => array(
+				'label' => qa_lang_html('users/website'),
+				'tags' => ' NAME="website" ',
+				'value' => qa_html(isset($inwebsite) ? $inwebsite : @$userprofile['website']),
+				'error' => qa_html(@$errors['website']),
 			),
 
 			'about' => array(

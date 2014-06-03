@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-recalc.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -63,6 +63,8 @@
 <?
 
 		while ($state) {
+			set_time_limit(60);
+			
 			$stoptime=time()+2;
 			
 			while ( qa_recalc_perform_step($qa_db, &$state) && (time()<$stoptime) )
@@ -71,6 +73,7 @@
 			echo qa_html(qa_recalc_get_message($state)).str_repeat('    ', 1024)."<BR>\n";
 
 			flush();
+			sleep(1);
 		}
 
 ?>

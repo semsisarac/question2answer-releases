@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-selects.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -60,7 +60,8 @@
 	{
 		$selectspec=array(
 			'columns' => array(
-				'^posts.postid', '^posts.type', '^posts.acount', '^posts.votes',
+				'^posts.postid', '^posts.type', 'basetype' => 'LEFT(^posts.type,1)', 'hidden' => "INSTR(^posts.type, '_HIDDEN')>0",
+				'^posts.acount', '^posts.upvotes', '^posts.downvotes',
 				'title' => 'BINARY ^posts.title', 'tags' => 'BINARY ^posts.tags', 'created' => 'UNIX_TIMESTAMP(^posts.created)',
 			),
 			
@@ -76,7 +77,9 @@
 		if ($full) {
 			$selectspec['columns']['content']='BINARY ^posts.content';
 			$selectspec['columns']['notify']='BINARY ^posts.notify';
-			$selectspec['columns'][]='format';
+			$selectspec['columns']['updated']='UNIX_TIMESTAMP(^posts.updated)';
+			$selectspec['columns'][]='^posts.format';
+			$selectspec['columns'][]='^posts.lastuserid';
 			$selectspec['columns'][]='^posts.parentid';
 			$selectspec['columns'][]='^posts.selchildid';
 		};
@@ -89,6 +92,11 @@
 			if (!QA_EXTERNAL_USERS) {
 				$selectspec['columns']['handle']='BINARY ^users.handle';
 				$selectspec['source'].=' LEFT JOIN ^users ON ^posts.userid=^users.userid';
+				
+				if ($full) {
+					$selectspec['columns']['lasthandle']='BINARY lastusers.handle';
+					$selectspec['source'].=' LEFT JOIN ^users AS lastusers ON ^posts.lastuserid=lastusers.userid';
+				}
 			}
 				
 			$selectspec['source'].=' LEFT JOIN ^userpoints ON ^posts.userid=^userpoints.userid';
@@ -134,22 +142,44 @@
 		return $selectspec;
 	}
 
-	function qa_db_full_q_selectspec($voteuserid, $postid)
+	function qa_db_full_post_selectspec($voteuserid, $postid)
 	{
 		$selectspec=qa_db_posts_basic_selectspec(true, true);
 
-		$selectspec['source'].=" WHERE ^posts.postid=# AND (type='Q' OR type='Q_HIDDEN')";
+		$selectspec['source'].=" WHERE ^posts.postid=#";
 		$selectspec['arguments']=array($voteuserid, $postid);
+		$selectspec['single']=true;
 
 		return $selectspec;
 	}
 	
-	function qa_db_full_as_selectspec($voteuserid, $postid)
+	function qa_db_full_child_posts_selectspec($voteuserid, $postid)
 	{
 		$selectspec=qa_db_posts_basic_selectspec(true, true);
 		
-		$selectspec['source'].=" WHERE parentid=# AND (type='A' OR type='A_HIDDEN')";
+		$selectspec['source'].=" WHERE ^posts.parentid=#";
 		$selectspec['arguments']=array($voteuserid, $postid);
+		
+		return $selectspec;
+	}
+
+	function qa_db_full_a_child_posts_selectspec($voteuserid, $postid)
+	{
+		$selectspec=qa_db_posts_basic_selectspec(true, true);
+		
+		$selectspec['source'].=" JOIN ^posts AS parents ON ^posts.parentid=parents.postid WHERE parents.parentid=# AND (parents.type='A' OR parents.type='A_HIDDEN')" ;
+		$selectspec['arguments']=array($voteuserid, $postid);
+		
+		return $selectspec;
+	}
+	
+	function qa_db_post_parent_q_selectspec($postid)
+	{
+		$selectspec=qa_db_posts_basic_selectspec(false, false);
+		
+		$selectspec['source'].=" WHERE ^posts.postid=(SELECT IF((parent.type='A') OR (parent.type='A_HIDDEN'), parent.parentid, parent.postid) FROM ^posts AS child LEFT JOIN ^posts AS parent ON parent.postid=child.parentid WHERE child.postid=#)";
+		$selectspec['arguments']=array($postid);
+		$selectspec['single']=true;
 		
 		return $selectspec;
 	}
@@ -181,7 +211,7 @@
 		$selectspec['columns'][]='score';
 		$selectspec['columns'][]='matchparts';
 		$selectspec['arguments']=array($voteuserid);
-		$selectspec['source'].=" JOIN (SELECT postid, SUM(score)+LOG(postid)/1000000 AS score, GROUP_CONCAT(CONCAT_WS(':', matchpostid, ROUND(score,3))) AS matchparts FROM (";
+		$selectspec['source'].=" JOIN (SELECT questionid, SUM(score)+LOG(questionid)/1000000 AS score, GROUP_CONCAT(CONCAT_WS(':', matchpostid, ROUND(score,3))) AS matchparts FROM (";
 		$selectspec['sortdesc']='score';
 		
 		$selectparts=0;
@@ -190,7 +220,7 @@
 			// At the indexing stage, duplicate words in title are ignored, so this doesn't count multiple appearances.
 			
 			$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
-				"(SELECT postid, LOG(#/titlecount) AS score, postid AS matchpostid FROM ^titlewords JOIN ^words ON ^titlewords.wordid=^words.wordid WHERE word IN ($) AND titlecount<#)";
+				"(SELECT postid AS questionid, LOG(#/titlecount) AS score, postid AS matchpostid FROM ^titlewords JOIN ^words ON ^titlewords.wordid=^words.wordid WHERE word IN ($) AND titlecount<#)";
 
 			array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $titlewords, QA_IGNORED_WORDS_FREQ);
 		}
@@ -200,10 +230,10 @@
 			// it's equivalent to 1/2 an appearance in the title (ignoring the contentcount/titlecount factor).
 			// If it appears an infinite number of times, it's equivalent to one appearance in the title.
 			// This will discourage keyword stuffing while still giving some weight to multiple appearances.
-			// On top of that, appearances in an answer are worth half of an appearance in the question.
+			// On top of that, answer matches are worth half a question match, and comment matches half again.
 			
 			$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
-				"(SELECT IF(type='A', ^posts.parentid, ^posts.postid) AS postid, (1-1/(1+count))*LOG(#/contentcount)*IF(type='A', 0.5, 1) AS score, ^contentwords.postid AS matchpostid FROM ^contentwords JOIN ^words ON ^contentwords.wordid=^words.wordid JOIN ^posts ON ^contentwords.postid=^posts.postid WHERE word IN ($) AND contentcount<#)";
+				"(SELECT questionid, (1-1/(1+count))*LOG(#/contentcount)*(CASE ^contentwords.type WHEN 'Q' THEN 1.0 WHEN 'A' THEN 0.5 ELSE 0.25 END) AS score, ^contentwords.postid AS matchpostid FROM ^contentwords JOIN ^words ON ^contentwords.wordid=^words.wordid WHERE word IN ($) AND contentcount<#)";
 
 			array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $contentwords, QA_IGNORED_WORDS_FREQ);
 		}
@@ -213,7 +243,7 @@
 			// This is because tags express explicit semantic intent, whereas titles do not necessarily. 
 			
 			$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
-				"(SELECT postid, 2*LOG(#/tagcount) AS score, postid AS matchpostid FROM ^posttags JOIN ^words ON ^posttags.wordid=^words.wordid WHERE word IN ($) AND tagcount<#)";
+				"(SELECT postid AS questionid, 2*LOG(#/tagcount) AS score, postid AS matchpostid FROM ^posttags JOIN ^words ON ^posttags.wordid=^words.wordid WHERE word IN ($) AND tagcount<#)";
 
 			array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $tagwords, QA_IGNORED_WORDS_FREQ);
 		}
@@ -224,23 +254,23 @@
 				
 				if (count($userids)) {
 					$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
-						"(SELECT postid, LOG(#/qposts) AS score, postid AS matchpostid FROM ^posts JOIN ^userpoints ON ^posts.userid=^userpoints.userid WHERE ^posts.userid IN ($) AND type='Q')";
+						"(SELECT postid AS questionid, LOG(#/qposts) AS score, postid AS matchpostid FROM ^posts JOIN ^userpoints ON ^posts.userid=^userpoints.userid WHERE ^posts.userid IN ($) AND type='Q')";
 					
 					array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $userids);
 				}
 
 			} else {
 				$selectspec['source'].=($selectparts++ ? " UNION ALL " : "").
-					"(SELECT postid, LOG(#/qposts) AS score, postid AS matchpostid FROM ^posts JOIN ^users ON ^posts.userid=^users.userid JOIN ^userpoints ON ^userpoints.userid=^users.userid WHERE handle IN ($) AND type='Q')";
+					"(SELECT postid AS questionid, LOG(#/qposts) AS score, postid AS matchpostid FROM ^posts JOIN ^users ON ^posts.userid=^users.userid JOIN ^userpoints ON ^userpoints.userid=^users.userid WHERE handle IN ($) AND type='Q')";
 
 				array_push($selectspec['arguments'], QA_IGNORED_WORDS_FREQ, $handlewords);				
 			}
 		}
 		
 		if ($selectparts==0)
-			$selectspec['source'].='(SELECT postid, 0 AS score, NULL as matchpostid FROM ^posts WHERE postid=NULL)';
+			$selectspec['source'].='(SELECT NULL as questionid, 0 AS score, NULL as matchpostid FROM ^posts WHERE postid=NULL)';
 
-		$selectspec['source'].=") x GROUP BY postid ORDER BY score DESC LIMIT #,#) y ON ^posts.postid=y.postid";
+		$selectspec['source'].=") x GROUP BY questionid ORDER BY score DESC LIMIT #,#) y ON ^posts.postid=y.questionid";
 		
 		array_push($selectspec['arguments'], $start, $count);
 		
@@ -309,41 +339,7 @@
 			'sortdesc' => 'tagcount',
 		);
 	}
-	
-	/*function qa_db_suggest_tags_selectspec($titlewords, $count)
-	{
-		return array(
-			'columns' => array('^words.wordid', 'word' => 'BINARY word', 'score' => 'SUM(score)'),
-			'source' => "^posttags JOIN (SELECT postid, #/titlecount AS score FROM ^titlewords JOIN ^words ON ^titlewords.wordid=^words.wordid WHERE word IN ($) AND titlecount<#) y ON ^posttags.postid=y.postid LEFT JOIN ^words ON ^words.wordid=^posttags.wordid GROUP BY wordid",
-			'arguments' => array(QA_IGNORED_WORDS_FREQ, $titlewords, QA_IGNORED_WORDS_FREQ),
-			'arraykey' => 'wordid',
-			'sortdec' => 'score',
-		);
-	}*/
-	
-	/*function qa_db_user_profile_selectspec($handle)
-	{
-		if (QA_EXTERNAL_USERS)
-			return array(
-				'columns' => array('points', 'qposts', 'aposts', 'aselects', 'aselecteds', 'qvotes', 'avotes', 'qvoteds', 'avoteds'),
-				'source' => '^userpoints WHERE userid=$',
-				'arguments' => array($handle),
-				'single' => true,
-			);
 
-		else
-			return array(
-				'columns' => array(
-					'^users.userid', 'level', 'created' => 'UNIX_TIMESTAMP(created)', 'email' => 'BINARY email',
-					'points', 'qposts', 'aposts', 'aselects', 'aselecteds', 'qvotes', 'avotes', 'qvoteds', 'avoteds'
-				),
-				
-				'source' => '^users LEFT JOIN ^userpoints ON ^users.userid=^userpoints.userid WHERE handle=$',
-				'arguments' => array($handle),
-				'single' => true,
-			);
-	}*/
-	
 	function qa_db_user_account_selectspec($useridhandle, $isuserid)
 	{
 		return array(
@@ -372,7 +368,7 @@
 	function qa_db_user_points_selectspec($identifier)
 	{
 		return array(
-			'columns' => array('points', 'qposts', 'aposts', 'aselects', 'aselecteds', 'qvotes', 'avotes', 'qvoteds', 'avoteds'),
+			'columns' => array('points', 'qposts', 'aposts', 'aselects', 'aselecteds', 'qvotes', 'avotes', 'qvoteds', 'avoteds', 'upvoteds', 'downvoteds'),
 			'source' => '^userpoints WHERE userid='.(QA_EXTERNAL_USERS ? '$' : '(SELECT userid FROM ^users WHERE handle=$)'),
 			'arguments' => array($identifier),
 			'single' => true,

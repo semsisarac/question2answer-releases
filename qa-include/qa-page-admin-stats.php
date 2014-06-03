@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-stats.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -45,6 +45,8 @@
 	$qcount_anon=qa_db_count_posts($qa_db, 'Q', false);
 	$acount=qa_get_option($qa_db, 'cache_acount');
 	$acount_anon=qa_db_count_posts($qa_db, 'A', false);
+	$ccount=qa_get_option($qa_db, 'cache_ccount');
+	$ccount_anon=qa_db_count_posts($qa_db, 'C', false);
 	
 //	Prepare content for theme
 
@@ -91,6 +93,25 @@
 			),
 			
 			'break2' => array(
+				'type' => 'blank',
+			),
+			
+			'ccount' => array(
+				'label' => qa_lang_html('admin/total_cs'),
+				'value' => qa_html(number_format($ccount)),
+			),
+	
+			'ccount_users' => array(
+				'label' => qa_lang_html('admin/from_users'),
+				'value' => qa_html(number_format($ccount-$ccount_anon)),
+			),
+	
+			'ccount_anon' => array(
+				'label' => qa_lang_html('admin/from_anon'),
+				'value' => qa_html(number_format($ccount_anon)),
+			),
+			
+			'break3' => array(
 				'type' => 'blank',
 			),
 			

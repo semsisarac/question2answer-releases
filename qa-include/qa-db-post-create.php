@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-post-create.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -33,7 +33,7 @@
 	function qa_db_post_create($db, $type, $parentid, $userid, $cookieid, $title, $content, $tagstring, $notify)
 	{	
 		qa_db_query_sub($db,
-			'INSERT INTO ^posts (type, parentid, userid, cookieid, title, content, tags, notify, created, updated) VALUES ($, #, $, #, $, $, $, $, NOW(), NOW())',
+			'INSERT INTO ^posts (type, parentid, userid, cookieid, title, content, tags, notify, created) VALUES ($, #, $, #, $, $, $, $, NOW())',
 			$type, $parentid, $userid, $cookieid, $title, $content, $tagstring, $notify
 		);
 		
@@ -70,15 +70,15 @@
 		}
 	}
 	
-	function qa_db_contentwords_add_post_wordidcounts($db, $postid, $wordidcounts)
+	function qa_db_contentwords_add_post_wordidcounts($db, $postid, $type, $questionid, $wordidcounts)
 	{
 		if (count($wordidcounts)) {
 			$rowstoadd=array();
 			foreach ($wordidcounts as $wordid => $count)
-				$rowstoadd[]=array($postid, $wordid, $count);
+				$rowstoadd[]=array($postid, $wordid, $count, $type, $questionid);
 
 			qa_db_query_sub($db,
-				'INSERT INTO ^contentwords (postid, wordid, count) VALUES #',
+				'INSERT INTO ^contentwords (postid, wordid, count, type, questionid) VALUES #',
 				$rowstoadd
 			);
 		}
@@ -128,19 +128,28 @@
 	function qa_db_word_titlecount_update($db, $wordids)
 	{
 		if (count($wordids))
-			qa_db_query_sub($db, 'UPDATE ^words AS x, (SELECT wordid, COUNT(*) AS titlecount FROM ^titlewords WHERE wordid IN (#) GROUP BY wordid) AS a SET x.titlecount=a.titlecount WHERE x.wordid=a.wordid', $wordids);
+			qa_db_query_sub($db,
+				'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^titlewords.wordid) AS titlecount FROM ^words LEFT JOIN ^titlewords ON ^titlewords.wordid=^words.wordid WHERE ^words.wordid IN (#) GROUP BY wordid) AS a SET x.titlecount=a.titlecount WHERE x.wordid=a.wordid',
+				$wordids
+			);
 	}
 	
 	function qa_db_word_tagcount_update($db, $wordids)
 	{
 		if (count($wordids))
-			qa_db_query_sub($db, 'UPDATE ^words AS x, (SELECT wordid, COUNT(*) AS tagcount FROM ^posttags WHERE wordid IN (#) GROUP BY wordid) AS a SET x.tagcount=a.tagcount WHERE x.wordid=a.wordid', $wordids);
+			qa_db_query_sub($db, 
+				'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^posttags.wordid) AS tagcount FROM ^words LEFT JOIN ^posttags ON ^posttags.wordid=^words.wordid WHERE ^words.wordid IN (#) GROUP BY wordid) AS a SET x.tagcount=a.tagcount WHERE x.wordid=a.wordid',
+				$wordids
+			);
 	}
 	
 	function qa_db_word_contentcount_update($db, $wordids)
 	{
 		if (count($wordids))
-			qa_db_query_sub($db, 'UPDATE ^words AS x, (SELECT wordid, COUNT(*) AS contentcount FROM ^contentwords WHERE wordid IN (#) GROUP BY wordid) AS a SET x.contentcount=a.contentcount WHERE x.wordid=a.wordid', $wordids);
+			qa_db_query_sub($db,
+				'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^contentwords.wordid) AS contentcount FROM ^words LEFT JOIN ^contentwords ON ^contentwords.wordid=^words.wordid WHERE ^words.wordid IN (#) GROUP BY wordid) AS a SET x.contentcount=a.contentcount WHERE x.wordid=a.wordid',
+				$wordids
+			);
 	}
 	
 	function qa_db_qcount_update($db)
@@ -151,6 +160,11 @@
 	function qa_db_acount_update($db)
 	{
 		qa_db_query_sub($db, "REPLACE ^options (title, content) SELECT 'cache_acount', COUNT(*) FROM ^posts WHERE type='A'");
+	}
+
+	function qa_db_ccount_update($db)
+	{
+		qa_db_query_sub($db, "REPLACE ^options (title, content) SELECT 'cache_ccount', COUNT(*) FROM ^posts WHERE type='C'");
 	}
 
 	function qa_db_tagcount_update($db)

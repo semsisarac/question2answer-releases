@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-base.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -32,7 +32,7 @@
 
 //	Set the version to be used for internal reference and a suffix for .js and .css requests
 
-	define('QA_VERSION', '1.0-beta-1');
+	define('QA_VERSION', '1.0-beta-2');
 
 //	Basic PHP configuation checks and unregister globals
 
@@ -68,12 +68,16 @@
 	
 //	General HTML/JS functions
 
-	function qa_html($string, $linebreaks=false)
+	function qa_html($string, $multiline=false)
 	{
 		$html=htmlspecialchars($string);
 		
-		if ($linebreaks)
-			$html=nl2br(preg_replace('/\r\n?/', "\n", $html));
+		if ($multiline) {
+			$html=preg_replace('/\r\n?/', "\n", $html);
+			$html=preg_replace('/(?<=\s) /', '&nbsp;', $html);
+			$html=str_replace("\t", '&nbsp; &nbsp; ', $html);
+			$html=nl2br($html);
+		}
 		
 		return $html;
 	}
@@ -196,7 +200,7 @@
 	
 //	Path generation
 
-	function qa_path($request, $params=null, $rooturl=null, $neaturls=null)
+	function qa_path($request, $params=null, $rooturl=null, $neaturls=null, $anchor=null)
 	{
 		global $qa_db, $qa_root_url_relative;
 		
@@ -214,7 +218,8 @@
 		return $rooturl
 			.( (empty($rooturl) || (substr($rooturl, -1)=='/') ) ? '' : '/')
 			.( ($neaturls || empty($request)) ? $request : ('index.php/'.$request) )
-			.$paramsextra;
+			.$paramsextra
+			.( empty($anchor) ? '' : '#'.urlencode($anchor) );
 	}
 	
 	function qa_q_request($postid, $title)
@@ -257,9 +262,9 @@
 		return qa_html($qa_root_url_relative);
 	}
 
-	function qa_path_html($request, $params=null, $rooturl=null, $neaturls=null)
+	function qa_path_html($request, $params=null, $rooturl=null, $neaturls=null, $anchor=null)
 	{
-		return qa_html(qa_path($request, $params, $rooturl, $neaturls));
+		return qa_html(qa_path($request, $params, $rooturl, $neaturls, $anchor));
 	}
 	
 	function qa_redirect($request, $params=null, $rooturl=null, $neaturls=null)

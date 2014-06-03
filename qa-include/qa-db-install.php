@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-install.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -29,6 +29,8 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
+
+	define('QA_DB_VERSION_CURRENT', 5);
 
 	function qa_db_user_column_type_verify()
 	{
@@ -123,13 +125,15 @@
 				'selchildid' => 'INT UNSIGNED',
 				'userid' => $useridcoltype,
 				'cookieid' => 'BIGINT UNSIGNED',
-				'votes' => 'INT NOT NULL',
+				'lastuserid' => $useridcoltype,
+				'upvotes' => 'SMALLINT UNSIGNED NOT NULL',
+				'downvotes' => 'SMALLINT UNSIGNED NOT NULL',
+				'format' => "CHAR(1) CHARACTER SET ascii NOT NULL", // for future obvious use
+				'created' => 'DATETIME NOT NULL',
+				'updated' => 'DATETIME',
 				'title' => 'VARCHAR('.QA_DB_MAX_TITLE_LENGTH.')',
 				'content' => 'VARCHAR('.QA_DB_MAX_CONTENT_LENGTH.')',
 				'tags' => 'VARCHAR('.QA_DB_MAX_TAGS_LENGTH.')',
-				'format' => "CHAR(1) CHARACTER SET ascii NOT NULL", // for future obvious use
-				'created' => 'DATETIME NOT NULL',
-				'updated' => 'DATETIME NOT NULL',
 				'notify' => 'VARCHAR('.QA_DB_MAX_EMAIL_LENGTH.')',
 				'PRIMARY KEY (postid)',
 				'KEY (type, created)',
@@ -162,6 +166,8 @@
 				'postid' => 'INT UNSIGNED NOT NULL',
 				'wordid' => 'INT UNSIGNED NOT NULL',
 				'count' => 'TINYINT UNSIGNED NOT NULL', // anything over 255 can be ignored
+				'type' => "ENUM('Q', 'A', 'C') NOT NULL",
+				'questionid' => 'INT UNSIGNED NOT NULL',
 				'KEY (postid)',
 				'KEY (wordid)',
 				'FOREIGN KEY (postid) REFERENCES ^posts(postid) ON DELETE CASCADE',
@@ -200,6 +206,8 @@
 				'avotes' => 'MEDIUMINT NOT NULL',
 				'qvoteds' => 'INT NOT NULL',
 				'avoteds' => 'INT NOT NULL',
+				'upvoteds' => 'INT NOT NULL',
+				'downvoteds' => 'INT NOT NULL',
 				'PRIMARY KEY (userid)',
 				'KEY(points)',
 			),
@@ -282,6 +290,25 @@
 		return $missing;
 	}
 	
+	function qa_db_get_db_version($db)
+	{
+		$definitions=qa_db_table_definitions();
+		
+		if (count(qa_db_missing_columns($db, 'options', $definitions['options']))==0) {
+			$version=(int)qa_db_read_one_value(qa_db_query_sub($db, "SELECT content FROM ^options WHERE title='db_version'"), true);
+			
+			if ($version>0)
+				return $version;
+		}
+			
+		return null;
+	}
+	
+	function qa_db_set_db_version($db, $version)
+	{
+		qa_db_query_sub($db, "REPLACE ^options (title,content) VALUES ('db_version', #)", $version);
+	}
+	
 	function qa_db_check_tables($db)
 	{
 		$version=qa_db_read_one_value(qa_db_query_raw($db, 'SELECT VERSION()'));
@@ -295,13 +322,22 @@
 		if (count($missing) == count($definitions))
 			return 'none';
 		
-		elseif (count($missing))
-			return 'table-missing';
-			
-		else
-			foreach ($definitions as $table => $definition)
-				if (count(qa_db_missing_columns($db, $table, $definition)))
-					return 'column-missing';
+		else {
+			if (!isset($missing['options'])) {
+				$version=qa_db_get_db_version($db);
+				
+				if (isset($version) && ($version<QA_DB_VERSION_CURRENT))
+					return 'old-version';
+			} 
+		
+			if (count($missing))
+				return 'table-missing';
+				
+			else
+				foreach ($definitions as $table => $definition)
+					if (count(qa_db_missing_columns($db, $table, $definition)))
+						return 'column-missing';
+		}
 				
 		return false;
 	}
@@ -327,7 +363,94 @@
 				qa_db_query_sub($db, 'ALTER TABLE ^'.$table.' ADD COLUMN '.$colname.' '.$coldefn);
 		}
 		
-		qa_db_query_sub($db, "REPLACE ^options (title,content) VALUES ('db_version', 1)");
+		qa_db_set_db_version($db, QA_DB_VERSION_CURRENT);
+	}
+	
+	function qa_db_upgrade_tables($db)
+	{
+		require_once QA_INCLUDE_DIR.'qa-app-recalc.php';
+		
+		$definitions=qa_db_table_definitions();
+		$recalc=array();
+		
+		$tables=qa_db_read_all_values(qa_db_query_raw($db, 'SHOW TABLES'));
+
+		$locks=array();
+		foreach ($tables as $table)
+			if (strpos($table, QA_MYSQL_TABLE_PREFIX)===0) // could have other tables not belonging to QA
+				$locks[]=$table.' WRITE';
+			
+		qa_db_upgrade_query($db, 'LOCK TABLES '.implode(', ', $locks));
+
+		while (1) {
+			$version=qa_db_get_db_version($db);	
+			
+			if ($version>=QA_DB_VERSION_CURRENT)
+				break;
+			
+			$newversion=$version+1;
+			
+			qa_db_upgrade_progress(QA_DB_VERSION_CURRENT-$version.' upgrade step/s remaining...');
+			
+			switch ($newversion) {
+				case 2:
+					qa_db_upgrade_query($db, 'ALTER TABLE ^posts DROP COLUMN votes');
+					qa_db_upgrade_query($db, 'ALTER TABLE ^posts ADD COLUMN (upvotes '.$definitions['posts']['upvotes'].
+						', downvotes '.$definitions['posts']['downvotes'].')');
+					$recalc['dorecountposts']=true;
+					break;
+					
+				case 3:
+					qa_db_upgrade_query($db, 'ALTER TABLE ^userpoints ADD COLUMN (upvoteds '.$definitions['userpoints']['upvoteds'].
+						', downvoteds '.$definitions['userpoints']['downvoteds'].')');
+					$recalc['dorecalcpoints']=true;
+					break;
+					
+				case 4:
+					qa_db_upgrade_query($db, 'ALTER TABLE ^posts ADD COLUMN lastuserid '.$definitions['posts']['lastuserid']);
+					qa_db_upgrade_query($db, 'ALTER TABLE ^posts CHANGE COLUMN updated updated '.$definitions['posts']['updated']);
+					qa_db_upgrade_query($db, 'UPDATE ^posts SET updated=NULL WHERE updated=0 OR updated=created');
+					break;
+					
+				case 5:
+					qa_db_upgrade_query($db, 'ALTER TABLE ^contentwords ADD COLUMN (type '.$definitions['contentwords']['type'].', questionid '.$definitions['contentwords']['questionid'].')');
+					$recalc['doreindexposts']=true;
+					break;
+				
+			}
+			
+			qa_db_set_db_version($db, $newversion);
+			
+			if (qa_db_get_db_version($db)!=$newversion)
+				qa_fatal_error('Could not increment database version');
+		}
+		
+		qa_db_upgrade_query($db, 'UNLOCK TABLES');
+		
+		foreach ($recalc as $state => $dummy)
+			while ($state) {
+				set_time_limit(60);
+			
+				$stoptime=time()+2;
+				
+				while ( qa_recalc_perform_step($db, $state) && (time()<$stoptime) )
+					;
+				
+				qa_db_upgrade_progress(qa_recalc_get_message($state));
+			}
+	}
+	
+	function qa_db_upgrade_query($db, $query)
+	{
+		qa_db_upgrade_progress('Running query: '.strtr($query, array('^' => QA_MYSQL_TABLE_PREFIX)).' ...');
+		qa_db_query_sub($db, $query);
+	}
+	
+	function qa_db_upgrade_progress($text)
+	{
+		echo qa_html($text).str_repeat('    ', 1024)."<BR>\n";
+		flush();
+		sleep(1);
 	}
 
 ?>

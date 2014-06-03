@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-feedback.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -74,8 +74,8 @@
 				'fromname' => $inname,
 				'toemail' => qa_get_option($qa_db, 'feedback_email'),
 				'toname' => qa_get_option($qa_db, 'site_title'),
-				'subject' => qa_lang_sub('main/feedback_subject', qa_get_option($qa_db, 'site_title')),
-				'body' => strtr(qa_lang('main/feedback_body'), $subs),
+				'subject' => qa_lang_sub('emails/feedback_subject', qa_get_option($qa_db, 'site_title')),
+				'body' => strtr(qa_lang('emails/feedback_body'), $subs),
 				'html' => false,
 			)))
 				$feedbacksent=true;

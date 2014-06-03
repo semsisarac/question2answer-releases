@@ -1,12 +1,12 @@
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-content/qa-votes.js
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -39,20 +39,7 @@ function qa_vote_click(elem, oldvote)
 			var lines=response.split("\n");
 			
 			if (lines[0]=='1') {
-				var prefixshow={'voted_up_':vote>0, 'vote_up_':vote==0, 'vote_down_':vote==0, 'voted_down_':vote<0};
-				for (prefix in prefixshow)
-					document.getElementById(prefix+postid).style.display=prefixshow[prefix] ? '' : 'none';
-				
-				var newvote=parseInt(oldvote)+parseInt(vote);
-				
-				if (newvote>=1)
-					var votehtml='+'+newvote;
-				else if (newvote<=-1)
-					var votehtml='&ndash;'+(-newvote);
-				else
-					var votehtml='0';
-				
-				document.getElementById('votes_'+postid).innerHTML=votehtml;
+				document.getElementById('voting_'+postid).innerHTML=lines.slice(1).join("\n");
 
 			} else if (lines[0]=='0') {
 				var mess=document.getElementById('errorbox');

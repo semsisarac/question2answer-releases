@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-recalc.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -32,12 +32,12 @@
 
 	require_once QA_INCLUDE_DIR.'qa-db-post-create.php';
 	
-//	For reindexing questions and answers...	
+//	For reindexing posts...	
 	
 	function qa_db_posts_get_for_reindexing($db, $startpostid, $count)
 	{
 		return qa_db_read_all_assoc(qa_db_query_sub($db,
-			'SELECT ^posts.postid, BINARY ^posts.title AS title, BINARY ^posts.content AS content, BINARY ^posts.tags AS tags FROM ^posts LEFT JOIN ^posts AS parentpost ON ^posts.parentid=parentpost.postid WHERE ^posts.postid>=# AND (^posts.type=\'Q\' OR ^posts.type=\'A\') AND NOT (parentpost.type<=>\'Q_HIDDEN\') ORDER BY postid LIMIT #',
+			"SELECT ^posts.postid, BINARY ^posts.title AS title, BINARY ^posts.content AS content, BINARY ^posts.tags AS tags, ^posts.type, IF (^posts.type='Q', ^posts.postid, IF(parent.type='Q', parent.postid, grandparent.postid)) AS questionid FROM ^posts LEFT JOIN ^posts AS parent ON ^posts.parentid=parent.postid LEFT JOIN ^posts as grandparent ON parent.parentid=grandparent.postid WHERE ^posts.postid>=# AND ( (^posts.type='Q') OR (^posts.type='A' AND parent.type<=>'Q') OR (^posts.type='C' AND parent.type<=>'Q') OR (^posts.type='C' AND parent.type<=>'A' AND grandparent.type<=>'Q') ) ORDER BY postid LIMIT #",
 			$startpostid, $count
 		), 'postid');
 	}
@@ -96,22 +96,17 @@
 	function qa_db_words_recount($db, $firstwordid, $lastwordid)
 	{
 		qa_db_query_sub($db,
-			'UPDATE ^words SET tagcount=0, titlecount=0, contentcount=0 WHERE wordid>=# AND wordid<=#',
-			$firstwordid, $lastwordid
-		);
-		
-		qa_db_query_sub($db,
-			'UPDATE ^words AS x, (SELECT wordid, COUNT(*) AS titlecount FROM ^titlewords WHERE wordid>=# AND wordid<=# GROUP BY wordid) AS a SET x.titlecount=a.titlecount WHERE x.wordid=a.wordid',
+			'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^titlewords.wordid) AS titlecount FROM ^words LEFT JOIN ^titlewords ON ^titlewords.wordid=^words.wordid WHERE ^words.wordid>=# AND ^words.wordid<=# GROUP BY wordid) AS a SET x.titlecount=a.titlecount WHERE x.wordid=a.wordid',
 			$firstwordid, $lastwordid		
 		);
 
 		qa_db_query_sub($db,
-			'UPDATE ^words AS x, (SELECT wordid, COUNT(*) AS contentcount FROM ^contentwords WHERE wordid>=# AND wordid<=# GROUP BY wordid) AS a SET x.contentcount=a.contentcount WHERE x.wordid=a.wordid',
+			'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^contentwords.wordid) AS contentcount FROM ^words LEFT JOIN ^contentwords ON ^contentwords.wordid=^words.wordid WHERE ^words.wordid>=# AND ^words.wordid<=# GROUP BY wordid) AS a SET x.contentcount=a.contentcount WHERE x.wordid=a.wordid',
 			$firstwordid, $lastwordid	
 		);
 
 		qa_db_query_sub($db,
-			'UPDATE ^words AS x, (SELECT wordid, COUNT(*) AS tagcount FROM ^posttags WHERE wordid>=# AND wordid<=# GROUP BY wordid) AS a SET x.tagcount=a.tagcount WHERE x.wordid=a.wordid',
+			'UPDATE ^words AS x, (SELECT ^words.wordid, COUNT(^posttags.wordid) AS tagcount FROM ^words LEFT JOIN ^posttags ON ^posttags.wordid=^words.wordid WHERE ^words.wordid>=# AND ^words.wordid<=# GROUP BY wordid) AS a SET x.tagcount=a.tagcount WHERE x.wordid=a.wordid',
 			$firstwordid, $lastwordid
 		);
 		
@@ -134,17 +129,12 @@
 	function qa_db_posts_recount($db, $firstpostid, $lastpostid)
 	{
 		qa_db_query_sub($db,
-			'UPDATE ^posts SET votes=0, acount=0 WHERE postid>=# AND postid<=#',
+			'UPDATE ^posts AS x, (SELECT ^posts.postid, COALESCE(SUM(GREATEST(0,^uservotes.vote)),0) AS upvotes, -COALESCE(SUM(LEAST(0,^uservotes.vote)),0) AS downvotes FROM ^posts LEFT JOIN ^uservotes ON ^uservotes.postid=^posts.postid WHERE ^posts.postid>=# AND ^posts.postid<=# GROUP BY postid) AS a SET x.upvotes=a.upvotes, x.downvotes=a.downvotes WHERE x.postid=a.postid',
 			$firstpostid, $lastpostid
 		);
 		
 		qa_db_query_sub($db,
-			'UPDATE ^posts AS x, (SELECT postid, SUM(vote) AS votes FROM ^uservotes WHERE postid>=# AND postid<=# GROUP BY postid) AS a SET x.votes=a.votes WHERE x.postid=a.postid',
-			$firstpostid, $lastpostid
-		);
-		
-		qa_db_query_sub($db,
-			'UPDATE ^posts AS x, (SELECT parentid, COUNT(*) AS acount FROM ^posts WHERE parentid>=# AND parentid<=# AND type=\'A\' GROUP BY parentid) AS a SET x.acount=a.acount WHERE x.postid=a.parentid',
+			'UPDATE ^posts AS x, (SELECT parents.postid, COUNT(children.postid) AS acount FROM ^posts AS parents LEFT JOIN ^posts AS children ON parents.postid=children.parentid AND children.type=\'A\' WHERE parents.postid>=# AND parents.postid<=# GROUP BY postid) AS a SET x.acount=a.acount WHERE x.postid=a.postid',
 			$firstpostid, $lastpostid
 		);
 	}
@@ -201,62 +191,4 @@
 		);
 	}
 
-//	Deprecated monolithic recalc functions	
-	
-	/*function qa_db_word_recount_all($db)
-	{
-		qa_db_query_sub($db, 'UPDATE ^words SET tagcount=0, titlecount=0, contentcount=0');
-		
-		qa_db_query_sub($db, 'UPDATE ^words AS x, (SELECT wordid, COUNT(*) AS titlecount FROM ^titlewords GROUP BY wordid) AS a SET x.titlecount=a.titlecount WHERE x.wordid=a.wordid');
-
-		qa_db_query_sub($db, 'UPDATE ^words AS x, (SELECT wordid, COUNT(*) AS contentcount FROM ^contentwords GROUP BY wordid) AS a SET x.contentcount=a.contentcount WHERE x.wordid=a.wordid');
-
-		qa_db_query_sub($db, 'UPDATE ^words AS x, (SELECT wordid, COUNT(*) AS tagcount FROM ^posttags GROUP BY wordid) AS a SET x.tagcount=a.tagcount WHERE x.wordid=a.wordid');
-		
-		qa_db_query_sub($db, 'DELETE FROM ^words WHERE titlecount=0 AND contentcount=0 AND tagcount=0');
-	}
-	
-	function qa_db_post_recount_all($db)
-	{
-		qa_db_query_sub($db, 'UPDATE ^posts SET votes=0 WHERE postid NOT IN (SELECT DISTINCT(postid) FROM ^uservotes)');
-
-		qa_db_query_sub($db, 'UPDATE ^posts AS x, (SELECT postid, SUM(vote) AS votes FROM ^uservotes GROUP BY postid) AS a '.
-			'SET x.votes=a.votes WHERE x.postid=a.postid');
-
-		qa_db_query_sub($db, 'UPDATE ^posts AS y, (SELECT x.postid FROM ^posts AS x LEFT JOIN ^posts AS a ON a.parentid=x.postid '.
-			'GROUP BY postid HAVING COUNT(a.postid)>0) z SET y.acount=0 WHERE y.postid=z.postid');
-
-		qa_db_query_sub($db, 'UPDATE ^posts AS x, (SELECT parentid, COUNT(*) AS acount FROM ^posts WHERE type=\'A\' GROUP BY parentid) AS a '.
-			'SET x.acount=a.acount WHERE x.postid=a.parentid');
-		
-		qa_db_qcount_update($db);
-		qa_db_acount_update($db);
-	}
-	
-	function qa_db_userpoints_recount_all($db)
-	{
-		require_once QA_INCLUDE_DIR.'qa-db-points.php';
-	
-		$qa_userpoints_calculations=qa_db_points_calculations($db);
-				
-		qa_db_query_sub($db, 'DELETE FROM ^userpoints');
-		
-		qa_db_query_sub($db, 'INSERT INTO ^userpoints (userid) SELECT DISTINCT userid FROM ^posts WHERE userid IS NOT NULL UNION SELECT DISTINCT userid FROM ^uservotes WHERE userid IS NOT NULL');
-		
-		$updatepoints=(int)qa_get_option($db, 'points_base');
-		
-		foreach ($qa_userpoints_calculations as $field => $calculation) {
-			qa_db_query_sub($db,
-				'UPDATE ^userpoints, (SELECT userid_src.userid, '.str_replace('~', ' IS NOT NULL', $calculation['formula']).' GROUP BY userid) AS results '.
-				'SET ^userpoints.'.$field.'=results.'.$field.' WHERE ^userpoints.userid=results.userid');
-			
-			$updatepoints.='+('.((int)$calculation['multiple']).'*'.$field.')';
-		}
-		
-		qa_db_query_sub($db, 'UPDATE ^userpoints SET points='.$updatepoints);
-		
-		qa_db_userpointscount_update($db);
-	}
-	*/
-	
 ?>

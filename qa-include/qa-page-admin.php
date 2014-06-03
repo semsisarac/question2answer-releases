@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -47,22 +47,24 @@
 	switch ($qa_template) {
 		case 'admin/layout':
 			$subtitle='admin/layout_title';
-			$showoptions=array('site_theme', 'logo_show', 'logo_url', 'logo_width', 'logo_height', 'custom_sidebar', 'custom_header', 'custom_footer');
+			$showoptions=array('site_theme', 'logo_show', 'logo_url', 'logo_width', 'logo_height', 'custom_sidebar', 'custom_header', 'custom_footer', 'custom_in_head');
 			break;
 			
 		case 'admin/viewing':
 			$subtitle='admin/viewing_title';
 			$showoptions=array(
-				'page_size_home', 'page_size_qs', /*'page_size_as',*/ '', 'page_size_tags', 'columns_tags', 'page_size_users', 'columns_users', '',
-				'page_size_tag_qs', 'page_size_user_qs', 'page_size_user_as', 'page_size_search', '', 'show_url_links', '', 'do_related_qs', 'match_related_qs', 'page_size_related_qs',
-				'', 'pages_prev_next'
+				'voting_on_qs', 'voting_on_as', 'votes_separated', '', 'page_size_home', 'page_size_qs', '',
+				'page_size_tags', 'columns_tags', 'page_size_users', 'columns_users', '',
+				'page_size_tag_qs', 'page_size_user_qs', 'page_size_user_as', 'page_size_search', '',
+				'show_url_links', '', 'do_related_qs', 'match_related_qs', 'page_size_related_qs', '',
+				'pages_prev_next'
 			);
 			$formstyle='wide';
 			break;
 		
 		case 'admin/posting':
 			$subtitle='admin/posting_title';
-			$showoptions=array('ask_needs_login', 'answer_needs_login', '', 'min_len_q_title', 'min_len_q_content', 'min_len_a_content', '',
+			$showoptions=array('comment_on_qs', 'comment_on_as', 'follow_on_as', '', 'ask_needs_login', 'answer_needs_login', 'comment_needs_login', '', 'min_len_q_title', 'min_len_q_content', 'min_len_a_content', 'min_len_c_content', '',
 			'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs', '', 'do_example_tags', 'match_example_tags', 'do_complete_tags', 'page_size_ask_tags');
 			$formstyle='wide';
 			break;
@@ -78,7 +80,7 @@
 		case 'admin/limits':
 			$subtitle='admin/limits_title';
 			$showoptions=array(
-				'max_rate_ip_qs', 'max_rate_ip_as', 'max_rate_ip_votes', '', 'max_rate_user_qs', 'max_rate_user_as', 'max_rate_user_votes',
+				'max_rate_ip_qs', 'max_rate_ip_as', 'max_rate_ip_cs', 'max_rate_ip_votes', '', 'max_rate_user_qs', 'max_rate_user_as', 'max_rate_user_cs', 'max_rate_user_votes',
 			);
 			$formstyle='wide';
 			break;
@@ -97,11 +99,14 @@
 		'min_len_q_title' => 'number',
 		'min_len_q_content' => 'number',
 		'min_len_a_content' => 'number',
+		'min_len_c_content' => 'number',
 		'max_rate_ip_qs' => 'number',
 		'max_rate_ip_as' => 'number',
+		'max_rate_ip_cs' => 'number',
 		'max_rate_ip_votes' => 'number',
 		'max_rate_user_qs' => 'number',
 		'max_rate_user_as' => 'number',
+		'max_rate_user_cs' => 'number',
 		'max_rate_user_votes' => 'number',
 		'pages_prev_next' => 'number',
 		'page_size_home' => 'number',
@@ -120,14 +125,21 @@
 		'columns_users' => 'number',
 		
 		'neat_urls' => 'checkbox',
+		'comment_on_qs' => 'checkbox',
+		'comment_on_as' => 'checkbox',
+		'follow_on_as' => 'checkbox',
 		'ask_needs_login' => 'checkbox',
 		'answer_needs_login' => 'checkbox',
+		'comment_needs_login' => 'checkbox',
 		'do_ask_check_qs' => 'checkbox',
 		'do_example_tags' => 'checkbox',
 		'do_complete_tags' => 'checkbox',
 		'do_related_qs' => 'checkbox',
 		'logo_show' => 'checkbox',
 		'show_url_links' => 'checkbox',
+		'voting_on_qs' => 'checkbox',
+		'voting_on_as' => 'checkbox',
+		'votes_separated' => 'checkbox',
 	);
 	
 	$optionmaximum=array(
@@ -286,21 +298,65 @@
 					
 					$qa_content['script_onloads'][]=array('qa_logo_display();');
 					break;
-				
+					
+				case 'voting_on_qs':
+					$optionfield['tags'].=' ID="voting_on_qs" onClick="qa_voting_on_display();" ';
+
+					$qa_content['script_lines'][]=array(
+						"function qa_voting_on_display() {",
+						"\tvar vq=document.getElementById('voting_on_qs').checked;",
+						"\tvar va=document.getElementById('voting_on_as').checked;",
+						"\tdocument.getElementById('votes_separated').style.display=(vq||va) ? '' : 'none';",
+						"}",
+					);
+					
+					$qa_content['script_onloads'][]=array('qa_voting_on_display();');
+					break;
+					
+				case 'voting_on_as':
+					$optionfield['tags'].=' ID="voting_on_as" onClick="qa_voting_on_display();" ';
+					break;
+
+				case 'comment_on_qs':
+					$optionfield['tags'].=' ID="comment_on_qs" onClick="qa_comments_on_display();" ';
+
+					$qa_content['script_lines'][]=array(
+						"function qa_comments_on_display() {",
+						"\tvar cq=document.getElementById('comment_on_qs').checked;",
+						"\tvar ca=document.getElementById('comment_on_as').checked;",
+						"\tdocument.getElementById('comment_needs_login').style.display=(cq||ca) ? '' : 'none';",
+						"\tdocument.getElementById('min_len_c_content').style.display=(cq||ca) ? '' : 'none';",
+						"}",
+					);
+					
+					$qa_content['script_onloads'][]=array('qa_comments_on_display();');
+					break;
+					
+				case 'comment_on_as':
+					$optionfield['tags'].=' ID="comment_on_as" onClick="qa_comments_on_display();" ';
+					break;
+					
 				case 'logo_url':
 				case 'logo_width':
 				case 'logo_height':
 				case 'page_size_related_qs':
 				case 'page_size_ask_check_qs':
 				case 'page_size_ask_tags':
+				case 'comment_needs_login':
+				case 'min_len_c_content':
+				case 'votes_separated':
 					$optionfield['id']=$optionname;
 					break;
 					
+				case 'custom_sidebar':
+					$optionfield['rows']=6;
+					break;
+				
 				case 'custom_header':
 				case 'custom_footer':
-				case 'custom_sidebar':
+				case 'custom_in_head':
 				case 'custom_welcome':
-					$optionfield['rows']=4;
+					$optionfield['rows']=3;
 					break;
 				
 				case 'pages_prev_next':

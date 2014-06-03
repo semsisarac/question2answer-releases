@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-index.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -41,15 +41,26 @@
 //	Determine the request and root of the installation
 	
 	if (isset($_GET['qa-rewrite'])) { // URLs rewritten by .htaccess
-		$qa_request_raw=qa_gpc_to_string($_GET['qa-rewrite']);
 		$qa_rewritten=true;
+		$qa_request_parts=explode('/', qa_gpc_to_string($_GET['qa-rewrite']));
+		
+		// Workaround for fact that Apache unescapes characters while rewriting
+		// Based on assumption that $_GET['qa-rewrite'] has right path depth
+		if (!empty($_SERVER['REQUEST_URI'])) {
+			$origpath=$_SERVER['REQUEST_URI'];
+			
+			$questionpos=strpos($origpath, '?');
+			if (is_numeric($questionpos))
+				$origpath=substr($origpath, 0, $questionpos);
+			
+			$qa_request_parts=array_slice(explode('/', urldecode($origpath)), -count($qa_request_parts));
+		}		
 		
 	} else { // URLs not rewritten
-		$qa_request_raw=urldecode($_SERVER['PHP_SELF']);
 		$qa_rewritten=false;
+		$qa_request_parts=explode('/', urldecode($_SERVER['PHP_SELF']));
 	}
 	
-	$qa_request_parts=explode('/', $qa_request_raw);
 	$qa_url_depth=0;
 	$qa_root_path=dirname($_SERVER['PHP_SELF']);
 	
@@ -68,10 +79,17 @@
 	}
 	
 	$qa_request=implode('/', $qa_request_parts);
-		
+	$qa_request_lc=strtolower($qa_request);
+	
 	$qa_root_url_relative=($qa_url_depth>1) ? str_repeat('../', $qa_url_depth-1) : './';	
 	$qa_root_url_inferred='http://'.$_SERVER['HTTP_HOST'].$qa_root_path.'/';
 
+//	Enable gzip compression for HTML output (apparently needs to come early)
+
+	if (($qa_request_lc!='install') && ($qa_request_lc!='admin/recalc')) // not for lengthy processes
+		if (extension_loaded('zlib') && !headers_sent())
+			ob_start('ob_gzhandler');
+		
 //	Memory/CPU usage tracking
 	
 	if (QA_DEBUG_PERFORMANCE) {
@@ -168,6 +186,7 @@
 //	Other required includes
 
 	require_once QA_INCLUDE_DIR.'qa-app-cookies.php';
+	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 	require_once QA_INCLUDE_DIR.'qa-app-users.php';
 	require_once QA_INCLUDE_DIR.'qa-app-options.php';
 	
@@ -202,7 +221,7 @@
 	$qa_start=min(max(0, (int)qa_get('start')), QA_MAX_LIMIT_START);
 
 	qa_options_set_pending(array('site_title', 'logo_show', 'logo_url', 'logo_width', 'logo_height', 'feedback_email',
-		'site_language', 'site_theme', 'neat_urls', 'custom_sidebar', 'custom_header', 'custom_footer', 'pages_prev_next'));
+		'site_language', 'site_theme', 'neat_urls', 'custom_sidebar', 'custom_header', 'custom_footer', 'custom_in_head', 'pages_prev_next'));
 
 //	Function called by qa-page-* files to start preparing theme content
 	
@@ -404,11 +423,9 @@
 		'rewrite-pass' => QA_INCLUDE_DIR.'qa-rewrite-test.php',
 	);
 	
-	$qa_operation_lc=strtolower($qa_request);
-
-	if (isset($qa_routing[$qa_operation_lc])) {
-		$qa_template=$qa_operation_lc;
-		require $qa_routing[$qa_operation_lc];
+	if (isset($qa_routing[$qa_request_lc])) {
+		$qa_template=$qa_request_lc;
+		require $qa_routing[$qa_request_lc];
 
 	} else {
 		$qa_operation_parts=explode('/', $qa_request);
@@ -445,56 +462,34 @@
 	
 	foreach ($qa_content['navigation'] as $navtype => $navigation)
 		foreach ($navigation as $navprefix => $navlink)
-			if (substr($qa_operation_lc.'$', 0, strlen($navprefix)) == $navprefix)
+			if (substr($qa_request_lc.'$', 0, strlen($navprefix)) == $navprefix)
 				$qa_content['navigation'][$navtype][$navprefix]['selected']=true;
 
-//	Load up the appropriate theme, with lots of safety measures
-
-	require_once QA_INCLUDE_DIR.'qa-theme-base.php';
-	
-	$themephpfile=QA_THEME_DIR.qa_get_option($qa_db, 'site_theme').'/qa-theme.php';
-	$themeroothtml=qa_html($qa_root_url_relative.'qa-theme/'.qa_get_option($qa_db, 'site_theme').'/');
-	
-	if (file_exists($themephpfile)) {
-		require_once QA_THEME_DIR.qa_get_option($qa_db, 'site_theme').'/qa-theme.php';
-
-		if (class_exists('qa_html_theme'))
-			$theme=new qa_html_theme($qa_template, $qa_content, $themeroothtml);
-	}
-	
-	if (!isset($theme)) {
-		if (!file_exists(QA_THEME_DIR.qa_get_option($qa_db, 'site_theme').'/qa-styles.css'))
-			$themeroothtml=qa_html($qa_root_url_relative.'qa-theme/Default/');
-			
-		$theme=new qa_html_theme_base($qa_template, $qa_content, $themeroothtml);
-	}
-		
 //	Output the page using the theme
 
-	if (extension_loaded('zlib') && !headers_sent())
-		ob_start('ob_gzhandler');
-
+	$themeclass=qa_load_theme_class(qa_get_option($qa_db, 'site_theme'), $qa_template, $qa_content);
+		
 	header('Content-type: text/html; charset=utf-8');
 	
-	$theme->doctype();
+	$themeclass->doctype();
 	
-	$theme->output(
+	$themeclass->output(
 		'<HTML>',
 		'<HEAD>',
 		'<META HTTP-EQUIV="Content-type" CONTENT="text/html; charset=utf-8"/>',
 		'<TITLE>'.(strlen($qa_request) ? (strip_tags($qa_content['title']).' - ') : '').qa_html(qa_get_option($qa_db, 'site_title')).'</TITLE>'
 	);
 	
-	$theme->output('<SCRIPT TYPE="text/javascript"><!--');
+	$themeclass->output('<SCRIPT TYPE="text/javascript"><!--');
 
 	if (isset($qa_content['script_var']))
 		foreach ($qa_content['script_var'] as $var => $value)
-			$theme->output('var '.$var.'='.qa_js($value).';');
+			$themeclass->output('var '.$var.'='.qa_js($value).';');
 	
 	if (isset($qa_content['script_lines']))
 		foreach ($qa_content['script_lines'] as $script) {
-			$theme->output('');
-			$theme->output_array($script);
+			$themeclass->output('');
+			$themeclass->output_array($script);
 		}
 		
 	if (isset($qa_content['focusid']))
@@ -507,7 +502,7 @@
 		);
 		
 	if (isset($qa_content['script_onloads'])) {
-		$theme->output(
+		$themeclass->output(
 			'',
 			'var qa_oldonload=window.onload;',
 			'window.onload=function() {',
@@ -516,33 +511,35 @@
 		);
 		
 		foreach ($qa_content['script_onloads'] as $script) {
-			$theme->output("\t");
+			$themeclass->output("\t");
 			
 			foreach ($script as $scriptline)
-				$theme->output("\t".$scriptline);
+				$themeclass->output("\t".$scriptline);
 		}
 
-		$theme->output(
+		$themeclass->output(
 			"}"
 		);
 	}
 
-	$theme->output('--></SCRIPT>');
+	$themeclass->output('--></SCRIPT>');
 	
 	if (isset($qa_content['script_src']))
 		foreach ($qa_content['script_src'] as $script_src)
-			$theme->output('<SCRIPT SRC="'.qa_html($qa_root_url_relative.'qa-content/'.$script_src).'" TYPE="text/javascript"></SCRIPT>');
+			$themeclass->output('<SCRIPT SRC="'.qa_html($qa_root_url_relative.'qa-content/'.$script_src).'" TYPE="text/javascript"></SCRIPT>');
 
-	$theme->head_custom();
+	$themeclass->head_css();
+	$themeclass->head_custom();
+	$themeclass->output_raw(qa_get_option($qa_db, 'custom_in_head'));
 	
-	$theme->output('</HEAD>', '<BODY');
-	$theme->body_tags();
-	$theme->output('>');
-	$theme->output_raw(qa_get_option($qa_db, 'custom_header'));
-	$theme->body_content();
-	$theme->output_raw(qa_get_option($qa_db, 'custom_footer'));
-	$theme->output('</BODY>', '</HTML>');
-	$theme->finish();
+	$themeclass->output('</HEAD>', '<BODY');
+	$themeclass->body_tags();
+	$themeclass->output('>');
+	$themeclass->output_raw(qa_get_option($qa_db, 'custom_header'));
+	$themeclass->body_content();
+	$themeclass->output_raw(qa_get_option($qa_db, 'custom_footer'));
+	$themeclass->output('</BODY>', '</HTML>');
+	$themeclass->finish();
 			
 //	End of output phase
 

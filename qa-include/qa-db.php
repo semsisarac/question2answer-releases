@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -197,9 +197,9 @@
 		This way we ensure that every read pageview on the site requires only a single DB query, so
 		that we pay for this latency only one time.
 		
-		For writes we worry less, since the user is more likely to be expecting a delay anyway.
+		For writes we worry less, since the user is more likely to be expecting a delay.
 		
-		And if QA_OPTIMIZE_LOCAL_DB is set in qa-config.php, we assume zero latency and go back to
+		If QA_OPTIMIZE_LOCAL_DB is set in qa-config.php, we assume zero latency and go back to
 		simple queries, since this will allow both MySQL and PHP to provide quicker results.
 	*/
 	
@@ -285,15 +285,10 @@
 				if (!isset($selectspec['outcolumns'][$columnas]))
 					unset($rawresult[$columnas]);
 			
-			/*if (isset($selectspec['arrayvalue']))
-				$value=$rawresult[$selectspec['arrayvalue']];
-			else*/
-				$value=$rawresult;
-			
 			if (isset($selectspec['arraykey']))
-				$outresults[$selectkey][$rawresult[$selectspec['arraykey']]]=$value;
+				$outresults[$selectkey][$rawresult[$selectspec['arraykey']]]=$rawresult;
 			else
-				$outresults[$selectkey][]=$value;
+				$outresults[$selectkey][]=$rawresult;
 		}
 		
 	//	Post-processing to apply sorting request
@@ -309,25 +304,19 @@
 	function qa_db_post_select(&$outresult, $selectspec)
 	{
 		if (isset($selectspec['sortdesc'])) {
-			/*if ($selectspec['sortdesc']==@$selectspec['arrayvalue'])
-				arsort($outresult);
+			// PHP's sorting algorithm is not 'stable', so we use _order_ to keep stability.
+			// By contrast, MySQL's ORDER BY seems to be stable. For example when retrieving
+			// most popular tags, we get the same results each time we run query, even if many
+			// of the tags have the same popularity.
 			
-			else*/ {
+			$index=count($outresult);
+			foreach ($outresult as $key => $value)
+				$outresult[$key]['_order_']=$index--;
 				
-				// PHP's sorting algorithm is not stable, so we use _order_ to keep stability.
-				// By contrast, MySQL's ORDER BY seems to be stable. For example when retrieving
-				// most popular tags, we get the same results each time we run query, even if many
-				// of the tags have the same popularity.
-				
-				$index=count($outresult);
-				foreach ($outresult as $key => $value)
-					$outresult[$key]['_order_']=$index--;
-					
-				require_once QA_INCLUDE_DIR.'qa-util-sort.php';
-				
-				qa_sort_by($outresult, $selectspec['sortdesc'], '_order_');
-				$outresult=array_reverse($outresult, true);
-			}
+			require_once QA_INCLUDE_DIR.'qa-util-sort.php';
+			
+			qa_sort_by($outresult, $selectspec['sortdesc'], '_order_');
+			$outresult=array_reverse($outresult, true);
 		}
 		
 		if (isset($selectspec['arrayvalue']))
@@ -335,7 +324,7 @@
 				$outresult[$key]=$value[$selectspec['arrayvalue']];
 		
 		if (@$selectspec['single'])
-			$outresult=@$outresult[0];
+			$outresult=count($outresult) ? reset($outresult) : null;
 	}
 	
 	function qa_db_read_all_assoc($result, $key=null, $value=null)

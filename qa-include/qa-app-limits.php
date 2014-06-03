@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-limits.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -52,6 +52,12 @@
 				$iplimit=$options['max_rate_ip_as'];
 				break;
 				
+			case 'C':
+				$options=qa_get_options($db, array('max_rate_user_cs', 'max_rate_ip_cs'));
+				$userlimit=$options['max_rate_user_cs'];
+				$iplimit=$options['max_rate_ip_cs'];
+				break;
+
 			case 'V':
 				$options=qa_get_options($db, array('max_rate_user_votes', 'max_rate_ip_votes'));
 				$userlimit=$options['max_rate_user_votes'];
@@ -75,7 +81,7 @@
 		qa_db_limits_ip_add($db, $_SERVER['REMOTE_ADDR'], $action, $period, 1);
 	}
 	
-	function qa_report_write_action($db, $userid, $cookieid, $action, $questionid, $answerid)
+	function qa_report_write_action($db, $userid, $cookieid, $action, $questionid, $answerid, $commentid)
 	{		
 		switch ($action) {
 			case 'q_post':
@@ -84,6 +90,10 @@
 			
 			case 'a_post':
 				qa_limits_increment($db, $userid, 'A');
+				break;
+				
+			case 'c_post':
+				qa_limits_increment($db, $userid, 'C');
 				break;
 			
 			case 'q_vote_up':
@@ -99,13 +109,13 @@
 		if (isset($userid)) {
 			require_once QA_INCLUDE_DIR.'qa-app-users.php';
 			
-			qa_user_report_action($db, $userid, $action, $questionid, $answerid);
+			qa_user_report_action($db, $userid, $action, $questionid, $answerid, $commentid);
 		}
 		
 		if (isset($cookieid)) {
 			require_once QA_INCLUDE_DIR.'qa-app-cookies.php';
 
-			qa_cookie_report_action($db, $cookieid, $action, $questionid, $answerid);
+			qa_cookie_report_action($db, $cookieid, $action, $questionid, $answerid, $commentid);
 		}
 	}
 

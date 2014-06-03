@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-points.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -65,7 +65,7 @@
 			
 			'aselecteds' => array(
 				'multiple' => $options['points_multiple']*$options['points_a_selected'],
-				'formula' => "COUNT(*) AS aselecteds FROM ^posts AS userid_src JOIN ^posts AS questions ON questions.selchildid=userid_src.postid WHERE userid_src.userid~ AND userid_src.type='A' AND questions.userid<>userid_src.userid",
+				'formula' => "COUNT(*) AS aselecteds FROM ^posts AS userid_src JOIN ^posts AS questions ON questions.selchildid=userid_src.postid WHERE userid_src.userid~ AND userid_src.type='A' AND NOT (questions.userid<=>userid_src.userid)",
 			),
 			
 			'qvotes' => array(
@@ -80,18 +80,30 @@
 			
 			'qvoteds' => array(
 				'multiple' => $options['points_multiple'],
-				'formula' => "COALESCE(SUM(IF((".((int)$options['points_per_q_voted'])."*votes)<-".((int)$options['points_q_voted_max_loss']).
-					",-".((int)$options['points_q_voted_max_loss']).",IF((".((int)$options['points_per_q_voted'])."*votes)>".((int)$options['points_q_voted_max_gain']).
-					",".((int)$options['points_q_voted_max_gain']).",".((int)$options['points_per_q_voted'])."*votes))), 0) ".
-					"AS qvoteds FROM ^posts AS userid_src WHERE type='Q' AND userid~",
+				'formula' => "COALESCE(SUM(".
+					"LEAST(".((int)$options['points_per_q_voted'])."*upvotes,".((int)$options['points_q_voted_max_gain']).")".
+					"-".
+					"LEAST(".((int)$options['points_per_q_voted'])."*downvotes,".((int)$options['points_q_voted_max_loss']).")".
+					"), 0) AS qvoteds FROM ^posts AS userid_src WHERE (type='Q' OR type='Q_HIDDEN') AND userid~",
 			),
 			
 			'avoteds' => array(
 				'multiple' => $options['points_multiple'],
-				'formula' => "COALESCE(SUM(IF((".((int)$options['points_per_a_voted'])."*votes)<-".((int)$options['points_a_voted_max_loss']).
-					",-".((int)$options['points_a_voted_max_loss']).",IF((".((int)$options['points_per_a_voted'])."*votes)>".((int)$options['points_a_voted_max_gain']).
-					",".((int)$options['points_a_voted_max_gain']).",".((int)$options['points_per_a_voted'])."*votes))), 0) ".
-					"AS avoteds FROM ^posts AS userid_src WHERE type='A' AND userid~",
+				'formula' => "COALESCE(SUM(".
+					"LEAST(".((int)$options['points_per_a_voted'])."*upvotes,".((int)$options['points_a_voted_max_gain']).")".
+					"-".
+					"LEAST(".((int)$options['points_per_a_voted'])."*downvotes,".((int)$options['points_a_voted_max_loss']).")".
+					"), 0) AS avoteds FROM ^posts AS userid_src WHERE (type='A' OR type='A_HIDDEN') AND userid~",
+			),
+			
+			'upvoteds' => array(
+				'multiple' => 0,
+				'formula' => "COALESCE(SUM(upvotes), 0) AS upvoteds FROM ^posts AS userid_src WHERE userid~",
+			),
+
+			'downvoteds' => array(
+				'multiple' => 0,
+				'formula' => "COALESCE(SUM(downvotes), 0) AS downvoteds FROM ^posts AS userid_src WHERE userid~",
 			),
 		);
 	}

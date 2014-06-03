@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-recalc.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -39,11 +39,11 @@
 	^contentwords (all): index of words in content of posts
 	^posttags (all): index of words in tags of posts
 	^words (all): list of words used for indexes
-	^options (title=cache_qcount|cache_acount|cache_tagcount): total Qs, As, tags
+	^options (title=cache_qcount|cache_acount|cache_ccount|cache_tagcount): total Qs, As, Cs, tags
 	
 	Recalculated in dorecalcposts:
 	==============================
-	^posts (votes, acount): number of votes and answer received by questions
+	^posts (upvotes, downvotes, acount): number of votes and answers received by questions
 	
 	Recalculated in dorecalcpoints:
 	===============================
@@ -66,12 +66,13 @@
 		
 		switch ($operation) {
 			case 'doreindexposts':
-				qa_recalc_transition($db, $state, 'doreindexposts_qacount');
+				qa_recalc_transition($db, $state, 'doreindexposts_postcount');
 				break;
 				
-			case 'doreindexposts_qacount':
+			case 'doreindexposts_postcount':
 				qa_db_qcount_update($db);
 				qa_db_acount_update($db);
+				qa_db_ccount_update($db);
 
 				qa_recalc_transition($db, $state, 'doreindexposts_reindex');
 				break;
@@ -85,7 +86,7 @@
 					qa_db_prepare_for_reindexing($db, $next, $lastpostid);
 		
 					foreach ($posts as $postid => $post)
-						qa_post_index($db, $postid, $post['title'], $post['content'], $post['tags'], true);
+						qa_post_index($db, $postid, $post['type'], $post['questionid'], $post['title'], $post['content'], $post['tags'], true);
 					
 					$next=1+$lastpostid;
 					$done+=count($posts);
@@ -116,12 +117,13 @@
 				break;
 				
 			case 'dorecountposts':
-				qa_recalc_transition($db, $state, 'dorecountposts_qacount');
+				qa_recalc_transition($db, $state, 'dorecountposts_postcount');
 				break;
 				
-			case 'dorecountposts_qacount':
+			case 'dorecountposts_postcount':
 				qa_db_qcount_update($db);
 				qa_db_acount_update($db);
+				qa_db_ccount_update($db);
 
 				qa_recalc_transition($db, $state, 'dorecountposts_recount');
 				break;
@@ -192,7 +194,7 @@
 		switch ($operation) {
 			case 'doreindexposts_reindex':
 			case 'dorecountposts_recount':
-				$length=qa_get_option($db, 'cache_qcount')+qa_get_option($db, 'cache_acount');
+				$length=qa_get_option($db, 'cache_qcount')+qa_get_option($db, 'cache_acount')+qa_get_option($db, 'cache_ccount');
 				break;
 			
 			case 'doreindexposts_wordcount':
@@ -216,9 +218,9 @@
 		@list($operation, $length, $next, $done)=explode(',', $state);
 		
 		switch ($operation) {
-			case 'doreindexposts_qacount':
-			case 'dorecountposts_qacount':
-				$message=qa_lang('admin/recalc_posts_qacount');
+			case 'doreindexposts_postcount':
+			case 'dorecountposts_postcount':
+				$message=qa_lang('admin/recalc_posts_count');
 				break;
 				
 			case 'doreindexposts_reindex':

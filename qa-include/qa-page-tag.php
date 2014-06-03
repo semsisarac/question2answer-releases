@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-tag.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -37,7 +37,7 @@
 
 //	Find the questions with this tag
 
-	qa_options_set_pending(array('page_size_tag_qs'));
+	qa_options_set_pending(array('page_size_tag_qs', 'voting_on_qs', 'votes_separated'));
 	
 	list($questions, $qcount)=qa_db_select_with_pending($qa_db,
 		qa_db_tag_recent_qs_selectspec($qa_login_userid, $tag, $qa_start),
@@ -63,8 +63,10 @@
 
 	$qa_content['q_list']['qs']=array();
 	foreach ($questions as $postid => $question)
-		$qa_content['q_list']['qs'][]=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, true);
+		$qa_content['q_list']['qs'][]=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, qa_get_vote_view($qa_db, 'Q'));
 		
 	$qa_content['page_links']=qa_html_page_links($qa_request, $qa_start, $pagesize, $qcount, qa_get_option($qa_db, 'pages_prev_next'));
 
+	if (empty($qa_content['page_links']))
+		$qa_content['suggest_next']=qa_html_suggest_qs_tags();
 ?>

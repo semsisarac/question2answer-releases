@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-ask.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -44,17 +44,31 @@
 		$pageerror=qa_insert_login_links(qa_lang_html('question/ask_must_login'), $qa_request);
 
 	} else {
+		require_once QA_INCLUDE_DIR.'qa-db-selects.php';
+
 		$stage=1;
 		
+		$infollow=qa_get('follow');
 		$intitle=qa_post_text('title');
 		$incontent=qa_post_text('content');
 		$intags=qa_post_text('tags');
-		$innotify=true;
-				
-		if (qa_clicked('doask1') || qa_clicked('doask2') || qa_clicked('doask3')) {
-			qa_options_set_pending(array('min_len_q_title', 'min_len_q_content', 'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs',
-				'do_example_tags', 'match_example_tags', 'page_size_ask_tags', 'do_complete_tags'));
+		$innotify=true; // show notify on by default
+		
+		qa_options_set_pending(array('min_len_q_title', 'min_len_q_content', 'do_ask_check_qs', 'match_ask_check_qs', 'page_size_ask_check_qs',
+			'do_example_tags', 'match_example_tags', 'page_size_ask_tags', 'do_complete_tags', 'voting_on_qs', 'votes_separated'));
+
+		if (isset($infollow)) {
+			$followanswer=qa_db_select_with_pending($qa_db,
+				qa_db_full_post_selectspec($qa_login_userid, $infollow)
+			);
 			
+			if ($followanswer['basetype']!='A')
+				$followanswer=null;
+				
+		} else
+			$followanswer=null;
+				
+		if (qa_clicked('doask1') || qa_clicked('doask2') || qa_clicked('doask3')) {			
 			if (qa_limits_remaining($qa_db, $qa_login_userid, 'Q')) {
 				require_once QA_INCLUDE_DIR.'qa-app-post-create.php';
 	
@@ -65,33 +79,25 @@
 					$innotify=qa_post_text('notify');
 					$inemail=qa_post_text('email');
 	
-					$errors=qa_question_validate($qa_db, $intitle, $incontent, $tagstring);
-					
-					if ($innotify && !empty($inemail)) {
-						if (!qa_email_validate($inemail))
-							$errors['email']=qa_lang('users/email_invalid');
-						elseif (qa_strlen($inemail)>QA_DB_MAX_EMAIL_LENGTH)
-							$errors['email']=qa_lang_sub('main/max_length_x', QA_DB_MAX_EMAIL_LENGTH);
-					}
+					$errors=qa_question_validate($qa_db, $intitle, $incontent, $tagstring, $innotify, $inemail);
 					
 					if (empty($errors)) {
 						if (!isset($qa_login_userid))
 							$qa_cookieid=qa_cookie_get_create($qa_db); // create a new cookie if necessary
 			
-						$questionid=qa_question_create($qa_db, $qa_login_userid, $qa_cookieid, $intitle, $incontent, $tagstring,
-							$innotify ? (empty($inemail) ? '@' : $inemail) : null);
+						$questionid=qa_question_create($qa_db, $followanswer, 
+							$qa_login_userid, $qa_cookieid, $intitle, $incontent, $tagstring, $innotify, $inemail);
 						
-						qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'q_post', $questionid, null);
+						qa_report_write_action($qa_db, $qa_login_userid, $qa_cookieid, 'q_post', $questionid, null, null);
 						qa_redirect(qa_q_request($questionid, $intitle));
 					}
 					
 					$stage=3;
 
 				} else
-					$errors=qa_question_validate($qa_db, $intitle, null, null);
+					$errors=qa_question_validate($qa_db, $intitle, null, null, null, null);
 				
 				if (empty($errors) || ($stage>1)) {
-					require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 					require_once QA_INCLUDE_DIR.'qa-app-format.php';
 					
 				//	Find out what operations are required
@@ -188,7 +194,7 @@
 
 	qa_content_prepare();
 	
-	$qa_content['title']=qa_lang_html('question/ask_title');
+	$qa_content['title']=qa_lang_html(isset($followanswer) ? 'question/ask_follow_title' : 'question/ask_title');
 	$qa_content['error']=@$pageerror;
 	
 	if (!$loginerror) {
@@ -220,6 +226,13 @@
 			);
 			
 			$qa_content['focusid']='title';
+			
+			if (isset($followanswer))
+				$qa_content['form']['fields']['follows']=array(
+					'type' => 'static',
+					'label' => qa_lang_html('question/ask_follow_from_a'),
+					'value' => qa_html($followanswer['content'], true),
+				);
 				
 		} elseif ($stage==2) {
 			$qa_content['title']=qa_html(@$intitle);
@@ -229,7 +242,7 @@
 			$qa_content['q_list']['qs']=array();
 
 			foreach ($suggestquestions as $question)
-				$qa_content['q_list']['qs'][]=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, false);
+				$qa_content['q_list']['qs'][]=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml);
 		
 			$qa_content['q_list']['form']=array(
 				'tags' => ' NAME="ask" METHOD="POST" ACTION="'.qa_self_html().'" ',
@@ -291,8 +304,7 @@
 			
 			$qa_content['focusid']='content';
 			
-			qa_set_up_notify_fields($qa_content, $qa_content['form']['fields'],
-				QA_EXTERNAL_USERS ? qa_get_user_email($qa_db, $qa_login_userid) : $qa_login_email,
+			qa_set_up_notify_fields($qa_content, $qa_content['form']['fields'], 'Q', $qa_login_email,
 				@$innotify, @$inemail, @$errors['email']);
 			
 			qa_set_up_tag_field($qa_content, $qa_content['form']['fields']['tags'], 'tags', $exampletags, $completetags, qa_get_option($qa_db, 'page_size_ask_tags'));

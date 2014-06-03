@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-register.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -77,12 +77,11 @@
 		'style' => 'tall',
 		
 		'fields' => array(
-			'email' => array(
-				'label' => qa_lang_html('users/email_label'),
-				'tags' => ' NAME="email" ID="email" ',
-				'value' => qa_html(@$inemail),
-				'note' => qa_get_option($qa_db, 'email_privacy'),
-				'error' => qa_html(@$errors['email']),
+			'handle' => array(
+				'label' => qa_lang_html('users/handle_label'),
+				'tags' => ' NAME="handle" ID="handle" ',
+				'value' => qa_html(@$inhandle),
+				'error' => qa_html(@$errors['handle']),
 			),
 			
 			'password' => array(
@@ -92,12 +91,13 @@
 				'value' => qa_html(@$inpassword),
 				'error' => qa_html(@$errors['password']),
 			),
-			
-			'handle' => array(
-				'label' => qa_lang_html('users/handle_label'),
-				'tags' => ' NAME="handle" ID="handle" ',
-				'value' => qa_html(@$inhandle),
-				'error' => qa_html(@$errors['handle']),
+
+			'email' => array(
+				'label' => qa_lang_html('users/email_label'),
+				'tags' => ' NAME="email" ID="email" ',
+				'value' => qa_html(@$inemail),
+				'note' => qa_get_option($qa_db, 'email_privacy'),
+				'error' => qa_html(@$errors['email']),
 			),
 		),
 		
@@ -112,8 +112,8 @@
 		),
 	);
 	
-	$qa_content['focusid']=isset($errors['email']) ? 'email'
+	$qa_content['focusid']=isset($errors['handle']) ? 'handle'
 		: (isset($errors['password']) ? 'password'
-			: (isset($errors['handle']) ? 'handle' : 'email'));
+			: (isset($errors['email']) ? 'email' : 'handle'));
 	
 ?>

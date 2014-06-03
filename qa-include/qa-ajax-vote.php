@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-ajax-vote.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -41,10 +41,15 @@
 //	Main code
 
 	require_once QA_INCLUDE_DIR.'qa-app-users.php';
+	require_once QA_INCLUDE_DIR.'qa-app-cookies.php';
 	require_once QA_INCLUDE_DIR.'qa-app-votes.php';
+	require_once QA_INCLUDE_DIR.'qa-app-format.php';
+	require_once QA_INCLUDE_DIR.'qa-app-options.php';
+	require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 	
 	$qa_root_url_relative=qa_post_text('qa_root');
 	$qa_request=qa_post_text('qa_request');
+	$postid=qa_post_text('postid');
 	
 	function qa_db_fail_handler()
 	{
@@ -53,14 +58,32 @@
 	}
 
 	qa_base_db_connect('qa_db_fail_handler');
+
 	$qa_login_user=qa_get_logged_in_user($qa_db);
-	$voteerror=qa_user_vote_error($qa_db, @$qa_login_user['userid'], qa_post_text('postid'), qa_post_text('vote'), $qa_request);
-	qa_base_db_disconnect();
-	
+	$qa_login_userid=@$qa_login_user['userid'];
+	$qa_cookieid=qa_cookie_get();
+
+	$voteerror=qa_user_vote_error($qa_db, $qa_login_userid, $postid, qa_post_text('vote'), $qa_request);
+
 	header("Content-Type: text/plain");
 	
-	if ($voteerror===false)
-		echo '1';
-	else
+	if ($voteerror===false) {
+		qa_options_set_pending(array('site_theme', 'site_language', 'votes_separated'));
+	
+		$post=qa_db_select_with_pending($qa_db,
+			qa_db_full_post_selectspec($qa_login_userid, $postid)
+		);
+		
+		$fields=qa_post_html_fields($post, $qa_login_userid, $qa_cookieid, array(), qa_get_option($db, 'votes_separated') ? 'updown' : 'net');
+		
+		$themeclass=qa_load_theme_class(qa_get_option($qa_db, 'site_theme'), 'voting', null);
+
+		echo "1\n";
+		$themeclass->voting_inner_html($fields);
+
+	} else
 		echo "0\n".$voteerror;
+
+	qa_base_db_disconnect();
+	
 ?>

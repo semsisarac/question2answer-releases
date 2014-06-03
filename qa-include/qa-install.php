@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-install.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -35,6 +35,8 @@
 	
 	global $qa_db;
 	
+	header('Content-type: text/html; charset=utf-8');
+
 	$success='';
 	$error='';
 	$buttons=array();
@@ -64,6 +66,12 @@
 				$success.='Your Question2Answer database has been created for external user identity management. Please read the documentation to complete integration.';
 			else
 				$success.='Your Question2Answer database has been created.';
+		}
+		
+		if (qa_clicked('upgrade')) {
+			qa_db_upgrade_tables($qa_db);
+			
+			$success.='Your Question2Answer database has been updated.';
 		}
 
 		if (qa_clicked('repair')) {
@@ -116,6 +124,11 @@
 				}
 				break;
 				
+			case 'old-version':
+				$error='Your Question2Answer database needs to be upgraded for this version of the software.'; // don't show error before this
+				$buttons=array('upgrade' => 'Upgrade Database');
+				break;
+				
 			case 'table-missing':
 				$error.='One or more tables are missing from your Question2Answer database.';
 				$buttons=array('repair' => 'Repair Database');
@@ -138,8 +151,6 @@
 		}
 	}
 	
-	header('Content-type: text/html; charset=utf-8');
-
 ?>
 <HTML>
 	<HEAD>

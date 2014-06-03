@@ -1,4 +1,6 @@
+DirectoryIndex index.php
 RewriteEngine On
+#RewriteBase /your-sub-directory
 RewriteRule ^index.php/rewrite-test index.php/rewrite-pass [L]
 RewriteCond %{REQUEST_URI} ^(.*)//(.*)$
 RewriteRule . %1/%2 [R=301,L]

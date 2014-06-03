@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-search.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -42,7 +42,7 @@
 		$words=qa_string_to_words($inquery);
 		$retrieve=2*QA_DB_RETRIEVE_QS_AS+1;
 		
-		qa_options_set_pending(array('page_size_search'));
+		qa_options_set_pending(array('page_size_search', 'voting_on_qs', 'votes_separated'));
 		
 		$questions=qa_db_select_with_pending($qa_db,
 			qa_db_search_posts_selectspec($qa_db, $qa_login_userid, $words, $words, $words, $words, $qa_start, $retrieve)
@@ -73,7 +73,7 @@
 		
 		$qa_content['q_list']['qs']=array();
 		foreach ($questions as $question) {
-			$fields=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, true);
+			$fields=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, qa_get_vote_view($qa_db, 'Q'));
 
 			$matchpostidscore=array();
 
@@ -85,7 +85,7 @@
 			$matchpostid=array_search(max($matchpostidscore), $matchpostidscore);
 
 			if ($matchpostid != $question['postid'])
-				$fields['url']=qa_path_html(qa_q_request($question['postid'], $question['title'])).'#'.qa_html(urlencode($matchpostid));
+				$fields['url']=qa_path_html(qa_q_request($question['postid'], $question['title']), null, null, null, $matchpostid);
 
 			$qa_content['q_list']['qs'][]=$fields;
 		}

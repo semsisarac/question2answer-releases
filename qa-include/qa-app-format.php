@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-format.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -80,17 +80,26 @@
 		if (QA_EXTERNAL_USERS) {
 			$keyuserids=array();
 	
-			foreach ($useridhandles as $useridhandle)
+			foreach ($useridhandles as $useridhandle) {
 				if (isset($useridhandle['userid']))
 					$keyuserids[$useridhandle['userid']]=true;
+
+				if (isset($useridhandle['lastuserid']))
+					$keyuserids[$useridhandle['lastuserid']]=true;
+			}		
 	
 			return qa_get_users_html($db, array_keys($keyuserids), true, qa_path(''), $microformats);
 		
 		} else {
 			$usershtml=array();
 
-			foreach ($useridhandles as $useridhandle)
-				$usershtml[$useridhandle['userid']]=qa_get_one_user_html($useridhandle['handle'], $microformats);
+			foreach ($useridhandles as $useridhandle) {
+				if (isset($useridhandle['userid']) && $useridhandle['handle'])
+					$usershtml[$useridhandle['userid']]=qa_get_one_user_html($useridhandle['handle'], $microformats);
+
+				if (isset($useridhandle['lastuserid']) && $useridhandle['lasthandle'])
+					$usershtml[$useridhandle['lastuserid']]=qa_get_one_user_html($useridhandle['lasthandle'], $microformats);
+			}
 		
 			return $usershtml;
 		}
@@ -101,21 +110,28 @@
 		return '<A HREF="'.qa_path_html('tag/'.urlencode($tag)).'"'.($microformats ? ' rel="tag"' : '').' CLASS="qa-tag-link">'.qa_html($tag).'</A>';
 	}
 	
-	function qa_post_html_fields($post, $userid, $cookieid, $usershtml, $allowvoting, $showurllinks=false, $microformats=false, $isselected=false)
+	function qa_post_html_fields($post, $userid, $cookieid, $usershtml, $voteview=false, $showurllinks=false, $microformats=false, $isselected=false)
 	{
 		$fields=array();
 		
+	//	Useful stuff used throughout function
+
 		$postid=$post['postid'];
-		$isanswer=($post['type']=='A') || ($post['type']=='A_HIDDEN');
+		$isquestion=($post['basetype']=='Q');
+		$isanswer=($post['basetype']=='A');
 		$isbyuser=qa_post_is_by_user($post, $userid, $cookieid);
 		
-		$fields['hidden']=($post['type']=='Q_HIDDEN') || ($post['type']=='A_HIDDEN');
+	//	High level information
+
+		$fields['hidden']=$post['hidden'];
 		$fields['tags']=' ID="'.qa_html($postid).'" ';
 		
 		if ($microformats)
-			$fields['classes']=' hentry '.($isanswer ? ($isselected ? 'answer answer-selected' : 'answer') : 'question').' ';
-		
-		if (!$isanswer) {
+			$fields['classes']=' hentry '.($isquestion ? 'question' : ($isanswer ? ($isselected ? 'answer answer-selected' : 'answer') : 'comment'));
+	
+	//	Question-specific stuff (title, URL, tags, answer count)
+	
+		if ($isquestion) {
 			if (isset($post['title'])) {
 				$fields['title']=qa_html($post['title']);
 				if ($microformats)
@@ -140,8 +156,19 @@
 					: qa_lang_sub_split_html('main/x_answers', number_format($post['acount']));
 		}
 		
+	//	Answer-specific stuff (selection)
+		
+		if ($isanswer) {
+			$fields['selected']=$isselected;
+			
+			if ($isselected)
+				$fields['select_text']=qa_lang_html('question/select_text');
+		}				
+
+	//	Post content
+		
 		if (!empty($post['content'])) {
-			$fields['content']=qa_html($post['content'], true);
+			$fields['content']=qa_html($post['content'], true); // also used for rendering content when asking follow-on q
 			
 			if ($showurllinks)
 				$fields['content']=qa_html_convert_urls($fields['content']);
@@ -149,67 +176,142 @@
 			if ($microformats)
 				$fields['content']='<SPAN CLASS="entry-content">'.$fields['content'].'</SPAN>';
 		}
+		
+	//	Voting stuff
 			
-		if (isset($post['votes'])) {
-			if ($post['votes']>=1)
-				$votecount='+'.(int)$post['votes'];
-			elseif ($post['votes']<=-1)
-				$votecount='&ndash;'.(int)(-$post['votes']);
+		if ($voteview) {
+		
+		//	Calculate raw values and pass through
+		
+			$upvotes=(int)@$post['upvotes'];
+			$downvotes=(int)@$post['downvotes'];
+			$netvotes=(int)($upvotes-$downvotes);
+			
+			$fields['upvotes_raw']=$upvotes;
+			$fields['downvotes_raw']=$downvotes;
+			$fields['netvotes_raw']=$netvotes;
+
+		//	Create HTML versions...
+			
+			$upvoteshtml=qa_html($upvotes);
+			$downvoteshtml=qa_html($downvotes);
+
+			if ($netvotes>=1)
+				$netvoteshtml='+'.qa_html($netvotes);
+			elseif ($netvotes<=-1)
+				$netvoteshtml='&ndash;'.qa_html(-$netvotes);
 			else
-				$votecount='0';
+				$netvoteshtml='0';
+				
+		//	...with microformats if appropriate
+
+			if ($microformats) {
+				$netvoteshtml.='<SPAN CLASS="votes-up"><SPAN CLASS="value-title" TITLE="'.$upvoteshtml.'"></SPAN></SPAN>'.
+					'<SPAN CLASS="votes-down"><SPAN CLASS="value-title" TITLE="'.$downvoteshtml.'"></SPAN></SPAN>';
+				$upvoteshtml='<SPAN CLASS="votes-up">'.$upvoteshtml.'</SPAN>';
+				$downvoteshtml='<SPAN CLASS="votes-down">'.$downvoteshtml.'</SPAN>';
+			}
 			
-			$votespan='<SPAN ID="votes_'.qa_html($postid).'"'.($microformats ? ' CLASS="votes"' : '').'>'.$votecount.'</SPAN>';
+		//	Pass information on vote viewing
+				
+			$fields['vote_view']=$voteview;
 			
-			$fields['votes']=($post['votes']==1) ? qa_lang_sub_split_html('main/1_vote', $votespan, '1')
-				: qa_lang_sub_split_html('main/x_votes', $votespan);
-			
-			if ($allowvoting) {
-				$uservote=@$post['uservote'];
-				if ($uservote)
-					$fields['user_voted']=(int)$uservote;
-					
-				$inactive='STYLE="display:none;" ';
-				$active=$isbyuser ? 'STYLE="visibility:hidden" ' : '';
-				$common='onClick="return qa_vote_click(this, '.(int)($post['votes']-$uservote).');" ';
+			$fields['upvotes_view']=($upvotes==1) ? qa_lang_sub_split_html('main/1_liked', $upvoteshtml, '1')
+				: qa_lang_sub_split_html('main/x_liked', $upvoteshtml);
 	
-				$fields['voted_up_tags']=' TITLE="'.qa_lang_html('main/voted_up_popup').'" NAME="vote_'.qa_html($postid).'_0" ID="voted_up_'.qa_html($postid).'" '.$common.(($uservote>0) ? $active : $inactive);
-				$fields['vote_up_tags']=' TITLE="'.qa_lang_html('main/vote_up_popup').'" NAME="vote_'.qa_html($postid).'_1" ID="vote_up_'.qa_html($postid).'" '.$common.($uservote ? $inactive : $active);
-				$fields['vote_down_tags']=' TITLE="'.qa_lang_html('main/vote_down_popup').'" NAME="vote_'.qa_html($postid).'_-1" ID="vote_down_'.qa_html($postid).'" '.$common.($uservote ? $inactive : $active);
-				$fields['voted_down_tags']=' TITLE="'.qa_lang_html('main/voted_down_popup').'" NAME="vote_'.qa_html($postid).'_0" ID="voted_down_'.qa_html($postid).'" '.$common.(($uservote<0) ? $active : $inactive);
+			$fields['downvotes_view']=($downvotes==1) ? qa_lang_sub_split_html('main/1_disliked', $downvoteshtml, '1')
+				: qa_lang_sub_split_html('main/x_disliked', $downvoteshtml);			
+			
+			$fields['netvotes_view']=(abs($netvotes)==1) ? qa_lang_sub_split_html('main/1_vote', $netvoteshtml, '1')
+				: qa_lang_sub_split_html('main/x_votes', $netvoteshtml);
+		
+		//	Voting buttons
+		
+			$fields['vote_tags']=' ID="voting_'.qa_html($postid).'" ';		
+			$onclick='onClick="return qa_vote_click(this);" ';
+			
+			if ($fields['hidden']) {
+				$fields['vote_state']='disabled';
+				$fields['vote_up_tags']=' TITLE="'.qa_lang_html($isanswer ? 'main/vote_disabled_hidden_a' : 'main/vote_disabled_hidden_q').'" DISABLED="disabled" ';
+				$fields['vote_down_tags']=$fields['vote_up_tags'];
+			
+			} elseif ($isbyuser) {
+				$fields['vote_state']='disabled';
+				$fields['vote_up_tags']=' TITLE="'.qa_lang_html($isanswer ? 'main/vote_disabled_my_a' : 'main/vote_disabled_my_q').'" DISABLED="disabled" ';
+				$fields['vote_down_tags']=$fields['vote_up_tags'];
+				
+			} elseif (@$post['uservote']>0) {
+				$fields['vote_state']='voted_up';
+				$fields['vote_up_tags']=' TITLE="'.qa_lang_html('main/voted_up_popup').'" NAME="vote_'.qa_html($postid).'_0" '.$onclick;
+				$fields['vote_down_tags']=' DISABLED="disabled" ';
+
+			} elseif (@$post['uservote']<0) {
+				$fields['vote_state']='voted_down';
+				$fields['vote_up_tags']=' DISABLED="disabled" ';
+				$fields['vote_down_tags']=' TITLE="'.qa_lang_html('main/voted_down_popup').'" NAME="vote_'.qa_html($postid).'_0" '.$onclick;
+				
+			} else {
+				$fields['vote_state']='enabled';			
+				$fields['vote_up_tags']=' TITLE="'.qa_lang_html('main/vote_up_popup').'" NAME="vote_'.qa_html($postid).'_1" '.$onclick;
+				$fields['vote_down_tags']=' TITLE="'.qa_lang_html('main/vote_down_popup').'" NAME="vote_'.qa_html($postid).'_-1" '.$onclick;
 			}
 		}
 		
+	//	Created when and by whom
+		
 		if (isset($post['created'])) {
-			$whenhtml=qa_html(qa_time_to_string(time()-$post['created']));			
+			$whenhtml=qa_html(qa_time_to_string(time()-$post['created']));		
 			if ($microformats)
 				$whenhtml='<SPAN CLASS="published"><SPAN CLASS="value-title" TITLE="'.date('Y-m-d\TH:i:sO', $post['created']).'"></SPAN>'.$whenhtml.'</SPAN>';
 			
-			$fields['when']=qa_lang_sub_split_html($isanswer ? 'main/answered_x_ago' : 'main/asked_x_ago', $whenhtml);
+			$fields['when']=qa_lang_sub_split_html($isquestion ? 'main/asked_x_ago' : ($isanswer ? 'main/answered_x_ago' : 'main/x_ago'), $whenhtml);
 		}
 		
-		if ($isbyuser || !empty($usershtml[@$post['userid']])) {
-			if ($isbyuser)
-				$whohtml=qa_lang_html('main/me');
+		$fields['who']=qa_who_to_html($isbyuser, @$post['userid'], $usershtml, $microformats);
+		
+		if (isset($post['points']))
+			$fields['points']=($post['points']==1) ? qa_lang_sub_split_html('main/1_point', '1', '1')
+				: qa_lang_sub_split_html('main/x_points', qa_html(number_format($post['points'])));
 
-			else {
-				$whohtml=$usershtml[$post['userid']];
-				if ($microformats)
-					$whohtml='<SPAN CLASS="vcard author">'.$whohtml.'</SPAN>';
-			}
+	//	Updated when and by whom
+		
+		if (isset($post['updated']) && ( // show the time/user who updated if...
+			(!isset($post['created'])) || // ... we didn't show the created time (should never happen in practice)
+			(abs($post['updated']-$post['created'])>300) || // ... or over 5 minutes passed between create and update times
+			($post['lastuserid']!=$post['userid']) // ... or it was updated by a different user
+		)) {
+			$whenhtml=qa_html(qa_time_to_string(time()-$post['updated']));
+			if ($microformats)
+				$whenhtml='<SPAN CLASS="updated"><SPAN CLASS="value-title" TITLE="'.date('Y-m-d\TH:i:sO', $post['updated']).'"></SPAN>'.$whenhtml.'</SPAN>';
 			
-			$fields['who']=qa_lang_sub_split_html('main/by_x', $whohtml);
-			
-			if (isset($post['points']))
-				$fields['points']=($post['points']==1) ? qa_lang_sub_split_html('main/1_point', '1', '1')
-					: qa_lang_sub_split_html('main/x_points', qa_html(number_format($post['points'])));
+			$fields['when_2']=qa_lang_sub_split_html($fields['hidden'] ? 'question/hidden_x_ago' : 'question/edited_x_ago', $whenhtml);			
+			$fields['who_2']=qa_who_to_html($post['lastuserid']==$userid, $post['lastuserid'], $usershtml, false);
 		}
+		
+	//	That's it!
 
 		return $fields;
 	}
 	
-	function qa_a_to_q_html_fields($answerquestion, $userid, $cookieid, $usershtml, $allowvoting, $apostid, $acreated, $auserid, $acookieid, $apoints)
+	function qa_who_to_html($isbyuser, $postuserid, $usershtml, $microformats)
+	{
+		if ($isbyuser)
+			$whohtml=qa_lang_html('main/me');
+
+		elseif (isset($postuserid) && isset($usershtml[$postuserid])) {
+			$whohtml=$usershtml[$postuserid];
+			if ($microformats)
+				$whohtml='<SPAN CLASS="vcard author">'.$whohtml.'</SPAN>';
+
+		} else
+			$whohtml=qa_lang_html('main/anonymous');
+			
+		return qa_lang_sub_split_html('main/by_x', $whohtml);
+	}
+	
+	function qa_a_to_q_html_fields($answerquestion, $userid, $cookieid, $usershtml, $voteview, $apostid, $acreated, $auserid, $acookieid, $apoints)
 	{	
-		$fields=qa_post_html_fields($answerquestion, $userid, $cookieid, $usershtml, $allowvoting);
+		$fields=qa_post_html_fields($answerquestion, $userid, $cookieid, $usershtml, $voteview);
 		
 		$isbyuser=qa_post_is_by_user(array('userid' => $auserid, 'cookieid' => $acookieid), $userid, $cookieid);
 		
@@ -218,14 +320,19 @@
 		
 		unset($fields['who']);
 		unset($fields['points']);
+		
+		if ($isbyuser)
+			$whohtml=qa_lang_html('main/me');
+		elseif (!empty($usershtml[$auserid]))
+			$whohtml=$usershtml[$auserid];
+		else
+			$whohtml=qa_lang_html('main/anonymous');
 
-		if ($isbyuser || !empty($usershtml[$auserid])) {
-			$fields['who']=qa_lang_sub_split_html('main/by_x', $isbyuser ? qa_lang_html('main/me') : $usershtml[$auserid]);
-			
-			if (isset($apoints))
-				$fields['points']=($apoints==1) ? qa_lang_sub_split_html('main/1_point', '1', '1')
-					: qa_lang_sub_split_html('main/x_points', qa_html(number_format($apoints)));
-		}
+		$fields['who']=qa_lang_sub_split_html('main/by_x', $whohtml);
+
+		if (isset($apoints))
+			$fields['points']=($apoints==1) ? qa_lang_sub_split_html('main/1_point', '1', '1')
+				: qa_lang_sub_split_html('main/x_points', qa_html(number_format($apoints)));
 		
 		return $fields;
 	}
@@ -233,9 +340,22 @@
 	function qa_html_convert_urls($html)
 	{
 		// URL regular expressions can get crazy: http://internet.ls-la.net/folklore/url-regexpr.html
-		// This is something quick and dirty that should do the trick
+		// This is something quick and dirty that should do the trick in most cases
 		
 		return trim(preg_replace('/([^A-Za-z0-9])((http|https|ftp):\/\/\S+\.[^\s<>]+)/i', '\1<A HREF="\2" rel="nofollow">\2</A>', ' '.$html.' '));
+	}
+	
+	function qa_url_to_html_link($url)
+	{
+		if (is_numeric(strpos($url, '.'))) {
+			$linkurl=$url;
+			if (!is_numeric(strpos($linkurl, ':/')))
+				$linkurl='http://'.$linkurl;
+				
+			return '<A HREF="'.qa_html($linkurl).'" rel="nofollow">'.qa_html($url).'</A>';
+		
+		} else
+			return $url;
 	}
 	
 	function qa_insert_login_links($htmlmessage, $topage)
@@ -366,7 +486,7 @@
 		$field['note'].='</SPAN>';
 	}
 	
-	function qa_set_up_notify_fields(&$qa_content, &$fields, $login_email, $innotify, $inemail, $errors_email)
+	function qa_set_up_notify_fields(&$qa_content, &$fields, $basetype, $login_email, $innotify, $inemail, $errors_email)
 	{
 		$fields['notify']=array(
 			'tags' => ' NAME="notify" ',
@@ -374,10 +494,30 @@
 			'value' => qa_html($innotify),
 		);
 
+		switch ($basetype) {
+			case 'Q':
+				$labelaskemail=qa_lang_html('question/q_notify_email');
+				$labelonly=qa_lang_html('question/q_notify_label');
+				$labelgotemail=qa_lang_html('question/q_notify_x_label');
+				break;
+				
+			case 'A':
+				$labelaskemail=qa_lang_html('question/a_notify_email');
+				$labelonly=qa_lang_html('question/a_notify_label');
+				$labelgotemail=qa_lang_html('question/a_notify_x_label');
+				break;
+				
+			case 'C':
+				$labelaskemail=qa_lang_html('question/c_notify_email');
+				$labelonly=qa_lang_html('question/c_notify_label');
+				$labelgotemail=qa_lang_html('question/c_notify_x_label');
+				break;
+		}
+			
 		if (empty($login_email)) {
 			$fields['notify']['label']=
-				'<SPAN ID="email_shown">'.qa_lang_html('question/q_notify_email').'</SPAN>'.
-				'<SPAN ID="email_hidden" STYLE="display:none;">'.qa_lang_html('question/q_notify_label').'</SPAN>';
+				'<SPAN ID="email_shown">'.$labelaskemail.'</SPAN>'.
+				'<SPAN ID="email_hidden" STYLE="display:none;">'.$labelonly.'</SPAN>';
 			
 			$fields['notify']['tags'].=' ID="notify" onClick="qa_email_display();" ';
 			$fields['notify']['tight']=true;
@@ -386,7 +526,7 @@
 				'id' => 'email',
 				'tags' => ' NAME="email" ',
 				'value' => qa_html($inemail),
-				'note' => qa_lang_html('question/q_email_note'),
+				'note' => qa_lang_html('question/notify_email_note'),
 				'error' => qa_html($errors_email),
 			);
 
@@ -402,8 +542,34 @@
 			$qa_content['script_onloads'][]=array('qa_email_display();');
 		
 		} else {
-			$fields['notify']['label']=qa_lang_sub_html('question/q_notify_x_label', qa_html($login_email));
+			$fields['notify']['label']=str_replace('^', qa_html($login_email), $labelgotemail);
 		}
+	}
+	
+	function qa_load_theme_class($theme, $template, $content)
+	{
+		global $qa_root_url_relative;
+		
+		require_once QA_INCLUDE_DIR.'qa-theme-base.php';
+		
+		$themephpfile=QA_THEME_DIR.$theme.'/qa-theme.php';
+		$themeroothtml=qa_html($qa_root_url_relative.'qa-theme/'.$theme.'/');
+		
+		if (file_exists($themephpfile)) {
+			require_once QA_THEME_DIR.$theme.'/qa-theme.php';
+	
+			if (class_exists('qa_html_theme'))
+				$themeclass=new qa_html_theme($template, $content, $themeroothtml);
+		}
+		
+		if (!isset($themeclass)) {
+			if (!file_exists(QA_THEME_DIR.$theme.'/qa-styles.css'))
+				$themeroothtml=qa_html($qa_root_url_relative.'qa-theme/Default/');
+				
+			$themeclass=new qa_html_theme_base($template, $content, $themeroothtml);
+		}
+		
+		return $themeclass;
 	}
 	
 	

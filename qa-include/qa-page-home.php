@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-home.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -37,7 +37,7 @@
 	
 	switch ($qa_template) {
 		case 'questions':
-			qa_options_set_pending(array('page_size_qs'));
+			qa_options_set_pending(array('page_size_qs', 'voting_on_qs', 'votes_separated'));
 			
 			list($questions, $count)=qa_db_select_with_pending($qa_db,
 				qa_db_recent_qs_selectspec($qa_login_userid, $qa_start),
@@ -50,7 +50,7 @@
 			break;
 			
 		case 'answers':
-			qa_options_set_pending(array('page_size_as'));
+			qa_options_set_pending(array('page_size_as', 'voting_on_qs', 'votes_separated'));
 			
 			list($questions, $count)=qa_db_select_with_pending($qa_db,
 				qa_db_recent_a_qs_selectspec($qa_login_userid, $qa_start),
@@ -65,7 +65,7 @@
 		default:
 			require_once QA_INCLUDE_DIR.'qa-util-sort.php';
 
-			qa_options_set_pending(array('page_size_home'));
+			qa_options_set_pending(array('page_size_home', 'voting_on_qs', 'votes_separated'));
 		
 			list($askedquestions, $answeredquestions)=qa_db_select_with_pending($qa_db,
 				qa_db_recent_qs_selectspec($qa_login_userid, 0),
@@ -125,8 +125,8 @@
 	if (count($questions))
 		foreach ($questions as $question)
 			$qa_content['q_list']['qs'][]=isset($question['apostid'])
-				? qa_a_to_q_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, true, $question['apostid'], $question['acreated'], $question['auserid'], $question['acookieid'], $question['apoints'])
-				: qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, true);
+				? qa_a_to_q_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, qa_get_vote_view($qa_db, 'Q'), $question['apostid'], $question['acreated'], $question['auserid'], $question['acookieid'], $question['apoints'])
+				: qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, qa_get_vote_view($qa_db, 'Q'));
 	else
 		$qa_content['title']=qa_lang_html('main/no_questions_found');
 	

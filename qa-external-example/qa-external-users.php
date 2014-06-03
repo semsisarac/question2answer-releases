@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-external-example/qa-external-users.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -65,9 +65,9 @@ This file is used if QA_EXTERNAL_USERS is set to true in qa-config.php.
 	/*
 		Example 2 - suitable if:
 		
-		* You use unsigned numerical user identifiers in an INT column
+		* You use unsigned numerical user identifiers in an UNSIGNED INT column
 		
-		return 'INT';
+		return 'UNSIGNED INT';
 	*/
 	}
 
@@ -86,7 +86,7 @@ This file is used if QA_EXTERNAL_USERS is set to true in qa-config.php.
 	You may return absolute or relative URLs for each page. If you do not want one of the links
 	to show, omit it from the array, or use null or an empty string.
 	
-	If you use absolute URLs, the return an array with the URLs in full (see example 1 below).
+	If you use absolute URLs, then return an array with the URLs in full (see example 1 below).
 
 	If you use relative URLs, the URLs should start with $relative_url_prefix, followed by the
 	relative path from the root of the QA site to your login page. Like in example 2 below, if
@@ -182,7 +182,7 @@ This file is used if QA_EXTERNAL_USERS is set to true in qa-config.php.
 	
 	QA_USER_LEVEL_BASIC, QA_USER_LEVEL_EDITOR, QA_USER_LEVEL_ADMIN, QA_USER_LEVEL_SUPER
 	
-	The result of this function may be passed to your other function qa_get_logged_in_user_html()
+	The result of this function will be passed to your other function qa_get_logged_in_user_html()
 	so you may add any other elements to the returned array if they will be useful to you.
 
 	$qa_db_connection is an open connection to the QA database. If your database is shared with
@@ -601,7 +601,7 @@ This file is used if QA_EXTERNAL_USERS is set to true in qa-config.php.
 	     YOU MAY MODIFY THIS FUNCTION, BUT THE DEFAULT BELOW WILL WORK OK
 	==========================================================================
 
-	qa_user_report_action($qa_db_connection, $userid, $action, $questionid, $answerid)
+	qa_user_report_action($qa_db_connection, $userid, $action, $questionid, $answerid, $commentid)
 
 	Informs you about an action by user $userid that modified the database, such as posting,
 	voting, etc... If you wish, you may use this to log user activity or monitor for abuse.
@@ -609,16 +609,18 @@ This file is used if QA_EXTERNAL_USERS is set to true in qa-config.php.
 	$qa_db_connection is an open connection to the QA database. If your database is shared with
 	QA, you can use this with PHP's MySQL functions such as mysql_query() to run queries.	
 	
-	$action is one of: q_post, a_post, q_edit, a_edit, q_vote_up, q_vote_down, q_vote_nil,
-	a_vote_up, a_vote_down, a_vote_nil, q_hide, a_hide, q_reshow, a_reshow, a_select, a_unselect
+	$action is one of:
+	q_post, q_edit, q_hide, q_reshow, q_claim, q_vote_up, q_vote_down, q_vote_nil
+	a_post, a_edit, a_hide, a_reshow, a_claim, a_vote_up, a_vote_down, a_vote_nil, a_select, a_unselect
+	c_post, c_edit, c_hide, c_reshow, c_claim
 	
-	$questionid and/or $answerid contain the ID of the relevant question or answer affected,
-	or null if this information is not appropriate for $action.
+	$questionid and/or $answerid and/or $commentid contain the ID of the relevant question or answer
+	or comment affected, or null if this information is not appropriate for $action.
 	
 	FYI, you can get the IP address of the user from $_SERVER['REMOTE_ADDR'].
 */
 
-	function qa_user_report_action($qa_db_connection, $userid, $action, $questionid, $answerid)
+	function qa_user_report_action($qa_db_connection, $userid, $action, $questionid, $answerid, $commentid)
 	{
 		// do nothing by default
 	}

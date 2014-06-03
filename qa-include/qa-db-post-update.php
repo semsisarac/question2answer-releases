@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-post-update.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -38,19 +38,27 @@
 		);
 	}
 	
-	function qa_db_post_set_type($db, $postid, $type)
+	function qa_db_post_set_type($db, $postid, $type, $lastuserid)
 	{
 		qa_db_query_sub($db,
-			'UPDATE ^posts SET type=$, updated=NOW() WHERE postid=#',
-			$type, $postid
+			'UPDATE ^posts SET type=$, updated=NOW(), lastuserid=$ WHERE postid=#',
+			$type, $lastuserid, $postid
 		);
 	}
 	
-	function qa_db_post_set_text($db, $postid, $title, $content, $tagstring, $notify)
+	function qa_db_post_set_text($db, $postid, $title, $content, $tagstring, $notify, $lastuserid)
 	{
 		qa_db_query_sub($db,
-			'UPDATE ^posts SET title=$, content=$, tags=$, updated=NOW(), notify=$ WHERE postid=#',
-			$title, $content, $tagstring, $notify, $postid
+			'UPDATE ^posts SET title=$, content=$, tags=$, updated=NOW(), notify=$, lastuserid=$ WHERE postid=#',
+			$title, $content, $tagstring, $notify, $lastuserid, $postid
+		);
+	}
+	
+	function qa_db_post_set_userid($db, $postid, $userid)
+	{
+		qa_db_query_sub($db,
+			'UPDATE ^posts SET userid=$ WHERE postid=#',
+			$userid, $postid
 		);
 	}
 	

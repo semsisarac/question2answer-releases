@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-options.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -126,24 +126,31 @@
 		$fixed_defaults=array(
 			'answer_needs_login' => 0,
 			'ask_needs_login' => 0,
+			'comment_needs_login' => 0,
+			'comment_on_qs' => 1,
+			'comment_on_as' => 1,
 			'columns_tags' => 3,
 			'columns_users' => 2,
 			'do_ask_check_qs' => 0,
 			'do_example_tags' => 1,
 			'do_complete_tags' => 1,
 			'do_related_qs' => 1,
+			'follow_on_as' => 1,
 			'match_ask_check_qs' => 3,
 			'match_related_qs' => 3,
 			'match_example_tags' => 3,
 			'max_rate_ip_as' => 150,
 			'max_rate_ip_qs' => 50,
+			'max_rate_ip_cs' => 100,
 			'max_rate_ip_votes' => 1500,
 			'max_rate_user_as' => 30,
 			'max_rate_user_qs' => 10,
+			'max_rate_user_cs' => 20,
 			'max_rate_user_votes' => 300,
 			'min_len_a_content' => 12,
 			'min_len_q_content' => 0,
 			'min_len_q_title' => 12,
+			'min_len_c_content' => 12,
 			'neat_urls' => 0,
 			'page_size_as' => 20,
 			'page_size_ask_check_qs' => 5,
@@ -153,10 +160,10 @@
 			'page_size_search' => 10,
 			'page_size_ask_tags' => 5,
 			'page_size_tag_qs' => 20,
-			'page_size_tags' => 60,
+			'page_size_tags' => 30,
 			'page_size_user_as' => 20,
 			'page_size_user_qs' => 20,
-			'page_size_users' => 40,
+			'page_size_users' => 20,
 			'pages_prev_next' => 3,
 			'points_a_selected' => 30,
 			'points_a_voted_max_gain' => 20,
@@ -174,6 +181,8 @@
 			'points_vote_on_q' => 1,
 			'show_url_links' => 1,
 			'site_theme' => 'Default',
+			'voting_on_qs' => 1,
+			'voting_on_as' => 1,
 		);
 		
 		if (isset($fixed_defaults[$name]))
@@ -224,6 +233,18 @@
 				$longestpart=$part;
 			
 		return ((strlen($longestpart)>3) ? (ucfirst($longestpart).' ') : '').qa_lang('options/default_suffix');
+	}
+	
+	function qa_get_vote_view($db, $basetype)
+	{
+		if ($basetype=='Q')
+			$enabled=qa_get_option($db, 'voting_on_qs');
+		elseif ($basetype=='A')
+			$enabled=qa_get_option($db, 'voting_on_as');
+		else
+			$enabled=false;
+		
+		return $enabled ? (qa_get_option($db, 'votes_separated') ? 'updown' : 'net') : false;
 	}
 	
 ?>

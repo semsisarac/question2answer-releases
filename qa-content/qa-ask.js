@@ -1,12 +1,12 @@
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-content/qa-ask.js
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -33,8 +33,8 @@ function qa_tag_click(link)
 	var elem=document.getElementById('tags');
 	var parts=qa_tag_typed_parts(elem);
 	
-	// removes any HTML formatting
-	var tag=link.innerHTML.replace(/<[^>]*>/g, '');
+	// removes any HTML tags and ampersand
+	var tag=link.innerHTML.replace(/<[^>]*>/g, '').replace('&amp;', '&');
 	
 	// replace if matches typed, otherwise append
 	var newvalue=(parts.typed && (tag.toLowerCase().indexOf(parts.typed.toLowerCase())>=0))
@@ -61,7 +61,7 @@ function qa_tag_hints(skipcomplete)
 	
 	// first try to auto-complete
 	if (parts.typed && qa_tags_complete) {
-		html=qa_tags_to_html(qa_tags_complete.split(' '), parts.typed.toLowerCase(), null);
+		html=qa_tags_to_html(qa_tags_complete.split(' '), parts.typed.toLowerCase().replace('&', '&amp;'), null);
 		completed=html ? true : false;
 	}
 	
@@ -93,8 +93,8 @@ function qa_tags_to_html(tags, matchlc, havelc)
 						tag.substring(matchstart, matchend)+'</B>'+tag.substring(matchend)+'</SPAN>';
 				} else // otherwise show as-is
 					inner=tag;
-				
-				html+=qa_tag_template.replace(/\^/g, inner)+' '; // replace ^ in template
+					
+				html+=qa_tag_template.replace(/\^/g, inner.replace('$', '$$$$'))+' '; // replace ^ in template, escape $s
 				
 				if (++added>=qa_tags_max)
 					break;

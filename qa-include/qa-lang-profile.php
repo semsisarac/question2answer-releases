@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-lang-profile.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -32,6 +32,8 @@
 
 	return array(
 		'1_chosen_as_best' => ' (1 chosen as best)',
+		'1_down_vote' => '1 down vote',
+		'1_up_vote' => '1 up vote',
 		'1_with_best_chosen' => ' (1 with best answer chosen)',
 		'activity_by_x' => 'Activity by ^',
 		'answers_by_x' => 'Recently answered questions by ^',
@@ -42,12 +44,13 @@
 		'questions_by_x' => 'Recently asked questions by ^',
 		'questions' => 'Questions:',
 		'ranked_x' => ' (ranked #^)',
+		'received' => 'Received:',
 		'score' => 'Score:',
 		'user_x' => 'User ^',
-		'votes' => 'Votes:',
-		'x_given' => '^ given',
-		'x_received_comma' => '^ received, ',
+		'voted_on' => 'Voted on:',
 		'x_chosen_as_best' => ' (^ chosen as best)',
+		'x_down_votes' => '^ down votes',
+		'x_up_votes' => '^ up votes',
 		'x_with_best_chosen' => ' (^ with best answer chosen)',
 	);
 	

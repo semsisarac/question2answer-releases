@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-user.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -46,7 +46,8 @@
 	
 //	Find the user profile and questions and answers for this handle
 	
-	qa_options_set_pending(array('page_size_user_qs', 'page_size_user_as', 'points_per_q_voted', 'points_per_a_voted'));
+	qa_options_set_pending(array('page_size_user_qs', 'page_size_user_as', 'points_per_q_voted', 'points_per_a_voted',
+		'voting_on_qs', 'voting_on_as', 'votes_separated'));
 	
 	$identifier=QA_EXTERNAL_USERS ? $userid : $handle;
 
@@ -70,7 +71,7 @@
 		$userid=$useraccount['userid'];
 		$useradminable=(($qa_login_level>=QA_USER_LEVEL_SUPER) && ($qa_login_userid!=$userid)) || // can't change self
 			(($qa_login_level>=QA_USER_LEVEL_ADMIN) && ($qa_login_level>$useraccount['level']));
-		$usereditable=$useradminable || ($qa_login_userid==$userid);
+		$usereditable=$useradminable; // || ($qa_login_userid==$userid);
 		$userediting=false;
 	}
 
@@ -89,11 +90,12 @@
 			$inemail=qa_post_text('email');
 			$inname=qa_post_text('name');
 			$inlocation=qa_post_text('location');
+			$inwebsite=qa_post_text('website');
 			$inabout=qa_post_text('about');
 			
 			$errors=array_merge(
 				qa_handle_email_validate($qa_db, $handle, $inemail, $userid),
-				qa_name_loc_about_validate($qa_db, $inname, $inlocation, $inabout)
+				qa_profile_fields_validate($qa_db, $inname, $inlocation, $inwebsite, $inabout)
 			);	
 
 			if (!isset($errors['email']))
@@ -104,6 +106,9 @@
 	
 			if (!isset($errors['location']))
 				qa_db_user_profile_set($qa_db, $userid, 'location', $inlocation);
+	
+			if (!isset($errors['website']))
+				qa_db_user_profile_set($qa_db, $userid, 'website', $inwebsite);
 	
 			if (!isset($errors['about']))
 				qa_db_user_profile_set($qa_db, $userid, 'about', $inabout);
@@ -133,6 +138,7 @@
 	$questions=array_slice($questions, 0, $pagesize_qs);
 	$answerquestions=array_slice($answerquestions, 0, $pagesize_as);
 	$usershtml=qa_userids_handles_html($qa_db, $answerquestions);
+	$usershtml[$userid]=qa_html($handle);
 	
 //	Prepare content for theme
 	
@@ -177,6 +183,16 @@
 					'error' => qa_html(@$errors['location']),
 				),
 	
+				'website' => array(
+					'type' => $userediting ? 'text' : 'static',
+					'label' => qa_lang_html('users/website'),
+					'tags' => ' NAME="website" ',
+					'value' => $userediting
+									? qa_html(isset($inwebsite) ? $inwebsite : @$userprofile['website'])
+									: qa_url_to_html_link(@$userprofile['website']),
+					'error' => qa_html(@$errors['website']),
+				),
+	
 				'about' => array(
 					'type' => $userediting ? 'text' : 'static',
 					'label' => qa_lang_html('users/about'),
@@ -195,7 +211,7 @@
 				'tags' => ' NAME="email" ',
 				'value' => qa_html(isset($inemail) ? $inemail : $useraccount['email']),
 				'error' => qa_html(@$errors['email']),
-				'note' => qa_lang_html('admin/only_admin'),
+				'note' => qa_lang_html('users/only_shown_admins'),
 			);
 		else
 			unset($qa_content['form']['fields']['email']);
@@ -271,16 +287,49 @@
 				'label' => qa_lang_html('profile/answers'),
 				'value' => '<SPAN CLASS="qa-uf-user-a-posts">'.qa_html(number_format($userpoints['aposts'])).'</SPAN>',
 			),
-	
-			'votes' => array(
-				'type' => 'static',
-				'label' => qa_lang_html('profile/votes'),
-				'value' =>
-					qa_lang_sub_html('profile/x_received_comma', '<SPAN CLASS="qa-uf-user-votes-in">'.qa_html($netvotesin).'</SPAN>').
-					qa_lang_sub_html('profile/x_given', '<SPAN CLASS="qa-uf-user-votes-out">'.number_format($userpoints['qvotes']+$userpoints['avotes']).'</SPAN>'),
-			),
 		),
 	);
+	
+	if (qa_get_option($qa_db, 'voting_on_qs') || qa_get_option($qa_db, 'voting_on_as')) {
+		$votedonvalue='';
+		
+		if (qa_get_option($qa_db, 'voting_on_qs')) {
+			$innervalue='<SPAN CLASS="qa-uf-user-q-votes">'.number_format($userpoints['qvotes']).'</SPAN>';
+			$votedonvalue.=($userpoints['qvotes']==1) ? qa_lang_sub_html('main/1_question', $innervalue, '1')
+				: qa_lang_sub_html('main/x_questions', $innervalue);
+				
+			if (qa_get_option($qa_db, 'voting_on_as'))
+				$votedonvalue.=', ';
+		}
+		
+		if (qa_get_option($qa_db, 'voting_on_as')) {
+			$innervalue='<SPAN CLASS="qa-uf-user-a-votes">'.number_format($userpoints['avotes']).'</SPAN>';
+			$votedonvalue.=($userpoints['avotes']==1) ? qa_lang_sub_html('main/1_answer', $innervalue, '1')
+				: qa_lang_sub_html('main/x_answers', $innervalue);
+		}
+		
+		$qa_content['form_2']['fields']['votedon']=array(
+			'type' => 'static',
+			'label' => qa_lang_html('profile/voted_on'),
+			'value' => $votedonvalue,
+		);
+		
+		$innervalue='<SPAN CLASS="qa-uf-user-upvoteds">'.number_format($userpoints['upvoteds']).'</SPAN>';
+		$votegotvalue=($userpoints['upvoteds']==1) ? qa_lang_sub_html('profile/1_up_vote', $innervalue, '1')
+			: qa_lang_sub_html('profile/x_up_votes', $innervalue);
+			
+		$votegotvalue.=', ';
+	
+		$innervalue='<SPAN CLASS="qa-uf-user-downvoteds">'.number_format($userpoints['downvoteds']).'</SPAN>';
+		$votegotvalue.=($userpoints['downvoteds']==1) ? qa_lang_sub_html('profile/1_down_vote', $innervalue, '1')
+			: qa_lang_sub_html('profile/x_down_votes', $innervalue);
+
+		$qa_content['form_2']['fields']['votegot']=array(
+			'type' => 'static',
+			'label' => qa_lang_html('profile/received'),
+			'value' => $votegotvalue,
+		);
+	}
 	
 	if ($userpoints['points'])
 		$qa_content['form_2']['fields']['points']['value'].=
@@ -305,10 +354,12 @@
 		$qa_content['q_list']['form']=array(
 			'tags' => ' METHOD="POST" ACTION="'.qa_self_html().'" ',
 		);
-	
+		
 		$qa_content['q_list']['qs']=array();
-		foreach ($questions as $postid => $question)
-			$qa_content['q_list']['qs'][]=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, null, ($qa_login_userid!=$userid));
+		foreach ($questions as $postid => $question) {
+			$question['userid']=$userid;
+			$qa_content['q_list']['qs'][]=qa_post_html_fields($question, $qa_login_userid, $qa_cookieid, $usershtml, qa_get_vote_view($qa_db, 'Q'));
+		}
 	}
 
 	if ($pagesize_as>0) {
@@ -319,8 +370,8 @@
 			
 		$qa_content['a_list']['qs']=array();
 		foreach ($answerquestions as $questionid => $answerquestion)
-			$qa_content['a_list']['qs'][]=qa_a_to_q_html_fields($answerquestion, $qa_login_userid, $qa_cookieid, $usershtml, false,
-				$answerquestion['apostid'], $answerquestion['acreated'], null, null, null);
+			$qa_content['a_list']['qs'][]=qa_a_to_q_html_fields($answerquestion, $qa_login_userid, $qa_cookieid, $usershtml,
+				qa_get_vote_view($qa_db, 'Q'), $answerquestion['apostid'], $answerquestion['acreated'], $userid, null, null);
 	}
 
 ?>

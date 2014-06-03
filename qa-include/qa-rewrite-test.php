@@ -1,14 +1,14 @@
 <?php
 	
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-rewrite-test.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -32,12 +32,12 @@
 
 	echo '<HTML><BODY STYLE="margin:0; padding:0; background-color:white;">';
 	echo '<TABLE WIDTH="100%" HEIGHT="100%" CELLSPACING="0" CELLPADDING="0">';
-	echo '<TR VALIGN="middle"><TD STYLE="font-size:12px; font-weight:bold; font-family:arial,sans-serif;">&nbsp; ';
+	echo '<TR VALIGN="middle"><TD STYLE="font-size:11px; font-weight:bold; font-family:arial,sans-serif;">&nbsp; ';
 	
 	if ($qa_request=='rewrite-pass')
 		echo '.htaccess OK - safe to use!';
 	else
-		echo '<FONT COLOR="#FF0000">.htaccess not OK - do not use!</FONT>';
+		echo '<FONT COLOR="#FF0000">.htaccess not OK <A HREF="http://www.question2answer.org/htaccess.php" TARGET="_blank">[?]</A> - do not use!</FONT>';
 		
 	echo '</TD></TR></TABLE>';
 	

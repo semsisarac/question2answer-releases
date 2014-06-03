@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.0-beta-1 (c) 2010, Gideon Greenspan
+	Question2Answer 1.0-beta-2 (c) 2010, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-app-users.php
-	Version: 1.0-beta-1
-	Date: 2010-02-04 14:10:15 GMT
+	Version: 1.0-beta-2
+	Date: 2010-03-08 13:08:01 GMT
 
 
 	This software is licensed for use in websites which are connected to the
@@ -55,8 +55,8 @@
 			if (empty($handle))
 				$errors['handle']=qa_lang('users/handle_empty');
 	
-			elseif (strpos($handle, '@')!==false)
-				$errors['handle']=qa_lang('users/handle_has_at');
+			elseif (preg_match('/[\\@\\+\\/]/', $handle))
+				$errors['handle']=qa_lang_sub('users/handle_has_bad', '@ + /');
 			
 			elseif (qa_strlen($handle)>QA_DB_MAX_HANDLE_LENGTH)
 				$errors['handle']=qa_lang_sub('main/max_length_x', QA_DB_MAX_HANDLE_LENGTH);
@@ -85,7 +85,7 @@
 			return $errors;
 		}
 
-		function qa_name_loc_about_validate($db, $name, $location, $about)
+		function qa_profile_fields_validate($db, $name, $location, $website, $about)
 		{
 			require_once QA_INCLUDE_DIR.'qa-db-maxima.php';
 			require_once QA_INCLUDE_DIR.'qa-util-string.php';
@@ -97,6 +97,9 @@
 				
 			if (qa_strlen($location)>QA_DB_MAX_PROFILE_CONTENT_LENGTH)
 				$errors['location']=qa_lang_sub('main/max_length_x', QA_DB_MAX_PROFILE_CONTENT_LENGTH);
+
+			if (qa_strlen($website)>QA_DB_MAX_PROFILE_CONTENT_LENGTH)
+				$errors['website']=qa_lang_sub('main/max_length_x', QA_DB_MAX_PROFILE_CONTENT_LENGTH);
 				
 			if (qa_strlen($about)>QA_DB_MAX_PROFILE_CONTENT_LENGTH)
 				$errors['about']=qa_lang_sub('main/max_length_x', QA_DB_MAX_PROFILE_CONTENT_LENGTH);
@@ -122,29 +125,18 @@
 		{
 			require_once QA_INCLUDE_DIR.'qa-db-users.php';
 			require_once QA_INCLUDE_DIR.'qa-app-options.php';
-			require_once QA_INCLUDE_DIR.'qa-util-emailer.php';
+			require_once QA_INCLUDE_DIR.'qa-app-emails.php';
 
 			$userid=qa_db_user_create($db, $email, $password, $handle, QA_USER_LEVEL_BASIC, $_SERVER['REMOTE_ADDR']);
 			
-			$options=qa_get_options($db, array('from_email', 'site_url', 'site_title', 'custom_welcome'));
+			qa_notification_pending();
 			
-			$subs=array(
-				'^site_title' => $options['site_title'],
-				'^handle' => $handle,
-				'^email' => $email,
+			$options=qa_get_options($db, array('custom_welcome', 'site_url'));
+			
+			qa_send_notification($db, $userid, $email, $handle, qa_lang('emails/welcome_subject'), qa_lang('emails/welcome_body'), array(
 				'^password' => $password,
 				'^url' => $options['site_url'],
-				'^custom' => empty($options['custom_welcome']) ? '' : (trim($options['custom_welcome'])."\n\n")
-			);
-			
-			qa_send_email(array(
-				'fromemail' => $options['from_email'],
-				'fromname' => $options['site_title'],
-				'toemail' => $email,
-				'toname' => $handle,
-				'subject' => strtr(qa_lang('users/welcome_subject'), $subs),
-				'body' => strtr(qa_lang('users/welcome_message'), $subs),
-				'html' => false,
+				'^custom' => empty($custom) ? '' : (trim($options['custom_welcome'])."\n\n"),
 			));
 			
 			return $userid;
@@ -177,32 +169,19 @@
 		{
 			require_once QA_INCLUDE_DIR.'qa-db-users.php';
 			require_once QA_INCLUDE_DIR.'qa-app-options.php';
-			require_once QA_INCLUDE_DIR.'qa-util-emailer.php';
+			require_once QA_INCLUDE_DIR.'qa-app-emails.php';
 			require_once QA_INCLUDE_DIR.'qa-db-selects.php';		
 	
 			qa_db_user_set($db, $userid, 'resetcode', qa_db_user_rand_resetcode());
 
-			$wantoptions=array('from_email', 'site_url', 'site_title');
-			qa_options_set_pending($wantoptions);
+			qa_notification_pending();
+			qa_options_set_pending(array('site_url'));
+			
 			$userinfo=qa_db_select_with_pending($db, qa_db_user_account_selectspec($userid, true));
-			$options=qa_get_options($db, $wantoptions);
-			
-			$subs=array(
-				'^site_title' => $options['site_title'],
-				'^handle' => $userinfo['handle'],
-				'^email' => $userinfo['email'],
+
+			if (!qa_send_notification($db, $userid, $userinfo['email'], $userinfo['handle'], qa_lang('emails/reset_subject'), qa_lang('emails/reset_body'), array(
 				'^code' => $userinfo['resetcode'],
-				'^url' => qa_path('reset', array('c' => $userinfo['resetcode'], 'e' => $userinfo['email']), $options['site_url']),
-			);
-			
-			if (!qa_send_email(array(
-				'fromemail' => $options['from_email'],
-				'fromname' => $options['site_title'],
-				'toemail' => $userinfo['email'],
-				'toname' => $userinfo['handle'],
-				'subject' => strtr(qa_lang('users/reset_subject'), $subs),
-				'body' => strtr(qa_lang('users/reset_message'), $subs),
-				'html' => false,
+				'^url' => qa_path('reset', array('c' => $userinfo['resetcode'], 'e' => $userinfo['email']), qa_get_option($db, 'site_url')),
 			)))
 				qa_fatal_error('Could not send reset password email');
 		}
@@ -211,32 +190,19 @@
 		{
 			require_once QA_INCLUDE_DIR.'qa-util-string.php';
 			require_once QA_INCLUDE_DIR.'qa-app-options.php';
-			require_once QA_INCLUDE_DIR.'qa-util-emailer.php';
+			require_once QA_INCLUDE_DIR.'qa-app-emails.php';
 			require_once QA_INCLUDE_DIR.'qa-db-selects.php';		
 		
 			$password=qa_random_alphanum(max(QA_MIN_PASSWORD_LEN, QA_NEW_PASSWORD_LEN));
 			
-			$wantoptions=array('from_email', 'site_url', 'site_title');			
-			qa_options_set_pending($wantoptions);
-			$userinfo=qa_db_select_with_pending($db, qa_db_user_account_selectspec($userid, true));
-			$options=qa_get_options($db, $wantoptions);
-
-			$subs=array(
-				'^site_title' => $options['site_title'],
-				'^handle' => $userinfo['handle'],
-				'^email' => $userinfo['email'],
-				'^password' => $password,
-				'^url' => $options['site_url'],
-			);
+			qa_notification_pending();
+			qa_options_set_pending(array('site_url'));
 			
-			if (!qa_send_email(array(
-				'fromemail' => $options['from_email'],
-				'fromname' => $options['site_title'],
-				'toemail' => $userinfo['email'],
-				'toname' => $userinfo['handle'],
-				'subject' => strtr(qa_lang('users/new_password_subject'), $subs),
-				'body' => strtr(qa_lang('users/new_password_message'), $subs),
-				'html' => false,
+			$userinfo=qa_db_select_with_pending($db, qa_db_user_account_selectspec($userid, true));
+			
+			if (!qa_send_notification($db, $userid, $userinfo['email'], $userinfo['handle'], qa_lang('emails/new_password_subject'), qa_lang('emails/new_password_body'), array(
+				'^password' => $password,
+				'^url' => qa_get_option($db, 'site_url'),
 			)))
 				qa_fatal_error('Could not send new password - password not reset');
 			
@@ -283,7 +249,7 @@
 			return $userinfo['email'];
 		}
 		
-		function qa_user_report_action($db, $userid, $action, $questionid, $answerid)
+		function qa_user_report_action($db, $userid, $action, $questionid, $answerid, $commentid)
 		{
 			require_once QA_INCLUDE_DIR.'qa-db-users.php';
 			
