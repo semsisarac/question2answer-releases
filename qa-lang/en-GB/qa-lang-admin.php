@@ -1,14 +1,13 @@
 <?php
 	
 /*
-	Question2Answer 1.4.3 (c) 2011, Gideon Greenspan
+	Question2Answer (c) Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-lang/en-GB/qa-lang-admin.php
-	Version: 1.4.3
-	Date: 2011-09-27 18:06:46 GMT
+	Version: See define()s at top of qa-include/qa-base.php
 	Description: UK English translations - not much to do here
 
 

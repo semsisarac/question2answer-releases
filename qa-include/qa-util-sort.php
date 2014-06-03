@@ -1,14 +1,13 @@
 <?php
 
 /*
-	Question2Answer 1.4.3 (c) 2011, Gideon Greenspan
+	Question2Answer (c) Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-util-sort.php
-	Version: 1.4.3
-	Date: 2011-09-27 18:06:46 GMT
+	Version: See define()s at top of qa-include/qa-base.php
 	Description: A useful general-purpose 'sort by' function
 
 
@@ -36,10 +35,10 @@
 	Sort the $array of inner arrays by sub-element $by1 of each inner array, and optionally then by sub-element $by2
 */
 	{
-		global $qa_sort_by1, $qa_sort_by2;
+		global $qa_sort_by_1, $qa_sort_by_2;
 		
-		$qa_sort_by1=$by1;
-		$qa_sort_by2=$by2;
+		$qa_sort_by_1=$by1;
+		$qa_sort_by_2=$by2;
 		
 		uasort($array, 'qa_sort_by_fn');
 	}
@@ -50,12 +49,12 @@
 	Function used in uasort to implement qa_sort_by()
 */
 	{
-		global $qa_sort_by1, $qa_sort_by2;
+		global $qa_sort_by_1, $qa_sort_by_2;
 		
-		$compare=qa_sort_cmp($a[$qa_sort_by1], $b[$qa_sort_by1]);
+		$compare=qa_sort_cmp($a[$qa_sort_by_1], $b[$qa_sort_by_1]);
 
-		if (($compare==0) && $qa_sort_by2)
-			$compare=qa_sort_cmp($a[$qa_sort_by2], $b[$qa_sort_by2]);
+		if (($compare==0) && $qa_sort_by_2)
+			$compare=qa_sort_cmp($a[$qa_sort_by_2], $b[$qa_sort_by_2]);
 
 		return $compare;
 	}
@@ -79,8 +78,8 @@
 	
 	function qa_array_insert(&$array, $beforekey, $addelements)
 /*
-	Inserts $addelements into $array, preserving their keys, before $beforekey in that array
-	If $beforekey cannot be found, the elements are appended at the end
+	Inserts $addelements into $array, preserving their keys, before $beforekey in that array.
+	If $beforekey cannot be found, the elements are appended at the end of the array.
 */
 	{
 		$newarray=array();

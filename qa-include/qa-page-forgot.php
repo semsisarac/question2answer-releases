@@ -1,14 +1,13 @@
 <?php
 
 /*
-	Question2Answer 1.4.3 (c) 2011, Gideon Greenspan
+	Question2Answer (c) Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-forgot.php
-	Version: 1.4.3
-	Date: 2011-09-27 18:06:46 GMT
+	Version: See define()s at top of qa-include/qa-base.php
 	Description: Controller for 'forgot my password' page
 
 
@@ -39,7 +38,7 @@
 	if (QA_FINAL_EXTERNAL_USERS)
 		qa_fatal_error('User login is handled by external code');
 		
-	if (isset($qa_login_userid))
+	if (qa_is_logged_in())
 		qa_redirect('');
 
 
@@ -61,7 +60,7 @@
 			$errors['emailhandle']=qa_lang('users/user_not_found');
 
 		if (qa_opt('captcha_on_reset_password'))
-			qa_captcha_validate($_POST, $errors);
+			qa_captcha_validate_post($errors);
 
 		if (empty($errors)) {
 			$inuserid=$matchusers[0];

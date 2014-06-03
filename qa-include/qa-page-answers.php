@@ -1,14 +1,13 @@
 <?php
 
 /*
-	Question2Answer 1.4.3 (c) 2011, Gideon Greenspan
+	Question2Answer (c) Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-answers.php
-	Version: 1.4.3
-	Date: 2011-09-27 18:06:46 GMT
+	Version: See define()s at top of qa-include/qa-base.php
 	Description: Controller for page listing recent answers on questions
 
 
@@ -34,15 +33,17 @@
 	require_once QA_INCLUDE_DIR.'qa-app-format.php';
 	require_once QA_INCLUDE_DIR.'qa-app-q-list.php';
 	
-	$categoryslugs=$pass_subrequests;
+
+	$categoryslugs=qa_request_parts(1);
 	$countslugs=count($categoryslugs);
+	$userid=qa_get_logged_in_userid();
 
 
 //	Get list of answers with related questions, plus category information
-
+	
 	@list($questions, $categories, $categoryid)=qa_db_select_with_pending(
-		qa_db_recent_a_qs_selectspec($qa_login_userid, 0, $categoryslugs),
-		qa_db_category_nav_selectspec($categoryslugs, false),
+		qa_db_recent_a_qs_selectspec($userid, 0, $categoryslugs),
+		qa_db_category_nav_selectspec($categoryslugs, false, false, true),
 		$countslugs ? qa_db_slugs_to_category_id_selectspec($categoryslugs) : null
 	);
 	

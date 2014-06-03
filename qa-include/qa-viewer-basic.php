@@ -1,14 +1,13 @@
 <?php
 
 /*
-	Question2Answer 1.4.3 (c) 2011, Gideon Greenspan
+	Question2Answer (c) Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-viewer-basic.php
-	Version: 1.4.3
-	Date: 2011-09-27 18:06:46 GMT
+	Version: See define()s at top of qa-include/qa-base.php
 	Description: Basic viewer module for displaying HTML or plain text
 
 
@@ -36,6 +35,7 @@
 		var $htmllineseparators;
 		var $htmlparagraphseparators;
 		
+
 		function load_module($localdir, $htmldir)
 		{
 			$this->htmllineseparators='br|option';
@@ -43,6 +43,7 @@
 				'|hr|iframe|input|li|marquee|ol|p|pre|samp|select|spacer|table|tbody|td|textarea|tfoot|th|thead|tr|ul';
 		}
 		
+
 		function calc_quality($content, $format)
 		{
 			if ( ($format=='') || ($format=='html') )
@@ -50,6 +51,7 @@
 			else
 				return 0.0001; // if there's nothing better this will give an error message for unknown formats
 		}
+
 		
 		function get_html($content, $format, $options)
 		{
@@ -113,10 +115,11 @@
 				}
 				
 			} else
-				$html='['.qa_html($format).']'; // for unknown formats
+				$html='[no viewer found for format: '.qa_html($format).']'; // for unknown formats
 			
 			return $html;
 		}
+
 
 		function get_text($content, $format, $options)
 		{
@@ -147,7 +150,7 @@
 				$text=$content;
 				
 			else
-				$text='['.$format.']'; // for unknown formats
+				$text='[no viewer found for format: '.$format.']'; // for unknown formats
 				
 			if (isset($options['blockwordspreg'])) {
 				require_once QA_INCLUDE_DIR.'qa-util-string.php';
@@ -157,7 +160,7 @@
 			return $text;
 		}
 	
-	};
+	}
 	
 
 /*

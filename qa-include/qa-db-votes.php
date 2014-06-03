@@ -1,14 +1,13 @@
 <?php
 	
 /*
-	Question2Answer 1.4.3 (c) 2011, Gideon Greenspan
+	Question2Answer (c) Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-votes.php
-	Version: 1.4.3
-	Date: 2011-09-27 18:06:46 GMT
+	Version: See define()s at top of qa-include/qa-base.php
 	Description: Database-level access to votes tables
 
 
@@ -118,6 +117,18 @@
 			'SELECT userid, vote FROM ^uservotes WHERE postid=# AND vote!=0',
 			$postid
 		), 'userid', 'vote');
+	}
+	
+	
+	function qa_db_uservoteflag_user_get($userid)
+/*
+	Returns all the postids from the database for posts that $userid has voted on or flagged
+*/
+	{
+		return qa_db_read_all_values(qa_db_query_sub(
+			'SELECT postid FROM ^uservotes WHERE userid=# AND (vote!=0) OR (flag!=0)',
+			$userid
+		));
 	}
 	
 

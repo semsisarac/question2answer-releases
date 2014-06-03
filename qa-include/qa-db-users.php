@@ -1,14 +1,13 @@
 <?php
 
 /*
-	Question2Answer 1.4.3 (c) 2011, Gideon Greenspan
+	Question2Answer (c) Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-db-users.php
-	Version: 1.4.3
-	Date: 2011-09-27 18:06:46 GMT
+	Version: See define()s at top of qa-include/qa-base.php
 	Description: Database-level access to user management tables (if not using single sign-on)
 
 
@@ -36,6 +35,8 @@
 	Return the expected value for the passcheck column given the $password and password $salt
 */
 	{
+		if (qa_to_override(__FUNCTION__)) return qa_call_override(__FUNCTION__, $args=func_get_args());
+		
 		return sha1(substr($salt, 0, 8).$password.substr($salt, 8));
 	}
 	
@@ -59,6 +60,29 @@
 	}
 
 		
+	function qa_db_user_delete($userid)
+/*
+	Delete user $userid from the database, along with everything they have ever done (to the extent that it's possible)
+*/
+	{
+		qa_db_query_sub('UPDATE ^posts SET lastuserid=NULL WHERE lastuserid=$', $userid);
+		qa_db_query_sub('DELETE FROM ^userpoints WHERE userid=$', $userid);
+		qa_db_query_sub('DELETE FROM ^blobs WHERE blobid=(SELECT avatarblobid FROM ^users WHERE userid=$)', $userid);
+		qa_db_query_sub('DELETE FROM ^users WHERE userid=$', $userid);
+		
+		// All the queries below should be superfluous due to foreign key constraints, but just in case the user switched to MyISAM.
+		// Note also that private messages to/from that user are kept since we don't have all the keys we need to delete efficiently.
+
+		qa_db_query_sub('UPDATE ^posts SET userid=NULL WHERE userid=$', $userid);
+		qa_db_query_sub('DELETE FROM ^userlogins WHERE userid=$', $userid);
+		qa_db_query_sub('DELETE FROM ^userprofile WHERE userid=$', $userid);
+		qa_db_query_sub('DELETE FROM ^userfavorites WHERE userid=$', $userid);
+		qa_db_query_sub('DELETE FROM ^userevents WHERE userid=$', $userid);
+		qa_db_query_sub('DELETE FROM ^uservotes WHERE userid=$', $userid);
+		qa_db_query_sub('DELETE FROM ^userlimits WHERE userid=$', $userid);
+	}
+
+	
 	function qa_db_user_find_by_email($email)
 /*
 	Return the ids of all users in the database which match $email (should be one or none)
@@ -100,6 +124,8 @@
 	Set the password of $userid to $password, and reset their salt at the same time
 */
 	{
+		if (qa_to_override(__FUNCTION__)) return qa_call_override(__FUNCTION__, $args=func_get_args());
+		
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 		
 		$salt=qa_random_alphanum(16);
@@ -128,6 +154,8 @@
 	Return a random string to be used for a user's emailcode column
 */
 	{
+		if (qa_to_override(__FUNCTION__)) return qa_call_override(__FUNCTION__, $args=func_get_args());
+		
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 		
 		return qa_random_alphanum(8);
@@ -139,6 +167,8 @@
 	Return a random string to be used for a user's sessioncode column (for browser session cookies)
 */
 	{
+		if (qa_to_override(__FUNCTION__)) return qa_call_override(__FUNCTION__, $args=func_get_args());
+		
 		require_once QA_INCLUDE_DIR.'qa-util-string.php';
 		
 		return qa_random_alphanum(8);
@@ -213,7 +243,7 @@
 */
 	{
 		if ($sync) { // need to lock all tables since any could be used by a plugin's event module
-			$tables=qa_db_read_all_values(qa_db_query_raw('SHOW TABLES'));
+			$tables=qa_db_list_tables_lc();
 
 			$locks=array();
 			foreach ($tables as $table)
@@ -223,6 +253,18 @@
 
 		} else
 			qa_db_query_sub('UNLOCK TABLES');
+	}
+	
+	
+	function qa_db_users_get_mailing_next($lastuserid, $count)
+/*
+	Get the information required for sending a mailing to the next $count users with userids greater than $lastuserid
+*/
+	{
+		return qa_db_read_all_assoc(qa_db_query_sub(
+			'SELECT userid, email, handle, emailcode, flags FROM ^users WHERE userid># ORDER BY userid LIMIT #',
+			$lastuserid, $count
+		));
 	}
 
 

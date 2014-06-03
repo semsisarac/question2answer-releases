@@ -1,14 +1,13 @@
 <?php
 	
 /*
-	Question2Answer 1.4.3 (c) 2011, Gideon Greenspan
+	Question2Answer (c) Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-admin-widgets.php
-	Version: 1.4.3
-	Date: 2011-09-27 18:06:46 GMT
+	Version: See define()s at top of qa-include/qa-base.php
 	Description: Controller for admin page for editing widgets
 
 
@@ -220,7 +219,7 @@
 	$positionvalue=@$positionoptions[$editwidget['place'].$editwidget['position']];
 	
 	$qa_content['form']=array(
-		'tags' => 'METHOD="POST" ACTION="'.qa_path_html($qa_request).'"',
+		'tags' => 'METHOD="POST" ACTION="'.qa_path_html(qa_request()).'"',
 		
 		'style' => 'tall',
 		
@@ -285,7 +284,7 @@
 		$qa_content['form']['fields']['templates']['html'].=
 			'<INPUT TYPE="checkbox" NAME="template_'.qa_html($template).'"'.
 			(is_numeric(strpos(','.@$editwidget['tags'].',', ','.$template.',')) ? ' CHECKED' : '').
-			'/>'.$optionhtml.'<BR/>';
+			'/> '.$optionhtml.'<BR/>';
 			
 	if (isset($editwidget['widgetid']))
 		qa_set_display_rules($qa_content, array(

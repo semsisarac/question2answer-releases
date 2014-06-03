@@ -1,14 +1,13 @@
 <?php
 
 /*
-	Question2Answer 1.4.3 (c) 2011, Gideon Greenspan
+	Question2Answer (c) Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page-reset.php
-	Version: 1.4.3
-	Date: 2011-09-27 18:06:46 GMT
+	Version: See define()s at top of qa-include/qa-base.php
 	Description: Controller for password reset page (comes after forgot page)
 
 
@@ -36,7 +35,7 @@
 	if (QA_FINAL_EXTERNAL_USERS)
 		qa_fatal_error('User login is handled by external code');
 		
-	if (isset($qa_login_userid))
+	if (qa_is_logged_in())
 		qa_redirect('');
 		
 

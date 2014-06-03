@@ -1,14 +1,13 @@
 <?php
 
 /*
-	Question2Answer 1.4.3 (c) 2011, Gideon Greenspan
+	Question2Answer (c) Gideon Greenspan
 
 	http://www.question2answer.org/
-	
 
+	
 	File: qa-plugin/xml-sitemap/qa-xml-sitemap.php
-	Version: 1.4.3
-	Date: 2011-09-27 18:06:46 GMT
+	Version: See define()s at top of qa-include/qa-base.php
 	Description: Page module class for XML sitemap plugin
 
 
@@ -16,7 +15,7 @@
 	modify it under the terms of the GNU General Public License
 	as published by the Free Software Foundation; either version 2
 	of the License, or (at your option) any later version.
-
+	
 	This program is distributed in the hope that it will be useful,
 	but WITHOUT ANY WARRANTY; without even the implied warranty of
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -35,6 +34,7 @@
 			$this->directory=$directory;
 			$this->urltoroot=$urltoroot;
 		}
+
 		
 		function option_default($option)
 		{
@@ -48,7 +48,8 @@
 					break;
 			}
 		}
-		
+	
+	
 		function admin_form()
 		{
 			require_once QA_INCLUDE_DIR.'qa-util-sort.php';
@@ -126,6 +127,7 @@
 
 			return $form;
 		}
+
 		
 		function suggest_requests()
 		{	
@@ -137,11 +139,13 @@
 				),
 			);
 		}
+
 		
 		function match_request($request)
 		{
 			return ($request=='sitemap.xml');
 		}
+
 		
 		function process_request($request)
 		{
@@ -166,7 +170,7 @@
 				
 				while (1) {
 					$questions=qa_db_read_all_assoc(qa_db_query_sub(
-						"SELECT postid, BINARY title AS title, hotness FROM ^posts WHERE postid>=# AND type='Q' ORDER BY postid LIMIT 100",
+						"SELECT postid, title, hotness FROM ^posts WHERE postid>=# AND type='Q' ORDER BY postid LIMIT 100",
 						$nextpostid
 					));
 					
@@ -189,7 +193,7 @@
 				
 				while (1) {
 					$users=qa_db_read_all_assoc(qa_db_query_sub(
-						"SELECT userid, BINARY handle AS handle FROM ^users WHERE userid>=# ORDER BY userid LIMIT 100",
+						"SELECT userid, handle FROM ^users WHERE userid>=# ORDER BY userid LIMIT 100",
 						$nextuserid
 					));
 					
@@ -211,7 +215,7 @@
 			
 				while (1) {
 					$tagwords=qa_db_read_all_assoc(qa_db_query_sub(
-						"SELECT wordid, BINARY word AS word, tagcount FROM ^words WHERE wordid>=# AND tagcount>0 ORDER BY wordid LIMIT 100",
+						"SELECT wordid, word, tagcount FROM ^words WHERE wordid>=# AND tagcount>0 ORDER BY wordid LIMIT 100",
 						$nextwordid
 					));
 					
@@ -280,15 +284,16 @@
 			return null;
 		}
 		
+
 		function sitemap_output($request, $priority)
 		{
 			echo "\t<url>\n".
 				"\t\t<loc>".qa_path_html($request, null, qa_opt('site_url'))."</loc>\n".
-				"\t\t<priority>".$priority."</priority>\n".
+				"\t\t<priority>".max(0, min(1.0, $priority))."</priority>\n".
 				"\t</url>\n";
 		}
 	
-	};
+	}
 	
 
 /*

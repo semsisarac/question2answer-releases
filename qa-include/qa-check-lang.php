@@ -1,14 +1,13 @@
 <?php
 
 /*
-	Question2Answer 1.4.3 (c) 2011, Gideon Greenspan
+	Question2Answer (c) Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-check-lang.php
-	Version: 1.4.3
-	Date: 2011-09-27 18:06:46 GMT
+	Version: See define()s at top of qa-include/qa-base.php
 	Description: Development tool to see which language phrases are missing or unused
 
 
@@ -58,10 +57,7 @@
 	
 	echo '<H1>Checking US English files in <code>qa-include</code>...</H1>';
 	
-	$includefiles=array_merge(
-		glob(QA_INCLUDE_DIR.'qa-*.php'),
-		glob(QA_PLUGIN_DIR.'*/qa-*.php')
-	);
+	$includefiles=glob(QA_INCLUDE_DIR.'qa-*.php');
 	
 	$definite=array();
 	$probable=array();
@@ -79,7 +75,12 @@
 		preg_match_all('/qa_lang[a-z_]*\s*\(\s*[\'\"]([a-z]+)\/([0-9a-z_]+)[\'\"]/', $contents, $matches, PREG_SET_ORDER);
 		
 		foreach ($matches as $matchparts)
-			@$definite[$matchparts[1]][$matchparts[2]]++;
+			if ($matchparts[2]=='date_month_') { // special case for month names
+				for ($month=1; $month<=12; $month++)
+					@$definite[$matchparts[1]][$matchparts[2].$month]++;
+
+			} else
+				@$definite[$matchparts[1]][$matchparts[2]]++;
 			
 		preg_match_all('/[\'\"]([a-z]+)\/([0-9a-z_]+)[\'\"]/', $contents, $matches, PREG_SET_ORDER);
 
@@ -202,6 +203,7 @@
 			echo '</PRE>';
 		}
 	}
+
 	
 	function output_lang_issue($prefix, $key, $issue, $error=true)
 	{
@@ -215,6 +217,7 @@
 		echo '</code></font> &nbsp; '.qa_html($issue).'<BR>';
 	}
 
+
 	function output_start_includes()
 	{
 		global $oneread;
@@ -223,6 +226,7 @@
 		
 		echo '<P STYLE="font-size:80%; color:#999;">Reading: ';
 	}
+
 	
 	function output_reading_include($file)
 	{
@@ -233,11 +237,13 @@
 		
 		$oneread=true;
 	}
+
 	
 	function output_finish_includes()
 	{
 		echo '</P>';
 	}
+
 	
 	echo '<H1>Finished scanning for problems!</H1>';
 
