@@ -1,14 +1,14 @@
-﻿<?php
+<?php
 
 /*
-	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-util-string.php
-	Version: 1.3.2
-	Date: 2011-03-14 09:01:08 GMT
+	Version: 1.3.3
+	Date: 2011-03-16 12:46:02 GMT
 	Description: Some useful string-related stuff
 
 

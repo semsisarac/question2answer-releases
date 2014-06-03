@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-page.php
-	Version: 1.3.2
-	Date: 2011-03-14 09:01:08 GMT
+	Version: 1.3.3
+	Date: 2011-03-16 12:46:02 GMT
 	Description: Routing and utility functions for page requests
 
 
@@ -293,10 +293,10 @@
 			$qa_content['head_lines'][]=qa_opt('custom_in_head');
 		
 		if (qa_opt('show_custom_header'))
-			$qa_content['custom_header']=qa_opt('custom_header');
+			$qa_content['body_header']=qa_opt('custom_header');
 	
 		if (qa_opt('show_custom_footer'))
-			$qa_content['custom_footer']=qa_opt('custom_footer');
+			$qa_content['body_footer']=qa_opt('custom_footer');
 
 		if (isset($categoryid))
 			$qa_content['categoryid']=$categoryid;

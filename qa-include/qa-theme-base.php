@@ -1,14 +1,14 @@
 <?php
 
 /*
-	Question2Answer 1.3.2 (c) 2011, Gideon Greenspan
+	Question2Answer 1.3.3 (c) 2011, Gideon Greenspan
 
 	http://www.question2answer.org/
 
 	
 	File: qa-include/qa-theme-base.php
-	Version: 1.3.2
-	Date: 2011-03-14 09:01:08 GMT
+	Version: 1.3.3
+	Date: 2011-03-16 12:46:02 GMT
 	Description: Default theme class, broken into lots of little functions for easy overriding
 
 
@@ -245,13 +245,13 @@
 			$this->body_tags();
 			$this->output('>');
 			
-			if (isset($this->content['custom_header']))
-				$this->output_raw($this->content['custom_header']);
+			if (isset($this->content['body_header']))
+				$this->output_raw($this->content['body_header']);
 				
 			$this->body_content();
 			
-			if (isset($this->content['custom_footer']))
-				$this->output_raw($this->content['custom_footer']);
+			if (isset($this->content['body_footer']))
+				$this->output_raw($this->content['body_footer']);
 				
 			$this->output('</BODY>');
 		}
