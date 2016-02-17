@@ -1,23 +1,21 @@
 /*
- * Q2A Market (c) Jatin Soni
- * http://www.q2amarket.com/
+	Q2A Market (c) Jatin Soni
+	http://www.q2amarket.com/
 
- * File:
- * Version:
- * Description:
+	File:           js/snow-core.js
+	Version:        Snow 1.4
+	Description:    JavaScript helpers for SnowFlat theme
 
- * This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- More about this license: http://www.q2amarket.com/license.php
- */
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+	GNU General Public License for more details.
+*/
 $(document).ready(function () {
 
 	/**
@@ -70,11 +68,6 @@ $(document).ready(function () {
 	$('.qa-top-users-score').wrapInner('<div class="qam-user-score-icon"></div>');
 
 	/*
-	 * add option lable in plugin option section
-	 */
-	$('.qa-part-form-plugin-options').prepend('<h2>Plugin Option</h2>');
-
-	/*
 	 * add wrapper to the message sent note 'td'
 	 */
 	$('.qa-part-form-message .qa-form-tall-ok').wrapInner('<div class="qam-pm-message"></div>');
@@ -83,9 +76,11 @@ $(document).ready(function () {
 	$(window).resize(function () {
 		if (window.matchMedia('(min-width: 980px)').matches) {
 			$(".qam-search.the-top .qa-search").hide();
-			$(".qa-nav-main").show();
+			$(".qa-nav-main").show('fast', function() { $(this).css('display','inline-block'); });
 		} else {
 			$(".qam-search.the-top .qa-search").show();
+			$(".qa-nav-main").hide();
+			$('.qam-menu-toggle').removeClass('current');
 		}
 	});
 

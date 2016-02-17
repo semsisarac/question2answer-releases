@@ -1,25 +1,22 @@
 <?php
 /*
-  Snow Theme for Question2Answer Package
-  Copyright (C) 2014  Q2A Market <http://www.q2amarket.com>
+	Snow Theme for Question2Answer Package
+	Copyright (C) 2014  Q2A Market <http://www.q2amarket.com>
 
-  File:           inc/qam-snow-theme.php
-  Version:        Snow 1.4
-  Description:    Snow theme core class
+	File:           inc/qam-snow-theme.php
+	Version:        Snow 1.4
+	Description:    Snow theme core class
 
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+	GNU General Public License for more details.
+*/
 
 /**
  * Snow theme loader class
@@ -226,71 +223,11 @@ class qam_snow_theme
 	private function headers()
 	{
 		$this->data['headers'] = array(
-			'user_account'        => $this->user_account(),
 			'user_points'         => $this->user_points(),
 			'ask_button'          => $this->ask_button(),
-			// 'fb_like_box_init'    => $this->fb_like_box_init(),
-			// 'twitter_widget_init' => $this->twitter_widget_init(),
 		);
 
 		return $this->data;
-	}
-
-	/**
-	 * User account navigation item
-	 *
-	 * This will return based on login information.
-	 *
-	 * If user loggedIn, it will populate user avatar and account links.
-	 * If user is guest, it will populate login form and registration link.
-	 *
-	 * @access private
-	 * @since Snow 1.4
-	 * @version 1.0
-	 * @return string HTML output for user account or authentication form
-	 *
-	 * @author Q2A Market <http://www.q2amarket.com>
-	 * @copyright (c) 2014, Q2A Market
-	 * @license http://www.gnu.org/copyleft/gpl.html
-	 */
-	private function user_account()
-	{
-		$logged_in = qa_is_logged_in();
-		$handle = qa_get_logged_in_user_field('handle');
-		$avatarsize = 36;
-
-		// get loogedin user avatar
-		if ($logged_in) {
-			if (QA_FINAL_EXTERNAL_USERS) {
-				$tobar_avatar = qa_get_external_avatar_html( qa_get_logged_in_user_field('userid'), $avatarsize, true );
-			}
-			else {
-				$tobar_avatar = qa_get_user_avatar_html(
-					qa_get_logged_in_user_field('flags'),
-					qa_get_logged_in_user_field('email'),
-					$handle,
-					qa_get_logged_in_user_field('avatarblobid'),
-					qa_get_logged_in_user_field('avatarwidth'),
-					qa_get_logged_in_user_field('avatarheight'),
-					$avatarsize,
-					false
-				);
-			}
-
-			$auth_icon = strip_tags($tobar_avatar, '<img>');
-		}
-		else {
-			$auth_icon = '<i class="icon-key qam-auth-key"></i>';
-		}
-
-		// finally return avatar with div tag
-		$class = $logged_in ? 'qam-logged-in' : 'qam-logged-out';
-		$user_account = '<div id="qam-account-toggle" class="' . $class . '">' .
-			$auth_icon .
-			'<div class="qam-account-handle">' . qa_html($handle) . '</div>' .
-			'</div>';
-
-		return $user_account;
 	}
 
 	/**

@@ -247,9 +247,9 @@
 
 			foreach ($navigation as $navprefix => $navlink) {
 				$selected =& $qa_content['navigation'][$navtype][$navprefix]['selected'];
-				if (isset($navlink['selectpaths'])) {
+				if (isset($navlink['selected_on'])) {
 					// match specified paths
-					foreach ($navlink['selectpaths'] as $path) {
+					foreach ($navlink['selected_on'] as $path) {
 						if (strpos($requestlower.'$', $path) === 0)
 							$selected = true;
 					}
@@ -583,21 +583,21 @@
 			$qa_content['navigation']['main']['tag']=array(
 				'url' => qa_path_html('tags'),
 				'label' => qa_lang_html('main/nav_tags'),
-				'selectpaths' => array('tags$', 'tag/'),
+				'selected_on' => array('tags$', 'tag/'),
 			);
 
 		if (qa_using_categories() && qa_opt('nav_categories'))
 			$qa_content['navigation']['main']['categories']=array(
 				'url' => qa_path_html('categories'),
 				'label' => qa_lang_html('main/nav_categories'),
-				'selectpaths' => array('categories$', 'categories/'),
+				'selected_on' => array('categories$', 'categories/'),
 			);
 
 		if (qa_opt('nav_users'))
 			$qa_content['navigation']['main']['user']=array(
 				'url' => qa_path_html('users'),
 				'label' => qa_lang_html('main/nav_users'),
-				'selectpaths' => array('users$', 'users/', 'user/'),
+				'selected_on' => array('users$', 'users/', 'user/'),
 			);
 
 		// Only the 'level' permission error prevents the menu option being shown - others reported on qa-page-ask.php
@@ -618,7 +618,7 @@
 			$qa_content['navigation']['main']['admin']=array(
 				'url' => qa_path_html('admin'),
 				'label' => qa_lang_html('main/nav_admin'),
-				'selectpaths' => array('admin/'),
+				'selected_on' => array('admin/'),
 			);
 
 
@@ -766,7 +766,7 @@
 					$qa_content['notices'][]=qa_notice_form('welcome', qa_opt('notice_welcome'));
 		}
 
-		$qa_content['script_rel']=array('qa-content/jquery-1.11.1.min.js');
+		$qa_content['script_rel']=array('qa-content/jquery-1.11.2.min.js');
 		$qa_content['script_rel'][]='qa-content/qa-page.js?'.QA_VERSION;
 
 		if ($voting)

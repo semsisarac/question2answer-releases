@@ -124,8 +124,8 @@
 		foreach (glob(QA_LANG_DIR . '*', GLOB_ONLYDIR) as $directory) {
 			$code = basename($directory);
 			$metadata = $metadataUtil->fetchFromAddonPath($directory);
-			if (isset($metadata['display_name']))
-				$options[$code] = $metadata['display_name'];
+			if (isset($metadata['name']))
+				$options[$code] = $metadata['name'];
 			// otherwise use an entry from above
 			elseif (isset($codetolanguage[$code]))
 				$options[$code] = $codetolanguage[$code];
@@ -284,9 +284,10 @@
 				'url' => qa_path_html('admin/emails'),
 			);
 
-			$navigation['admin/user']=array(
+			$navigation['admin/users']=array(
 				'label' => qa_lang_html('admin/users_title'),
 				'url' => qa_path_html('admin/users'),
+				'selected_on' => array('admin/users$', 'admin/userfields$', 'admin/usertitles$'),
 			);
 
 			$navigation['admin/layout']=array(

@@ -849,7 +849,7 @@
 			),
 
 			'reset' => array(
-				'tags' => 'name="doresetoptions"',
+				'tags' => 'name="doresetoptions" onclick="return confirm('.qa_js(qa_lang_html('admin/reset_options_confirm')).');"',
 				'label' => qa_lang_html('admin/reset_options_button'),
 			),
 		),
@@ -1040,13 +1040,13 @@
 					}
 
 					$updatehtml = '';
-					if (strlen(@$metadata['version']) && strlen(@$metadata['update'])) {
+					if (strlen(@$metadata['version']) && strlen(@$metadata['update_uri'])) {
 						$elementid = 'version_check_'.$optionname;
 
 						$updatehtml = '(<span id="'.$elementid.'">...</span>)';
 
 						$qa_content['script_onloads'][] = array(
-							"qa_version_check(".qa_js($metadata['update']).", ".qa_js($metadata['version'], true).", ".qa_js($elementid).");"
+							"qa_version_check(".qa_js($metadata['update_uri']).", ".qa_js($metadata['version'], true).", ".qa_js($elementid).");"
 						);
 
 					}
