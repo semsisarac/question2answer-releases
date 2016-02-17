@@ -57,7 +57,7 @@
 	//	If we're using single sign-on integration (WordPress or otherwise), load PHP file for that
 
 		if (defined('QA_FINAL_WORDPRESS_INTEGRATE_PATH'))
-			require_once QA_INCLUDE_DIR.'qa-external-users-wp.php';
+			require_once QA_INCLUDE_DIR.'util/external-users-wp.php';
 		else
 			require_once QA_EXTERNAL_DIR.'qa-external-users.php';
 
@@ -653,7 +653,7 @@
 	of the returned array will match the $handles provided, not necessary those in the DB.
 */
 	{
-		require_once QA_INCLUDE_DIR.'qa-util-string.php';
+		require_once QA_INCLUDE_DIR.'util/string.php';
 
 		if (QA_FINAL_EXTERNAL_USERS)
 			$rawhandleuserids=qa_get_userids_from_public($handles);
@@ -1047,7 +1047,7 @@ in a category for which they have elevated privileges).
 			$qa_form_key_cookie_set=true;
 
 			if (strlen(@$_COOKIE['qa_key'])!=QA_FORM_KEY_LENGTH) {
-				require_once QA_INCLUDE_DIR.'qa-util-string.php';
+				require_once QA_INCLUDE_DIR.'util/string.php';
 				$_COOKIE['qa_key']=qa_random_alphanum(QA_FORM_KEY_LENGTH);
 			}
 
@@ -1103,7 +1103,7 @@ in a category for which they have elevated privileges).
 		if (!isset($value))
 			$silentproblems[]='code missing';
 
-		else if (!strlen($value))
+		elseif (!strlen($value))
 			$silentproblems[]='code empty';
 
 		else {
@@ -1135,7 +1135,7 @@ in a category for which they have elevated privileges).
 							$silentproblems[]='key cookie missing';
 						elseif (!strlen($key))
 							$silentproblems[]='key cookie empty';
-						else if (strlen($key)!=QA_FORM_KEY_LENGTH)
+						elseif (strlen($key)!=QA_FORM_KEY_LENGTH)
 							$reportproblems[]='key cookie '.$key.' invalid';
 					}
 				}

@@ -199,6 +199,7 @@
 		'show_custom_sidebar' => 'checkbox',
 		'show_custom_sidepanel' => 'checkbox',
 		'show_custom_welcome' => 'checkbox',
+		'show_post_update_meta' => 'checkbox',
 		'show_home_description' => 'checkbox',
 		'show_message_history' => 'checkbox',
 		'show_notice_visitor' => 'checkbox',
@@ -303,11 +304,11 @@
 			$showoptions = array('show_notice_visitor', 'notice_visitor');
 
 			if (!QA_FINAL_EXTERNAL_USERS) {
-				require_once QA_INCLUDE_DIR.'qa-util-image.php';
+				require_once QA_INCLUDE_DIR.'util/image.php';
 
 				array_push($showoptions, 'show_custom_register', 'custom_register', 'show_register_terms', 'register_terms', 'show_notice_welcome', 'notice_welcome', 'show_custom_welcome', 'custom_welcome');
 
-				array_push($showoptions, '' ,'allow_login_email_only', 'allow_change_usernames', 'allow_private_messages', 'show_message_history', 'page_size_pms', 'allow_user_walls', 'page_size_wall', '', 'avatar_allow_gravatar');
+				array_push($showoptions, '', 'allow_login_email_only', 'allow_change_usernames', 'allow_private_messages', 'show_message_history', 'page_size_pms', 'allow_user_walls', 'page_size_wall', '', 'avatar_allow_gravatar');
 
 				if (qa_has_gd_image())
 					array_push($showoptions, 'avatar_allow_upload', 'avatar_store_size', 'avatar_default_show');
@@ -374,12 +375,12 @@
 			if (count(qa_get_points_to_titles()))
 				$showoptions[] = 'show_user_titles';
 
-			array_push($showoptions, 'show_user_points', '', 'sort_answers_by', 'show_selected_first', 'page_size_q_as', 'show_a_form_immediate');
+			array_push($showoptions, 'show_user_points', 'show_post_update_meta', '', 'sort_answers_by', 'show_selected_first', 'page_size_q_as', 'show_a_form_immediate');
 
 			if (qa_opt('comment_on_qs') || qa_opt('comment_on_as'))
 				array_push($showoptions, 'show_fewer_cs_from', 'show_fewer_cs_count', 'show_c_reply_buttons');
 
-			$showoptins[] = '';
+			$showoptions[] = '';
 
 			$widgets = qa_db_single_select(qa_db_widgets_selectspec());
 
@@ -706,12 +707,12 @@
 							break;
 
 						case 'block_ips_write':
-							require_once QA_INCLUDE_DIR . 'app/limits.php';
+							require_once QA_INCLUDE_DIR.'app/limits.php';
 							$optionvalue = implode(' , ', qa_block_ips_explode($optionvalue));
 							break;
 
 						case 'block_bad_words':
-							require_once QA_INCLUDE_DIR . 'qa-util-string.php';
+							require_once QA_INCLUDE_DIR.'util/string.php';
 							$optionvalue = implode(' , ', qa_block_words_explode($optionvalue));
 							break;
 					}
@@ -729,7 +730,7 @@
 					if ($avatarfileerror === 1)
 						$errors['avatar_default_show'] = qa_lang('main/file_upload_limit_exceeded');
 					elseif ($avatarfileerror === 0 && $_FILES['avatar_default_file']['size'] > 0) {
-						require_once QA_INCLUDE_DIR . 'qa-util-image.php';
+						require_once QA_INCLUDE_DIR.'util/image.php';
 
 						$oldblobid = qa_opt('avatar_default_blobid');
 
@@ -742,7 +743,7 @@
 							$imagedata = qa_image_constrain_data(file_get_contents($_FILES['avatar_default_file']['tmp_name']), $width, $height, qa_opt('avatar_store_size'));
 
 							if (isset($imagedata)) {
-								require_once QA_INCLUDE_DIR . 'app/blobs.php';
+								require_once QA_INCLUDE_DIR.'app/blobs.php';
 
 								$newblobid = qa_create_blob($imagedata, 'jpeg');
 
@@ -956,7 +957,7 @@
 
 			switch ($optionname) { // special treatment for certain options
 				case 'site_language':
-					require_once QA_INCLUDE_DIR.'qa-util-string.php';
+					require_once QA_INCLUDE_DIR.'util/string.php';
 
 					qa_optionfield_make_select($optionfield, qa_admin_language_options(), $value, '');
 
@@ -1006,9 +1007,14 @@
 
 					qa_optionfield_make_select($optionfield, $themeoptions, $value, 'Classic');
 
-					// limit theme parsing to first 8kB
-					$contents = file_get_contents(QA_THEME_DIR.$value.'/qa-styles.css', false, NULL, -1, 8192);
-					$metadata = qa_addon_metadata($contents, 'Theme');
+					$metadataUtil = new Q2A_Util_Metadata();
+					$themedirectory = QA_THEME_DIR . $value;
+					$metadata = $metadataUtil->fetchFromAddonPath($themedirectory);
+					if (empty($metadata)) {
+						// limit theme parsing to first 8kB
+						$contents = file_get_contents($themedirectory . '/qa-styles.css', false, null, -1, 8192);
+						$metadata = qa_addon_metadata($contents, 'Theme');
+					}
 
 					if (strlen(@$metadata['version']))
 						$namehtml = 'v'.qa_html($metadata['version']);
@@ -1040,7 +1046,7 @@
 						$updatehtml = '(<span id="'.$elementid.'">...</span>)';
 
 						$qa_content['script_onloads'][] = array(
-							"qa_version_check(".qa_js($metadata['update']).", 'Theme', ".qa_js($metadata['version'], true).", ".qa_js($elementid).");"
+							"qa_version_check(".qa_js($metadata['update']).", ".qa_js($metadata['version'], true).", ".qa_js($elementid).");"
 						);
 
 					}
@@ -1137,7 +1143,7 @@
 					$optionfield['note'] = qa_lang_html('admin/pixels');
 					break;
 
-				case 'avatar_default_show';
+				case 'avatar_default_show':
 					$qa_content['form']['tags'] .= 'enctype="multipart/form-data"';
 					$optionfield['label'] .= ' <span style="margin:2px 0; display:inline-block;">'.
 						qa_get_avatar_blob_html(qa_opt('avatar_default_blobid'), qa_opt('avatar_default_width'), qa_opt('avatar_default_height'), 32).
@@ -1282,7 +1288,7 @@
 					$optionfield['label'] = '<span id="moderate_points_label_off" style="display:none;">'.$optionfield['label'].'</span><span id="moderate_points_label_on">'.qa_lang_html('options/moderate_points_limit').'</span>';
 					break;
 
-				case 'moderate_points_limit';
+				case 'moderate_points_limit':
 					unset($optionfield['label']);
 					$optionfield['note'] = qa_lang_html('admin/points');
 					break;
@@ -1680,7 +1686,7 @@
 			break;
 
 		case 'mailing':
-			require_once QA_INCLUDE_DIR.'qa-util-sort.php';
+			require_once QA_INCLUDE_DIR.'util/sort.php';
 
 			if (isset($mailingprogress)) {
 				unset($qa_content['form']['buttons']['save']);

@@ -107,7 +107,9 @@
 	/**
 	 * @deprecated Deprecated since Q2A 1.3 now that all options are retrieved together.
 	 */
-	function qa_options_set_pending($names) {}
+	function qa_options_set_pending($names)
+	{
+	}
 
 
 	function qa_preload_options()
@@ -337,6 +339,7 @@
 			'show_a_form_immediate' => 'if_no_as',
 			'show_c_reply_buttons' => 1,
 			'show_custom_welcome' => 0,
+			'show_post_update_meta' => 1,
 			'show_fewer_cs_count' => 5,
 			'show_fewer_cs_from' => 10,
 			'show_full_date_days' => 7,
@@ -483,7 +486,7 @@
 					break;
 
 				case 'form_security_salt':
-					require_once QA_INCLUDE_DIR.'qa-util-string.php';
+					require_once QA_INCLUDE_DIR.'util/string.php';
 					$value=qa_random_alphanum(32);
 					break;
 
@@ -547,7 +550,7 @@
 			'avatarsize' => qa_opt('avatar_q_list_size'),
 			'pointsview' => qa_opt('show_user_points'),
 			'pointstitle' => qa_opt('show_user_titles') ? qa_get_points_to_titles() : array(),
-			'updateview' => true,
+			'updateview' => qa_opt('show_post_update_meta'),
 			'blockwordspreg' => qa_get_block_words_preg(),
 			'showurllinks' => qa_opt('show_url_links'),
 			'linksnewwindow' => qa_opt('links_in_new_window'),
@@ -692,7 +695,7 @@
 			$blockwordstring=qa_opt('block_bad_words');
 
 			if (strlen($blockwordstring)) {
-				require_once QA_INCLUDE_DIR.'qa-util-string.php';
+				require_once QA_INCLUDE_DIR.'util/string.php';
 				$qa_blockwordspreg=qa_block_words_to_preg($blockwordstring);
 
 			} else

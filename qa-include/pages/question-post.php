@@ -128,7 +128,7 @@
 				$pageerror=@$qerrors['page']; // for security code failure
 			}
 
-		} else if (($pagestate==('edit-'.$questionid)) && qa_page_q_permit_edit($question, 'permit_edit_q', $pageerror, 'permit_retag_cat'))
+		} elseif (($pagestate==('edit-'.$questionid)) && qa_page_q_permit_edit($question, 'permit_edit_q', $pageerror, 'permit_retag_cat'))
 			$formtype='q_edit';
 
 		if ($formtype=='q_edit') { // get tags for auto-completion
@@ -633,7 +633,7 @@
 	Returns a $qa_content form for editing an answer and sets up other parts of $qa_content accordingly
 */
 	{
-		require_once QA_INCLUDE_DIR.'qa-util-string.php';
+		require_once QA_INCLUDE_DIR.'util/string.php';
 
 		$answerid=$answer['postid'];
 		$prefix='a'.$answerid.'_';
@@ -705,7 +705,7 @@
 
 				if ($otheranswer['created']>$lastbeforetime) {
 					$lastbeforeid=$otheranswer['postid'];
-					$lastebeforetime=$otheranswer['created'];
+					$lastbeforetime=$otheranswer['created'];
 				}
 			}
 

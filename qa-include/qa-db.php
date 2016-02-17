@@ -236,7 +236,7 @@
 				$result = implode(',', $parts);
 
 		}
-		else if (isset($argument)) {
+		elseif (isset($argument)) {
 			if ($alwaysquote || !is_numeric($argument))
 				$result = "'".qa_db_escape_string($argument)."'";
 			else
@@ -342,6 +342,18 @@
 
 
 	/**
+	 * Return the number of rows in $result. (Simple wrapper for mysqli_result::num_rows.)
+	 */
+	function qa_db_num_rows($result)
+	{
+		if ($result instanceof mysqli_result)
+			return $result->num_rows;
+
+		return 0;
+	}
+
+
+	/**
 	 * Return the value of the auto-increment column for the last inserted row.
 	 */
 	function qa_db_last_insert_id()
@@ -352,7 +364,7 @@
 
 
 	/**
-	 * Does what it says on the tin.
+	 * Return the number of rows affected by the last query.
 	 */
 	function qa_db_affected_rows()
 	{
@@ -376,7 +388,7 @@
 	 */
 	function qa_db_random_bigint()
 	{
-		return sprintf('%d%06d%06d', mt_rand(1,18446743), mt_rand(0,999999), mt_rand(0,999999));
+		return sprintf('%d%06d%06d', mt_rand(1, 18446743), mt_rand(0, 999999), mt_rand(0, 999999));
 	}
 
 
@@ -586,7 +598,7 @@
 		// By contrast, MySQL's ORDER BY does seem to give the results in a reliable order.
 
 		if (isset($selectspec['sortasc'])) {
-			require_once QA_INCLUDE_DIR.'qa-util-sort.php';
+			require_once QA_INCLUDE_DIR.'util/sort.php';
 
 			$index=0;
 			foreach ($outresult as $key => $value)
@@ -595,7 +607,7 @@
 			qa_sort_by($outresult, $selectspec['sortasc'], '_order_');
 
 		} elseif (isset($selectspec['sortdesc'])) {
-			require_once QA_INCLUDE_DIR.'qa-util-sort.php';
+			require_once QA_INCLUDE_DIR.'util/sort.php';
 
 			if (isset($selectspec['sortdesc_2']))
 				qa_sort_by($outresult, $selectspec['sortdesc'], $selectspec['sortdesc_2']);

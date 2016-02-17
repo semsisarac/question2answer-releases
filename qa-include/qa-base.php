@@ -21,8 +21,8 @@
 */
 
 
-	define('QA_VERSION', '1.7.0-beta-1'); // also used as suffix for .js and .css requests
-	define('QA_BUILD_DATE', '2014-11-03');
+	define('QA_VERSION', '1.7.0-beta-2'); // also used as suffix for .js and .css requests
+	define('QA_BUILD_DATE', '2014-12-06');
 
 
 	/**
@@ -39,7 +39,7 @@
 	function qa_autoload($class)
 	{
 		if (strpos($class, 'Q2A_') === 0)
-			require QA_INCLUDE_DIR . strtr($class, '_', '/') . '.php';
+			require QA_INCLUDE_DIR.strtr($class, '_', '/') . '.php';
 	}
 	spl_autoload_register('qa_autoload');
 
@@ -288,12 +288,14 @@
 	}
 
 
+	/**
+	 * Retrieve metadata information from the $contents of a qa-theme.php or qa-plugin.php file, specified by $type ('Plugin' or 'Theme').
+	 * If $versiononly is true, only min version metadata is parsed.
+	 * Name, Description, Min Q2A & Min PHP are not currently used by themes.
+	 *
+	 * @deprecated Deprecated from 1.7; Q2A_Util_Metadata class and metadata.json files should be used instead
+	 */
 	function qa_addon_metadata($contents, $type, $versiononly=false)
-/*
-	Retrieve metadata information from the $contents of a qa-theme.php or qa-plugin.php file, specified by $type ('Plugin' or 'Theme').
-	If $versiononly is true, only min version metadata is parsed.
-	Name, Description, Min Q2A & Min PHP are not currently used by themes.
-*/
 	{
 		$fields = array(
 			'min_q2a' => 'Minimum Question2Answer Version',
@@ -334,10 +336,16 @@
 
 		$pluginfiles = glob(QA_PLUGIN_DIR.'*/qa-plugin.php');
 
+		$metadataUtil = new Q2A_Util_Metadata();
 		foreach ($pluginfiles as $pluginfile) {
-			// limit plugin parsing to first 8kB
-			$contents = file_get_contents($pluginfile, false, NULL, -1, 8192);
-			$metadata = qa_addon_metadata($contents, 'Plugin', true);
+			$pluginDirectory = dirname($pluginfile);
+
+			$metadata = $metadataUtil->fetchFromAddonPath($pluginDirectory);
+			if (empty($metadata)) {
+				// limit plugin parsing to first 8kB
+				$contents = file_get_contents($pluginfile, false, null, -1, 8192);
+				$metadata = qa_addon_metadata($contents, 'Plugin', true);
+			}
 
 			// skip plugin which requires a later version of Q2A
 			if (isset($metadata['min_q2a']) && qa_qa_version_below($metadata['min_q2a']))
@@ -347,7 +355,7 @@
 				continue;
 
 			// these variables are utilized in the qa_register_plugin_* functions
-			$qa_plugin_directory = dirname($pluginfile).'/';
+			$qa_plugin_directory = $pluginDirectory . '/';
 			$qa_plugin_urltoroot = substr($qa_plugin_directory, strlen(QA_BASE_DIR));
 
 			require_once $pluginfile;
@@ -548,11 +556,11 @@
 
 //	Low-level functions used throughout Q2A
 
+	/**
+	 * Calls eval() on the PHP code in $eval which came from the file $filename. It supplements PHP's regular error reporting by
+	 * displaying/logging (as appropriate) the original source filename, if an error occurred when evaluating the code.
+	 */
 	function qa_eval_from_file($eval, $filename)
-/*
-	Calls eval() on the PHP code in $eval which came from the file $filename. It supplements PHP's regular error reporting by
-	displaying/logging (as appropriate) the original source filename, if an error occurred when evaluating the code.
-*/
 	{
 		// could also use ini_set('error_append_string') but apparently it doesn't work for errors logged on disk
 
@@ -577,18 +585,25 @@
 	}
 
 
+	/**
+	 * Call $function with the arguments in the $args array (doesn't work with call-by-reference functions)
+	 */
 	function qa_call($function, $args)
-/*
-	Call $function with the arguments in the $args array (doesn't work with call-by-reference functions)
-*/
 	{
-		switch (count($args)) { // call_user_func_array(...) is very slow, so we break out most cases
-			case 0: return $function();
-			case 1: return $function($args[0]);
-			case 2: return $function($args[0], $args[1]);
-			case 3: return $function($args[0], $args[1], $args[2]);
-			case 4: return $function($args[0], $args[1], $args[2], $args[3]);
-			case 5: return $function($args[0], $args[1], $args[2], $args[3], $args[4]);
+		// call_user_func_array(...) is very slow, so we break out most common cases first
+		switch (count($args)) {
+			case 0:
+				return $function();
+			case 1:
+				return $function($args[0]);
+			case 2:
+				return $function($args[0], $args[1]);
+			case 3:
+				return $function($args[0], $args[1], $args[2]);
+			case 4:
+				return $function($args[0], $args[1], $args[2], $args[3]);
+			case 5:
+				return $function($args[0], $args[1], $args[2], $args[3], $args[4]);
 		}
 
 		return call_user_func_array($function, $args);
@@ -746,7 +761,7 @@
 				$module = qa_load_module($moduletype, $modulename);
 
 				if (method_exists($module, $method))
-					$modules[$moduletype] = $module;
+					$modules[$modulename] = $module;
 			}
 		}
 
@@ -1033,8 +1048,10 @@
 			switch (strtoupper($unit)) {  // Gets an integer value that can be compared against the size of the HTTP request
 				case 'G':
 					$postmaxsize *= 1024;
+					// fall-through
 				case 'M':
 					$postmaxsize *= 1024;
+					// fall-through
 				case 'K':
 					$postmaxsize *= 1024;
 			}
@@ -1073,7 +1090,7 @@
 	{
 		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 
-		require_once QA_INCLUDE_DIR.'qa-util-string.php';
+		require_once QA_INCLUDE_DIR.'util/string.php';
 
 		$useragent=@$_SERVER['HTTP_USER_AGENT'];
 
@@ -1091,7 +1108,7 @@
 	{
 		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 
-		require_once QA_INCLUDE_DIR.'qa-util-string.php';
+		require_once QA_INCLUDE_DIR.'util/string.php';
 
 		// inspired by: http://dangerousprototypes.com/docs/PhpBB3_MOD:_Replacement_mobile_browser_detection_for_mobile_themes
 
@@ -1121,14 +1138,14 @@
 
 //	Language phrase support
 
+	/**
+	 * Return the translated string for $identifier, unless we're using external translation logic.
+	 * This will retrieve the 'site_language' option so make sure you've already loaded/set that if
+	 * loading an option now will cause a problem (see issue in qa_default_option()). The part of
+	 * $identifier before the slash (/) replaces the * in the qa-lang-*.php file references, and the
+	 * part after the / is the key of the array element to be taken from that file's returned result.
+	 */
 	function qa_lang($identifier)
-/*
-	Return the translated string for $identifier, unless we're using external translation logic.
-	This will retrieve the 'site_language' option so make sure you've already loaded/set that if
-	loading an option now will cause a problem (see issue in qa_default_option()). The part of
-	$identifier before the slash (/) replaces the * in the qa-lang-*.php file references, and the
-	part after the / is the key of the array element to be taken from that file's returned result.
-*/
 	{
 		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 
@@ -1136,7 +1153,7 @@
 
 		list($group, $label)=explode('/', $identifier, 2);
 
-	//	First look for a custom phrase
+	//	First look for a custom phrase in qa-lang/custom/
 
 		if (!isset($qa_phrases_custom[$group])) { // only load each language file once
 			$phrases=@include QA_LANG_DIR.'custom/qa-lang-'.$group.'.php'; // can tolerate missing file or directory
@@ -1146,7 +1163,7 @@
 		if (isset($qa_phrases_custom[$group][$label]))
 			return $qa_phrases_custom[$group][$label];
 
-	//	Second look for a localized file
+	//	Second look for a localized file in qa-lang/<lang>/
 
 		$languagecode=qa_opt('site_language');
 
@@ -1165,13 +1182,13 @@
 				return $qa_phrases_lang[$group][$label];
 		}
 
-	//	Finally load the default
+	//	Finally load the default language files
 
 		if (!isset($qa_phrases_default[$group])) { // only load each default language file once
 			if (isset($qa_lang_file_pattern[$group]))
 				$include=str_replace('*', 'default', $qa_lang_file_pattern[$group]);
 			else
-				$include=QA_INCLUDE_DIR.'qa-lang-'.$group.'.php';
+				$include=QA_INCLUDE_DIR.'lang/qa-lang-'.$group.'.php';
 
 			$qa_phrases_default[$group]=@include_once $include;
 		}
@@ -1353,7 +1370,7 @@
 		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 
 		require_once QA_INCLUDE_DIR.'app/options.php';
-		require_once QA_INCLUDE_DIR.'qa-util-string.php';
+		require_once QA_INCLUDE_DIR.'util/string.php';
 
 		$title=qa_block_words_replace($title, qa_get_block_words_preg());
 
@@ -1599,6 +1616,26 @@
 			call_user_func_array(array($processmodule, $method), $args);
 
 		$qa_process_reports_suspended=null;
+	}
+
+
+	/**
+	 * JSON compatibility layer for PHP 5.1
+	 */
+	if (!function_exists('json_encode') && !function_exists('json_decode')) {
+		require_once QA_INCLUDE_DIR.'vendor/JSON.php';
+
+		function json_encode($json)
+		{
+			$service = new Services_JSON();
+			return $service->encode($json);
+		}
+
+		function json_decode($json, $assoc = false)
+		{
+			$service = new Services_JSON($assoc ? SERVICES_JSON_LOOSE_TYPE : 0);
+			return $service->decode($json);
+		}
 	}
 
 

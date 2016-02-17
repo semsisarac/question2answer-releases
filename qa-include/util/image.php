@@ -3,7 +3,7 @@
 	Question2Answer by Gideon Greenspan and contributors
 	http://www.question2answer.org/
 
-	File: qa-include/qa-util-image.php
+	File: qa-include/util/image.php
 	Description: Some useful image-related functions (using GD)
 
 
@@ -47,11 +47,13 @@
 
 			switch (strtolower(substr($gotbytes, -1))) {
 				case 'g':
-					$gotbytes*=1024;
+					$gotbytes *= 1024;
+					// fall-through
 				case 'm':
-					$gotbytes*=1024;
+					$gotbytes *= 1024;
+					// fall-through
 				case 'k':
-					$gotbytes*=1024;
+					$gotbytes *= 1024;
 			}
 
 			if ($gotbytes>0) { // otherwise we clearly don't know our limit

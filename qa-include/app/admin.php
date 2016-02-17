@@ -55,14 +55,14 @@
 	}
 
 
+	/**
+	 *	Return a sorted array of available languages, [short code] => [long name]
+	 */
 	function qa_admin_language_options()
-/*
-	Return a sorted array of available languages, [short code] => [long name]
-*/
 	{
 		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 
-		/*
+		/**
 		 * @deprecated The hardcoded language ids will be removed in favor of language metadata files.
 		 * See qa-lang/en-GB directory for a clear example of how to use them.
 		 */
@@ -120,45 +120,42 @@
 		$options = array('' => 'English (US)');
 
 		// find all language folders
-		foreach (glob(QA_LANG_DIR.'*', GLOB_NOSORT) as $directory) {
+		$metadataUtil = new Q2A_Util_Metadata();
+		foreach (glob(QA_LANG_DIR . '*', GLOB_ONLYDIR) as $directory) {
 			$code = basename($directory);
-			$metadatafile = QA_LANG_DIR . $code . '/metadata.php';
-			if (is_file($metadatafile)) {
-				$metadata = include $metadatafile;
-				if (isset($metadata['display_name']))
-					$options[$code] = $metadata['display_name'];
-			}
+			$metadata = $metadataUtil->fetchFromAddonPath($directory);
+			if (isset($metadata['display_name']))
+				$options[$code] = $metadata['display_name'];
 			// otherwise use an entry from above
-			else if (isset($codetolanguage[$code]))
+			elseif (isset($codetolanguage[$code]))
 				$options[$code] = $codetolanguage[$code];
 		}
 
 		asort($options, SORT_STRING);
-
 		return $options;
 	}
 
 
+	/**
+	 * Return a sorted array of available themes, [theme name] => [theme name]
+	 */
 	function qa_admin_theme_options()
-/*
-	Return a sorted array of available themes, [theme name] => [theme name]
-*/
 	{
 		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 
-		$options=array();
-
-		$directory=@opendir(QA_THEME_DIR);
-		if (is_resource($directory)) {
-			while (($theme=readdir($directory))!==false)
-				if ( (substr($theme, 0, 1)!='.') && file_exists(QA_THEME_DIR.$theme.'/qa-styles.css') )
-					$options[$theme]=$theme;
-
-			closedir($directory);
+		$metadataUtil = new Q2A_Util_Metadata();
+		foreach (glob(QA_THEME_DIR . '*', GLOB_ONLYDIR) as $directory) {
+			$theme = basename($directory);
+			$metadata = $metadataUtil->fetchFromAddonPath($directory);
+			if (empty($metadata)) {
+				// limit theme parsing to first 8kB
+				$contents = file_get_contents($directory . '/qa-styles.css', false, null, -1, 8192);
+				$metadata = qa_addon_metadata($contents, 'Theme');
+			}
+			$options[$theme] = isset($metadata['name']) ? $metadata['name'] : $theme;
 		}
 
 		asort($options, SORT_STRING);
-
 		return $options;
 	}
 
@@ -387,7 +384,7 @@
 		if ( (!QA_FINAL_EXTERNAL_USERS) && qa_opt('moderate_users') && ($level>=QA_USER_LEVEL_MODERATOR)) {
 			$count=qa_opt('cache_uapprovecount');
 
-			$navigation['admin/moderate-users']=array(
+			$navigation['admin/approve']=array(
 				'label' => qa_lang_html('admin/approve_users_title').($count ? (' ('.$count.')') : ''),
 				'url' => qa_path_html('admin/approve'),
 			);
@@ -598,32 +595,34 @@
 	}
 
 
+	/**
+	 * Return the hash code for the plugin in $directory (without trailing slash), used for in-page navigation on admin/plugins page
+	 */
 	function qa_admin_plugin_directory_hash($directory)
-/*
-	Return the hash code for the plugin in $directory, used for in-page navigation on admin/plugins page
-*/
 	{
 		return md5($directory);
 	}
 
 
+	/**
+	 * Return the URL (relative to the current page) to navigate to the options panel for the plugin in $directory (without trailing slash)
+	 */
 	function qa_admin_plugin_options_path($directory)
-/*
-	Return the URL (relative to the current page) to navigate to the options panel for the plugin in $directory
-*/
 	{
-		$hash=qa_admin_plugin_directory_hash($directory);
+		$hash = qa_admin_plugin_directory_hash($directory);
 		return qa_path_html('admin/plugins', array('show' => $hash), null, null, $hash);
 	}
 
 
+	/**
+	 * Return the URL (relative to the current page) to navigate to the options panel for plugin module $name of $type
+	 */
 	function qa_admin_module_options_path($type, $name)
-/*
-	Return the URL (relative to the current page) to navigate to the options panel for plugin module $name of $type
-*/
 	{
-		$info=qa_get_module_info($type, $name);
-		return qa_admin_plugin_options_path($info['directory']);
+		$info = qa_get_module_info($type, $name);
+		$dir = rtrim($info['directory'], '/');
+
+		return qa_admin_plugin_options_path($dir);
 	}
 
 

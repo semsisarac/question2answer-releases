@@ -4,16 +4,30 @@
 
 	<exclude-pattern>qa-include/vendor/*</exclude-pattern>
 	<exclude-pattern>qa-config.php</exclude-pattern>
+	<exclude-pattern>qa-plugin/recaptcha-captcha/recaptchalib.php</exclude-pattern>
+	<exclude-pattern>qa-plugin/facebook-login/facebook.php</exclude-pattern>
+	<exclude-pattern>qa-plugin/facebook-login/base_facebook.php</exclude-pattern>
 
-	<rule ref="PSR1"/>
+	<rule ref="PSR1">
+		<exclude name="PSR1.Classes.ClassDeclaration.MissingNamespace"/>
+	</rule>
 
 	<rule ref="PSR2">
 		<exclude name="Generic.WhiteSpace.DisallowTabIndent"/>
-		<exclude name="Generic.WhiteSpace.ScopeIndent"/>
+		<exclude name="Generic.Files.LineLength.TooLong"/>
+
 		<exclude name="Squiz.ControlStructures.ControlSignature"/>
 		<exclude name="Generic.ControlStructures.InlineControlStructure"/>
 		<exclude name="PSR2.Methods.FunctionCallSignature"/>
 	</rule>
 
+	<arg name="tab-width" value="4"/>
 	<rule ref="Generic.WhiteSpace.DisallowSpaceIndent"/>
+	<rule ref="Generic.WhiteSpace.ScopeIndent">
+		<properties>
+			<property name="indent" value="4"/>
+			<property name="tabIndent" value="true"/>
+		</properties>
+	</rule>
+
 </ruleset>

@@ -163,7 +163,8 @@ class qa_html_theme extends qa_html_theme_base
 			$class .= ' qam-approve-users';
 		}
 
-		$class .= ' qam-body-' . $qam_snow->fixed_topbar;
+		if (isset($qam_snow->fixed_topbar))
+			$class .= ' qam-body-' . $qam_snow->fixed_topbar;
 
 		$this->output('class="' . $class . ' qa-body-js-off"');
 	}
@@ -206,7 +207,7 @@ class qa_html_theme extends qa_html_theme_base
 			}
 		}
 
-		qa_html_theme_base::nav('user');
+		$this->nav('user');
 		$this->output('</div> <!-- END qam-account-items -->');
 		$this->output('</div> <!-- END qam-account-items-wrapper -->');
 	}
@@ -228,10 +229,7 @@ class qa_html_theme extends qa_html_theme_base
 	}
 
 	/**
-	 * The method has been overridden just to remove the '-' from the note
-	 * for the category page (notes). I know it is not good idea to override
-	 * this just for '-' it. But I did
-	 * intentionally to avoid such issue during the updates.
+	 * The method has been overridden to remove the '-' from the note for the category page (notes).
 	 *
 	 * @since Snow 1.4
 	 * @param type $navlink
@@ -239,36 +237,13 @@ class qa_html_theme extends qa_html_theme_base
 	 */
 	public function nav_link($navlink, $class)
 	{
-		if (isset($navlink['url'])) {
-			$this->output(
-					'<a href="' . $navlink['url'] . '" class="qa-' . $class . '-link' .
-					(@$navlink['selected'] ? (' qa-' . $class . '-selected') : '') .
-					(@$navlink['favorited'] ? (' qa-' . $class . '-favorited') : '') .
-					'"' . (strlen(@$navlink['popup']) ? (' title="' . $navlink['popup'] . '"') : '') .
-					(isset($navlink['target']) ? (' target="' . $navlink['target'] . '"') : '') . '>' . $navlink['label'] .
-					'</a>'
-			);
-		} else {
-			$this->output(
-					'<span class="qa-' . $class . '-nolink' . (@$navlink['selected'] ? (' qa-' . $class . '-selected') : '') .
-					(@$navlink['favorited'] ? (' qa-' . $class . '-favorited') : '') . '"' .
-					(strlen(@$navlink['popup']) ? (' title="' . $navlink['popup'] . '"') : '') .
-					'>' . $navlink['label'] . '</span>'
-			);
-		}
-
 		if (strlen(@$navlink['note'])) {
-
-			$qam_note_class = '';
-			if (strpos($navlink['note'], '> -') !== false) {
-				$qam_note_class = !empty($navlink['note']) ? ' qam-cat-note' : NULL;
-			}
-
-			// search and replace within the string
 			$search = array(' - <', '> - ');
 			$replace = array(' <', '> ');
-			$output = $this->output('<span class="qa-' . $class . '-note ' . $qam_note_class . '">' . str_replace($search, $replace, $navlink['note']) . '</span>');
+			$navlink['note'] = str_replace($search, $replace, $navlink['note']);
 		}
+
+		parent::nav_link($navlink, $class);
 	}
 
 	/**
@@ -312,7 +287,9 @@ class qa_html_theme extends qa_html_theme_base
 	{
 		global $qam_snow;
 
-		$this->output('<div id="qam-topbar" class="clearfix ' . $qam_snow->fixed_topbar . '">');
+		$class = isset($qam_snow->fixed_topbar) ? ' ' . $qam_snow->fixed_topbar : '';
+		$this->output('<div id="qam-topbar" class="clearfix' . $class . '">');
+
 		$this->nav_main_sub();
 		$this->output('</div><!-- END qam-topbar -->');
 
@@ -418,7 +395,7 @@ class qa_html_theme extends qa_html_theme_base
 
 		// add closed image
 		$closed = (!empty($q_view['closed']) ?
-						'<img src="' . $this->rooturl . $this->icon_url . '/closed-q-view.png" class="qam-q-view-close-icon" alt="question-closed" width="24" height="24" title="' . qa_lang('main/closed') . '" />' : NULL );
+						'<img src="' . $this->rooturl . $this->icon_url . '/closed-q-view.png" class="qam-q-view-close-icon" alt="question-closed" width="24" height="24" title="' . qa_lang('main/closed') . '" />' : null );
 
 		if (isset($this->content['title'])) {
 			$this->output(
@@ -594,14 +571,14 @@ class qa_html_theme extends qa_html_theme_base
 	 * @since Snow 1.4
 	 * @version 1.0
 	 */
-	public function qam_search($addon_class = FALSE, $ids = FALSE)
+	private function qam_search($addon_class = false, $ids = false)
 	{
 		$default_color = 'turquoise';
 
-		$id = (($ids) ? ' id="' . $ids . '"' : NULL);
+		$id = (($ids) ? ' id="' . $ids . '"' : null);
 
 		$this->output('<div class="qam-search ' . $default_color . ' ' . $addon_class . '" ' . $id . ' >');
-		qa_html_theme_base::search();
+		$this->search();
 		$this->output('</div>');
 	}
 
@@ -617,7 +594,7 @@ class qa_html_theme extends qa_html_theme_base
 	{
 		$css = '<style>';
 
-		$css .= ( (!qa_is_logged_in() ) ? '.qa-nav-user{margin:0 !important;}' : NULL );
+		$css .= ( (!qa_is_logged_in() ) ? '.qa-nav-user{margin:0 !important;}' : null );
 		if (qa_request_part(1) !== qa_get_logged_in_handle()) {
 			$css .= '@media (max-width: 979px){';
 			$css .= 'body.qa-template-user.fixed, body[class^="qa-template-user-"].fixed, body[class*="qa-template-user-"].fixed{';
@@ -670,6 +647,4 @@ class qa_html_theme extends qa_html_theme_base
 
 		return $icons_info;
 	}
-
-
 }

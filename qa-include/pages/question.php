@@ -28,8 +28,8 @@
 	require_once QA_INCLUDE_DIR.'app/cookies.php';
 	require_once QA_INCLUDE_DIR.'app/format.php';
 	require_once QA_INCLUDE_DIR.'db/selects.php';
-	require_once QA_INCLUDE_DIR.'qa-util-sort.php';
-	require_once QA_INCLUDE_DIR.'qa-util-string.php';
+	require_once QA_INCLUDE_DIR.'util/sort.php';
+	require_once QA_INCLUDE_DIR.'util/string.php';
 	require_once QA_INCLUDE_DIR.'app/captcha.php';
 	require_once QA_INCLUDE_DIR.'pages/question-view.php';
 	require_once QA_INCLUDE_DIR.'app/updates.php';
@@ -358,7 +358,7 @@
 					$commentsall=$answerid;
 				}
 
-			} else if (($formtype=='c_edit') && (@$commentsfollows[$formpostid]['parentid']==$answerid)) { // ...being edited
+			} elseif (($formtype=='c_edit') && (@$commentsfollows[$formpostid]['parentid']==$answerid)) { // ...being edited
 				$a_view['c_form']=qa_page_q_edit_c_form($qa_content, 'c'.$formpostid, $commentsfollows[$formpostid],
 					@$ceditin[$formpostid], @$cediterrors[$formpostid]);
 
