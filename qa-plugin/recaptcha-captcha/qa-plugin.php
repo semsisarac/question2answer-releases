@@ -1,13 +1,9 @@
 <?php
-
 /*
-	Question2Answer (c) Gideon Greenspan
-
+	Question2Answer by Gideon Greenspan and contributors
 	http://www.question2answer.org/
 
-	
 	File: qa-plugin/recaptcha-captcha/qa-plugin.php
-	Version: See define()s at top of qa-include/qa-base.php
 	Description: Initiates reCAPTCHA plugin
 
 
@@ -15,7 +11,7 @@
 	modify it under the terms of the GNU General Public License
 	as published by the Free Software Foundation; either version 2
 	of the License, or (at your option) any later version.
-	
+
 	This program is distributed in the hope that it will be useful,
 	but WITHOUT ANY WARRANTY; without even the implied warranty of
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -26,7 +22,7 @@
 
 /*
 	Plugin Name: reCAPTCHA
-	Plugin URI: 
+	Plugin URI:
 	Plugin Description: Provides support for reCAPTCHA captchas
 	Plugin Version: 1.0
 	Plugin Date: 2011-11-17
@@ -45,7 +41,7 @@
 
 
 	qa_register_plugin_module('captcha', 'qa-recaptcha-captcha.php', 'qa_recaptcha_captcha', 'reCAPTCHA');
-	
+
 
 /*
 	Omit PHP closing tag to help avoid accidental output
