@@ -57,6 +57,40 @@ class qa_wysiwyg_editor
 			'wysiwyg_editor_upload_max_size_display' => 'wysiwyg_editor_upload_images_field',
 		));
 
+		// handle AJAX requests to 'wysiwyg-editor-ajax'
+		$js = array(
+			'function wysiwyg_editor_ajax(totalEdited) {',
+			'	$.ajax({',
+			'		url: ' . qa_js(qa_path('wysiwyg-editor-ajax')) . ',',
+			'		success: function(response) {',
+			'			var postsEdited = parseInt(response, 10);',
+			'			var $btn = $("#wysiwyg_editor_ajax");',
+			'			if (isNaN(postsEdited)) {',
+			'				$btn.text("ERROR");',
+			'			}',
+			'			else if (postsEdited < 5) {',
+			'				$btn.text("All posts converted.");',
+			'			}',
+			'			else {',
+			'				totalEdited += postsEdited;',
+			'				$btn.text("Updating posts... " + totalEdited)',
+			'				window.setTimeout(function() {',
+			'					wysiwyg_editor_ajax(totalEdited);',
+			'				}, 1000);',
+			'			}',
+			'		}',
+			'	});',
+			'}',
+
+			'$("#wysiwyg_editor_ajax").click(function() {',
+			'	wysiwyg_editor_ajax(0);',
+			'	return false;',
+			'});',
+		);
+		$ajaxHtml = 'Update broken images from old CKeditor Smiley plugin: ' .
+			'<button id="wysiwyg_editor_ajax">click here</button> ' .
+			'<script>' . implode("\n", $js) . '</script>';
+
 		return array(
 			'ok' => $saved ? 'WYSIWYG editor settings saved' : null,
 
@@ -83,6 +117,11 @@ class qa_wysiwyg_editor
 					'type' => 'number',
 					'value' => $this->bytes_to_mega_html(qa_opt('wysiwyg_editor_upload_max_size')),
 					'tags' => 'name="wysiwyg_editor_upload_max_size_field"',
+				),
+
+				array(
+					'type' => 'custom',
+					'html' => $ajaxHtml,
 				),
 			),
 
@@ -125,38 +164,17 @@ class qa_wysiwyg_editor
 
 			$qa_content['script_src'][] = $scriptsrc;
 			$qa_content['script_lines'][] = array(
+				// Most CKeditor config occurs in ckeditor/config.js
 				"var qa_wysiwyg_editor_config = {",
-				// The toolbar arrangement, two rows of buttons
-				"	toolbar: [",
-				"		{ name: 'basic', items: [ 'Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript' ] },",
-				"		{ name: 'color', items: [ 'TextColor', 'BGColor' ] },",
-				"		{ name: 'align', items: [ 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock' ] },",
-				"		{ name: 'clipboard', items: [ 'Cut', 'Copy', 'Paste', 'PasteFromWord', '-', 'Undo', 'Redo' ] },",
-				"		'/',",
-				"		{ name: 'font', items: [ 'Font', 'FontSize', 'Format' ] },",
-				"		{ name: 'paragraph', items: [ 'NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', 'Blockquote' ] },",
-				"		{ name: 'links', items: [ 'Link', 'Unlink' ] },",
-				"		{ name: 'insert', items: [ 'Image', 'Table', 'HorizontalRule', 'SpecialChar' ] },",
-				"		{ name: 'last', items: [ 'RemoveFormat', 'Maximize' ] }",
-				"	],",
-
-				// Set the most common block elements.
-				"	format_tags: 'p;h1;h2;h3;pre',",
-				"	entities: false,",
-				// Make dialogs simpler.
-				"	removeDialogTabs: 'image:advanced;link:advanced;table:advanced',",
-				// Use native spell checking (note: Ctrl+right-click is required for native context menu).
-				"	disableNativeSpellChecker: false,",
-				// Set language to Q2A site language, falling back to English if not available.
-				"	defaultLanguage: 'en',",
-				"	language: " . qa_js(qa_opt('site_language')) . ",",
 
 				// File uploads
 				($uploadimages ? "	filebrowserImageUploadUrl: $imageUploadUrl," : ""),
 				($uploadall ? "	filebrowserUploadUrl: $fileUploadUrl," : ""),
 
-				// Prevent config file being loaded
-				"	customConfig: ''",
+				// Set language to Q2A site language, falling back to English if not available.
+				"	defaultLanguage: 'en',",
+				"	language: " . qa_js(qa_opt('site_language')) . "",
+
 				"};",
 			);
 		}

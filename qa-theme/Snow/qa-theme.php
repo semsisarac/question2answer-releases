@@ -9,23 +9,21 @@ class qa_html_theme extends qa_html_theme_base
 	public function nav_user_search()
 	{
 		if (!qa_is_logged_in()) {
-			$login=@$this->content['navigation']['user']['login'];
-
-			if (isset($login) && !QA_FINAL_EXTERNAL_USERS) {
+			if (isset($this->content['navigation']['user']['login']) && !QA_FINAL_EXTERNAL_USERS) {
+				$login = $this->content['navigation']['user']['login'];
 				$this->output(
-					'<!--[Begin: login form]-->',
-					'<form id="qa-loginform" action="'.$login['url'].'" method="post">',
-						'<input type="text" id="qa-userid" name="emailhandle" placeholder="'.trim(qa_lang_html(qa_opt('allow_login_email_only') ? 'users/email_label' : 'users/email_handle_label'), ':').'" />',
-						'<input type="password" id="qa-password" name="password" placeholder="'.trim(qa_lang_html('users/password_label'), ':').'" />',
-						'<div id="qa-rememberbox"><input type="checkbox" name="remember" id="qa-rememberme" value="1"/>',
-						'<label for="qa-rememberme" id="qa-remember">'.qa_lang_html('users/remember').'</label></div>',
+					'<form class="qam-login-form" action="'.$login['url'].'" method="post">',
+						'<input type="text" class="qam-login-text" name="emailhandle" dir="auto" placeholder="'.trim(qa_lang_html(qa_opt('allow_login_email_only') ? 'users/email_label' : 'users/email_handle_label'), ':').'"/>',
+						'<input type="password" class="qam-login-text" name="password" dir="auto" placeholder="'.trim(qa_lang_html('users/password_label'), ':').'"/>',
+						'<div class="qam-rememberbox"><input type="checkbox" name="remember" id="qam-rememberme" value="1"/>',
+						'<label for="qam-rememberme" class="qam-remember">'.qa_lang_html('users/remember').'</label></div>',
 						'<input type="hidden" name="code" value="'.qa_html(qa_get_form_security_code('login')).'"/>',
-						'<input type="submit" value="'.$login['label'].'" id="qa-login" name="dologin" />',
-					'</form>',
-					'<!--[End: login form]-->'
+						'<input type="submit" value="' . qa_lang_html('users/login_button') . '" class="qa-form-tall-button qa-form-tall-button-login" name="dologin"/>',
+					'</form>'
 				);
 
-				unset($this->content['navigation']['user']['login']); // removes regular navigation link to log in page
+				// remove regular navigation link to log in page
+				unset($this->content['navigation']['user']['login']);
 			}
 		}
 
@@ -65,7 +63,7 @@ class qa_html_theme extends qa_html_theme_base
 	// adds login bar, user navigation and search at top of page in place of custom header content
 	public function body_header()
 	{
-		$this->output('<div id="qa-login-bar"><div id="qa-login-group">');
+		$this->output('<div class="qam-login-bar"><div class="qam-login-group">');
 		$this->nav_user_search();
 		$this->output('</div></div>');
 	}
